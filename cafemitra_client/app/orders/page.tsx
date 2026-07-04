@@ -1,15 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BarChart3,
+  CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   CircleHelp,
   ClipboardList,
+  Filter,
   FileText,
   Home,
   IdCard,
   Image,
+  Inbox,
   Landmark,
   LayoutGrid,
   MessageCircle,
@@ -22,6 +27,7 @@ import {
 } from "lucide-react";
 import { apiFetch, apiUrl, hasStoredSession } from "@/lib/api";
 import { DashboardShell } from "../DashboardShell";
+import { SkeletonBlock, UiState } from "../UiState";
 
 type Order = {
   id: number;
@@ -39,6 +45,8 @@ type Order = {
   fileUrl: string;
   createdAt: string;
 };
+
+type PrintFilter = "all" | "pass" | "fail";
 
 type NavItem = {
   name: string;
@@ -88,10 +96,36 @@ const navGroups: NavGroup[] = [
   },
 ];
 
+const ORDERS_PER_PAGE = 15;
+
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [message, setMessage] = useState("Loading orders...");
+  const [printFilter, setPrintFilter] = useState<PrintFilter>("all");
+  const [dateFilter, setDateFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
   const cashApprovalOrders = orders.filter((order) => order.paymentStatus === "cash_counter" && order.status === "awaiting_approval");
+  const filteredOrders = useMemo(
+    () =>
+      orders.filter((order) => {
+        const matchesPrint =
+          printFilter === "all" ||
+          (printFilter === "pass" && order.status === "printed") ||
+          (printFilter === "fail" && order.status === "failed");
+        const matchesDate = !dateFilter || getLocalDateInputValue(order.createdAt) === dateFilter;
+        return matchesPrint && matchesDate;
+      }),
+    [dateFilter, orders, printFilter]
+  );
+  const totalPages = Math.max(1, Math.ceil(filteredOrders.length / ORDERS_PER_PAGE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedOrders = filteredOrders.slice((safeCurrentPage - 1) * ORDERS_PER_PAGE, safeCurrentPage * ORDERS_PER_PAGE);
+  const pageStart = filteredOrders.length ? (safeCurrentPage - 1) * ORDERS_PER_PAGE + 1 : 0;
+  const pageEnd = Math.min(safeCurrentPage * ORDERS_PER_PAGE, filteredOrders.length);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [dateFilter, printFilter]);
 
   useEffect(() => {
     if (!hasStoredSession()) {
@@ -157,9 +191,48 @@ export default function OrdersPage() {
           ) : null}
 
           <section className="panel orders-panel">
-            {message ? <div className="orders-empty">{message}</div> : null}
-            {!message && orders.length === 0 ? <div className="orders-empty">There are no orders yet.</div> : null}
-            {orders.length ? (
+            {!message && orders.length ? (
+              <div className="orders-toolbar">
+                <div className="orders-filter-group" aria-label="Print result filter">
+                  <Filter size={16} />
+                  <button className={printFilter === "all" ? "active" : ""} type="button" onClick={() => setPrintFilter("all")}>
+                    All
+                  </button>
+                  <button className={printFilter === "pass" ? "active" : ""} type="button" onClick={() => setPrintFilter("pass")}>
+                    Pass
+                  </button>
+                  <button className={printFilter === "fail" ? "active" : ""} type="button" onClick={() => setPrintFilter("fail")}>
+                    Fail
+                  </button>
+                </div>
+
+                <label className="orders-date-filter">
+                  <CalendarDays size={16} />
+                  <input aria-label="Filter orders by date" type="date" value={dateFilter} onChange={(event) => setDateFilter(event.target.value)} />
+                </label>
+
+                {(printFilter !== "all" || dateFilter) && (
+                  <button className="orders-clear-filter" type="button" onClick={() => {
+                    setPrintFilter("all");
+                    setDateFilter("");
+                  }}>
+                    Clear
+                  </button>
+                )}
+              </div>
+            ) : null}
+            {message ? (
+              message === "Loading orders..." ? (
+                <div className="orders-state-wrap">
+                  <SkeletonBlock lines={5} />
+                </div>
+              ) : (
+                <UiState icon={Inbox} title="Orders unavailable" description={message} tone="danger" />
+              )
+            ) : null}
+            {!message && orders.length === 0 ? <UiState icon={Inbox} title="No orders yet" description="Customer print orders will appear here after they upload or pay." /> : null}
+            {!message && orders.length > 0 && filteredOrders.length === 0 ? <UiState icon={Inbox} title="No matching orders" description="Try changing the status or date filter." /> : null}
+            {paginatedOrders.length ? (
               <div className="orders-table-wrap">
                 <table className="orders-table">
                   <thead>
@@ -176,7 +249,7 @@ export default function OrdersPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {orders.map((order) => (
+                    {paginatedOrders.map((order) => (
                       <tr key={order.id}>
                         <td>
                           <strong className="token-pill">{order.tokenId}</strong>
@@ -206,6 +279,24 @@ export default function OrdersPage() {
                 </table>
               </div>
             ) : null}
+            {!message && filteredOrders.length ? (
+              <div className="orders-pagination">
+                <span>
+                  Showing {pageStart}-{pageEnd} of {filteredOrders.length}
+                </span>
+                <div className="orders-page-actions">
+                  <button type="button" onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={safeCurrentPage === 1} aria-label="Previous page">
+                    <ChevronLeft size={16} />
+                  </button>
+                  <strong>
+                    Page {safeCurrentPage} of {totalPages}
+                  </strong>
+                  <button type="button" onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={safeCurrentPage === totalPages} aria-label="Next page">
+                    <ChevronRight size={16} />
+                  </button>
+                </div>
+              </div>
+            ) : null}
           </section>
       </div>
     </DashboardShell>
@@ -224,4 +315,14 @@ function formatDate(value: string) {
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(value));
+}
+
+function getLocalDateInputValue(value: string) {
+  if (!value) return "";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }

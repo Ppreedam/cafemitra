@@ -3,20 +3,15 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
-  BarChart3,
-  Bell,
-  Bookmark,
   Building2,
   ChevronDown,
-  LogOut,
   Menu,
   Printer,
-  Settings,
-  UserRound,
   Wallet,
 } from "lucide-react";
-import { apiFetch, clearSession, hasStoredSession, storeSession } from "@/lib/api";
+import { apiFetch, hasStoredSession, storeSession } from "@/lib/api";
 import { fallbackPrinters, fetchAgentHealth, saveAgentPrinter, type AgentHealth } from "@/lib/printpilot-agent";
+import { ProfileMenu } from "./ProfileMenu";
 
 type ProfileSummary = {
   user: {
@@ -150,8 +145,6 @@ export function ProfileTopbar({ isSidebarCollapsed = false, onMenuClick }: Profi
     }
   }
 
-  const ownerName = profile.user.fullName || "Owner";
-  const initial = ownerName.charAt(0).toUpperCase() || "O";
   const balance = Number(wallet?.summary?.netWithdrawable ?? profile.user.balance ?? 0);
   const isAgentConnected = agentHealth?.status === "running";
   const activePrinter = selectedPrinter || topbarPrinters[0] || "No printer";
@@ -198,63 +191,14 @@ export function ProfileTopbar({ isSidebarCollapsed = false, onMenuClick }: Profi
             })}
           </div>
         </details>
-        <div className="notification-dot">
-          <Bell size={23} />
-        </div>
         <Link className="topbar-wallet-link" href="/wallet" aria-label={`Wallet balance ${formatWalletBalance(balance)}`}>
           <Wallet size={21} />
           <span>{formatWalletBalance(balance)}</span>
         </Link>
-        <details className="profile-menu">
-          <summary className="user-menu">
-            <ProfileAvatar initial={initial} photo={profile.user.profilePhoto} className="avatar" />
-            <span>
-              <strong>{ownerName}</strong>
-              <small style={{ display: "block", color: "#697397" }}>Owner</small>
-            </span>
-            <ChevronDown size={15} />
-          </summary>
-          <div className="profile-dropdown">
-            <div className="profile-head">
-              <ProfileAvatar initial={initial} photo={profile.user.profilePhoto} className="profile-photo" />
-              <div>
-                <strong>{ownerName}</strong>
-                <span>{profile.user.email || "No email added"}</span>
-              </div>
-            </div>
-            <div className="profile-list">
-              <Link href="/dashboard">
-                <Bookmark size={18} /> Dashboard
-              </Link>
-              <Link href="/profile">
-                <UserRound size={18} /> My Profile
-              </Link>
-              <Link href="/pricing-settings">
-                <Settings size={18} /> Pricing & Settings
-              </Link>
-              <Link href="/wallet">
-                <Wallet size={18} /> Wallet & Settlement
-              </Link>
-              <Link href="/analytics">
-                <BarChart3 size={18} /> Analytics
-              </Link>
-              <Link href="/login" onClick={clearSession}>
-                <LogOut size={18} /> Sign Out
-              </Link>
-            </div>
-          </div>
-        </details>
+        <ProfileMenu user={profile.user} />
       </div>
     </header>
   );
-}
-
-function ProfileAvatar({ initial, photo, className }: { initial: string; photo?: string; className: string }) {
-  if (photo) {
-    return <img className={className} src={photo} alt="" />;
-  }
-
-  return <span className={className}>{initial}</span>;
 }
 
 function readJson<T>(key: string): Partial<T> {

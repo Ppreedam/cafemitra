@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { apiFetch, hasStoredSession, storeSession } from "@/lib/api";
 import { DashboardShell } from "../DashboardShell";
+import { SkeletonBlock } from "../UiState";
 
 type Order = {
   id: number;
@@ -129,7 +130,14 @@ export default function Dashboard() {
           </div>
 
           <section className="metrics-grid" aria-label="Business metrics">
-            {analytics.metrics.map((metric) => {
+            {message === "Loading dashboard..." ? (
+              <>
+                <SkeletonBlock lines={3} />
+                <SkeletonBlock lines={3} />
+                <SkeletonBlock lines={3} />
+                <SkeletonBlock lines={3} />
+              </>
+            ) : analytics.metrics.map((metric) => {
               const Icon = metric.icon;
               return (
                 <article className="metric-card" key={metric.label}>

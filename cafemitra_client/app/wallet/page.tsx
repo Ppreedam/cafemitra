@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ArrowDownToLine, Banknote, Clock3, Landmark, ReceiptText, Wallet } from "lucide-react";
 import { apiFetch, hasStoredSession } from "@/lib/api";
 import { DashboardShell } from "../DashboardShell";
+import { SkeletonBlock, UiState } from "../UiState";
 
 type WalletTransaction = {
   id: number;
@@ -244,7 +245,7 @@ export default function WalletPage() {
                   </div>
                   <span className={`order-status ${withdrawal.status}`}>{formatLabel(withdrawal.status)}</span>
                 </div>
-              )) : <div className="orders-empty">No withdrawal requests yet.</div>}
+              )) : <UiState icon={ReceiptText} title="No withdrawal requests" description="Your withdrawal requests will appear here after you submit one." />}
             </div>
           </article>
         </section>
@@ -284,7 +285,11 @@ export default function WalletPage() {
                   <small>{transaction.affectsBalance ? "Withdrawable" : "Tracked only"}</small>
                 </div>
               </div>
-            )) : <div className="orders-empty">No wallet transactions yet.</div>}
+            )) : message === "Loading wallet..." ? (
+              <SkeletonBlock lines={4} />
+            ) : (
+              <UiState icon={ReceiptText} title="No wallet transactions" description="Collected payments and settlement activity will appear here." />
+            )}
           </div>
           <div className="wallet-pagination" aria-label="Wallet ledger pagination">
             <span>

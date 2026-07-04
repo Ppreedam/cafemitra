@@ -40,8 +40,8 @@ const navGroups: NavGroup[] = [
     label: "Services",
     items: [
       { name: "PrintPilot", icon: Printer, href: "/auto-print", match: ["/auto-print"] },
-      { name: "PDF Tools", icon: FileText, href: "/pdf-tools", match: ["/pdf-tools"] },
-      { name: "Image Tools", icon: Image, href: "/image-tools", match: ["/image-tools"] },
+      // { name: "PDF Tools", icon: FileText, href: "/pdf-tools", match: ["/pdf-tools"] },
+      // { name: "Image Tools", icon: Image, href: "/image-tools", match: ["/image-tools"] },
     ],
   },
 ];

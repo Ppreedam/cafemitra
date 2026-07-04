@@ -39,7 +39,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { clearSession } from "@/lib/api";
-import { calculatePriceItemRate, fetchPricingServices, formatPriceItem, savePricingService, type PriceItem, type PriceRange } from "@/lib/pricing";
+import { fetchPricingServices, formatPriceItem, savePricingService, type PriceItem, type PriceRange } from "@/lib/pricing";
 import { fallbackPrinters, fetchAgentHealth, runAgentTestPrint, saveAgentPrinter, type AgentHealth } from "@/lib/printpilot-agent";
 import { DashboardShell } from "../DashboardShell";
 
@@ -56,7 +56,7 @@ type NavGroup = {
 };
 
 type SetupStep = {
-  key: "verify" | "printer" | "pricing" | "qr" | "test" | "live";
+  key: "download" | "verify" | "printer" | "pricing" | "qr" | "test";
   title: string;
   helper: string;
   icon: LucideIcon;
@@ -92,13 +92,64 @@ const navGroups: NavGroup[] = [
 ];
 
 const setupSteps: SetupStep[] = [
-  { key: "verify", title: "Verify C# Agent", helper: "Check local C# agent connection", icon: ShieldCheck },
+  { key: "download", title: "Download Agent", helper: "Install the PrintPilot desktop app", icon: Download },
+  { key: "verify", title: "Verify Agent", helper: "Check agent connection", icon: ShieldCheck },
   { key: "printer", title: "Select Printer", helper: "Choose default PrintPilot printer", icon: Printer },
   { key: "pricing", title: "Pricing", helper: "Set BW, color, and minimum order", icon: Wallet },
   { key: "qr", title: "QR Setup", helper: "Generate PrintPilot customer QR", icon: QrCode },
   { key: "test", title: "Test Print", helper: "Send a demo page to printer", icon: Play },
-  { key: "live", title: "Go Live", helper: "Enable PrintPilot orders", icon: CheckCircle2 },
 ];
+
+const setupStepGuides: Record<SetupStep["key"], { title: string; videoUrl?: string; bullets: string[] }> = {
+  download: {
+    title: "Install the desktop agent",
+    bullets: [
+      "Download the PrintPilot Agent on the computer connected to the printer.",
+      "Extract the file if it is downloaded as a ZIP.",
+      "Open the agent app and keep it running in the background.",
+    ],
+  },
+  verify: {
+    title: "Confirm the agent connection",
+    bullets: [
+      "Make sure the desktop agent is open.",
+      "Login in the agent with the same Repetigo account.",
+      "Click Retry here and confirm that the status changes to connected.",
+    ],
+  },
+  printer: {
+    title: "Choose the default printer",
+    bullets: [
+      "Select the printer that should receive customer print jobs.",
+      "Use Microsoft Print to PDF only for testing.",
+      "Save the printer after selection.",
+    ],
+  },
+  pricing: {
+    title: "Set customer print pricing",
+    bullets: [
+      "Add charges for black and white, color, or custom services.",
+      "Use page ranges when the rate changes by page count.",
+      "Choose how customers can pay before saving.",
+    ],
+  },
+  qr: {
+    title: "Prepare the customer QR",
+    bullets: [
+      "Generate the QR for your shop.",
+      "Download and print the QR poster.",
+      "Place it where customers can scan before uploading documents.",
+    ],
+  },
+  test: {
+    title: "Run one test print",
+    bullets: [
+      "Confirm the agent is connected and a printer is selected.",
+      "Click Run Test Print to send a sample QR page.",
+      "If the test fails, check the agent and printer connection.",
+    ],
+  },
+};
 
 const queue = [
   { file: "Aadhaar.pdf", pages: 3, amount: "Rs. 6", status: "Printed", tone: "#16b978" },
@@ -107,13 +158,15 @@ const queue = [
   { file: "Passport-photo.pdf", pages: 1, amount: "Rs. 10", status: "Failed", tone: "#e9546a" },
 ];
 
-const paymentModes = ["No Payment", "Online Payment", "Cash Counter", "Both"];
+const paymentModes = ["Online Payment", "Cash Counter"];
+const PRINTPILOT_AGENT_DOWNLOAD_URL = "https://drive.google.com/";
 
 export default function AutoPrintPage() {
   const [activeStep, setActiveStep] = useState(0);
+  const [agentDownloaded, setAgentDownloaded] = useState(false);
   const [agentConnected, setAgentConnected] = useState(false);
   const [agentHealth, setAgentHealth] = useState<AgentHealth | null>(null);
-  const [agentMessage, setAgentMessage] = useState("Click Retry to check the local PrintPilot C# Agent.");
+  const [agentMessage, setAgentMessage] = useState("Run the desktop agent, then check the connection.");
   const [isVerifyingAgent, setIsVerifyingAgent] = useState(false);
   const [availablePrinters, setAvailablePrinters] = useState<string[]>(fallbackPrinters);
   const [selectedPrinter, setSelectedPrinter] = useState(fallbackPrinters[0]);
@@ -136,19 +189,18 @@ export default function AutoPrintPage() {
   const [testStatus, setTestStatus] = useState<"idle" | "printing" | "success">("idle");
   const [testPrintMessage, setTestPrintMessage] = useState("");
   const [testPrintError, setTestPrintError] = useState("");
-  const [autoPrintLive, setAutoPrintLive] = useState(false);
   const printerReady = Boolean(selectedPrinter);
   const pricingReady = priceItems.length > 0;
   const qrSetupReady = qrReady || Boolean(qrUrl);
   const testPrintReady = testStatus === "success" || (agentConnected && printerReady);
-  const printPilotActive = autoPrintLive || (agentConnected && printerReady);
+  const printPilotActive = agentConnected && printerReady;
   const stepCompletion = {
+    download: agentDownloaded || agentConnected,
     verify: agentConnected,
     printer: printerReady,
     pricing: pricingReady,
     qr: qrSetupReady,
     test: testPrintReady,
-    live: printPilotActive,
   };
 
   const completedCount = useMemo(() => {
@@ -158,7 +210,7 @@ export default function AutoPrintPage() {
   const progress = `${(completedCount / setupSteps.length) * 100}%`;
   const currentStep = setupSteps[activeStep];
   const CurrentStepIcon = currentStep.icon;
-  const samplePrice = calculatePriceItemRate(priceItems[0], 5) * 5;
+  const currentGuide = setupStepGuides[currentStep.key];
 
   useEffect(() => {
     const storedUser = readJson<{ id?: string }>("cafemitra_user");
@@ -209,13 +261,13 @@ export default function AutoPrintPage() {
 
       setAgentMessage(
         connected
-          ? `C# Agent connected${health.account ? ` as ${health.account}` : ""}${health.printer ? ` on ${health.printer}` : ""}.`
-          : "C# Agent found, but it is stopped. Click Start Agent in the desktop app.",
+          ? formatAgentConnectedMessage(health)
+          : "Agent found, but not running. Start it from the desktop app.",
       );
     } catch {
       setAgentConnected(false);
       setAgentHealth(null);
-      setAgentMessage("C# Agent not found. Open PrintPilotAgent.CSharp, login, select printer, then click Start Agent.");
+      setAgentMessage("Agent not found. Download, open, and start the desktop app.");
     } finally {
       setIsVerifyingAgent(false);
     }
@@ -428,20 +480,27 @@ export default function AutoPrintPage() {
                 <div className="wizard-action-content">
                   <div className={`connection-result ${agentConnected ? "success" : "danger"}`}>
                     <span />
-                    <strong>{agentConnected ? "C# Agent Connected" : agentHealth ? "C# Agent Stopped" : "C# Agent Not Found"}</strong>
+                    <strong>{agentConnected ? "Agent Connected" : agentHealth ? "Agent Stopped" : "Agent Not Found"}</strong>
                     <p>{agentMessage}</p>
-                    {agentHealth ? (
-                      <p>
-                        {agentHealth.app ? `App: ${agentHealth.app}` : ""}
-                        {agentHealth.app && agentHealth.apiBaseUrl ? " | " : ""}
-                        {agentHealth.apiBaseUrl ? `API: ${agentHealth.apiBaseUrl}` : ""}
-                        {agentHealth.lastCheckAt ? ` | Last check: ${agentHealth.lastCheckAt}` : ""}
-                      </p>
-                    ) : null}
                   </div>
                   <button className="btn btn-primary" type="button" onClick={() => verifyAgent()} disabled={isVerifyingAgent}>
                     <RefreshCw size={16} /> {isVerifyingAgent ? "Checking..." : "Retry"}
                   </button>
+                </div>
+              ) : null}
+
+              {currentStep.key === "download" ? (
+                <div className="wizard-action-content">
+                  <div className="agent-download-card">
+                    <Download size={24} />
+                    <div>
+                      <strong>Download PrintPilot Agent</strong>
+                      <p>Install the desktop app on the computer connected to your printer.</p>
+                    </div>
+                  </div>
+                  <a className="btn btn-primary" href={PRINTPILOT_AGENT_DOWNLOAD_URL} target="_blank" rel="noreferrer" onClick={() => setAgentDownloaded(true)}>
+                    <Download size={16} /> Download Agent
+                  </a>
                 </div>
               ) : null}
 
@@ -467,23 +526,30 @@ export default function AutoPrintPage() {
               ) : null}
 
               {currentStep.key === "pricing" ? (
-                <div className="wizard-action-content">
+                <div className="wizard-action-content print-pricing-editor">
                   <div className="panel-title-row compact">
-                    <h2>Price Items</h2>
+                    <div>
+                      <h2>Print Categories</h2>
+                      <p>Create a category, then add page ranges inside it.</p>
+                    </div>
                     <button className="icon-action-btn" type="button" onClick={addPriceItem} aria-label="Add price item">
                       <Plus size={18} />
                     </button>
                   </div>
                   <div className="price-item-list">
-                    {priceItems.map((item) => (
+                    {priceItems.map((item, itemIndex) => (
                       <div className="price-item-row" key={item.id}>
+                        <div className="price-item-header">
+                          <span>Category {itemIndex + 1}</span>
+                          <strong>{item.label || "New print category"}</strong>
+                        </div>
                         <div className="price-item-main">
                           <label className="auto-field">
-                            <span>Charge For</span>
+                            <span>Category Name</span>
                             <input value={item.label} onChange={(event) => updatePriceItem(item.id, "label", event.target.value)} />
                           </label>
                           <label className="auto-field">
-                            <span>Base Price</span>
+                            <span>Default Per Page</span>
                             <input min="0" type="number" value={item.rate} onChange={(event) => updatePriceItem(item.id, "rate", event.target.value)} />
                           </label>
                           <button className="icon-action-btn danger" type="button" onClick={() => removePriceItem(item.id)} aria-label="Remove price item">
@@ -492,7 +558,7 @@ export default function AutoPrintPage() {
                         </div>
                         <details className="price-range-panel" open={(item.ranges || []).length > 0}>
                           <summary>
-                            <span>Page ranges</span>
+                            <span>Page Range Rules</span>
                             <small>{(item.ranges || []).length ? `${(item.ranges || []).length} active` : "General price applies"}</small>
                           </summary>
                           {(item.ranges || []).map((range) => (
@@ -584,68 +650,41 @@ export default function AutoPrintPage() {
                 </div>
               ) : null}
 
-              {currentStep.key === "live" ? (
-                <div className="wizard-action-content">
-                  <div className={`connection-result ${printPilotActive ? "success" : "info"}`}>
-                    <span />
-                    <strong>{printPilotActive ? "PrintPilot Active" : "Shop Ready"}</strong>
-                    <p>{printPilotActive ? "Verified agent and printer can receive paid customer orders." : "After Go Live, paid customer orders will start appearing in the PrintPilot queue."}</p>
-                  </div>
-                  <button className="btn btn-primary" type="button" onClick={() => setAutoPrintLive(true)}>
-                    <CheckCircle2 size={16} /> Go Live
-                  </button>
-                </div>
-              ) : null}
             </section>
 
-            <aside className="dashboard-stack">
-              <article className="panel auto-status-panel">
+            <aside className="dashboard-stack setup-guide-stack">
+              <article className="panel setup-guide-panel">
                 <div className="panel-title-row compact">
-                  <h2>PrintPilot Console</h2>
-                  <span className={`agent-status ${agentConnected ? "success" : "danger"}`}>{agentConnected ? "Running" : "Offline"}</span>
+                  <div>
+                    <h2>Step Guide</h2>
+                    <p>Step {activeStep + 1}: {currentStep.title}</p>
+                  </div>
+                  <span className="agent-status success">Help</span>
                 </div>
-                <div className="status-stat-grid">
-                  <div>
-                    <small>Printer</small>
-                    <strong>{selectedPrinter}</strong>
-                  </div>
-                  <div>
-                    <small>Today's Orders</small>
-                    <strong>18</strong>
-                  </div>
-                  <div>
-                    <small>Revenue</small>
-                    <strong>Rs. 420</strong>
-                  </div>
-                  <div>
-                    <small>Health</small>
-                    <strong>{agentConnected ? "Online" : "Offline"}</strong>
-                  </div>
+                <div className="guide-video">
+                  {currentGuide.videoUrl ? (
+                    <video controls src={currentGuide.videoUrl} />
+                  ) : (
+                    <div className="guide-video-placeholder">
+                      <Play size={28} />
+                      <strong>Video guide</strong>
+                      <span>Video clip coming soon for this step.</span>
+                    </div>
+                  )}
                 </div>
-              </article>
-
-              <article className="panel customer-flow-panel">
-                <h2>Customer Scan Flow</h2>
-                <div className="phone-flow">
-                  <div className="phone-top">
-                    <strong>Shankar Cyber Cafe</strong>
-                    <span>Verified | Sitamarhi</span>
-                  </div>
-                  <button type="button">
-                    <FileText size={15} /> Upload Document
-                  </button>
-                  <div className="phone-price">
-                    <span>5 Pages</span>
-                    <strong>Rs. {samplePrice}</strong>
-                  </div>
-                  <button type="button">Pay Now</button>
-                  <small>Order #1245 | Paid</small>
+                <div className="guide-instructions">
+                  <strong>{currentGuide.title}</strong>
+                  <ol>
+                    {currentGuide.bullets.map((item) => (
+                      <li key={item}>{item}</li>
+                    ))}
+                  </ol>
                 </div>
               </article>
             </aside>
           </section>
 
-          <section className="panel print-queue-panel" aria-label="Auto print queue">
+          {/* <section className="panel print-queue-panel" aria-label="Auto print queue">
             <div className="panel-title-row compact">
               <div>
                 <h2>PrintPilot Queue</h2>
@@ -668,7 +707,7 @@ export default function AutoPrintPage() {
                 </div>
               ))}
             </div>
-          </section>
+          </section> */}
       </div>
     </DashboardShell>
   );
@@ -689,6 +728,12 @@ function createQrImage(value: string) {
     errorCorrectionLevel: "H",
     color: { dark: "#111a44", light: "#ffffff" },
   });
+}
+
+function formatAgentConnectedMessage(health: AgentHealth) {
+  const account = health.account ? `Signed in as ${health.account}.` : "";
+  const printer = health.printer ? `Printer: ${health.printer}.` : "Select a printer to continue.";
+  return [account, printer].filter(Boolean).join(" ");
 }
 
 function buildQrPosterSvg(shopName: string, shopCode: string, qrUrl: string, qrImage: string) {
