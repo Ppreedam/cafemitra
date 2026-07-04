@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "CafeMitra.online",
-  description: "Cyber cafe automation platform for documents, printing, and daily operations.",
+  title: "Repetigo",
+  description:
+    "Cyber cafe automation platform for document printing, passport photos, PDF tools, AI form filling, and agreements.",
 };
 
 export default function RootLayout({

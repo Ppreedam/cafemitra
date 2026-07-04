@@ -3,18 +3,20 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import {
+  BarChart3,
   Bell,
   Bookmark,
   Building2,
   ChevronDown,
-  Landmark,
   LogOut,
   Menu,
   Printer,
   Settings,
   UserRound,
+  Wallet,
 } from "lucide-react";
 import { apiFetch, clearSession, hasStoredSession, storeSession } from "@/lib/api";
+import { fallbackPrinters, fetchAgentHealth, saveAgentPrinter, type AgentHealth } from "@/lib/printpilot-agent";
 
 type ProfileSummary = {
   user: {
@@ -26,6 +28,13 @@ type ProfileSummary = {
   };
   shop: {
     shopName: string;
+  };
+};
+
+type WalletSummary = {
+  balance: number;
+  summary?: {
+    netWithdrawable?: number;
   };
 };
 
@@ -42,15 +51,34 @@ const fallbackProfile: ProfileSummary = {
   },
 };
 
-export function ProfileTopbar() {
+type ProfileTopbarProps = {
+  isSidebarCollapsed?: boolean;
+  onMenuClick?: () => void;
+};
+
+export function ProfileTopbar({ isSidebarCollapsed = false, onMenuClick }: ProfileTopbarProps) {
   const [profile, setProfile] = useState<ProfileSummary>(fallbackProfile);
+  const [agentHealth, setAgentHealth] = useState<AgentHealth | null>(null);
+  const [wallet, setWallet] = useState<WalletSummary | null>(null);
+  const [topbarPrinters, setTopbarPrinters] = useState<string[]>(fallbackPrinters);
+  const [selectedPrinter, setSelectedPrinter] = useState(fallbackPrinters[0]);
 
   useEffect(() => {
     hydrateFromStorage();
     fetchProfile();
+    fetchWallet();
+    refreshPrinters();
 
     window.addEventListener("cafemitra:profile-updated", hydrateFromStorage);
-    return () => window.removeEventListener("cafemitra:profile-updated", hydrateFromStorage);
+    window.addEventListener("cafemitra:wallet-updated", fetchWallet);
+    window.addEventListener("cafemitra:printers-updated", refreshPrinters);
+    window.addEventListener("cafemitra:session-cleared", resetProfile);
+    return () => {
+      window.removeEventListener("cafemitra:profile-updated", hydrateFromStorage);
+      window.removeEventListener("cafemitra:wallet-updated", fetchWallet);
+      window.removeEventListener("cafemitra:printers-updated", refreshPrinters);
+      window.removeEventListener("cafemitra:session-cleared", resetProfile);
+    };
   }, []);
 
   function hydrateFromStorage() {
@@ -77,16 +105,69 @@ export function ProfileTopbar() {
     }
   }
 
+  async function fetchWallet() {
+    if (!hasStoredSession()) return;
+
+    try {
+      const response = await apiFetch("/api/wallet/");
+      if (!response.ok) return;
+      setWallet((await response.json()) as WalletSummary);
+    } catch {
+      undefined;
+    }
+  }
+
+  function resetProfile() {
+    setProfile(fallbackProfile);
+    setWallet(null);
+  }
+
+  async function refreshPrinters() {
+    try {
+      const health = await fetchAgentHealth();
+      const printers = Array.isArray(health.printers) && health.printers.length ? health.printers : fallbackPrinters;
+      setAgentHealth(health);
+      setTopbarPrinters(printers);
+      setSelectedPrinter(health.printer && printers.includes(health.printer) ? health.printer : printers[0] || "");
+    } catch {
+      setAgentHealth(null);
+      setTopbarPrinters(fallbackPrinters);
+      setSelectedPrinter((current) => (fallbackPrinters.includes(current) ? current : fallbackPrinters[0]));
+    }
+  }
+
+  async function choosePrinter(printerName: string) {
+    setSelectedPrinter(printerName);
+    try {
+      const result = await saveAgentPrinter(printerName);
+      const printers = Array.isArray(result.printers) && result.printers.length ? result.printers : topbarPrinters;
+      setTopbarPrinters(printers);
+      setSelectedPrinter(result.printer || printerName);
+      await refreshPrinters();
+      window.dispatchEvent(new Event("cafemitra:printers-updated"));
+    } catch {
+      undefined;
+    }
+  }
+
   const ownerName = profile.user.fullName || "Owner";
   const initial = ownerName.charAt(0).toUpperCase() || "O";
-  const balance = Number(profile.user.balance || 0);
+  const balance = Number(wallet?.summary?.netWithdrawable ?? profile.user.balance ?? 0);
+  const isAgentConnected = agentHealth?.status === "running";
+  const activePrinter = selectedPrinter || topbarPrinters[0] || "No printer";
 
   return (
     <header className="topbar">
       <div className="topbar-left">
-        <Link href="/" aria-label="Open menu">
+        <button
+          className="topbar-menu-button"
+          type="button"
+          aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-pressed={isSidebarCollapsed}
+          onClick={onMenuClick}
+        >
           <Menu size={22} />
-        </Link>
+        </button>
       </div>
       <div className="topbar-right">
         <div className="business-switcher">
@@ -97,31 +178,33 @@ export function ProfileTopbar() {
         <details className="printer-menu">
           <summary>
             <Printer size={17} />
-            <span className="printer-dot online" />
-            <span>Epson L805</span>
-            <small>Connected</small>
+            <span className={`printer-dot ${isAgentConnected ? "online" : "offline"}`} />
+            <span>{activePrinter}</span>
+            <small>{isAgentConnected ? "Connected" : "Disconnected"}</small>
             <ChevronDown size={14} />
           </summary>
           <div className="printer-dropdown">
-            <div className="printer-option">
-              <span className="printer-dot online" />
-              <div>
-                <strong>Epson L805</strong>
-                <small>Connected</small>
-              </div>
-            </div>
-            <div className="printer-option">
-              <span className="printer-dot offline" />
-              <div>
-                <strong>Canon G3010</strong>
-                <small>Disconnected</small>
-              </div>
-            </div>
+            {topbarPrinters.map((printer) => {
+              const isSelected = printer === activePrinter;
+              return (
+                <button className="printer-option" key={printer} type="button" onClick={() => choosePrinter(printer)}>
+                  <span className={`printer-dot ${isAgentConnected && isSelected ? "online" : "offline"}`} />
+                  <div>
+                    <strong>{printer}</strong>
+                    <small>{isAgentConnected && isSelected ? "Connected" : isSelected ? "Selected" : "Available"}</small>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </details>
         <div className="notification-dot">
           <Bell size={23} />
         </div>
+        <Link className="topbar-wallet-link" href="/wallet" aria-label={`Wallet balance ${formatWalletBalance(balance)}`}>
+          <Wallet size={21} />
+          <span>{formatWalletBalance(balance)}</span>
+        </Link>
         <details className="profile-menu">
           <summary className="user-menu">
             <ProfileAvatar initial={initial} photo={profile.user.profilePhoto} className="avatar" />
@@ -137,8 +220,6 @@ export function ProfileTopbar() {
               <div>
                 <strong>{ownerName}</strong>
                 <span>{profile.user.email || "No email added"}</span>
-                <span>Balance: {balance}</span>
-                <span>User ID: {profile.user.id || "Not assigned"}</span>
               </div>
             </div>
             <div className="profile-list">
@@ -148,14 +229,14 @@ export function ProfileTopbar() {
               <Link href="/profile">
                 <UserRound size={18} /> My Profile
               </Link>
-              <Link href="/auto-print">
-                <Printer size={18} /> PrintPilot Setup
-              </Link>
               <Link href="/pricing-settings">
                 <Settings size={18} /> Pricing & Settings
               </Link>
-              <Link href="#">
-                <Landmark size={18} /> Withdraw
+              <Link href="/wallet">
+                <Wallet size={18} /> Wallet & Settlement
+              </Link>
+              <Link href="/analytics">
+                <BarChart3 size={18} /> Analytics
               </Link>
               <Link href="/login" onClick={clearSession}>
                 <LogOut size={18} /> Sign Out
@@ -182,4 +263,8 @@ function readJson<T>(key: string): Partial<T> {
   } catch {
     return {};
   }
+}
+
+function formatWalletBalance(value: number) {
+  return `Rs. ${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(value)}`;
 }

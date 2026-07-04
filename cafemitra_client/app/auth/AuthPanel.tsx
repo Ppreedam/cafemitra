@@ -49,7 +49,9 @@ export function AuthPanel({ mode }: AuthPanelProps) {
   const [values, setValues] = useState<AuthValues>(initialValues);
   const [touched, setTouched] = useState<TouchedValues>({});
   const [apiError, setApiError] = useState("");
+  const [apiNotice, setApiNotice] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
   const errors = useMemo(() => {
     const nextErrors: Partial<Record<keyof AuthValues, string>> = {};
@@ -84,6 +86,9 @@ export function AuthPanel({ mode }: AuthPanelProps) {
   }, [isRegister, values]);
 
   const isFormValid = Object.keys(errors).length === 0;
+  const hasVerificationPrompt =
+    apiNotice.toLowerCase().includes("verify") || apiError.toLowerCase().includes("verify") || isResending;
+  const canResendVerification = emailPattern.test(values.email.trim()) && hasVerificationPrompt;
 
   function updateValue(field: keyof AuthValues, value: string | boolean) {
     setValues((current) => ({ ...current, [field]: value }));
@@ -96,6 +101,7 @@ export function AuthPanel({ mode }: AuthPanelProps) {
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setApiError("");
+    setApiNotice("");
 
     if (!isFormValid) {
       setTouched({
@@ -127,12 +133,45 @@ export function AuthPanel({ mode }: AuthPanelProps) {
         throw new Error(data.message ?? "Something went wrong.");
       }
 
-      storeSession(data);
-      router.push("/dashboard");
+      if (data.token) {
+        storeSession(data);
+        router.push("/dashboard");
+      } else {
+        setApiNotice(data.message || "Please check your email to continue.");
+      }
     } catch (error) {
       setApiError(error instanceof Error ? error.message : "Something went wrong.");
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function resendVerification() {
+    setApiError("");
+    setApiNotice("");
+
+    if (!emailPattern.test(values.email.trim())) {
+      setTouched((current) => ({ ...current, email: true }));
+      setApiError("Enter a valid email address to resend verification.");
+      return;
+    }
+
+    setIsResending(true);
+    try {
+      const response = await fetch(apiUrl("/api/auth/resend-verification/"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: values.email }),
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message ?? "Could not send verification email.");
+      }
+      setApiNotice(data.message || "Verification email sent.");
+    } catch (error) {
+      setApiError(error instanceof Error ? error.message : "Could not send verification email.");
+    } finally {
+      setIsResending(false);
     }
   }
 
@@ -267,7 +306,7 @@ export function AuthPanel({ mode }: AuthPanelProps) {
                     />
                     <span>Remember me?</span>
                   </label>
-                  <Link href="#">Forgot password?</Link>
+                  <Link href="/forgot-password">Forgot password?</Link>
                 </div>
                 <p className="recaptcha-copy">
                   This site is protected by reCAPTCHA and the Google Privacy Policy and Terms of Service apply.
@@ -276,7 +315,13 @@ export function AuthPanel({ mode }: AuthPanelProps) {
             )}
 
             {apiError ? <p className="auth-error">{apiError}</p> : null}
-            <button className="btn btn-primary auth-submit" type="submit" disabled={!isFormValid || isSubmitting}>
+            {apiNotice ? <p className="auth-success">{apiNotice}</p> : null}
+            {canResendVerification ? (
+              <button className="auth-resend" type="button" onClick={resendVerification} disabled={isResending}>
+                {isResending ? "Sending..." : "Resend verification email"}
+              </button>
+            ) : null}
+            <button className="btn btn-primary auth-submit" type="submit" disabled={isSubmitting}>
               {isSubmitting ? "Please wait..." : isRegister ? "Create Account" : "Login"}
             </button>
           </form>

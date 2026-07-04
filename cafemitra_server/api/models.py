@@ -14,6 +14,36 @@ class AuthToken(models.Model):
         return f"Token for {self.user_id}"
 
 
+class EmailVerificationToken(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="email_verification_tokens")
+    token = models.CharField(max_length=128, unique=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["token", "expires_at"])]
+
+    def __str__(self) -> str:
+        return f"Email verification for {self.user_id}"
+
+
+class PasswordResetToken(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="password_reset_tokens")
+    token = models.CharField(max_length=128, unique=True)
+    expires_at = models.DateTimeField()
+    used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["token", "expires_at"])]
+
+    def __str__(self) -> str:
+        return f"Password reset for {self.user_id}"
+
+
 class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile")
     phone = models.CharField(max_length=10)
@@ -98,3 +128,51 @@ class PrintOrder(models.Model):
 
     def __str__(self) -> str:
         return f"Order #{self.id} - {self.service_name}"
+
+
+class WalletTransaction(models.Model):
+    KIND_SIGNUP_BONUS = "signup_bonus"
+    KIND_ONLINE_ORDER_CREDIT = "online_order_credit"
+    KIND_CASH_COUNTER_COLLECTION = "cash_counter_collection"
+    KIND_WITHDRAWAL = "withdrawal"
+
+    DIRECTION_CREDIT = "credit"
+    DIRECTION_DEBIT = "debit"
+    DIRECTION_INFO = "info"
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="wallet_transactions")
+    order = models.ForeignKey(PrintOrder, null=True, blank=True, on_delete=models.SET_NULL, related_name="wallet_transactions")
+    kind = models.CharField(max_length=40)
+    direction = models.CharField(max_length=12)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    affects_balance = models.BooleanField(default=True)
+    note = models.CharField(max_length=255, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["user", "kind", "created_at"])]
+
+    def __str__(self) -> str:
+        return f"{self.kind} {self.amount} for {self.user_id}"
+
+
+class WithdrawalRequest(models.Model):
+    STATUS_PENDING = "pending"
+    STATUS_PAID = "paid"
+    STATUS_REJECTED = "rejected"
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="withdrawal_requests")
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    method = models.CharField(max_length=40)
+    account_detail = models.CharField(max_length=180)
+    note = models.CharField(max_length=255, blank=True)
+    status = models.CharField(max_length=20, default=STATUS_PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"Withdrawal {self.amount} for {self.user_id}"

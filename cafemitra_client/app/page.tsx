@@ -2,8 +2,10 @@ import Link from "next/link";
 import type React from "react";
 import {
   BadgeCheck,
-  ChevronDown,
+  Bot,
+  Clock3,
   Crop,
+  Download,
   FileImage,
   FileText,
   IdCard,
@@ -11,142 +13,140 @@ import {
   LockKeyhole,
   MessageCircle,
   Printer,
+  ReceiptText,
   ScanLine,
   ShieldCheck,
   Sparkles,
   SplitSquareVertical,
-  Star,
+  UploadCloud,
   Users,
+  WandSparkles,
   Zap,
 } from "lucide-react";
-import { HomeHeaderActions } from "./HomeHeaderActions";
+import { Brand, LandingNavbar } from "./LandingNavbar";
 
 const freeTools = [
   {
     name: "PDF to JPG",
-    desc: "Convert PDF files to JPG images.",
+    desc: "Convert customer PDFs into clear printable images.",
     icon: FileImage,
     color: "#1688f5",
   },
   {
     name: "JPG to PDF",
-    desc: "Convert JPG images to PDF files.",
+    desc: "Turn scanned images and photos into PDF documents.",
     icon: FileText,
     color: "#ff7b1a",
   },
   {
     name: "Image to PDF",
-    desc: "Convert images to PDF.",
+    desc: "Combine multiple images into a single PDF file.",
     icon: ImageIcon,
     color: "#f13d7d",
   },
   {
     name: "Compress PDF",
-    desc: "Reduce PDF file size easily.",
+    desc: "Reduce file size before upload, email, or print.",
     icon: ScanLine,
     color: "#f13d7d",
   },
   {
     name: "Merge PDF",
-    desc: "Merge multiple PDF files into one.",
+    desc: "Join forms, certificates, and IDs in one click.",
     icon: FileText,
     color: "#1688f5",
   },
   {
     name: "Split PDF",
-    desc: "Split PDF into multiple pages.",
+    desc: "Extract only the pages your customer needs.",
     icon: SplitSquareVertical,
     color: "#5740ed",
   },
   {
     name: "Resize Image",
-    desc: "Resize your image in any size.",
+    desc: "Prepare images for forms, portals, and print sizes.",
     icon: ScanLine,
     color: "#16a1bd",
   },
   {
     name: "Crop Image",
-    desc: "Crop your image online.",
+    desc: "Cleanly crop photos for applications and IDs.",
     icon: Crop,
     color: "#5740ed",
   },
 ];
 
 const services = [
-  { name: "PrintPilot", icon: Printer, color: "#5740ed" },
+  { name: "Print Automation", icon: Printer, color: "#5740ed" },
   { name: "WhatsApp Print", icon: MessageCircle, color: "#16b978" },
   { name: "Passport Photo", icon: Users, color: "#f13d7d" },
-  { name: "ID Card Print", icon: IdCard, color: "#16a1bd" },
-  { name: "Admit Card Hub", icon: FileText, color: "#ff7b1a" },
-  { name: "Document Services", icon: FileText, color: "#1688f5" },
+  { name: "ID Photo & Card", icon: IdCard, color: "#16a1bd" },
+  { name: "AI Form Filling", icon: Bot, color: "#ff7b1a" },
+  { name: "Agreement Maker", icon: ReceiptText, color: "#1688f5" },
 ];
 
-function Brand() {
-  return (
-    <Link className="brand" href="/">
-      <span className="brand-main">
-        Cafe<span className="brand-accent">Mitra</span>
-      </span>
-      <span className="brand-dot">.online</span>
-    </Link>
-  );
-}
+const problems = [
+  "Repeating the same printing and document tasks all day.",
+  "Manual photo resizing, cropping, and passport layout work.",
+  "Filling customer forms again and again from loose details.",
+  "Creating agreements and PDF files under rush-hour pressure.",
+];
+
+const workflow = [
+  { title: "Add customer details", desc: "Upload files or enter details once.", icon: UploadCloud },
+  { title: "Choose the tool", desc: "Pick print, PDF, photo, form, or agreement.", icon: WandSparkles },
+  { title: "Automate the work", desc: "Repetigo prepares the final output fast.", icon: Zap },
+  { title: "Print or share", desc: "Download, print, or send the completed file.", icon: Download },
+];
+
+const benefits = [
+  { title: "Save daily time", desc: "Finish routine document jobs in fewer clicks.", icon: Clock3 },
+  { title: "Reduce mistakes", desc: "Use consistent workflows for staff and customers.", icon: ShieldCheck },
+  { title: "Serve more customers", desc: "Handle busy hours with faster job completion.", icon: Users },
+  { title: "Increase revenue", desc: "Offer more services from one simple platform.", icon: BadgeCheck },
+];
 
 export default function Home() {
   return (
     <main className="page-shell">
-      <header className="site-header">
-        <div className="section-inner header-inner">
-          <Brand />
-          <nav className="main-nav" aria-label="Primary navigation">
-            <Link href="/">Home</Link>
-            <Link href="#services">
-              Services <ChevronDown size={14} aria-hidden />
-            </Link>
-            <Link href="#free-tools">Free Tools</Link>
-            <Link href="#pricing">Pricing</Link>
-            <Link href="#about">About Us</Link>
-            <Link href="#blog">Blog</Link>
-          </nav>
-          <HomeHeaderActions />
-        </div>
-      </header>
+      <LandingNavbar />
 
       <section className="section-inner hero">
         <div>
           <div className="eyebrow">
-            <Star size={15} fill="currentColor" aria-hidden />
-            All-in-One Platform for Cyber Cafes
+            <Sparkles size={15} fill="currentColor" aria-hidden />
+            Built for Cyber Cafe Automation
           </div>
           <h1>
-            Run Your Cyber Cafe <span>Smarter</span>, Faster &amp; Easier
+            Automate Repetitive Work in Your <span>Cyber Cafe</span>
           </h1>
           <p className="hero-copy">
-            CafeMitra.online helps you automate printing, documents, payments, and daily operations
-            in one calm, reliable platform.
+            Repetigo helps cyber cafes automate document printing, passport-size photo creation,
+            PDF tools, image editing, AI form filling and agreement generation - all from one
+            simple platform.
           </p>
           <div className="hero-cta">
             <Link className="btn btn-primary" href="/register">
-              Get Started Free
+              Start Automating
             </Link>
             <Link className="btn" href="#services">
-              Explore Services
+              Explore Features
             </Link>
           </div>
           <div className="trust-row">
             <span>
-              <BadgeCheck size={16} /> Easy to Use
+              <BadgeCheck size={16} /> Easy for Staff
             </span>
             <span>
-              <ShieldCheck size={16} /> Secure &amp; Reliable
+              <ShieldCheck size={16} /> Secure Workflow
             </span>
             <span>
-              <Zap size={16} /> 24/7 Support
+              <Zap size={16} /> Faster Service
             </span>
           </div>
         </div>
 
-        <div className="hero-visual" aria-label="CafeMitra dashboard and printer illustration">
+        <div className="hero-visual" aria-label="Repetigo dashboard and printer illustration">
           <div className="dashboard-card">
             <div className="mock-browser" />
             <div className="mock-layout">
@@ -173,10 +173,10 @@ export default function Home() {
             <FileText size={24} />
           </span>
           <span className="float-icon" style={{ "--tile-color": "#5740ed", right: 6, top: 112 } as React.CSSProperties}>
-            <ScanLine size={24} />
+            <Bot size={24} />
           </span>
           <span className="float-icon" style={{ "--tile-color": "#ff7b1a", right: 34, top: 218 } as React.CSSProperties}>
-            <SettingsMark />
+            <ReceiptText size={24} />
           </span>
           <span className="float-icon" style={{ "--tile-color": "#16b978", left: 50, top: 100 } as React.CSSProperties}>
             <FileImage size={24} />
@@ -184,10 +184,62 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="landing-section landing-section-white" id="services">
+        <div className="section-inner">
+          <h2 className="section-heading">Everything Your Cyber Cafe Repeats Daily</h2>
+          <p className="section-subtitle">Bring printing, photo, PDF, image, AI form, and agreement tools into one clean workflow.</p>
+          <div className="services-grid">
+            {services.map((service) => {
+              const Icon = service.icon;
+              return (
+                <article className="service-card" key={service.name}>
+                  <span className="icon-tile" style={{ "--tile-color": service.color } as React.CSSProperties}>
+                    <Icon size={25} />
+                  </span>
+                  <h3>{service.name}</h3>
+                  <span className="login-badge">
+                    <LockKeyhole size={12} /> Dashboard Tool
+                  </span>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section className="landing-section">
+        <div className="section-inner problem-solution-grid">
+          <div>
+            <h2 className="section-heading align-left">The Daily Rush Should Not Slow You Down</h2>
+            <p className="section-subtitle align-left">
+              Cyber cafes lose time when staff must manually repeat small document jobs for every customer.
+            </p>
+            <div className="problem-list">
+              {problems.map((problem) => (
+                <span key={problem}>
+                  <Zap size={16} />
+                  {problem}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="solution-panel">
+            <span className="icon-tile" style={{ "--tile-color": "#5740ed" } as React.CSSProperties}>
+              <Sparkles size={24} />
+            </span>
+            <h3>Repetigo turns repeat work into guided actions.</h3>
+            <p>
+              Your team can prepare files, photos, forms, agreements, and print-ready outputs from
+              the same workspace, so customers move faster and staff stay organized.
+            </p>
+          </div>
+        </div>
+      </section>
+
       <section className="tools-band" id="free-tools">
         <div className="section-inner">
-          <h2 className="section-heading">Free Tools</h2>
-          <p className="section-subtitle">Use our free tools instantly. No login required.</p>
+          <h2 className="section-heading">Quick Document Tools</h2>
+          <p className="section-subtitle">Useful PDF and image utilities for common customer requests.</p>
           <div className="tools-grid">
             {freeTools.map((tool) => {
               const Icon = tool.icon;
@@ -200,38 +252,55 @@ export default function Home() {
                     <h3>{tool.name}</h3>
                     <p>{tool.desc}</p>
                   </div>
-                  <span className="free-badge">Free</span>
+                  <span className="free-badge">Tool</span>
                 </article>
               );
             })}
           </div>
+        </div>
+      </section>
 
-          <div className="services-box" id="services">
-            <h2 className="section-heading">Powerful Tools for Your Business</h2>
-            <p className="section-subtitle">Unlock advanced features and automate your cyber cafe operations.</p>
-            <div className="services-grid">
-              {services.map((service) => {
-                const Icon = service.icon;
-                return (
-                  <article className="service-card" key={service.name}>
-                    <span className="icon-tile" style={{ "--tile-color": service.color } as React.CSSProperties}>
-                      <Icon size={25} />
-                    </span>
-                    <h3>{service.name}</h3>
-                    <span className="login-badge">
-                      <LockKeyhole size={12} /> Login Required
-                    </span>
-                  </article>
-                );
-              })}
-            </div>
+      <section className="landing-section landing-section-white" id="workflow">
+        <div className="section-inner">
+          <h2 className="section-heading">How Repetigo Works</h2>
+          <p className="section-subtitle">A simple workflow for every document, photo, form, and agreement job.</p>
+          <div className="workflow-grid">
+            {workflow.map((step, index) => {
+              const Icon = step.icon;
+              return (
+                <article className="workflow-card" key={step.title}>
+                  <span className="step-number">{index + 1}</span>
+                  <Icon size={24} />
+                  <h3>{step.title}</h3>
+                  <p>{step.desc}</p>
+                </article>
+              );
+            })}
           </div>
+        </div>
+      </section>
 
-          <div className="cta-band">
-            <h2>Ready to Grow Your Cyber Cafe Business?</h2>
-            <p>Join thousands of cafe owners who trust CafeMitra.online.</p>
-            <Link className="btn" href="/dashboard">
-              Get Started Now <Sparkles size={16} />
+      <section className="landing-section">
+        <div className="section-inner">
+          <h2 className="section-heading">Built to Make Your Counter Faster</h2>
+          <p className="section-subtitle">Repetigo helps your cyber cafe finish more jobs with less manual effort.</p>
+          <div className="benefit-grid">
+            {benefits.map((benefit) => {
+              const Icon = benefit.icon;
+              return (
+                <article className="benefit-card" key={benefit.title}>
+                  <Icon size={24} />
+                  <h3>{benefit.title}</h3>
+                  <p>{benefit.desc}</p>
+                </article>
+              );
+            })}
+          </div>
+          <div className="cta-band" id="contact">
+            <h2>Run Your Cyber Cafe Faster with Repetigo</h2>
+            <p>Start with one workflow today, then automate more services as your shop grows.</p>
+            <Link className="btn" href="/register">
+              Get Started <Sparkles size={16} />
             </Link>
           </div>
         </div>
@@ -242,14 +311,14 @@ export default function Home() {
           <div className="footer-grid">
             <div>
               <Brand />
-              <p>Your digital partner for modern cyber cafes.</p>
+              <p>Automation software for cyber cafes, printing shops, and document service centers.</p>
             </div>
-            <FooterColumn title="Quick Links" items={["Home", "Services", "Free Tools", "Pricing", "About Us", "Contact"]} />
-            <FooterColumn title="Top Services" items={["PrintPilot", "WhatsApp Print", "Passport Photo", "ID Card Print", "Document Services", "Admit Card Hub"]} />
-            <FooterColumn title="Support" items={["Help Center", "Privacy Policy", "Terms & Conditions"]} />
-            <FooterColumn title="Follow Us" items={["Facebook", "Instagram", "YouTube"]} />
+            <FooterColumn title="Platform" items={["Features", "Tools", "How It Works", "Contact"]} />
+            <FooterColumn title="Top Tools" items={["Print Automation", "Passport Photo", "PDF Tools", "AI Form Filling", "Agreement Maker"]} />
+            <FooterColumn title="Business" items={["Dashboard", "Pricing", "Support"]} />
+            <FooterColumn title="Social" items={["Facebook", "Instagram", "YouTube"]} />
           </div>
-          <div className="copyright">© 2024 CafeMitra.online. All rights reserved.</div>
+          <div className="copyright">Copyright 2026 Repetigo. All rights reserved.</div>
         </div>
       </footer>
     </main>
@@ -268,13 +337,5 @@ function FooterColumn({ title, items }: { title: string; items: string[] }) {
         ))}
       </div>
     </div>
-  );
-}
-
-function SettingsMark() {
-  return (
-    <span aria-hidden style={{ fontWeight: 950, fontSize: 24, lineHeight: 1 }}>
-      @
-    </span>
   );
 }

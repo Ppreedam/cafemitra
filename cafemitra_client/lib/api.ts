@@ -1,7 +1,22 @@
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8000";
+const configuredApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "";
+
+export const API_BASE_URL = configuredApiBaseUrl || "http://localhost:8000";
+
+function runtimeApiBaseUrl() {
+  if (typeof window === "undefined") return API_BASE_URL;
+
+  const { protocol, hostname } = window.location;
+  const configuredIsLocalhost = configuredApiBaseUrl.includes("localhost") || configuredApiBaseUrl.includes("127.0.0.1");
+  const pageIsLocalhost = hostname === "localhost" || hostname === "127.0.0.1";
+  if (configuredApiBaseUrl && (!configuredIsLocalhost || pageIsLocalhost)) return configuredApiBaseUrl;
+
+  return `${protocol}//${hostname}:8000`;
+}
+
+let refreshInFlight: Promise<boolean> | null = null;
 
 export function apiUrl(path: string) {
-  return `${API_BASE_URL}${path}`;
+  return `${runtimeApiBaseUrl()}${path}`;
 }
 
 export function getAuthToken() {
@@ -43,37 +58,60 @@ export function clearSession() {
   localStorage.removeItem("cafemitra_refresh_token_expires_at");
   localStorage.removeItem("cafemitra_user");
   localStorage.removeItem("cafemitra_shop");
+  window.dispatchEvent(new Event("cafemitra:session-cleared"));
 }
 
 export async function refreshSession() {
+  if (refreshInFlight) return refreshInFlight;
+
   const refreshToken = getRefreshToken();
   if (!refreshToken) {
-    clearSession();
+    logoutToLogin();
     return false;
   }
 
-  const response = await fetch(apiUrl("/api/auth/refresh/"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ refreshToken }),
-  });
+  refreshInFlight = (async () => {
+    try {
+      const response = await fetch(apiUrl("/api/auth/refresh/"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refreshToken }),
+      });
 
-  if (!response.ok) {
-    clearSession();
-    return false;
-  }
+      if (!response.ok) {
+        logoutToLogin();
+        return false;
+      }
 
-  const data = await response.json();
-  storeSession(data);
-  return Boolean(data.token);
+      const data = await response.json();
+      storeSession(data);
+      return Boolean(data.token);
+    } catch {
+      logoutToLogin();
+      return false;
+    } finally {
+      refreshInFlight = null;
+    }
+  })();
+
+  return refreshInFlight;
 }
 
 export async function apiFetch(path: string, init: RequestInit = {}) {
+  if (isAccessTokenExpired() && getRefreshToken()) {
+    await refreshSession();
+  }
+
   const firstResponse = await fetchWithAuth(path, init);
   if (firstResponse.status !== 401) return firstResponse;
 
   const refreshed = await refreshSession();
-  if (!refreshed) return firstResponse;
+  if (!refreshed) {
+    return new Response(JSON.stringify({ message: "Session expired. Please login again." }), {
+      status: 401,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
   return fetchWithAuth(path, init);
 }
@@ -87,4 +125,20 @@ function fetchWithAuth(path: string, init: RequestInit) {
     ...init,
     headers,
   });
+}
+
+function isAccessTokenExpired() {
+  if (typeof window === "undefined") return false;
+  const expiresAt = localStorage.getItem("cafemitra_token_expires_at");
+  if (!expiresAt) return false;
+  return new Date(expiresAt).getTime() <= Date.now() + 30_000;
+}
+
+function logoutToLogin() {
+  clearSession();
+  if (typeof window === "undefined") return;
+  const currentPath = window.location.pathname;
+  if (currentPath !== "/login" && currentPath !== "/register") {
+    window.location.replace("/login");
+  }
 }

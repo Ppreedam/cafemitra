@@ -26,8 +26,8 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
-import { ProfileTopbar } from "@/app/profile/ProfileTopbar";
-import { fetchPricingServices, savePricingService, type PriceItem, type PricingService } from "@/lib/pricing";
+import { DashboardShell } from "@/app/DashboardShell";
+import { fetchPricingServices, formatPriceItem, savePricingService, type PriceItem, type PriceRange, type PricingService } from "@/lib/pricing";
 
 type NavItem = {
   name: string;
@@ -70,7 +70,7 @@ const navGroups: NavGroup[] = [
   },
 ];
 
-const paymentModes = ["No Payment", "Online Payment", "Cash Counter", "Both"];
+const paymentModes = ["Online Payment", "Cash Counter"];
 
 export default function PricingSettingsPage() {
   const [services, setServices] = useState<PricingService[]>([]);
@@ -140,6 +140,73 @@ export default function PricingSettingsPage() {
     );
   }
 
+  function addPriceRange(serviceKey: string, itemId: string) {
+    setServices((current) =>
+      current.map((service) => {
+        if (service.serviceKey !== serviceKey) return service;
+        return {
+          ...service,
+          settings: {
+            ...service.settings,
+            priceItems: getPriceItems(service).map((item) => {
+              if (item.id !== itemId) return item;
+              const ranges = item.ranges || [];
+              const nextMin = ranges.length ? Number(ranges[ranges.length - 1].maxPages || ranges[ranges.length - 1].minPages) + 1 : 1;
+              return {
+                ...item,
+                ranges: [...ranges, { id: `${Date.now()}-${ranges.length + 1}`, minPages: nextMin, maxPages: undefined, rate: item.rate }],
+              };
+            }),
+          },
+        };
+      }),
+    );
+  }
+
+  function updatePriceRange(serviceKey: string, itemId: string, rangeId: string, field: keyof PriceRange, value: string) {
+    setServices((current) =>
+      current.map((service) => {
+        if (service.serviceKey !== serviceKey) return service;
+        return {
+          ...service,
+          settings: {
+            ...service.settings,
+            priceItems: getPriceItems(service).map((item) =>
+              item.id === itemId
+                ? {
+                    ...item,
+                    ranges: (item.ranges || []).map((range) =>
+                      range.id === rangeId
+                        ? {
+                            ...range,
+                            [field]: field === "maxPages" && value === "" ? undefined : Number(value || 0),
+                          }
+                        : range,
+                    ),
+                  }
+                : item,
+            ),
+          },
+        };
+      }),
+    );
+  }
+
+  function removePriceRange(serviceKey: string, itemId: string, rangeId: string) {
+    setServices((current) =>
+      current.map((service) => {
+        if (service.serviceKey !== serviceKey) return service;
+        return {
+          ...service,
+          settings: {
+            ...service.settings,
+            priceItems: getPriceItems(service).map((item) => (item.id === itemId ? { ...item, ranges: (item.ranges || []).filter((range) => range.id !== rangeId) } : item)),
+          },
+        };
+      }),
+    );
+  }
+
   function removePriceItem(serviceKey: string, itemId: string) {
     setServices((current) =>
       current.map((service) => {
@@ -182,52 +249,12 @@ export default function PricingSettingsPage() {
   }
 
   return (
-    <main className="app-frame">
-      <aside className="sidebar">
-        <Link className="brand" href="/">
-          <span className="brand-main">
-            Cafe<span className="brand-accent">Mitra</span>
-          </span>
-          <span className="brand-dot">.online</span>
-        </Link>
-
-        <nav className="side-nav" aria-label="Dashboard navigation">
-          {navGroups.map((group, index) => (
-            <div key={`${group.label}-${index}`}>
-              {group.label ? <div className="nav-label">{group.label}</div> : null}
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link className={`side-link ${item.active ? "active" : ""}`} href={item.href ?? "#"} key={item.name}>
-                    <Icon size={17} />
-                    <span>{item.name}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
-        </nav>
-
-        <div className="help-box">
-          <div className="help-avatar">
-            <UserRound size={21} />
-          </div>
-          <strong>Need Help?</strong>
-          <p>We are here to assist you.</p>
-          <Link className="btn" href="#">
-            <CircleHelp size={15} /> Contact Support
-          </Link>
-        </div>
-      </aside>
-
-      <section className="app-main">
-        <ProfileTopbar />
-
-        <div className="dashboard pricing-settings-dashboard">
+    <DashboardShell activePath="/pricing-settings">
+      <div className="dashboard pricing-settings-dashboard">
           <div className="dashboard-hero">
             <div>
               <h1>Pricing & Settings</h1>
-              <p>Har tool ke customer charges yahan manage karo. Same pricing respective service pages me bhi use hogi.</p>
+              <p>Manage customer charges for each tool here. The same pricing will also be used on the related service pages.</p>
             </div>
             <span className="status-pill">Central Pricing Active</span>
           </div>
@@ -290,7 +317,7 @@ export default function PricingSettingsPage() {
                     <div className="panel-title-row compact">
                       <div>
                         <h2>Price Items</h2>
-                        <p>Jis kaam ke liye payment lena hai, uska naam aur price set karo.</p>
+                        <p>Set the name and price for the service you want to charge for.</p>
                       </div>
                       <button className="icon-action-btn" type="button" onClick={() => addPriceItem(activeService.serviceKey)} aria-label="Add price item">
                         <Plus size={18} />
@@ -300,17 +327,50 @@ export default function PricingSettingsPage() {
                     <div className="price-item-list">
                       {getPriceItems(activeService).map((item) => (
                         <div className="price-item-row" key={item.id}>
-                          <label className="auto-field">
-                            <span>Charge For</span>
-                            <input value={item.label} onChange={(event) => updatePriceItem(activeService.serviceKey, item.id, "label", event.target.value)} />
-                          </label>
-                          <label className="auto-field">
-                            <span>Price</span>
-                            <input min="0" type="number" value={item.rate} onChange={(event) => updatePriceItem(activeService.serviceKey, item.id, "rate", event.target.value)} />
-                          </label>
-                          <button className="icon-action-btn danger" type="button" onClick={() => removePriceItem(activeService.serviceKey, item.id)} aria-label="Remove price item">
-                            <Trash2 size={17} />
-                          </button>
+                          <div className="price-item-main">
+                            <label className="auto-field">
+                              <span>Charge For</span>
+                              <input value={item.label} onChange={(event) => updatePriceItem(activeService.serviceKey, item.id, "label", event.target.value)} />
+                            </label>
+                            <label className="auto-field">
+                              <span>Base Price</span>
+                              <input min="0" type="number" value={item.rate} onChange={(event) => updatePriceItem(activeService.serviceKey, item.id, "rate", event.target.value)} />
+                            </label>
+                            <button className="icon-action-btn danger" type="button" onClick={() => removePriceItem(activeService.serviceKey, item.id)} aria-label="Remove price item">
+                              <Trash2 size={17} />
+                            </button>
+                          </div>
+                          <details className="price-range-panel" open={(item.ranges || []).length > 0}>
+                            <summary>
+                              <span>Page ranges</span>
+                              <small>{(item.ranges || []).length ? `${(item.ranges || []).length} active` : "General price applies"}</small>
+                            </summary>
+                            {(item.ranges || []).map((range) => (
+                              <div className="price-range-row" key={range.id}>
+                                <label className="auto-field">
+                                  <span>From</span>
+                                  <input min="1" type="number" value={range.minPages} onChange={(event) => updatePriceRange(activeService.serviceKey, item.id, range.id, "minPages", event.target.value)} />
+                                </label>
+                                <label className="auto-field">
+                                  <span>To</span>
+                                  <input min="1" placeholder="Up" type="number" value={range.maxPages ?? ""} onChange={(event) => updatePriceRange(activeService.serviceKey, item.id, range.id, "maxPages", event.target.value)} />
+                                </label>
+                                <label className="auto-field">
+                                  <span>Per Page</span>
+                                  <input min="0" type="number" value={range.rate} onChange={(event) => updatePriceRange(activeService.serviceKey, item.id, range.id, "rate", event.target.value)} />
+                                </label>
+                                <button className="icon-action-btn danger" type="button" onClick={() => removePriceRange(activeService.serviceKey, item.id, range.id)} aria-label="Remove page range">
+                                  <Trash2 size={15} />
+                                </button>
+                              </div>
+                            ))}
+                            <div className="price-range-footer">
+                              <small>{formatPriceItem(item)}</small>
+                              <button type="button" onClick={() => addPriceRange(activeService.serviceKey, item.id)}>
+                                <Plus size={14} /> Add range
+                              </button>
+                            </div>
+                          </details>
                         </div>
                       ))}
                     </div>
@@ -333,9 +393,8 @@ export default function PricingSettingsPage() {
               ) : null}
             </section>
           </section>
-        </div>
-      </section>
-    </main>
+      </div>
+    </DashboardShell>
   );
 }
 
@@ -345,5 +404,5 @@ function getPriceItems(service: PricingService) {
 
 function getServiceSummary(service: PricingService) {
   const items = getPriceItems(service);
-  return items.length ? items.map((item) => `${item.label} Rs. ${item.rate}`).join(" | ") : "No pricing items";
+  return items.length ? items.map(formatPriceItem).join(" | ") : "No pricing items";
 }

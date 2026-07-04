@@ -1,224 +1,135 @@
+"use client";
+
 import Link from "next/link";
 import type React from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
-  BarChart3,
-  Bell,
-  Bookmark,
-  Building2,
-  ChevronDown,
-  CircleHelp,
   ClipboardList,
   FileText,
-  Landmark,
-  Home,
   IdCard,
-  Image,
-  LogOut,
-  LayoutGrid,
-  Menu,
   MessageCircle,
   Printer,
-  Settings,
   Shield,
   UserRound,
   Users,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
+import { apiFetch, hasStoredSession, storeSession } from "@/lib/api";
+import { DashboardShell } from "../DashboardShell";
 
-type NavItem = {
-  name: string;
-  icon: LucideIcon;
-  href?: string;
-  active?: boolean;
+type Order = {
+  id: number;
+  orderNumber: string;
+  tokenId: string;
+  serviceKey?: string;
+  serviceName: string;
+  totalAmount: number;
+  paymentStatus: string;
+  status: string;
+  customerPhone?: string;
+  createdAt: string;
 };
 
-type NavGroup = {
+type ProfileSummary = {
+  user: {
+    fullName: string;
+    balance: number;
+  };
+};
+
+type WalletSummary = {
+  balance: number;
+  summary?: {
+    netWithdrawable?: number;
+  };
+};
+
+type Metric = {
   label: string;
-  items: NavItem[];
+  value: string;
+  meta: string;
+  icon: LucideIcon;
+  color: string;
 };
 
-const navGroups: NavGroup[] = [
-  { label: "", items: [{ name: "Dashboard", icon: Home, href: "/dashboard", active: true }] },
-  { label: "", items: [{ name: "Orders", icon: ClipboardList, href: "/orders" }] },
-  {
-    label: "Services",
-    items: [
-      { name: "PrintPilot", icon: Printer, href: "/auto-print" },
-      { name: "PDF Tools", icon: FileText, href: "/pdf-tools" },
-      { name: "Image Tools", icon: Image, href: "/image-tools" },
-      { name: "WhatsApp Print", icon: MessageCircle },
-      { name: "Passport Photo", icon: UserRound },
-      { name: "ID Card Print", icon: IdCard },
-      { name: "Admit Card Hub", icon: ClipboardList },
-      { name: "Document Services", icon: FileText },
-      { name: "All Services", icon: LayoutGrid },
-    ],
-  },
-  {
-    label: "Manage",
-    items: [
-      { name: "Customers", icon: Users },
-      { name: "Wallet & Settlement", icon: Wallet },
-      { name: "Analytics", icon: BarChart3, href: "/analytics" },
-      { name: "Reports", icon: FileText },
-    ],
-  },
-];
-
-const metrics = [
-  { label: "Today's Revenue", value: "Rs. 1,250", meta: "+18.6% vs yesterday", icon: Shield, color: "#6d63df" },
-  { label: "Today's Orders", value: "42", meta: "+16.3% vs yesterday", icon: ClipboardList, color: "#4a9dec" },
-  { label: "Pending Orders", value: "3", meta: "View pending", icon: ClipboardList, color: "#ff9a52" },
-  { label: "Wallet Balance", value: "Rs. 5,000", meta: "View wallet", icon: Wallet, color: "#42b98e" },
-  { label: "Total Customers", value: "86", meta: "+12.5% vs yesterday", icon: Users, color: "#8b79e8" },
-];
-
-const quickServices = [
-  { name: "PrintPilot", orders: "18 orders", icon: Printer, color: "#6d63df" },
-  { name: "WhatsApp Print", orders: "5 orders", icon: MessageCircle, color: "#42b98e" },
-  { name: "Passport Photo", orders: "2 orders", icon: UserRound, color: "#e95c8d" },
-  { name: "ID Card Print", orders: "6 orders", icon: IdCard, color: "#45aabc" },
-  { name: "Admit Card Hub", orders: "3 orders", icon: ClipboardList, color: "#ff9a52" },
-  { name: "Document Services", orders: "8 orders", icon: FileText, color: "#4a9dec" },
+const serviceCatalog = [
+  { key: "auto_document_print", aliases: ["cafemitra printpilot", "printpilot"], name: "PrintPilot", icon: Printer, color: "#6d63df", href: "/auto-print" },
+  { key: "whatsapp_print", aliases: ["whatsapp print"], name: "WhatsApp Print", icon: MessageCircle, color: "#42b98e", href: "#" },
+  { key: "passport_photo", aliases: ["passport size photo", "passport photo"], name: "Passport Photo", icon: UserRound, color: "#e95c8d", href: "#" },
+  { key: "id_card_print", aliases: ["id card print"], name: "ID Card Print", icon: IdCard, color: "#45aabc", href: "#" },
+  { key: "admit_card_hub", aliases: ["admit card hub"], name: "Admit Card Hub", icon: ClipboardList, color: "#ff9a52", href: "#" },
+  { key: "document_services", aliases: ["document services"], name: "Document Services", icon: FileText, color: "#4a9dec", href: "#" },
 ];
 
 export default function Dashboard() {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [profile, setProfile] = useState<ProfileSummary | null>(null);
+  const [wallet, setWallet] = useState<WalletSummary | null>(null);
+  const [message, setMessage] = useState("Loading dashboard...");
+
+  useEffect(() => {
+    hydrateProfileFromStorage();
+
+    if (!hasStoredSession()) {
+      setMessage("Please login to view live analytics.");
+      return;
+    }
+
+    async function loadDashboard() {
+      try {
+        const [ordersResponse, profileResponse, walletResponse] = await Promise.all([apiFetch("/api/orders/"), apiFetch("/api/profile/"), apiFetch("/api/wallet/")]);
+        const ordersResult = await ordersResponse.json().catch(() => ({}));
+        const profileResult = await profileResponse.json().catch(() => ({}));
+        const walletResult = await walletResponse.json().catch(() => ({}));
+
+        if (!ordersResponse.ok) throw new Error(ordersResult.message || "Could not load dashboard analytics.");
+        setOrders(Array.isArray(ordersResult.orders) ? ordersResult.orders : []);
+
+        if (profileResponse.ok) {
+          storeSession(profileResult);
+          setProfile(profileResult as ProfileSummary);
+        }
+        if (walletResponse.ok) {
+          setWallet(walletResult as WalletSummary);
+        }
+
+        setMessage("");
+      } catch (error) {
+        setMessage(error instanceof Error ? error.message : "Could not load dashboard analytics.");
+      }
+    }
+
+    loadDashboard();
+  }, []);
+
+  function hydrateProfileFromStorage() {
+    try {
+      const storedUser = JSON.parse(localStorage.getItem("cafemitra_user") || "{}") as Partial<ProfileSummary["user"]>;
+      if (storedUser.fullName || storedUser.balance !== undefined) {
+        setProfile({ user: { fullName: storedUser.fullName || "Owner", balance: Number(storedUser.balance || 0) } });
+      }
+    } catch {
+      undefined;
+    }
+  }
+
+  const analytics = useMemo(() => buildDashboardAnalytics(orders, profile, wallet), [orders, profile, wallet]);
+  const ownerName = profile?.user.fullName?.trim().split(" ")[0] || "Owner";
+
   return (
-    <main className="app-frame">
-      <aside className="sidebar">
-        <Link className="brand" href="/">
-          <span className="brand-main">
-            Cafe<span className="brand-accent">Mitra</span>
-          </span>
-          <span className="brand-dot">.online</span>
-        </Link>
-
-        <nav className="side-nav" aria-label="Dashboard navigation">
-          {navGroups.map((group, index) => (
-            <div key={`${group.label}-${index}`}>
-              {group.label ? <div className="nav-label">{group.label}</div> : null}
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link className={`side-link ${item.active ? "active" : ""}`} href={item.href ?? "#"} key={item.name}>
-                    <Icon size={17} />
-                    <span>{item.name}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
-        </nav>
-
-        <div className="help-box">
-          <div className="help-avatar">
-            <UserRound size={21} />
-          </div>
-          <strong>Need Help?</strong>
-          <p>We are here to assist you.</p>
-          <Link className="btn" href="#">
-            <CircleHelp size={15} /> Contact Support
-          </Link>
-        </div>
-      </aside>
-
-      <section className="app-main">
-        <header className="topbar">
-          <div className="topbar-left">
-            <Link href="/" aria-label="Open menu">
-              <Menu size={22} />
-            </Link>
-          </div>
-          <div className="topbar-right">
-            <div className="business-switcher">
-              <Building2 size={17} />
-              Cyber Cafe Shankar
-              <ChevronDown size={15} />
-            </div>
-            <details className="printer-menu">
-              <summary>
-                <Printer size={17} />
-                <span className="printer-dot online" />
-                <span>Epson L805</span>
-                <small>Connected</small>
-                <ChevronDown size={14} />
-              </summary>
-              <div className="printer-dropdown">
-                <div className="printer-option">
-                  <span className="printer-dot online" />
-                  <div>
-                    <strong>Epson L805</strong>
-                    <small>Connected</small>
-                  </div>
-                </div>
-                <div className="printer-option">
-                  <span className="printer-dot offline" />
-                  <div>
-                    <strong>Canon G3010</strong>
-                    <small>Disconnected</small>
-                  </div>
-                </div>
-              </div>
-            </details>
-            <div className="notification-dot">
-              <Bell size={23} />
-            </div>
-            <details className="profile-menu">
-              <summary className="user-menu">
-                <span className="avatar">S</span>
-                <span>
-                  <strong>Shankar Kumar</strong>
-                  <small style={{ display: "block", color: "#697397" }}>Owner</small>
-                </span>
-                <ChevronDown size={15} />
-              </summary>
-              <div className="profile-dropdown">
-                <div className="profile-head">
-                  <span className="profile-photo">S</span>
-                  <div>
-                    <strong>Shankar Kumar</strong>
-                    <span>sk6201184579@gmail.com</span>
-                    <span>Balance: 0</span>
-                    <span>User ID: 204927</span>
-                  </div>
-                </div>
-                <div className="profile-list">
-                  <Link href="/dashboard">
-                    <Bookmark size={18} /> Dashboard
-                  </Link>
-                  <Link href="/profile">
-                    <UserRound size={18} /> My Profile
-                  </Link>
-                  <Link href="#">
-                    <Printer size={18} /> PrintPilot Setup
-                  </Link>
-                  <Link href="/pricing-settings">
-                    <Settings size={18} /> Pricing & Settings
-                  </Link>
-                  <Link href="#">
-                    <Landmark size={18} /> Withdraw
-                  </Link>
-                  <Link href="/login">
-                    <LogOut size={18} /> Sign Out
-                  </Link>
-                </div>
-              </div>
-            </details>
-          </div>
-        </header>
-
-        <div className="dashboard">
+    <DashboardShell activePath="/dashboard">
+      <div className="dashboard">
           <div className="dashboard-hero">
             <div>
-              <h1>Good Morning, Shankar</h1>
-              <p>Here is what is happening with your business today.</p>
+              <h1>{getGreeting()}, {ownerName}</h1>
+              <p>{message || "Here is what is happening with your business today."}</p>
             </div>
             <span className="status-pill">All Systems Operational</span>
           </div>
 
           <section className="metrics-grid" aria-label="Business metrics">
-            {metrics.map((metric) => {
+            {analytics.metrics.map((metric) => {
               const Icon = metric.icon;
               return (
                 <article className="metric-card" key={metric.label}>
@@ -238,32 +149,113 @@ export default function Dashboard() {
           <section className="dashboard-section">
             <div className="section-title-row">
               <h2>Quick Access Services</h2>
-              <Link className="mini-link" href="#">
+              <Link className="mini-link" href="/pricing-settings">
                 View All Services
               </Link>
             </div>
             <div className="quick-grid">
-              {quickServices.map((service) => {
+              {analytics.quickServices.map((service) => {
                 const Icon = service.icon;
                 return (
-                  <article className="quick-card" key={service.name}>
+                  <Link className="quick-card" href={service.href} key={service.name}>
                     <span className="icon-tile" style={{ "--tile-color": service.color } as React.CSSProperties}>
                       <Icon size={23} />
                     </span>
                     <div>
                       <h3>{service.name}</h3>
                       <span className="order-count" style={{ "--tile-color": service.color } as React.CSSProperties}>
-                        {service.orders}
+                        {service.orders} {service.orders === 1 ? "order" : "orders"}
                       </span>
                     </div>
-                  </article>
+                  </Link>
                 );
               })}
             </div>
           </section>
 
-        </div>
-      </section>
-    </main>
+      </div>
+    </DashboardShell>
   );
+}
+
+function buildDashboardAnalytics(orders: Order[], profile: ProfileSummary | null, wallet: WalletSummary | null) {
+  const todayOrders = orders.filter((order) => isSameLocalDay(order.createdAt, 0));
+  const yesterdayOrders = orders.filter((order) => isSameLocalDay(order.createdAt, -1));
+  const todayRevenue = sumRevenue(todayOrders);
+  const yesterdayRevenue = sumRevenue(yesterdayOrders);
+  const pendingOrders = orders.filter((order) => !["printed", "failed"].includes(order.status)).length;
+  const customerIds = new Set(
+    orders
+      .map((order) => order.customerPhone || order.tokenId || order.orderNumber)
+      .filter(Boolean),
+  );
+  const yesterdayCustomerIds = new Set(
+    orders
+      .filter((order) => isBeforeToday(order.createdAt))
+      .map((order) => order.customerPhone || order.tokenId || order.orderNumber)
+      .filter(Boolean),
+  );
+
+  const metrics: Metric[] = [
+    { label: "Today's Revenue", value: formatCurrency(todayRevenue), meta: formatDelta(todayRevenue, yesterdayRevenue, "vs yesterday"), icon: Shield, color: "#6d63df" },
+    { label: "Today's Orders", value: String(todayOrders.length), meta: formatDelta(todayOrders.length, yesterdayOrders.length, "vs yesterday"), icon: ClipboardList, color: "#4a9dec" },
+    { label: "Pending Orders", value: String(pendingOrders), meta: pendingOrders ? "View pending" : "No pending orders", icon: ClipboardList, color: "#ff9a52" },
+    { label: "Wallet Balance", value: formatCurrency(Number(wallet?.summary?.netWithdrawable ?? profile?.user.balance ?? 0)), meta: "After commission", icon: Wallet, color: "#42b98e" },
+    { label: "Total Customers", value: String(customerIds.size), meta: formatDelta(customerIds.size, yesterdayCustomerIds.size, "total growth"), icon: Users, color: "#8b79e8" },
+  ];
+
+  const quickServices = serviceCatalog.map((service) => ({
+    ...service,
+    orders: orders.filter((order) => matchesService(order, service.key, service.aliases)).length,
+  }));
+
+  return { metrics, quickServices };
+}
+
+function sumRevenue(orders: Order[]) {
+  return orders
+    .filter((order) => order.paymentStatus !== "pending" && order.status !== "failed")
+    .reduce((total, order) => total + Number(order.totalAmount || 0), 0);
+}
+
+function matchesService(order: Order, key: string, aliases: string[]) {
+  const serviceKey = String(order.serviceKey || "").toLowerCase();
+  const serviceName = String(order.serviceName || "").toLowerCase();
+  return serviceKey === key || aliases.includes(serviceName);
+}
+
+function isSameLocalDay(value: string, dayOffset: number) {
+  if (!value) return false;
+  const date = new Date(value);
+  const target = new Date();
+  target.setDate(target.getDate() + dayOffset);
+  return date.getFullYear() === target.getFullYear() && date.getMonth() === target.getMonth() && date.getDate() === target.getDate();
+}
+
+function isBeforeToday(value: string) {
+  if (!value) return false;
+  const date = new Date(value);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return date < today;
+}
+
+function formatCurrency(value: number) {
+  return `Rs. ${new Intl.NumberFormat("en-IN", { maximumFractionDigits: 0 }).format(value)}`;
+}
+
+function formatDelta(current: number, previous: number, suffix: string) {
+  if (previous > 0) {
+    const delta = ((current - previous) / previous) * 100;
+    return `${delta >= 0 ? "+" : ""}${delta.toFixed(1)}% ${suffix}`;
+  }
+  if (current > 0) return `+${current} new ${suffix}`;
+  return `No change ${suffix}`;
+}
+
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good Morning";
+  if (hour < 17) return "Good Afternoon";
+  return "Good Evening";
 }

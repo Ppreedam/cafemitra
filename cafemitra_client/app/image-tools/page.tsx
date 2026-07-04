@@ -24,6 +24,7 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
+import { DashboardShell } from "../DashboardShell";
 
 type NavItem = {
   name: string;
@@ -92,135 +93,13 @@ const imageTools: ImageTool[] = [
 
 export default function ImageToolsPage() {
   return (
-    <main className="app-frame">
-      <aside className="sidebar">
-        <Link className="brand" href="/">
-          <span className="brand-main">
-            Cafe<span className="brand-accent">Mitra</span>
-          </span>
-          <span className="brand-dot">.online</span>
-        </Link>
-
-        <nav className="side-nav" aria-label="Dashboard navigation">
-          {navGroups.map((group, index) => (
-            <div key={`${group.label}-${index}`}>
-              {group.label ? <div className="nav-label">{group.label}</div> : null}
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link className={`side-link ${item.active ? "active" : ""}`} href={item.href ?? "#"} key={item.name}>
-                    <Icon size={17} />
-                    <span>{item.name}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
-        </nav>
-
-        <div className="help-box">
-          <div className="help-avatar">
-            <UserRound size={21} />
-          </div>
-          <strong>Need Help?</strong>
-          <p>We are here to assist you.</p>
-          <Link className="btn" href="#">
-            <CircleHelp size={15} /> Contact Support
-          </Link>
-        </div>
-      </aside>
-
-      <section className="app-main">
-        <header className="topbar">
-          <div className="topbar-left">
-            <Link href="/" aria-label="Open menu">
-              <Menu size={22} />
-            </Link>
-          </div>
-          <div className="topbar-right">
-            <div className="business-switcher">
-              <Building2 size={17} />
-              Cyber Cafe Shankar
-              <ChevronDown size={15} />
-            </div>
-            <details className="printer-menu">
-              <summary>
-                <Printer size={17} />
-                <span className="printer-dot online" />
-                <span>Epson L805</span>
-                <small>Connected</small>
-                <ChevronDown size={14} />
-              </summary>
-              <div className="printer-dropdown">
-                <div className="printer-option">
-                  <span className="printer-dot online" />
-                  <div>
-                    <strong>Epson L805</strong>
-                    <small>Connected</small>
-                  </div>
-                </div>
-                <div className="printer-option">
-                  <span className="printer-dot offline" />
-                  <div>
-                    <strong>Canon G3010</strong>
-                    <small>Disconnected</small>
-                  </div>
-                </div>
-              </div>
-            </details>
-            <div className="notification-dot">
-              <Bell size={23} />
-            </div>
-            <details className="profile-menu">
-              <summary className="user-menu">
-                <span className="avatar">S</span>
-                <span>
-                  <strong>Shankar Kumar</strong>
-                  <small style={{ display: "block", color: "#697397" }}>Owner</small>
-                </span>
-                <ChevronDown size={15} />
-              </summary>
-              <div className="profile-dropdown">
-                <div className="profile-head">
-                  <span className="profile-photo">S</span>
-                  <div>
-                    <strong>Shankar Kumar</strong>
-                    <span>sk6201184579@gmail.com</span>
-                    <span>Balance: 0</span>
-                    <span>User ID: 204927</span>
-                  </div>
-                </div>
-                <div className="profile-list">
-                  <Link href="/dashboard">
-                    <Bookmark size={18} /> Dashboard
-                  </Link>
-                  <Link href="/profile">
-                    <UserRound size={18} /> My Profile
-                  </Link>
-                  <Link href="/auto-print">
-                    <Printer size={18} /> PrintPilot Setup
-                  </Link>
-                  <Link href="/pricing-settings">
-                    <Settings size={18} /> Pricing & Settings
-                  </Link>
-                  <Link href="#">
-                    <Landmark size={18} /> Withdraw
-                  </Link>
-                  <Link href="/login">
-                    <LogOut size={18} /> Sign Out
-                  </Link>
-                </div>
-              </div>
-            </details>
-          </div>
-        </header>
-
-        <div className="dashboard image-tools-page">
+    <DashboardShell activePath="/image-tools">
+      <div className="dashboard image-tools-page">
           <div className="dashboard-hero pdf-tools-hero">
             <div>
               <span className="auto-print-kicker">PrintPilot Image Tools</span>
               <h1>Image Tools</h1>
-              <p>Daily photo aur image work ke liye compress, resize, crop, convert, background remove, watermark aur blur tools ek jagah.</p>
+              <p>Compress, resize, crop, convert, remove backgrounds, add watermarks, and blur images from one place.</p>
             </div>
             <span className="status-pill">13 Tools Ready</span>
           </div>
@@ -238,8 +117,7 @@ export default function ImageToolsPage() {
               </Link>
             ))}
           </section>
-        </div>
-      </section>
-    </main>
+      </div>
+    </DashboardShell>
   );
 }

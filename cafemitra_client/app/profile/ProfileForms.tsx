@@ -1,7 +1,7 @@
 "use client";
 
-import { type ChangeEvent, useEffect, useState } from "react";
-import { Building2, ImagePlus, LockKeyhole, UserRound } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Building2, LockKeyhole, UserRound } from "lucide-react";
 import { apiFetch, hasStoredSession, storeSession } from "@/lib/api";
 
 type ProfileData = {
@@ -146,32 +146,6 @@ export function ProfileForms() {
     setError("");
   }
 
-  function handleBrandImage(field: "logo" | "banner", event: ChangeEvent<HTMLInputElement>) {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      setError("Please upload an image file.");
-      return;
-    }
-
-    if (file.size > 1536 * 1024) {
-      setError("Image must be under 1.5 MB.");
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = () => {
-      updateShop(field, String(reader.result || ""));
-      setError("");
-    };
-    reader.readAsDataURL(file);
-  }
-
-  function removeBrandImage(field: "logo" | "banner") {
-    updateShop(field, "");
-  }
-
   async function saveProfile() {
     setMessage("");
     setError("");
@@ -258,7 +232,7 @@ export function ProfileForms() {
             <ProfileInput label="Owner Name" value={data.user.fullName} onChange={(value) => updateUser("fullName", value)} />
             <ProfileInput label="Email" value={data.user.email} onChange={(value) => updateUser("email", value)} />
             <ProfileInput label="Mobile" value={data.user.phone} onChange={(value) => updateUser("phone", value)} />
-            <ProfileInput label="User ID" value={data.user.id} readOnly />
+            {/* <ProfileInput label="User ID" value={data.user.id} readOnly /> */}
           </div>
         </article>
 
@@ -301,30 +275,14 @@ export function ProfileForms() {
           </div>
           <div className="profile-subtitle">Shop Information</div>
           <div className="profile-owner-grid">
-            <ProfileInput label="Shop Name" value={data.shop.shopName} onChange={(value) => updateShop("shopName", value)} />
-            <ProfileBrandInput
-              label="Logo"
-              helper="Square logo works best"
-              image={data.shop.logo}
-              variant="logo"
-              onChange={(event) => handleBrandImage("logo", event)}
-              onRemove={() => removeBrandImage("logo")}
-            />
-            <ProfileBrandInput
-              label="Banner"
-              helper="Wide banner supported"
-              image={data.shop.banner}
-              variant="banner"
-              onChange={(event) => handleBrandImage("banner", event)}
-              onRemove={() => removeBrandImage("banner")}
-            />
-            <ProfileInput label="Address" value={data.shop.address} onChange={(value) => updateShop("address", value)} />
-            <ProfileInput label="City" value={data.shop.city} onChange={(value) => updateShop("city", value)} />
-            <ProfileSelect label="State" value={data.shop.state} options={indianStates} onChange={(value) => updateShop("state", value)} />
-            <ProfileInput label="PIN Code" value={data.shop.pinCode} onChange={(value) => updateShop("pinCode", value)} />
-            <ProfileInput label="Mobile" value={data.shop.mobile} onChange={(value) => updateShop("mobile", value)} />
-            <ProfileInput label="WhatsApp" value={data.shop.whatsapp} onChange={(value) => updateShop("whatsapp", value)} />
-            <ProfileInput label="Email" value={data.shop.email} onChange={(value) => updateShop("email", value)} />
+            <ProfileInput label="Shop Name *" value={data.shop.shopName} onChange={(value) => updateShop("shopName", value)} />
+            <ProfileInput label="Address (optional)" value={data.shop.address} onChange={(value) => updateShop("address", value)} />
+            <ProfileInput label="City *" value={data.shop.city} onChange={(value) => updateShop("city", value)} />
+            <ProfileSelect label="State *" value={data.shop.state} options={indianStates} onChange={(value) => updateShop("state", value)} />
+            <ProfileInput label="PIN Code (optional)" value={data.shop.pinCode} onChange={(value) => updateShop("pinCode", value)} />
+            <ProfileInput label="Mobile (optional)" value={data.shop.mobile} onChange={(value) => updateShop("mobile", value)} />
+            <ProfileInput label="WhatsApp (optional)" value={data.shop.whatsapp} onChange={(value) => updateShop("whatsapp", value)} />
+            <ProfileInput label="Email (optional)" value={data.shop.email} onChange={(value) => updateShop("email", value)} />
           </div>
           <div className="profile-actions">
             <button className="btn" type="button" onClick={handleCancel}>
@@ -388,49 +346,6 @@ function ProfileSelect({
           </option>
         ))}
       </select>
-    </label>
-  );
-}
-
-function ProfileBrandInput({
-  label,
-  helper,
-  image,
-  variant,
-  onChange,
-  onRemove,
-}: {
-  label: string;
-  helper: string;
-  image?: string;
-  variant: "logo" | "banner";
-  onChange: (event: ChangeEvent<HTMLInputElement>) => void;
-  onRemove: () => void;
-}) {
-  return (
-    <label className="profile-input">
-      <span>{label}</span>
-      <div className={`profile-brand-control ${variant}`}>
-        <div className="profile-brand-preview">
-          {image ? (
-            <img src={image} alt="" />
-          ) : (
-            <span>
-              <ImagePlus size={18} />
-              {label}
-            </span>
-          )}
-        </div>
-        <div className="profile-brand-actions">
-          <small>{helper}</small>
-          <input accept="image/*" type="file" onChange={onChange} />
-          {image ? (
-            <button type="button" onClick={onRemove}>
-              Remove
-            </button>
-          ) : null}
-        </div>
-      </div>
     </label>
   );
 }

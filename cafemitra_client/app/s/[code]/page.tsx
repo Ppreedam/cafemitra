@@ -2,9 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { BadgeCheck, Crop, Eye, FileText, IdCard, Image as ImageIcon, Phone, Trash2, Upload, Wallet, X } from "lucide-react";
+import QRCode from "qrcode";
+import { Crop, Eye, FileText, IdCard, Image as ImageIcon, Printer, Trash2, Upload, Wallet, X } from "lucide-react";
 import { apiUrl } from "@/lib/api";
-import { mergePricingDefaults, type PriceItem, type PricingService } from "@/lib/pricing";
+import { calculatePriceItemRate, formatPriceItem, mergePricingDefaults, type PriceItem, type PricingService } from "@/lib/pricing";
 
 type PublicShop = {
   code: string;
@@ -33,6 +34,7 @@ type PrintOrder = {
   paymentStatus: string;
   status: string;
   totalAmount: number;
+  documentDeleted?: boolean;
 };
 
 type CropRect = {
@@ -75,25 +77,43 @@ export default function CustomerScanPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isPageManagerOpen, setIsPageManagerOpen] = useState(false);
   const [isCropOpen, setIsCropOpen] = useState(false);
+  const [isDeleteDocumentOpen, setIsDeleteDocumentOpen] = useState(false);
   const [cropRect, setCropRect] = useState<CropRect>({ x: 10, y: 10, width: 80, height: 80 });
   const [isProcessingPdf, setIsProcessingPdf] = useState(false);
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+  const [isDeletingDocument, setIsDeletingDocument] = useState(false);
   const [order, setOrder] = useState<PrintOrder | null>(null);
   const [orderError, setOrderError] = useState("");
   const [paymentMode, setPaymentMode] = useState("Online Payment");
+  const [upiQrDataUrl, setUpiQrDataUrl] = useState("");
+  const [paymentStarted, setPaymentStarted] = useState(false);
+  const [isCheckingPayment, setIsCheckingPayment] = useState(false);
+  const [paymentMessage, setPaymentMessage] = useState("");
+  const [optionsTouched, setOptionsTouched] = useState(false);
+  const paymentPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const paymentCheckInFlightRef = useRef(false);
 
   useEffect(() => {
     fetch(apiUrl(`/api/public-shop/${params.code}/`))
-      .then((response) => (response.ok ? response.json() : Promise.reject()))
+      .then(async (response) => {
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(result.message || `Cafe QR request failed (${response.status}).`);
+        }
+        return result;
+      })
       .then((result: PublicShop) => {
-        const services = mergePricingDefaults(result.services);
+        const services = mergePricingDefaults(result.services).filter((service) => service.serviceKey !== "passport_photo");
         setData({ ...result, services });
+        setError("");
         setSelectedService(services[0]?.serviceKey || "auto_document_print");
         const firstItem = getPriceItems(services[0])[0];
         setSelectedItemId(firstItem?.id || "");
         setPaymentMode(String(services[0]?.settings.paymentMode || "Online Payment"));
       })
-      .catch(() => setError("Cafe QR not found or temporarily unavailable."));
+      .catch((shopError) =>
+        setError(shopError instanceof Error ? shopError.message : "Cafe QR not found or temporarily unavailable."),
+      );
   }, [params.code]);
 
   const activeService = useMemo(() => data?.services.find((service) => service.serviceKey === selectedService), [data, selectedService]);
@@ -101,11 +121,60 @@ export default function CustomerScanPage() {
   const selectedItem = priceItems.find((item) => item.id === selectedItemId) || priceItems[0];
   const isPassportPhoto = selectedService === "passport_photo";
   const hasUploadedFile = Boolean(fileUrl);
-  const amount = hasUploadedFile ? Math.max(0, Number(selectedItem?.rate || 0) * (isPassportPhoto ? copies : pages * copies)) : 0;
+  const selectedRate = calculatePriceItemRate(selectedItem, isPassportPhoto ? 1 : pages);
+  const amount = hasUploadedFile ? Math.max(0, selectedRate * (isPassportPhoto ? copies : pages * copies)) : 0;
   const hasPdfFile = isPdfFile(fileType, fileName);
   const hasImageFile = isImageFile(fileType, fileName);
   const onlyCropImage = selectedService === "auto_document_print" && hasImageFile;
   const canCropImage = (selectedService === "auto_document_print" || isPassportPhoto) && hasImageFile;
+  const showServiceSelector = (data?.services.length || 0) > 1;
+  const activeStep = showServiceSelector
+    ? order || (hasUploadedFile && optionsTouched)
+      ? 4
+      : hasUploadedFile
+        ? 3
+        : selectedService
+          ? 2
+          : 1
+    : order || (hasUploadedFile && optionsTouched)
+      ? 3
+      : hasUploadedFile
+        ? 2
+        : 1;
+  const completedStepCount = showServiceSelector
+    ? order
+      ? 4
+      : hasUploadedFile && optionsTouched
+        ? 3
+        : hasUploadedFile
+          ? 2
+          : selectedService
+            ? 1
+            : 0
+    : order
+      ? 3
+      : hasUploadedFile && optionsTouched
+        ? 2
+        : hasUploadedFile
+          ? 1
+          : 0;
+  const customerSteps = showServiceSelector
+    ? [
+        { label: "Service", text: "Choose print or photo" },
+        { label: "Upload", text: "Select PDF or image" },
+        { label: "Options", text: "Pages, copies, remove page" },
+        { label: "Payment", text: "Check total and continue" },
+      ]
+    : [
+        { label: "Upload", text: "Select PDF or image" },
+        { label: "Options", text: "Pages, copies, remove page" },
+        { label: "Payment", text: "Check total and continue" },
+      ];
+  const progressPercent = Math.round((completedStepCount / customerSteps.length) * 100);
+  const activeStepLabel = customerSteps[activeStep - 1]?.label || "Service";
+  const canDeletePrintedDocument = order?.status === "printed" && !order.documentDeleted;
+  const isOnlinePaymentOrder = order?.paymentStatus === "pending" && paymentMode === "Online Payment";
+  const upiLink = useMemo(() => (order && data ? buildUpiLink(order, data.shop.shopName) : ""), [data, order]);
 
   useEffect(() => {
     if (!isPassportPhoto || !fileUrl || !hasImageFile) {
@@ -128,20 +197,78 @@ export default function CustomerScanPage() {
           return URL.createObjectURL(sheetBlob);
         });
       })
-      .catch(() => setOrderError("Passport photo sheet generate nahi ho paya."));
+      .catch(() => setOrderError("Could not create the passport photo sheet."));
 
     return () => {
       cancelled = true;
     };
   }, [fileUrl, hasImageFile, isPassportPhoto, passportBackground, passportCustomBackground, removePassportBackground]);
 
+  useEffect(() => {
+    let isActive = true;
+
+    if (!upiLink || !isOnlinePaymentOrder) {
+      setUpiQrDataUrl("");
+      return;
+    }
+
+    QRCode.toDataURL(upiLink, {
+      errorCorrectionLevel: "M",
+      margin: 1,
+      width: 220,
+    })
+      .then((url) => {
+        if (isActive) setUpiQrDataUrl(url);
+      })
+      .catch(() => {
+        if (isActive) setUpiQrDataUrl("");
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [upiLink, isOnlinePaymentOrder]);
+
+  useEffect(() => {
+    if (!paymentStarted || !order || order.paymentStatus !== "pending") return;
+
+    paymentPollRef.current = setInterval(() => {
+      checkUpiPayment(order.id);
+    }, 3000);
+
+    return () => {
+      if (paymentPollRef.current) {
+        clearInterval(paymentPollRef.current);
+        paymentPollRef.current = null;
+      }
+    };
+  }, [paymentStarted, order?.id, order?.paymentStatus]);
+
+  useEffect(() => {
+    if (!order || order.status === "printed" || order.status === "failed") return;
+
+    const intervalId = window.setInterval(async () => {
+      try {
+        const response = await fetch(apiUrl(`/api/public-orders/${order.id}/`));
+        const result = await response.json().catch(() => ({}));
+        if (response.ok && result.order) setOrder(result.order);
+      } catch {
+        // Keep the current token visible if status refresh is temporarily unavailable.
+      }
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
+  }, [order]);
+
   function selectService(service: PricingService) {
     setSelectedService(service.serviceKey);
     setPaymentMode(String(service.settings.paymentMode || "Online Payment"));
     setSelectedItemId(getPriceItems(service)[0]?.id || "");
     setCopies(1);
+    setOptionsTouched(false);
     setOrder(null);
     setOrderError("");
+    resetPaymentFlow();
     if (service.serviceKey === "passport_photo" && hasUploadedFile && !hasImageFile) {
       clearUpload();
     }
@@ -150,13 +277,25 @@ export default function CustomerScanPage() {
   function resetOrderDraft() {
     setOrder(null);
     setOrderError("");
+    resetPaymentFlow();
+  }
+
+  function resetPaymentFlow() {
+    setUpiQrDataUrl("");
+    setPaymentStarted(false);
+    setIsCheckingPayment(false);
+    setPaymentMessage("");
+    if (paymentPollRef.current) {
+      clearInterval(paymentPollRef.current);
+      paymentPollRef.current = null;
+    }
   }
 
   async function handleUpload(file?: File) {
     if (!file) return;
     const isImageUpload = file.type.startsWith("image/") || /\.(jpg|jpeg|png)$/i.test(file.name);
     if (isPassportPhoto && !isImageUpload) {
-      alert("Passport Size Photo ke liye sirf JPG, PNG, JPEG image upload karein.");
+      alert("Please upload only JPG, PNG, or JPEG images for passport photos.");
       return;
     }
 
@@ -173,7 +312,9 @@ export default function CustomerScanPage() {
     setCropRect({ x: 10, y: 10, width: 80, height: 80 });
     setOrder(null);
     setOrderError("");
+    setOptionsTouched(false);
     setPassportSheetUrl("");
+    resetPaymentFlow();
 
     if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
       const detectedPages = await detectPdfPages(file);
@@ -200,6 +341,7 @@ export default function CustomerScanPage() {
     setOrder(null);
     setOrderError("");
     setCropRect({ x: 10, y: 10, width: 80, height: 80 });
+    resetPaymentFlow();
   }
 
   async function applyImageCrop() {
@@ -223,7 +365,7 @@ export default function CustomerScanPage() {
         setPassportSheetUrl("");
       }
     } catch {
-      alert("Image crop nahi ho paya. Please image dobara upload karke try karein.");
+      alert("Could not crop the image. Please upload the image again and try.");
     }
   }
 
@@ -253,7 +395,7 @@ export default function CustomerScanPage() {
       setOrderError("");
       if (pdfDoc.getPageCount() <= 1) setIsPageManagerOpen(false);
     } catch {
-      alert("PDF page remove nahi ho paya. Please file dobara upload karke try karein.");
+      alert("Could not remove the PDF page. Please upload the file again and try.");
     } finally {
       setIsProcessingPdf(false);
     }
@@ -262,6 +404,7 @@ export default function CustomerScanPage() {
   async function createPrintOrder() {
     if (!finalFile || !selectedItem || !activeService) return;
 
+    setOptionsTouched(true);
     setIsSubmittingOrder(true);
     setOrderError("");
     try {
@@ -271,7 +414,7 @@ export default function CustomerScanPage() {
       formData.append("serviceKey", activeService.serviceKey);
       formData.append("priceItemId", selectedItem.id);
       formData.append("priceLabel", selectedItem.label);
-      formData.append("rate", String(selectedItem.rate));
+      formData.append("rate", String(selectedRate));
       formData.append("pages", String(isPassportPhoto ? 1 : pages));
       formData.append("copies", String(copies));
       formData.append("totalAmount", String(amount));
@@ -282,12 +425,58 @@ export default function CustomerScanPage() {
         body: formData,
       });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.message || "Order create nahi ho paya.");
+      if (!response.ok) throw new Error(result.message || "Could not create the order.");
       setOrder(result.order);
+      if (result.order?.paymentStatus === "pending" && paymentMode === "Online Payment") {
+        setPaymentStarted(true);
+        setPaymentMessage("Scan the QR code or open your UPI app. We will verify payment automatically.");
+      }
     } catch (submitError) {
-      setOrderError(submitError instanceof Error ? submitError.message : "Order create nahi ho paya.");
+      setOrderError(submitError instanceof Error ? submitError.message : "Could not create the order.");
     } finally {
       setIsSubmittingOrder(false);
+    }
+  }
+
+  async function checkUpiPayment(orderId: number) {
+    if (paymentCheckInFlightRef.current) return;
+
+    paymentCheckInFlightRef.current = true;
+    setIsCheckingPayment(true);
+    setOrderError("");
+    try {
+      const response = await fetch(apiUrl(`/api/public-orders/${orderId}/check-upi-payment/`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || "Could not verify the payment.");
+      if (result.order) setOrder(result.order);
+
+      if (result.order?.paymentStatus === "paid") {
+        setPaymentStarted(false);
+        setPaymentMessage("Payment received. Your document has been sent to the print queue.");
+      } else {
+        setPaymentMessage("Waiting for UPI payment confirmation...");
+      }
+    } catch (paymentError) {
+      setPaymentMessage("");
+      setOrderError(paymentError instanceof Error ? paymentError.message : "Could not verify the payment.");
+    } finally {
+      paymentCheckInFlightRef.current = false;
+      setIsCheckingPayment(false);
+    }
+  }
+
+  function openUpiApp() {
+    if (!upiLink || !order) return;
+
+    setPaymentStarted(true);
+    setPaymentMessage("Opening UPI app. Complete the payment, then keep this page open for confirmation.");
+    window.setTimeout(() => checkUpiPayment(order.id), 3000);
+    const opened = window.open(upiLink, "_blank", "noopener,noreferrer");
+    if (!opened) {
+      window.location.href = upiLink;
     }
   }
 
@@ -299,12 +488,30 @@ export default function CustomerScanPage() {
     try {
       const response = await fetch(apiUrl(`/api/public-orders/${order.id}/mark-paid/`), { method: "POST" });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.message || "Payment update nahi ho paya.");
+      if (!response.ok) throw new Error(result.message || "Could not update the payment.");
       setOrder(result.order);
     } catch (paymentError) {
-      setOrderError(paymentError instanceof Error ? paymentError.message : "Payment update nahi ho paya.");
+      setOrderError(paymentError instanceof Error ? paymentError.message : "Could not update the payment.");
     } finally {
       setIsSubmittingOrder(false);
+    }
+  }
+
+  async function deletePrintedDocument() {
+    if (!order) return;
+
+    setIsDeletingDocument(true);
+    setOrderError("");
+    try {
+      const response = await fetch(apiUrl(`/api/public-orders/${order.id}/delete-document/`), { method: "POST" });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.message || "Could not delete the document.");
+      setOrder(result.order);
+      setIsDeleteDocumentOpen(false);
+    } catch (deleteError) {
+      setOrderError(deleteError instanceof Error ? deleteError.message : "Could not delete the document.");
+    } finally {
+      setIsDeletingDocument(false);
     }
   }
 
@@ -328,46 +535,58 @@ export default function CustomerScanPage() {
     <main className="customer-portal">
       <section className="customer-shop-hero">
         <div className="customer-shop-overlay">
-          <div className="customer-logo">{data.shop.logo ? <img src={data.shop.logo} alt="" /> : data.shop.shopName.charAt(0)}</div>
-          <div>
-            <h1>{data.shop.shopName || "CafeMitra Cafe"}</h1>
-            <div className="customer-badges">
-              {data.status.verified ? (
-                <span>
-                  <BadgeCheck size={15} /> Verified
-                </span>
-              ) : null}
-              <span className={data.status.open ? "open" : "closed"}>{data.status.open ? "Open" : "Closed"}</span>
+          <div className="customer-shop-identity">
+            <div className="customer-shop-copy">
+              <h1>{data.shop.shopName || "CafeMitra Cafe"}</h1>
+              <div className="customer-badges">
+                <span className={data.status.open ? "open" : "closed"}>{data.status.open ? "Open" : "Closed"}</span>
+              </div>
             </div>
-            <p>{[data.shop.address, data.shop.city, data.shop.state].filter(Boolean).join(", ")}</p>
-            <a href={`tel:${data.shop.mobile}`}>
-              <Phone size={15} /> {data.shop.mobile || data.shop.whatsapp || "Call shop"}
-            </a>
           </div>
         </div>
       </section>
 
       <section className="customer-flow-grid">
-        <article className="customer-panel">
-          <h2>Select Service</h2>
-          <div className="customer-service-grid">
-            {data.services.map((service) => {
-              const Icon = serviceIcons[service.serviceKey] || FileText;
-              return (
-                <button className={selectedService === service.serviceKey ? "active" : ""} type="button" key={service.serviceKey} onClick={() => selectService(service)}>
-                  <Icon size={20} />
-                  <span>
-                    <strong>{service.serviceName}</strong>
-                    <small>{getServiceSummary(service)}</small>
-                  </span>
-                </button>
-              );
-            })}
+        <div className="customer-flow-guide" aria-label="Order steps">
+          <div className="customer-progress-summary">
+            <div>
+              <span>Step {activeStep} of {customerSteps.length}</span>
+              <strong>{progressPercent}% complete</strong>
+            </div>
+            <div className="customer-progress-track" aria-hidden="true">
+              <span style={{ width: `${progressPercent}%` }} />
+            </div>
           </div>
-        </article>
+        </div>
 
-        <article className="customer-panel">
-          <h2>Upload Document</h2>
+        {showServiceSelector ? (
+          <article className={`customer-panel ${activeStep === 1 ? "is-guided" : ""}`}>
+            <div className="customer-panel-head">
+              <span>Step 1</span>
+              <h2>Select Service</h2>
+            </div>
+            <div className="customer-service-grid">
+              {data.services.map((service) => {
+                const Icon = serviceIcons[service.serviceKey] || FileText;
+                return (
+                  <button className={selectedService === service.serviceKey ? "active" : ""} type="button" key={service.serviceKey} onClick={() => selectService(service)}>
+                    <Icon size={20} />
+                    <span>
+                      <strong>{service.serviceName}</strong>
+                      <small>{getServiceSummary(service)}</small>
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </article>
+        ) : null}
+
+        <article className={`customer-panel ${activeStep === (showServiceSelector ? 2 : 1) ? "is-guided" : ""}`}>
+          <div className="customer-panel-head">
+            <span>Step {showServiceSelector ? 2 : 1}</span>
+            <h2>Upload Document</h2>
+          </div>
           {hasUploadedFile ? (
             <div className="customer-document-preview">
               <div className="document-thumb">
@@ -379,6 +598,13 @@ export default function CustomerScanPage() {
               <div>
                 <strong>{fileName}</strong>
                 <span>{pages ? `${pages} page${pages > 1 ? "s" : ""} detected` : "Detecting pages..."}</span>
+                <p className="customer-inline-help">
+                  {hasPdfFile
+                    ? "If there is a wrong page, use Remove Page. Preview the file before continuing."
+                    : canCropImage
+                      ? "Use Crop if you only want to print a specific part of the image."
+                      : "Preview the file before continuing."}
+                </p>
                 <div className="document-actions">
                   {!onlyCropImage ? (
                     <button type="button" onClick={() => setIsPreviewOpen(true)}>
@@ -461,30 +687,46 @@ export default function CustomerScanPage() {
             <label className="customer-upload">
               <Upload size={24} />
               <strong>{isPassportPhoto ? "Upload Passport Photo" : "Upload PDF, JPG, PNG, JPEG"}</strong>
-              <span>{isPassportPhoto ? "JPG, PNG, JPEG image upload karo. Crop ke baad 6 pcs printable sheet banegi." : "Pages auto-detect honge. Upload ke baad thumbnail aur full preview milega."}</span>
+              <span>{isPassportPhoto ? "Upload a JPG, PNG, or JPEG image. A 6-piece printable sheet will be created after cropping." : "Pages will be detected automatically. You will see a thumbnail and full preview after upload."}</span>
+              <em>Tap to choose a file</em>
               <input accept={isPassportPhoto ? ".jpg,.jpeg,.png" : ".pdf,.jpg,.jpeg,.png"} type="file" onChange={(event) => handleUpload(event.target.files?.[0])} />
             </label>
           )}
         </article>
 
-        <article className="customer-panel customer-options-panel">
-          <h2>Print Options</h2>
-          <label>
+        <article className={`customer-panel customer-options-panel ${activeStep === (showServiceSelector ? 3 : 2) ? "is-guided" : ""}`}>
+          <div className="customer-panel-head">
+            <span>Step {showServiceSelector ? 3 : 2}</span>
+            <h2>Print Options</h2>
+          </div>
+          {/* <div className="customer-tip-row">
+            <Printer size={16} />
+            <span>{hasUploadedFile ? "Now confirm the print type, pages, and copies." : "After upload, you can edit pages and copies."}</span>
+          </div> */}
+          <div className="print-type-control">
             <span>{isPassportPhoto ? "Package" : "Charge Type"}</span>
-            <select
-              value={selectedItem?.id || ""}
-              onChange={(event) => {
-                setSelectedItemId(event.target.value);
-                resetOrderDraft();
-              }}
-            >
+            <div className="print-type-options">
               {priceItems.map((item) => (
-                <option value={item.id} key={item.id}>
-                  {item.label} - Rs. {item.rate}
-                </option>
+                <label className={selectedItem?.id === item.id ? "active" : ""} key={item.id}>
+                  <input
+                    checked={selectedItem?.id === item.id}
+                    name="print-type"
+                    type="radio"
+                    value={item.id}
+                    onChange={() => {
+                      setSelectedItemId(item.id);
+                      setOptionsTouched(true);
+                      resetOrderDraft();
+                    }}
+                  />
+                  <span>
+                    <strong>{item.label}</strong>
+                    <small>{formatPriceItem(item).replace(`${item.label} `, "")}</small>
+                  </span>
+                </label>
               ))}
-            </select>
-          </label>
+            </div>
+          </div>
           {!isPassportPhoto ? (
             <label>
               <span>Pages</span>
@@ -496,24 +738,52 @@ export default function CustomerScanPage() {
                 value={hasUploadedFile ? pages : ""}
                 onChange={(event) => {
                   setPages(Number(event.target.value || 1));
+                  setOptionsTouched(true);
                   resetOrderDraft();
                 }}
               />
             </label>
           ) : null}
-          <label>
+          <label className="copies-control">
             <span>{isPassportPhoto ? "Sets" : "Copies"}</span>
-            <input
-              disabled={!hasUploadedFile}
-              min="1"
-              placeholder="Upload document first"
-              type="number"
-              value={hasUploadedFile ? copies : ""}
-              onChange={(event) => {
-                setCopies(Number(event.target.value || 1));
-                resetOrderDraft();
-              }}
-            />
+            <div className="copies-stepper">
+              <button
+                aria-label="Decrease copies"
+                disabled={!hasUploadedFile || copies <= 1}
+                type="button"
+                onClick={() => {
+                  setCopies((current) => Math.max(1, current - 1));
+                  setOptionsTouched(true);
+                  resetOrderDraft();
+                }}
+              >
+                -
+              </button>
+              <input
+                disabled={!hasUploadedFile}
+                min="1"
+                placeholder="Upload document first"
+                type="number"
+                value={hasUploadedFile ? copies : ""}
+                onChange={(event) => {
+                  setCopies(Number(event.target.value || 1));
+                  setOptionsTouched(true);
+                  resetOrderDraft();
+                }}
+              />
+              <button
+                aria-label="Increase copies"
+                disabled={!hasUploadedFile}
+                type="button"
+                onClick={() => {
+                  setCopies((current) => current + 1);
+                  setOptionsTouched(true);
+                  resetOrderDraft();
+                }}
+              >
+                +
+              </button>
+            </div>
           </label>
           <label>
             <span>Payment Mode</span>
@@ -521,26 +791,28 @@ export default function CustomerScanPage() {
               value={paymentMode}
               onChange={(event) => {
                 setPaymentMode(event.target.value);
+                setOptionsTouched(true);
                 resetOrderDraft();
               }}
             >
               <option>Online Payment</option>
               <option>Cash Counter</option>
-              <option>UPI</option>
-              <option>Both</option>
             </select>
           </label>
         </article>
 
-        <article className="customer-panel customer-summary-panel">
-          <h2>Order Summary</h2>
+        <article className={`customer-panel customer-summary-panel ${activeStep === (showServiceSelector ? 4 : 3) ? "is-guided" : ""}`}>
+          <div className="customer-panel-head">
+            <span>Step {showServiceSelector ? 4 : 3}</span>
+            <h2>Order Summary</h2>
+          </div>
           <div className="customer-summary-row">
             <span>Service</span>
             <strong>{activeService?.serviceName}</strong>
           </div>
           <div className="customer-summary-row">
             <span>Rate</span>
-            <strong>{selectedItem?.label} Rs. {selectedItem?.rate}</strong>
+            <strong>{selectedItem?.label} Rs. {selectedRate}</strong>
           </div>
           <div className="customer-summary-row">
             <span>{isPassportPhoto ? "Package x Sets" : "Pages x Copies"}</span>
@@ -556,27 +828,55 @@ export default function CustomerScanPage() {
             <span>Total</span>
             <strong>Rs. {amount}</strong>
           </div>
+          {!hasUploadedFile ? <p className="customer-payment-help">The payment button will be active after upload.</p> : null}
           {order ? (
             <div className="order-created-box">
               <small>Order Created</small>
               <strong>{order.orderNumber}</strong>
-              {order.paymentStatus === "paid" || order.paymentStatus === "cash_counter" || order.status === "queued" ? (
+              {order.paymentStatus === "paid" || order.paymentStatus === "cash_counter" || order.status === "queued" || order.status === "printed" ? (
                 <div className="customer-token-card">
-                  <small>Your Token ID</small>
+                  <div className="customer-token-head">
+                    <small>Your Token ID</small>
+                    {canDeletePrintedDocument ? (
+                      <button type="button" onClick={() => setIsDeleteDocumentOpen(true)} aria-label="Delete printed document">
+                        <Trash2 size={16} />
+                      </button>
+                    ) : null}
+                  </div>
                   <strong>{order.tokenId}</strong>
                 </div>
               ) : null}
               <span>
                 {order.status === "awaiting_approval"
-                  ? "Cash counter approval pending hai. Cafe owner cash receive karke print approve karega."
+                  ? "Cash counter approval is pending. The cafe owner will approve the print after receiving cash."
+                  : order.documentDeleted
+                    ? "The document has been deleted. The token record is saved."
+                    : order.status === "printed"
+                      ? "Print is complete. You can delete the uploaded document if you want."
                   : order.paymentStatus === "paid" || order.status === "queued"
-                    ? "Print queue me bhej diya gaya."
-                    : "Payment pending hai."}
+                    ? "The order has been sent to the print queue."
+                    : "Payment is pending."}
               </span>
             </div>
           ) : null}
           {orderError ? <div className="profile-alert error">{orderError}</div> : null}
-          {order && order.paymentStatus === "pending" ? (
+          {isOnlinePaymentOrder ? (
+            <div className="upi-payment-box">
+              <div className="upi-payment-head">
+                <span>UPI Payment</span>
+                <strong>Rs. {order.totalAmount}</strong>
+              </div>
+              {upiQrDataUrl ? <img src={upiQrDataUrl} alt="UPI payment QR code" /> : <div className="upi-qr-placeholder">Generating QR...</div>}
+              <p>Pay for {order.orderNumber}. Printing will start after payment confirmation.</p>
+              {paymentMessage ? <small>{paymentMessage}</small> : null}
+              <button type="button" onClick={openUpiApp} disabled={!upiLink || isSubmittingOrder}>
+                <Wallet size={18} /> Open UPI App
+              </button>
+              <button className="secondary-action" type="button" onClick={() => checkUpiPayment(order.id)} disabled={isCheckingPayment}>
+                {isCheckingPayment ? "Checking..." : "I have paid, check now"}
+              </button>
+            </div>
+          ) : order && order.paymentStatus === "pending" ? (
             <button type="button" onClick={markOrderPaid} disabled={isSubmittingOrder}>
               <Wallet size={18} /> {isSubmittingOrder ? "Processing..." : "Pay Now"}
             </button>
@@ -588,17 +888,48 @@ export default function CustomerScanPage() {
         </article>
       </section>
 
+      {isDeleteDocumentOpen ? (
+        <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Delete printed document">
+          <div className="confirm-dialog">
+            <div className="confirm-dialog-icon">
+              <Trash2 size={22} />
+            </div>
+            <h2>Are you sure want to delete?</h2>
+            <p>The printed document will be permanently deleted. The token ID and order record will stay saved.</p>
+            <div className="confirm-dialog-actions">
+              <button type="button" onClick={() => setIsDeleteDocumentOpen(false)} disabled={isDeletingDocument}>
+                Cancel
+              </button>
+              <button type="button" onClick={deletePrintedDocument} disabled={isDeletingDocument}>
+                {isDeletingDocument ? "Deleting..." : "OK, Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {isPreviewOpen ? (
         <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Document preview">
           <div className="document-preview-window">
             <div className="document-preview-head">
-              <strong>{fileName}</strong>
+              <div>
+                <strong>{fileName}</strong>
+                <span>{pages ? `${pages} page${pages > 1 ? "s" : ""}` : "Preview"}</span>
+              </div>
               <button type="button" onClick={() => setIsPreviewOpen(false)} aria-label="Close preview">
                 <X size={18} />
               </button>
             </div>
             <div className="document-preview-body">
               {isImageFile(fileType, fileName) ? <img src={fileUrl} alt="" /> : <iframe src={fileUrl} title={fileName} />}
+            </div>
+            <div className="document-preview-actions">
+              <button type="button" onClick={() => setIsPreviewOpen(false)}>
+                <X size={16} /> Close Preview
+              </button>
+              <button type="button" onClick={clearUpload}>
+                <Trash2 size={16} /> Remove File
+              </button>
             </div>
           </div>
         </div>
@@ -648,7 +979,7 @@ export default function CustomerScanPage() {
             <div className="crop-body">
               <CropEditor fileUrl={fileUrl} rect={cropRect} onRectChange={setCropRect} />
               <div className="crop-controls">
-                <p>Corner ya edge drag karke print area resize karo. Box ke andar drag karke crop area move karo.</p>
+                <p>Drag a corner or edge to resize the print area. Drag inside the box to move the crop area.</p>
                 <button type="button" onClick={() => setCropRect({ x: 10, y: 10, width: 80, height: 80 })}>
                   Reset Crop
                 </button>
@@ -670,7 +1001,29 @@ function getPriceItems(service?: PricingService) {
 
 function getServiceSummary(service: PricingService) {
   const items = getPriceItems(service);
-  return items.length ? items.map((item) => `${item.label} Rs. ${item.rate}`).join(" | ") : "Pricing not set";
+  return items.length ? items.map(formatPriceItem).join(" | ") : "Pricing not set";
+}
+
+function getUpiTransactionRef(order: PrintOrder) {
+  return `${order.orderNumber}`.replace(/[^A-Za-z0-9]/g, "").slice(0, 35);
+}
+
+function buildUpiLink(order: PrintOrder, shopName: string) {
+  const transactionRef = getUpiTransactionRef(order);
+  const params = new URLSearchParams({
+    pa: "8298972939@okbizaxis",
+    pn: shopName || "Repetigo Print",
+    mc: "5944",
+    aid: "uGICAgICTie7ceg",
+    ver: "01",
+    mode: "01",
+    tr: transactionRef,
+    am: order.totalAmount.toFixed(2),
+    cu: "INR",
+    tn: transactionRef,
+  });
+
+  return `upi://pay?${params.toString()}`;
 }
 
 function isImageFile(fileType: string, fileName: string) {

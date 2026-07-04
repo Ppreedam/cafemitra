@@ -24,7 +24,6 @@ import {
   LogOut,
   Menu,
   MessageCircle,
-  MonitorDown,
   Play,
   Plus,
   Printer,
@@ -40,7 +39,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { clearSession } from "@/lib/api";
-import { fetchPricingServices, savePricingService, type PriceItem } from "@/lib/pricing";
+import { calculatePriceItemRate, fetchPricingServices, formatPriceItem, savePricingService, type PriceItem, type PriceRange } from "@/lib/pricing";
+import { fallbackPrinters, fetchAgentHealth, runAgentTestPrint, saveAgentPrinter, type AgentHealth } from "@/lib/printpilot-agent";
+import { DashboardShell } from "../DashboardShell";
 
 type NavItem = {
   name: string;
@@ -55,23 +56,10 @@ type NavGroup = {
 };
 
 type SetupStep = {
-  key: "agent" | "verify" | "printer" | "pricing" | "qr" | "test" | "live";
+  key: "verify" | "printer" | "pricing" | "qr" | "test" | "live";
   title: string;
   helper: string;
   icon: LucideIcon;
-};
-
-type AgentHealth = {
-  app?: string;
-  status?: "running" | "stopped";
-  account?: string;
-  printer?: string;
-  mockMode?: boolean;
-  printers?: string[];
-  apiBaseUrl?: string;
-  lastCheckAt?: string;
-  lastJob?: string;
-  lastJobCount?: number;
 };
 
 const navGroups: NavGroup[] = [
@@ -104,16 +92,13 @@ const navGroups: NavGroup[] = [
 ];
 
 const setupSteps: SetupStep[] = [
-  { key: "agent", title: "Install Agent", helper: "Download EXE and install on shop PC", icon: MonitorDown },
-  { key: "verify", title: "Verify Agent", helper: "Check local agent connection", icon: ShieldCheck },
+  { key: "verify", title: "Verify C# Agent", helper: "Check local C# agent connection", icon: ShieldCheck },
   { key: "printer", title: "Select Printer", helper: "Choose default PrintPilot printer", icon: Printer },
   { key: "pricing", title: "Pricing", helper: "Set BW, color, and minimum order", icon: Wallet },
   { key: "qr", title: "QR Setup", helper: "Generate PrintPilot customer QR", icon: QrCode },
   { key: "test", title: "Test Print", helper: "Send a demo page to printer", icon: Play },
   { key: "live", title: "Go Live", helper: "Enable PrintPilot orders", icon: CheckCircle2 },
 ];
-
-const fallbackPrinters = ["Microsoft Print to PDF", "Fax"];
 
 const queue = [
   { file: "Aadhaar.pdf", pages: 3, amount: "Rs. 6", status: "Printed", tone: "#16b978" },
@@ -126,10 +111,9 @@ const paymentModes = ["No Payment", "Online Payment", "Cash Counter", "Both"];
 
 export default function AutoPrintPage() {
   const [activeStep, setActiveStep] = useState(0);
-  const [agentInstalled, setAgentInstalled] = useState(false);
   const [agentConnected, setAgentConnected] = useState(false);
   const [agentHealth, setAgentHealth] = useState<AgentHealth | null>(null);
-  const [agentMessage, setAgentMessage] = useState("Click Retry to check the local PrintPilot Agent.");
+  const [agentMessage, setAgentMessage] = useState("Click Retry to check the local PrintPilot C# Agent.");
   const [isVerifyingAgent, setIsVerifyingAgent] = useState(false);
   const [availablePrinters, setAvailablePrinters] = useState<string[]>(fallbackPrinters);
   const [selectedPrinter, setSelectedPrinter] = useState(fallbackPrinters[0]);
@@ -150,24 +134,31 @@ export default function AutoPrintPage() {
   const [qrUrl, setQrUrl] = useState("");
   const [qrImage, setQrImage] = useState("");
   const [testStatus, setTestStatus] = useState<"idle" | "printing" | "success">("idle");
+  const [testPrintMessage, setTestPrintMessage] = useState("");
+  const [testPrintError, setTestPrintError] = useState("");
   const [autoPrintLive, setAutoPrintLive] = useState(false);
+  const printerReady = Boolean(selectedPrinter);
+  const pricingReady = priceItems.length > 0;
+  const qrSetupReady = qrReady || Boolean(qrUrl);
+  const testPrintReady = testStatus === "success" || (agentConnected && printerReady);
+  const printPilotActive = autoPrintLive || (agentConnected && printerReady);
+  const stepCompletion = {
+    verify: agentConnected,
+    printer: printerReady,
+    pricing: pricingReady,
+    qr: qrSetupReady,
+    test: testPrintReady,
+    live: printPilotActive,
+  };
 
   const completedCount = useMemo(() => {
-    return [
-      agentInstalled,
-      agentConnected,
-      Boolean(selectedPrinter),
-      priceItems.length > 0,
-      qrReady,
-      testStatus === "success",
-      autoPrintLive,
-    ].filter(Boolean).length;
-  }, [agentConnected, agentInstalled, autoPrintLive, priceItems.length, qrReady, selectedPrinter, testStatus]);
+    return Object.values(stepCompletion).filter(Boolean).length;
+  }, [stepCompletion]);
 
   const progress = `${(completedCount / setupSteps.length) * 100}%`;
   const currentStep = setupSteps[activeStep];
   const CurrentStepIcon = currentStep.icon;
-  const samplePrice = Number(priceItems[0]?.rate || 0) * 5;
+  const samplePrice = calculatePriceItemRate(priceItems[0], 5) * 5;
 
   useEffect(() => {
     const storedUser = readJson<{ id?: string }>("cafemitra_user");
@@ -190,6 +181,11 @@ export default function AutoPrintPage() {
     verifyAgent({ silent: true });
   }, []);
 
+  useEffect(() => {
+    if (currentStep.key !== "qr" || !qrUrl || qrImage) return;
+    generateQr({ copyToClipboard: false }).catch(() => undefined);
+  }, [currentStep.key, qrImage, qrUrl]);
+
   async function verifyAgent(options: { silent?: boolean } = {}) {
     if (!options.silent) {
       setIsVerifyingAgent(true);
@@ -199,7 +195,6 @@ export default function AutoPrintPage() {
     try {
       const health = await fetchAgentHealth();
       const connected = health.status === "running";
-      setAgentInstalled(true);
       setAgentConnected(connected);
       setAgentHealth(health);
 
@@ -214,22 +209,41 @@ export default function AutoPrintPage() {
 
       setAgentMessage(
         connected
-          ? `Connected${health.account ? ` as ${health.account}` : ""}${health.printer ? ` on ${health.printer}` : ""}${health.mockMode ? " in mock test mode" : ""}.`
-          : "Agent found, but it is stopped. Click Start Agent in the desktop app.",
+          ? `C# Agent connected${health.account ? ` as ${health.account}` : ""}${health.printer ? ` on ${health.printer}` : ""}.`
+          : "C# Agent found, but it is stopped. Click Start Agent in the desktop app.",
       );
     } catch {
-      setAgentInstalled(false);
       setAgentConnected(false);
       setAgentHealth(null);
-      setAgentMessage("Agent not found. Open CafeMitra PrintPilot Agent, login, then click Start Agent.");
+      setAgentMessage("C# Agent not found. Open PrintPilotAgent.CSharp, login, select printer, then click Start Agent.");
     } finally {
       setIsVerifyingAgent(false);
     }
   }
 
-  function runTestPrint() {
+  async function runTestPrint() {
+    setTestPrintMessage("");
+    setTestPrintError("");
     setTestStatus("printing");
-    window.setTimeout(() => setTestStatus("success"), 800);
+    try {
+      const image = qrImage || (await createQrImage(qrUrl));
+      if (!qrImage) {
+        setQrImage(image);
+        setQrReady(true);
+      }
+      const result = await runAgentTestPrint({
+        printer: selectedPrinter,
+        shopName,
+        shopCode,
+        qrUrl,
+        qrImage: image,
+      });
+      setTestStatus("success");
+      setTestPrintMessage(result.message || `QR test page sent to ${result.printer || selectedPrinter}.`);
+    } catch (error) {
+      setTestStatus("idle");
+      setTestPrintError(error instanceof Error ? error.message : "Could not run test print. Is the PrintPilot Agent running?");
+    }
   }
 
   async function savePrinter() {
@@ -243,6 +257,7 @@ export default function AutoPrintPage() {
       setSelectedPrinter(result.printer || selectedPrinter);
       setPrinterMessage(`Printer saved: ${result.printer || selectedPrinter}${result.mockMode ? " (Mock Test Mode)" : ""}`);
       await verifyAgent({ silent: true });
+      window.dispatchEvent(new Event("cafemitra:printers-updated"));
     } catch (error) {
       setPrinterError(error instanceof Error ? error.message : "Could not save printer. Is the PrintPilot Agent running?");
     } finally {
@@ -278,20 +293,56 @@ export default function AutoPrintPage() {
     );
   }
 
+  function addPriceRange(itemId: string) {
+    setPriceItems((current) =>
+      current.map((item) => {
+        if (item.id !== itemId) return item;
+        const ranges = item.ranges || [];
+        const nextMin = ranges.length ? Number(ranges[ranges.length - 1].maxPages || ranges[ranges.length - 1].minPages) + 1 : 1;
+        return {
+          ...item,
+          ranges: [...ranges, { id: `${Date.now()}-${ranges.length + 1}`, minPages: nextMin, maxPages: undefined, rate: item.rate }],
+        };
+      }),
+    );
+  }
+
+  function updatePriceRange(itemId: string, rangeId: string, field: keyof PriceRange, value: string) {
+    setPriceItems((current) =>
+      current.map((item) =>
+        item.id === itemId
+          ? {
+              ...item,
+              ranges: (item.ranges || []).map((range) =>
+                range.id === rangeId
+                  ? {
+                      ...range,
+                      [field]: field === "maxPages" && value === "" ? undefined : Number(value || 0),
+                    }
+                  : range,
+              ),
+            }
+          : item,
+      ),
+    );
+  }
+
+  function removePriceRange(itemId: string, rangeId: string) {
+    setPriceItems((current) =>
+      current.map((item) => (item.id === itemId ? { ...item, ranges: (item.ranges || []).filter((range) => range.id !== rangeId) } : item)),
+    );
+  }
+
   function removePriceItem(itemId: string) {
     setPriceItems((current) => (current.length > 1 ? current.filter((item) => item.id !== itemId) : current));
   }
 
-  async function generateQr() {
-    const image = await QRCode.toDataURL(qrUrl, {
-      width: 512,
-      margin: 2,
-      errorCorrectionLevel: "H",
-      color: { dark: "#111a44", light: "#ffffff" },
-    });
+  async function generateQr(options: { copyToClipboard?: boolean } = {}) {
+    const image = await createQrImage(qrUrl);
     setQrImage(image);
     setQrReady(true);
-    if (qrUrl) navigator.clipboard?.writeText(qrUrl).catch(() => undefined);
+    if (options.copyToClipboard !== false && qrUrl) navigator.clipboard?.writeText(qrUrl).catch(() => undefined);
+    return image;
   }
 
   function downloadQr() {
@@ -304,15 +355,6 @@ export default function AutoPrintPage() {
     URL.revokeObjectURL(link.href);
   }
 
-  function printPoster() {
-    const popup = window.open("", "_blank", "width=720,height=900");
-    if (!popup) return;
-    popup.document.write(`<html><head><title>${shopCode} QR Poster</title></head><body style="margin:0">${buildQrPosterSvg(shopName, shopCode, qrUrl, qrImage)}</body></html>`);
-    popup.document.close();
-    popup.focus();
-    popup.print();
-  }
-
   function shareQr() {
     if (navigator.share) {
       navigator.share({ title: `${shopName} PrintPilot QR`, text: "Upload. Pay. Print.", url: qrUrl }).catch(() => undefined);
@@ -322,139 +364,22 @@ export default function AutoPrintPage() {
   }
 
   return (
-    <main className="app-frame">
-      <aside className="sidebar">
-        <Link className="brand" href="/">
-          <span className="brand-main">
-            Cafe<span className="brand-accent">Mitra</span>
-          </span>
-          <span className="brand-dot">.online</span>
-        </Link>
-
-        <nav className="side-nav" aria-label="Dashboard navigation">
-          {navGroups.map((group, index) => (
-            <div key={`${group.label}-${index}`}>
-              {group.label ? <div className="nav-label">{group.label}</div> : null}
-              {group.items.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link className={`side-link ${item.active ? "active" : ""}`} href={item.href ?? "#"} key={item.name}>
-                    <Icon size={17} />
-                    <span>{item.name}</span>
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
-        </nav>
-
-        <div className="help-box">
-          <div className="help-avatar">
-            <UserRound size={21} />
-          </div>
-          <strong>Need Help?</strong>
-          <p>We are here to assist you.</p>
-          <Link className="btn" href="#">
-            <CircleHelp size={15} /> Contact Support
-          </Link>
-        </div>
-      </aside>
-
-      <section className="app-main">
-        <header className="topbar">
-          <div className="topbar-left">
-            <Link href="/" aria-label="Open menu">
-              <Menu size={22} />
-            </Link>
-          </div>
-          <div className="topbar-right">
-            <div className="business-switcher">
-              <Building2 size={17} />
-              Cyber Cafe Shankar
-              <ChevronDown size={15} />
-            </div>
-            <details className="printer-menu">
-              <summary>
-                <Printer size={17} />
-                <span className={`printer-dot ${agentConnected ? "online" : "offline"}`} />
-                <span>{selectedPrinter}</span>
-                <small>{agentConnected ? "Connected" : "Offline"}</small>
-                <ChevronDown size={14} />
-              </summary>
-              <div className="printer-dropdown">
-                {availablePrinters.map((printer, index) => (
-                  <button className="printer-option printer-option-button" key={printer} type="button" onClick={() => setSelectedPrinter(printer)}>
-                    <span className={`printer-dot ${index === 1 ? "offline" : "online"}`} />
-                    <div>
-                      <strong>{printer}</strong>
-                      <small>{index === 1 ? "Disconnected" : "Connected"}</small>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </details>
-            <div className="notification-dot">
-              <Bell size={23} />
-            </div>
-            <details className="profile-menu">
-              <summary className="user-menu">
-                <span className="avatar">S</span>
-                <span>
-                  <strong>Shankar Kumar</strong>
-                  <small style={{ display: "block", color: "#697397" }}>Owner</small>
-                </span>
-                <ChevronDown size={15} />
-              </summary>
-              <div className="profile-dropdown">
-                <div className="profile-head">
-                  <span className="profile-photo">S</span>
-                  <div>
-                    <strong>Shankar Kumar</strong>
-                    <span>sk6201184579@gmail.com</span>
-                    <span>Balance: 0</span>
-                    <span>User ID: 204927</span>
-                  </div>
-                </div>
-                <div className="profile-list">
-                  <Link href="/dashboard">
-                    <Bookmark size={18} /> Dashboard
-                  </Link>
-                  <Link href="/profile">
-                    <UserRound size={18} /> My Profile
-                  </Link>
-                  <Link href="/auto-print">
-                    <Printer size={18} /> PrintPilot Setup
-                  </Link>
-                  <Link href="/pricing-settings">
-                    <Settings size={18} /> Pricing & Settings
-                  </Link>
-                  <Link href="#">
-                    <Landmark size={18} /> Withdraw
-                  </Link>
-                  <Link href="/login" onClick={clearSession}>
-                    <LogOut size={18} /> Sign Out
-                  </Link>
-                </div>
-              </div>
-            </details>
-          </div>
-        </header>
-
-        <div className="dashboard auto-print-dashboard">
+    <DashboardShell activePath="/auto-print">
+      <div className="dashboard auto-print-dashboard">
           <div className="dashboard-hero auto-print-hero">
             <div>
               <span className="auto-print-kicker">CafeMitra PrintPilot</span>
               <h1>PrintPilot Setup</h1>
-              <p>Upload. Pay. Print. Customer QR scan karega, document upload karega, payment karega, aur PrintPilot printer par job bhej dega.</p>
+              <p>Upload. Pay. Print. Customers scan the QR, upload a document, complete payment, and send the job to the PrintPilot printer.</p>
             </div>
-            <span className={`status-pill ${autoPrintLive ? "" : "warning"}`}>{autoPrintLive ? "PrintPilot Active" : "Setup in Progress"}</span>
+            <span className={`status-pill ${printPilotActive ? "" : "warning"}`}>{printPilotActive ? "PrintPilot Active" : "Setup in Progress"}</span>
           </div>
 
           <section className="auto-print-layout" aria-label="PrintPilot setup wizard">
             <aside className="panel setup-wizard-panel">
               <div className="setup-progress-header">
                 <div>
-                  <strong>{completedCount}/7 ready</strong>
+                  <strong>{completedCount}/{setupSteps.length} ready</strong>
                   <span>MVP setup progress</span>
                 </div>
                 <span>{Math.round((completedCount / setupSteps.length) * 100)}%</span>
@@ -465,14 +390,7 @@ export default function AutoPrintPage() {
               <div className="wizard-step-list">
                 {setupSteps.map((step, index) => {
                   const Icon = step.icon;
-                  const complete =
-                    (step.key === "agent" && agentInstalled) ||
-                    (step.key === "verify" && agentConnected) ||
-                    (step.key === "printer" && Boolean(selectedPrinter)) ||
-                    (step.key === "pricing" && priceItems.length > 0) ||
-                    (step.key === "qr" && qrReady) ||
-                    (step.key === "test" && testStatus === "success") ||
-                    (step.key === "live" && autoPrintLive);
+                  const complete = stepCompletion[step.key];
 
                   return (
                     <button
@@ -506,36 +424,16 @@ export default function AutoPrintPage() {
                 </span>
               </div>
 
-              {currentStep.key === "agent" ? (
-                <div className="wizard-action-content">
-                  <div className="agent-card">
-                    <MonitorDown size={34} />
-                    <div>
-                      <strong>CafeMitra PrintPilot Agent</strong>
-                      <span className={`agent-status ${agentInstalled ? "success" : "danger"}`}>
-                        {agentInstalled ? "Installed" : "Not Installed"}
-                      </span>
-                    </div>
-                  </div>
-                  <ol className="compact-steps">
-                    <li>Download EXE</li>
-                    <li>Run as Administrator</li>
-                    <li>Install and keep it running</li>
-                  </ol>
-                  <button className="btn btn-primary" type="button" onClick={() => setAgentInstalled(true)}>
-                    <Download size={16} /> Download Agent
-                  </button>
-                </div>
-              ) : null}
-
               {currentStep.key === "verify" ? (
                 <div className="wizard-action-content">
                   <div className={`connection-result ${agentConnected ? "success" : "danger"}`}>
                     <span />
-                    <strong>{agentConnected ? "Agent Connected" : agentHealth ? "Agent Stopped" : "Agent Not Found"}</strong>
+                    <strong>{agentConnected ? "C# Agent Connected" : agentHealth ? "C# Agent Stopped" : "C# Agent Not Found"}</strong>
                     <p>{agentMessage}</p>
                     {agentHealth ? (
                       <p>
+                        {agentHealth.app ? `App: ${agentHealth.app}` : ""}
+                        {agentHealth.app && agentHealth.apiBaseUrl ? " | " : ""}
                         {agentHealth.apiBaseUrl ? `API: ${agentHealth.apiBaseUrl}` : ""}
                         {agentHealth.lastCheckAt ? ` | Last check: ${agentHealth.lastCheckAt}` : ""}
                       </p>
@@ -579,17 +477,50 @@ export default function AutoPrintPage() {
                   <div className="price-item-list">
                     {priceItems.map((item) => (
                       <div className="price-item-row" key={item.id}>
-                        <label className="auto-field">
-                          <span>Charge For</span>
-                          <input value={item.label} onChange={(event) => updatePriceItem(item.id, "label", event.target.value)} />
-                        </label>
-                        <label className="auto-field">
-                          <span>Price</span>
-                          <input min="0" type="number" value={item.rate} onChange={(event) => updatePriceItem(item.id, "rate", event.target.value)} />
-                        </label>
-                        <button className="icon-action-btn danger" type="button" onClick={() => removePriceItem(item.id)} aria-label="Remove price item">
-                          <Trash2 size={17} />
-                        </button>
+                        <div className="price-item-main">
+                          <label className="auto-field">
+                            <span>Charge For</span>
+                            <input value={item.label} onChange={(event) => updatePriceItem(item.id, "label", event.target.value)} />
+                          </label>
+                          <label className="auto-field">
+                            <span>Base Price</span>
+                            <input min="0" type="number" value={item.rate} onChange={(event) => updatePriceItem(item.id, "rate", event.target.value)} />
+                          </label>
+                          <button className="icon-action-btn danger" type="button" onClick={() => removePriceItem(item.id)} aria-label="Remove price item">
+                            <Trash2 size={17} />
+                          </button>
+                        </div>
+                        <details className="price-range-panel" open={(item.ranges || []).length > 0}>
+                          <summary>
+                            <span>Page ranges</span>
+                            <small>{(item.ranges || []).length ? `${(item.ranges || []).length} active` : "General price applies"}</small>
+                          </summary>
+                          {(item.ranges || []).map((range) => (
+                            <div className="price-range-row" key={range.id}>
+                              <label className="auto-field">
+                                <span>From</span>
+                                <input min="1" type="number" value={range.minPages} onChange={(event) => updatePriceRange(item.id, range.id, "minPages", event.target.value)} />
+                              </label>
+                              <label className="auto-field">
+                                <span>To</span>
+                                <input min="1" placeholder="Up" type="number" value={range.maxPages ?? ""} onChange={(event) => updatePriceRange(item.id, range.id, "maxPages", event.target.value)} />
+                              </label>
+                              <label className="auto-field">
+                                <span>Per Page</span>
+                                <input min="0" type="number" value={range.rate} onChange={(event) => updatePriceRange(item.id, range.id, "rate", event.target.value)} />
+                              </label>
+                              <button className="icon-action-btn danger" type="button" onClick={() => removePriceRange(item.id, range.id)} aria-label="Remove page range">
+                                <Trash2 size={15} />
+                              </button>
+                            </div>
+                          ))}
+                          <div className="price-range-footer">
+                            <small>{formatPriceItem(item)}</small>
+                            <button type="button" onClick={() => addPriceRange(item.id)}>
+                              <Plus size={14} /> Add range
+                            </button>
+                          </div>
+                        </details>
                       </div>
                     ))}
                   </div>
@@ -610,52 +541,30 @@ export default function AutoPrintPage() {
 
               {currentStep.key === "qr" ? (
                 <div className="wizard-action-content qr-action">
-                  <div className="qr-preview real-qr-preview" aria-label="Generated shop QR preview">
-                    {qrImage ? (
-                      <>
-                        <img src={qrImage} alt="Shop QR code" />
-                        <span className="qr-brand-badge">
-                          Cafe<span>Mitra</span>
-                        </span>
-                      </>
-                    ) : (
-                      <QrCode size={96} />
-                    )}
-                  </div>
-                  <div>
-                    <strong>Generate PrintPilot QR</strong>
-                    {/* <p>Customer is QR se upload, price, payment aur order status flow open karega.</p> */}
-                    {qrUrl.includes("localhost") || qrUrl.includes("127.0.0.1") ? (
-                      <div className="profile-alert error">
-                        Phone se scan karne ke liye localhost ki jagah deployed URL ya same Wi-Fi LAN IP use karo.
-                      </div>
-                    ) : null}
-                    <div className="qr-url-box">
+                  <div className="qr-card">
+                    <div className="qr-card-header">
+                      <strong>PrintPilot QR Ready</strong>
                       <span>{shopCode}</span>
-                      <input value={qrUrl} onChange={(event) => {
-                        setQrUrl(event.target.value);
-                        setQrReady(false);
-                        setQrImage("");
-                      }} />
+                    </div>
+                    <div className="qr-preview real-qr-preview" aria-label="Generated shop QR preview">
+                      {qrImage ? (
+                        <>
+                          <img src={qrImage} alt="Shop QR code" />
+                          <span className="qr-brand-badge">
+                            <span className="brand-repeti">Repeti</span><span className="brand-go">GO</span>
+                          </span>
+                        </>
+                      ) : (
+                        <QrCode size={140} />
+                      )}
                     </div>
                     <div className="qr-buttons">
-                      <button className="btn btn-primary" type="button" onClick={generateQr}>
-                        <QrCode size={16} /> Generate QR
-                      </button>
-                      <button className="btn" disabled={!qrReady} type="button" onClick={downloadQr}>
+                      <button className="btn btn-primary" disabled={!qrReady} type="button" onClick={downloadQr}>
                         <Download size={16} /> Download
-                      </button>
-                      <button className="btn" disabled={!qrReady} type="button" onClick={printPoster}>
-                        <Printer size={16} /> Print Poster
                       </button>
                       <button className="btn" disabled={!qrReady} type="button" onClick={shareQr}>
                         <Share2 size={16} /> Share
                       </button>
-                    </div>
-                    <div className="qr-analytics-grid">
-                      <div><small>Total Scans</small><strong>{qrReady ? 42 : 0}</strong></div>
-                      <div><small>Orders Created</small><strong>{qrReady ? 12 : 0}</strong></div>
-                      <div><small>Conversion Rate</small><strong>{qrReady ? "28%" : "0%"}</strong></div>
                     </div>
                   </div>
                 </div>
@@ -663,23 +572,24 @@ export default function AutoPrintPage() {
 
               {currentStep.key === "test" ? (
                 <div className="wizard-action-content">
-                  <div className={`connection-result ${testStatus === "success" ? "success" : "info"}`}>
+                  <div className={`connection-result ${testPrintReady ? "success" : "info"}`}>
                     <span />
-                    <strong>{testStatus === "printing" ? "Printing Demo Page..." : testStatus === "success" ? "Test Print Successful" : "Ready for test print"}</strong>
-                    <p>Demo page selected printer par bheji jayegi: {selectedPrinter}.</p>
+                    <strong>{testStatus === "printing" ? "Sending QR Test Page..." : testStatus === "success" ? "QR Test Print Sent" : testPrintReady ? "Test Print Ready" : "Ready for test print"}</strong>
+                    <p>{testStatus === "success" ? testPrintMessage : testPrintReady ? `The generated shop QR will print on ${selectedPrinter}.` : `The generated shop QR will be sent to the selected printer: ${selectedPrinter}.`}</p>
                   </div>
-                  <button className="btn btn-primary" type="button" onClick={runTestPrint}>
-                    <Play size={16} /> Run Test Print
+                  {testPrintError ? <div className="profile-alert error">{testPrintError}</div> : null}
+                  <button className="btn btn-primary" type="button" onClick={runTestPrint} disabled={!selectedPrinter || testStatus === "printing"}>
+                    <Play size={16} /> {testStatus === "printing" ? "Sending..." : "Run Test Print"}
                   </button>
                 </div>
               ) : null}
 
               {currentStep.key === "live" ? (
                 <div className="wizard-action-content">
-                  <div className={`connection-result ${autoPrintLive ? "success" : "info"}`}>
+                  <div className={`connection-result ${printPilotActive ? "success" : "info"}`}>
                     <span />
-                    <strong>{autoPrintLive ? "PrintPilot Active" : "Shop Ready"}</strong>
-                    <p>Go Live ke baad paid customer orders PrintPilot queue me aana shuru honge.</p>
+                    <strong>{printPilotActive ? "PrintPilot Active" : "Shop Ready"}</strong>
+                    <p>{printPilotActive ? "Verified agent and printer can receive paid customer orders." : "After Go Live, paid customer orders will start appearing in the PrintPilot queue."}</p>
                   </div>
                   <button className="btn btn-primary" type="button" onClick={() => setAutoPrintLive(true)}>
                     <CheckCircle2 size={16} /> Go Live
@@ -739,7 +649,7 @@ export default function AutoPrintPage() {
             <div className="panel-title-row compact">
               <div>
                 <h2>PrintPilot Queue</h2>
-                <p>Pending, printing, completed aur failed jobs ka live view.</p>
+                <p>Live view of pending, printing, completed, and failed jobs.</p>
               </div>
               <button className="btn" type="button">
                 <RefreshCw size={16} /> Refresh
@@ -759,9 +669,8 @@ export default function AutoPrintPage() {
               ))}
             </div>
           </section>
-        </div>
-      </section>
-    </main>
+      </div>
+    </DashboardShell>
   );
 }
 
@@ -773,78 +682,38 @@ function readJson<T>(key: string): Partial<T> {
   }
 }
 
-async function fetchAgentHealth() {
-  const endpoints = ["http://127.0.0.1:8765/status", "http://localhost:8765/status"];
-  let lastError: unknown;
-
-  for (const endpoint of endpoints) {
-    const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 2000);
-    try {
-      const response = await fetch(endpoint, {
-        cache: "no-store",
-        signal: controller.signal,
-      });
-      if (!response.ok) {
-        throw new Error("Agent health check failed.");
-      }
-      return (await response.json()) as AgentHealth;
-    } catch (error) {
-      lastError = error;
-    } finally {
-      window.clearTimeout(timeout);
-    }
-  }
-
-  throw lastError instanceof Error ? lastError : new Error("Agent health check failed.");
-}
-
-async function saveAgentPrinter(printerName: string) {
-  const endpoints = ["http://127.0.0.1:8765/settings", "http://localhost:8765/settings"];
-  let lastError: unknown;
-
-  for (const endpoint of endpoints) {
-    const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 2000);
-    try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ printerName }),
-        signal: controller.signal,
-      });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) {
-        throw new Error(result.message || "Could not save printer.");
-      }
-      return result as { message?: string; printer?: string; mockMode?: boolean; printers?: string[] };
-    } catch (error) {
-      lastError = error;
-    } finally {
-      window.clearTimeout(timeout);
-    }
-  }
-
-  throw lastError instanceof Error ? lastError : new Error("Could not save printer.");
+function createQrImage(value: string) {
+  return QRCode.toDataURL(value, {
+    width: 512,
+    margin: 2,
+    errorCorrectionLevel: "H",
+    color: { dark: "#111a44", light: "#ffffff" },
+  });
 }
 
 function buildQrPosterSvg(shopName: string, shopCode: string, qrUrl: string, qrImage: string) {
   const qrMarkup = qrImage
-    ? `<image href="${qrImage}" x="190" y="190" width="340" height="340"/>
-       <rect x="286" y="342" width="148" height="40" rx="12" fill="#ffffff" stroke="#e6e9f6"/>
-       <text x="360" y="368" text-anchor="middle" font-family="Arial" font-size="20" font-weight="900" fill="#0d1748">Cafe<tspan fill="#ff7b1a">Mitra</tspan></text>`
-    : `<rect x="190" y="190" width="340" height="340" rx="18" fill="#111a44"/>`;
+    ? `<image href="${qrImage}" x="180" y="244" width="360" height="360"/>
+       <rect x="268" y="405" width="184" height="44" rx="22" fill="#ffffff" stroke="#0d1748" stroke-width="4"/>
+       <text x="360" y="434" text-anchor="middle" font-family="Arial" font-size="23" font-weight="900" fill="#0d1748">Repeti<tspan fill="#4a72bd">GO</tspan></text>
+       <path d="M411 425h18m-8-8 8 8-8 8" fill="none" stroke="#4a72bd" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`
+    : `<rect x="180" y="244" width="360" height="360" rx="18" fill="#111a44"/>`;
 
   return `
 <svg xmlns="http://www.w3.org/2000/svg" width="720" height="900" viewBox="0 0 720 900">
-  <rect width="720" height="900" fill="#ffffff"/>
-  <text x="360" y="92" text-anchor="middle" font-family="Arial" font-size="42" font-weight="800" fill="#0d1748">${escapeSvg(shopName)}</text>
-  <text x="360" y="132" text-anchor="middle" font-family="Arial" font-size="22" font-weight="700" fill="#59658c">Scan to upload print documents</text>
+  <rect width="720" height="900" fill="#f5f7fc"/>
+  <rect x="0" y="0" width="720" height="214" fill="#0d1748"/>
+  <rect x="54" y="54" width="612" height="792" rx="34" fill="#ffffff"/>
+  <rect x="54" y="54" width="612" height="166" rx="34" fill="#5740ed"/>
+  <rect x="54" y="178" width="612" height="42" fill="#5740ed"/>
+  <text x="360" y="112" text-anchor="middle" font-family="Arial" font-size="38" font-weight="900" fill="#ffffff">${escapeSvg(shopName)}</text>
+  <text x="360" y="154" text-anchor="middle" font-family="Arial" font-size="21" font-weight="800" fill="#f7d45c">Scan. Upload. Pay. Print.</text>
+  <rect x="140" y="208" width="440" height="440" rx="30" fill="#ffffff" stroke="#e4e8f5" stroke-width="3"/>
   ${qrMarkup}
-  <text x="360" y="590" text-anchor="middle" font-family="Arial" font-size="28" font-weight="800" fill="#5740ed">${shopCode}</text>
-  <text x="360" y="630" text-anchor="middle" font-family="Arial" font-size="18" font-weight="700" fill="#59658c">${escapeSvg(qrUrl)}</text>
-  <rect x="150" y="690" width="420" height="72" rx="10" fill="#5740ed"/>
-  <text x="360" y="736" text-anchor="middle" font-family="Arial" font-size="24" font-weight="800" fill="#fff">Upload. Pay. Print.</text>
+  <text x="360" y="700" text-anchor="middle" font-family="Arial" font-size="30" font-weight="900" fill="#0d1748">${shopCode}</text>
+  <text x="360" y="735" text-anchor="middle" font-family="Arial" font-size="18" font-weight="700" fill="#59658c">Upload documents from your phone</text>
+  <rect x="106" y="772" width="508" height="54" rx="14" fill="#0d1748"/>
+  <text x="360" y="807" text-anchor="middle" font-family="Arial" font-size="20" font-weight="900" fill="#ffffff">Repeti<tspan fill="#77a0ff">GO</tspan> PrintPilot</text>
 </svg>`;
 }
 
