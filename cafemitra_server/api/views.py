@@ -498,6 +498,13 @@ def auth_user(request):
         return None
     return token.user if token else None
 
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def check_server_status(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    return JsonResponse({"status": "ok", "message": "Server is running."})
 
 @csrf_exempt
 @require_http_methods(["POST", "OPTIONS"])
