@@ -1,4 +1,4 @@
-const configuredApiBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/$/, "") || "";
+const configuredApiBaseUrl = normalizeApiBaseUrl(process.env.NEXT_PUBLIC_API_BASE_URL);
 
 export const API_BASE_URL = configuredApiBaseUrl || "http://localhost:8000";
 
@@ -16,7 +16,18 @@ function runtimeApiBaseUrl() {
 let refreshInFlight: Promise<boolean> | null = null;
 
 export function apiUrl(path: string) {
-  return `${runtimeApiBaseUrl()}${path}`;
+  const baseUrl = runtimeApiBaseUrl();
+  const apiPath = path.startsWith("/") ? path : `/${path}`;
+
+  if (baseUrl.endsWith("/api") && apiPath.startsWith("/api/")) {
+    return `${baseUrl}${apiPath.slice(4)}`;
+  }
+
+  return `${baseUrl}${apiPath}`;
+}
+
+function normalizeApiBaseUrl(value?: string) {
+  return value?.trim().replace(/\/+$/, "") || "";
 }
 
 export function getAuthToken() {
