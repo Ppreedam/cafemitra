@@ -10,14 +10,16 @@ from decimal import Decimal, InvalidOperation
 from django.contrib.auth import authenticate, get_user_model
 from django.conf import settings
 from django.core.mail import send_mail
+from django.db import transaction
 from django.db.models import Max, Q, Sum
 from django.http import JsonResponse
+from django.utils.html import escape
 from django.utils import timezone
 from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
-from .models import AuthToken, EmailVerificationToken, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, UserProfile, WalletTransaction, WithdrawalRequest
+from .models import AuthToken, ContactMessage, EmailVerificationToken, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, UserProfile, WalletTransaction, WithdrawalRequest
 
 User = get_user_model()
 
@@ -36,6 +38,8 @@ DEFAULT_SERVICE_PRICING = {
         "serviceName": "CafeMitra PrintPilot",
         "settings": {
             "paymentMode": "Online Payment",
+            "selectedPrinter": "",
+            "pricingSaved": False,
             "priceItems": [
                 {"id": "black_white", "label": "Black & White", "rate": 2},
                 {"id": "color", "label": "Color", "rate": 10},
@@ -63,13 +67,14 @@ def public_auth_message(message):
     return JsonResponse({"message": message})
 
 
-def send_transactional_email(to_email, subject, body):
+def send_transactional_email(to_email, subject, body, html_body=None):
     send_mail(
         subject,
         body,
         settings.DEFAULT_FROM_EMAIL,
         [to_email],
         fail_silently=False,
+        html_message=html_body,
     )
 
 
@@ -81,10 +86,71 @@ def create_email_verification(user):
         expires_at=timezone.now() + EMAIL_TOKEN_TTL,
     )
     verify_url = f"{settings.FRONTEND_URL}/verify-email?token={token.token}"
+    owner_name = user.get_full_name() or "Owner"
+    safe_owner_name = escape(owner_name)
+    safe_verify_url = escape(verify_url)
+    text_body = (
+        f"Welcome to RepetiGo, {owner_name}!\n\n"
+        "Thank you for creating your RepetiGo account. Please verify your email address to activate your account and start using your print shop dashboard.\n\n"
+        f"Verify your account here:\n{verify_url}\n\n"
+        "This verification link expires in 24 hours.\n\n"
+        "RepetiGo's motive is simple: help cyber cafes and print shops reduce repetitive manual work, protect customer documents, and run faster with AI-powered print automation.\n\n"
+        "Thanks for joining us,\n"
+        "The RepetiGo Team"
+    )
+    html_body = f"""
+<!doctype html>
+<html>
+  <body style="margin:0;padding:0;background:#f5f8ff;font-family:Inter,Arial,sans-serif;color:#0d1748;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f8ff;padding:28px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background:#ffffff;border:1px solid #dfe7f4;border-radius:18px;overflow:hidden;box-shadow:0 18px 48px rgba(13,23,72,0.10);">
+            <tr>
+              <td style="padding:28px 32px;background:linear-gradient(135deg,#0d1748 0%,#1d4ed8 62%,#16a1bd 100%);color:#ffffff;">
+                <div style="font-size:24px;font-weight:900;letter-spacing:0;">Repeti<span style="color:#93c5fd;">Go</span></div>
+                <div style="margin-top:18px;font-size:13px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#bfdbfe;">Welcome to RepetiGo</div>
+                <h1 style="margin:8px 0 0;font-size:30px;line-height:1.15;font-weight:900;color:#ffffff;">Verify your email address</h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:30px 32px;">
+                <p style="margin:0;font-size:17px;line-height:1.7;font-weight:800;color:#0d1748;">Hello {safe_owner_name},</p>
+                <p style="margin:12px 0 0;font-size:15px;line-height:1.75;color:#59658c;">
+                  Thank you for creating your RepetiGo account. Please verify your email address to activate your account and start using your print shop dashboard.
+                </p>
+                <div style="margin:26px 0;text-align:center;">
+                  <a href="{safe_verify_url}" style="display:inline-block;border-radius:12px;padding:14px 24px;background:#2563eb;color:#ffffff;text-decoration:none;font-size:15px;font-weight:900;box-shadow:0 12px 26px rgba(37,99,235,0.24);">Verify Account</a>
+                </div>
+                <p style="margin:0;font-size:13px;line-height:1.65;color:#7a88a5;">
+                  This verification link expires in <strong style="color:#0d1748;">24 hours</strong>. If the button does not work, copy and paste this link into your browser:
+                </p>
+                <p style="margin:10px 0 0;word-break:break-all;font-size:12px;line-height:1.6;color:#2563eb;">
+                  <a href="{safe_verify_url}" style="color:#2563eb;">{safe_verify_url}</a>
+                </p>
+                <div style="margin-top:26px;border-radius:14px;padding:18px;background:#eef4ff;border:1px solid #dbe7ff;">
+                  <p style="margin:0;font-size:14px;line-height:1.75;color:#33415f;">
+                    <strong style="color:#0d1748;">Our motive:</strong> RepetiGo helps cyber cafes and print shops reduce repetitive manual work, protect customer documents, and run faster with AI-powered print automation.
+                  </p>
+                </div>
+                <p style="margin:24px 0 0;font-size:15px;line-height:1.75;color:#59658c;">
+                  Thanks for joining us,<br />
+                  <strong style="color:#0d1748;">The RepetiGo Team</strong>
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
     send_transactional_email(
         user.email,
-        "Verify your Repetigo account",
-        f"Hello {user.get_full_name() or 'Owner'},\n\nVerify your Repetigo account using this link:\n{verify_url}\n\nThis link expires in 24 hours.",
+        "Welcome to RepetiGo - verify your email",
+        text_body,
+        html_body,
     )
     return token
 
@@ -97,10 +163,76 @@ def create_password_reset(user):
         expires_at=timezone.now() + PASSWORD_RESET_TOKEN_TTL,
     )
     reset_url = f"{settings.FRONTEND_URL}/reset-password?token={token.token}"
+    owner_name = user.get_full_name() or "Owner"
+    safe_owner_name = escape(owner_name)
+    safe_reset_url = escape(reset_url)
+    text_body = (
+        f"Hello {owner_name},\n\n"
+        "We received a request to reset your RepetiGo password.\n\n"
+        f"Reset your password here:\n{reset_url}\n\n"
+        "This reset link expires in 30 minutes. If you did not request this, you can safely ignore this email.\n\n"
+        "RepetiGo's motive is to help print shops work faster while keeping customer documents secure and private.\n\n"
+        "Thanks,\n"
+        "The RepetiGo Team"
+    )
+    html_body = f"""
+<!doctype html>
+<html>
+  <body style="margin:0;padding:0;background:#f5f8ff;font-family:Inter,Arial,sans-serif;color:#0d1748;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f5f8ff;padding:28px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;background:#ffffff;border:1px solid #dfe7f4;border-radius:18px;overflow:hidden;box-shadow:0 18px 48px rgba(13,23,72,0.10);">
+            <tr>
+              <td style="padding:28px 32px;background:linear-gradient(135deg,#0d1748 0%,#1d4ed8 62%,#16a1bd 100%);color:#ffffff;">
+                <div style="font-size:24px;font-weight:900;letter-spacing:0;">Repeti<span style="color:#93c5fd;">Go</span></div>
+                <div style="margin-top:18px;font-size:13px;font-weight:800;letter-spacing:0.08em;text-transform:uppercase;color:#bfdbfe;">Password security</div>
+                <h1 style="margin:8px 0 0;font-size:30px;line-height:1.15;font-weight:900;color:#ffffff;">Reset your password</h1>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:30px 32px;">
+                <p style="margin:0;font-size:17px;line-height:1.7;font-weight:800;color:#0d1748;">Hello {safe_owner_name},</p>
+                <p style="margin:12px 0 0;font-size:15px;line-height:1.75;color:#59658c;">
+                  We received a request to reset your RepetiGo password. Click the button below to choose a new password for your account.
+                </p>
+                <div style="margin:26px 0;text-align:center;">
+                  <a href="{safe_reset_url}" style="display:inline-block;border-radius:12px;padding:14px 24px;background:#2563eb;color:#ffffff;text-decoration:none;font-size:15px;font-weight:900;box-shadow:0 12px 26px rgba(37,99,235,0.24);">Reset Password</a>
+                </div>
+                <div style="border-radius:14px;padding:16px;background:#fff7ed;border:1px solid #fed7aa;">
+                  <p style="margin:0;font-size:13px;line-height:1.7;color:#7c4a03;">
+                    This reset link expires in <strong>30 minutes</strong>. If you did not request this password reset, ignore this email and your current password will stay unchanged.
+                  </p>
+                </div>
+                <p style="margin:18px 0 0;font-size:13px;line-height:1.65;color:#7a88a5;">
+                  If the button does not work, copy and paste this link into your browser:
+                </p>
+                <p style="margin:10px 0 0;word-break:break-all;font-size:12px;line-height:1.6;color:#2563eb;">
+                  <a href="{safe_reset_url}" style="color:#2563eb;">{safe_reset_url}</a>
+                </p>
+                <div style="margin-top:26px;border-radius:14px;padding:18px;background:#eef4ff;border:1px solid #dbe7ff;">
+                  <p style="margin:0;font-size:14px;line-height:1.75;color:#33415f;">
+                    <strong style="color:#0d1748;">Our motive:</strong> RepetiGo helps print shops work faster while keeping customer documents secure and private.
+                  </p>
+                </div>
+                <p style="margin:24px 0 0;font-size:15px;line-height:1.75;color:#59658c;">
+                  Thanks,<br />
+                  <strong style="color:#0d1748;">The RepetiGo Team</strong>
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+"""
     send_transactional_email(
         user.email,
-        "Reset your Repetigo password",
-        f"Hello {user.get_full_name() or 'Owner'},\n\nReset your Repetigo password using this link:\n{reset_url}\n\nThis link expires in 30 minutes. If you did not request this, ignore this email.",
+        "Reset your RepetiGo password",
+        text_body,
+        html_body,
     )
     return token
 
@@ -498,6 +630,19 @@ def auth_user(request):
         return None
     return token.user if token else None
 
+
+def delete_user_files(user):
+    for order in PrintOrder.objects.filter(user=user).exclude(document=""):
+        if order.document:
+            order.document.delete(save=False)
+
+
+def client_ip(request):
+    forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR", "")
+    if forwarded_for:
+        return forwarded_for.split(",")[0].strip()
+    return request.META.get("REMOTE_ADDR") or None
+
 @csrf_exempt
 @require_http_methods(["GET", "OPTIONS"])
 def check_server_status(request):
@@ -505,6 +650,57 @@ def check_server_status(request):
         return JsonResponse({})
 
     return JsonResponse({"status": "ok", "message": "Server is running."})
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def contact_message(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    body = parse_body(request)
+    full_name = str(body.get("fullName", "")).strip()
+    email = str(body.get("email", "")).strip().lower()
+    phone = str(body.get("phone", "")).strip()
+    subject = str(body.get("subject", "")).strip()
+    message = str(body.get("message", "")).strip()
+
+    if len(full_name) < 2:
+        return JsonResponse({"message": "Enter your full name."}, status=400)
+    if not re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", email):
+        return JsonResponse({"message": "Enter a valid email address."}, status=400)
+    if phone and not re.match(r"^[0-9+\-\s()]{7,24}$", phone):
+        return JsonResponse({"message": "Enter a valid phone number."}, status=400)
+    if len(subject) < 2:
+        return JsonResponse({"message": "Choose a subject."}, status=400)
+    if len(message) < 10:
+        return JsonResponse({"message": "Message must be at least 10 characters."}, status=400)
+    if len(message) > 5000:
+        return JsonResponse({"message": "Message must be under 5000 characters."}, status=400)
+
+    contact = ContactMessage.objects.create(
+        full_name=full_name,
+        email=email,
+        phone=phone,
+        subject=subject,
+        message=message,
+        ip_address=client_ip(request),
+        user_agent=request.META.get("HTTP_USER_AGENT", "")[:1000],
+    )
+
+    return JsonResponse(
+        {
+            "message": "Message received. We will reply within 24 hours.",
+            "contact": {
+                "id": contact.id,
+                "fullName": contact.full_name,
+                "email": contact.email,
+                "subject": contact.subject,
+                "createdAt": contact.created_at.isoformat(),
+            },
+        },
+        status=201,
+    )
 
 @csrf_exempt
 @require_http_methods(["POST", "OPTIONS"])
@@ -850,6 +1046,38 @@ def change_password(request):
 
 
 @csrf_exempt
+@require_http_methods(["POST", "DELETE", "OPTIONS"])
+def delete_account_by_email(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    requester = auth_user(request)
+    if not requester:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    body = parse_body(request)
+    email = str(body.get("email", "")).strip().lower()
+
+    if not re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", email):
+        return JsonResponse({"message": "Enter a valid email address."}, status=400)
+
+    account = User.objects.filter(Q(username__iexact=email) | Q(email__iexact=email)).first()
+    if not account:
+        return JsonResponse({"message": "Account not found."}, status=404)
+
+    is_self_delete = account.id == requester.id
+    if not is_self_delete and not requester.is_staff and not requester.is_superuser:
+        return JsonResponse({"message": "You can delete only your own account."}, status=403)
+
+    deleted_email = account.email or account.username
+    with transaction.atomic():
+        delete_user_files(account)
+        account.delete()
+
+    return JsonResponse({"message": "Account deleted successfully.", "email": deleted_email})
+
+
+@csrf_exempt
 @require_http_methods(["GET", "PUT", "OPTIONS"])
 def pricing_settings(request):
     if request.method == "OPTIONS":
@@ -881,7 +1109,8 @@ def pricing_settings(request):
         defaults={"service_name": default_service["serviceName"], "settings": default_service["settings"]},
     )
     pricing.service_name = default_service["serviceName"]
-    pricing.settings = {**default_service["settings"], **settings}
+    existing_settings = pricing.settings if isinstance(pricing.settings, dict) else {}
+    pricing.settings = {**default_service["settings"], **existing_settings, **settings}
     pricing.save(update_fields=["service_name", "settings", "updated_at"])
 
     return JsonResponse({"service": public_pricing(pricing)})

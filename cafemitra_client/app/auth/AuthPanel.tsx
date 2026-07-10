@@ -9,6 +9,7 @@ import {
   Check,
   FileText,
   LockKeyhole,
+  Printer,
   ShieldCheck,
   UserRound,
 } from "lucide-react";
@@ -25,7 +26,6 @@ type AuthValues = {
   password: string;
   confirmPassword: string;
   terms: boolean;
-  remember: boolean;
 };
 
 type TouchedValues = Partial<Record<keyof AuthValues, boolean>>;
@@ -37,7 +37,6 @@ const initialValues: AuthValues = {
   password: "",
   confirmPassword: "",
   terms: false,
-  remember: false,
 };
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -86,12 +85,18 @@ export function AuthPanel({ mode }: AuthPanelProps) {
   }, [isRegister, values]);
 
   const isFormValid = Object.keys(errors).length === 0;
+  const hasAnyInput = isRegister
+    ? Boolean(values.email || values.fullName || values.phone || values.password || values.confirmPassword || values.terms)
+    : Boolean(values.email || values.password);
+  const canSubmit = isFormValid && !isSubmitting;
   const hasVerificationPrompt =
     apiNotice.toLowerCase().includes("verify") || apiError.toLowerCase().includes("verify") || isResending;
   const canResendVerification = emailPattern.test(values.email.trim()) && hasVerificationPrompt;
 
   function updateValue(field: keyof AuthValues, value: string | boolean) {
     setValues((current) => ({ ...current, [field]: value }));
+    if (apiError) setApiError("");
+    if (apiNotice) setApiNotice("");
   }
 
   function markTouched(field: keyof AuthValues) {
@@ -121,9 +126,9 @@ export function AuthPanel({ mode }: AuthPanelProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          email: values.email,
-          fullName: values.fullName,
-          phone: values.phone,
+          email: values.email.trim().toLowerCase(),
+          fullName: values.fullName.trim(),
+          phone: values.phone.trim(),
           password: values.password,
         }),
       });
@@ -183,15 +188,17 @@ export function AuthPanel({ mode }: AuthPanelProps) {
       >
         <div className="auth-visual">
           <Link className="brand auth-brand" href="/">
-            <span className="brand-main">
-              Cafe<span className="brand-accent">Mitra</span>
+            <span className="brand-mark" aria-hidden>
+              <Printer size={16} />
             </span>
-            <span className="brand-dot">.online</span>
+            <span className="brand-main">
+              Repeti<span className="brand-accent">Go</span>
+            </span>
           </Link>
           <AuthIllustration />
           <div className="auth-visual-copy">
-            <h2>Manage your cyber cafe with confidence</h2>
-            <p>Secure logins, quick services, daily orders, wallet tracking, and customer tools in one place.</p>
+            <h2>Run your print shop on autopilot</h2>
+            <p>Secure QR uploads, AI document processing, print queues, wallet tracking, and customer tools in one place.</p>
           </div>
         </div>
 
@@ -229,6 +236,7 @@ export function AuthPanel({ mode }: AuthPanelProps) {
                   placeholder="Enter full name"
                   value={values.fullName}
                   error={touched.fullName ? errors.fullName : undefined}
+                  verified={Boolean(values.fullName.trim()) && !errors.fullName}
                   autoComplete="off"
                   onBlur={() => markTouched("fullName")}
                   onChange={(value) => updateValue("fullName", value)}
@@ -240,6 +248,7 @@ export function AuthPanel({ mode }: AuthPanelProps) {
                   placeholder="Enter 10 digit mobile number"
                   value={values.phone}
                   error={touched.phone ? errors.phone : undefined}
+                  verified={Boolean(values.phone.trim()) && !errors.phone}
                   inputMode="numeric"
                   maxLength={10}
                   autoComplete="off"
@@ -253,6 +262,7 @@ export function AuthPanel({ mode }: AuthPanelProps) {
                   placeholder="Minimum 8 characters"
                   value={values.password}
                   error={touched.password ? errors.password : undefined}
+                  verified={Boolean(values.password) && !errors.password}
                   autoComplete="new-password"
                   onBlur={() => markTouched("password")}
                   onChange={(value) => updateValue("password", value)}
@@ -264,6 +274,7 @@ export function AuthPanel({ mode }: AuthPanelProps) {
                   placeholder="Confirm password"
                   value={values.confirmPassword}
                   error={touched.confirmPassword ? errors.confirmPassword : undefined}
+                  verified={Boolean(values.confirmPassword) && !errors.confirmPassword}
                   autoComplete="new-password"
                   onBlur={() => markTouched("confirmPassword")}
                   onChange={(value) => updateValue("confirmPassword", value)}
@@ -279,7 +290,10 @@ export function AuthPanel({ mode }: AuthPanelProps) {
                     }}
                   />
                   <span>
-                    I agree to the Terms and Conditions, Privacy Policy, Refund Policy and Disclaimer.
+                    I agree to the{" "}
+                    <Link href="/terms-conditions">Terms and Conditions</Link>,{" "}
+                    <Link href="/privacy-policy">Privacy Policy</Link>, and{" "}
+                    <Link href="/disclaimer">Disclaimer</Link>.
                   </span>
                 </label>
                 {touched.terms && errors.terms ? <p className="auth-error">{errors.terms}</p> : null}
@@ -297,20 +311,9 @@ export function AuthPanel({ mode }: AuthPanelProps) {
                   onBlur={() => markTouched("password")}
                   onChange={(value) => updateValue("password", value)}
                 />
-                <div className="auth-row">
-                  <label className="auth-check compact">
-                    <input
-                      type="checkbox"
-                      checked={values.remember}
-                      onChange={(event) => updateValue("remember", event.target.checked)}
-                    />
-                    <span>Remember me?</span>
-                  </label>
+                <div className="auth-row auth-row-end">
                   <Link href="/forgot-password">Forgot password?</Link>
                 </div>
-                <p className="recaptcha-copy">
-                  This site is protected by reCAPTCHA and the Google Privacy Policy and Terms of Service apply.
-                </p>
               </>
             )}
 
@@ -321,11 +324,26 @@ export function AuthPanel({ mode }: AuthPanelProps) {
                 {isResending ? "Sending..." : "Resend verification email"}
               </button>
             ) : null}
-            <button className="btn btn-primary auth-submit" type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Please wait..." : isRegister ? "Create Account" : "Login"}
+            <button
+              className={canSubmit ? "btn btn-primary auth-submit auth-submit-ready" : "btn btn-primary auth-submit"}
+              type="submit"
+              disabled={isSubmitting}
+              aria-disabled={!canSubmit}
+              title={!isFormValid && hasAnyInput ? "Complete the highlighted fields to continue." : undefined}
+            >
+              {isSubmitting ? (
+                <>
+                  <span className="auth-button-spinner" aria-hidden />
+                  Please wait...
+                </>
+              ) : isRegister ? (
+                "Create Account"
+              ) : (
+                "Login"
+              )}
             </button>
           </form>
-          <p className="auth-copy">Copyrights (c) 2026 CafeMitra.online</p>
+          <p className="auth-copy">Copyright 2026 RepetiGo. All rights reserved.</p>
         </div>
       </section>
     </main>
@@ -359,7 +377,7 @@ function Field({
   onBlur: () => void;
   onChange: (value: string) => void;
 }) {
-  const fieldId = `cafemitra-${name}`;
+  const fieldId = `repetigo-${name}`;
 
   return (
     <label className="auth-field" htmlFor={fieldId}>

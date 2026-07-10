@@ -14,7 +14,7 @@ export type PriceRange = {
   rate: number;
 };
 
-export type PricingValue = string | number | PriceItem[];
+export type PricingValue = string | number | boolean | PriceItem[];
 
 export type PricingService = {
   serviceKey: string;
@@ -28,9 +28,11 @@ const releaseHiddenServiceKeys = new Set(["passport_photo"]);
 export const defaultPricingServices: PricingService[] = [
   {
     serviceKey: "auto_document_print",
-    serviceName: "CafeMitra PrintPilot",
+    serviceName: "RepetiGo PrintPilot",
     settings: {
       paymentMode: "Online Payment",
+      selectedPrinter: "",
+      pricingSaved: false,
       priceItems: [
         { id: "black_white", label: "Black & White", rate: 2 },
         { id: "color", label: "Color", rate: 10 },
@@ -69,6 +71,10 @@ export async function savePricingService(serviceKey: string, settings: Record<st
   const result = await response.json();
   if (!response.ok) throw new Error(result.message || "Could not save pricing.");
   return result.service as PricingService;
+}
+
+export async function saveServicePrinter(serviceKey: string, printerName: string) {
+  return savePricingService(serviceKey, { selectedPrinter: printerName });
 }
 
 export function calculatePriceItemRate(item: PriceItem | undefined, pages: number) {

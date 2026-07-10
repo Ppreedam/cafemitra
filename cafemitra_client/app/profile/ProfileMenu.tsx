@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { BarChart3, Bookmark, ChevronDown, LogOut, Printer, Settings, UserRound, Wallet, type LucideIcon } from "lucide-react";
 import { clearSession } from "@/lib/api";
 
@@ -33,12 +34,28 @@ const profileMenuItems: ProfileMenuItem[] = [
 ];
 
 export function ProfileMenu({ user, className = "" }: ProfileMenuProps) {
+  const [isOpen, setIsOpen] = useState(false);
   const ownerName = user.fullName || "Owner";
   const initial = ownerName.charAt(0).toUpperCase() || "O";
 
   return (
-    <details className={`profile-menu ${className}`.trim()}>
-      <summary className="user-menu">
+    <details
+      className={`profile-menu ${className}`.trim()}
+      open={isOpen}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setIsOpen(false);
+      }}
+      onFocus={() => setIsOpen(true)}
+      onMouseEnter={() => setIsOpen(true)}
+      onMouseLeave={() => setIsOpen(false)}
+    >
+      <summary
+        className="user-menu"
+        onClick={(event) => {
+          event.preventDefault();
+          setIsOpen((current) => !current);
+        }}
+      >
         <ProfileAvatar initial={initial} photo={user.profilePhoto} className="avatar" />
         <span>
           <strong>{ownerName}</strong>
@@ -58,7 +75,14 @@ export function ProfileMenu({ user, className = "" }: ProfileMenuProps) {
           {profileMenuItems.map((item) => {
             const Icon = item.icon;
             return (
-              <Link href={item.href} onClick={item.onClick} key={item.label}>
+              <Link
+                href={item.href}
+                onClick={() => {
+                  item.onClick?.();
+                  setIsOpen(false);
+                }}
+                key={item.label}
+              >
                 <Icon size={18} /> {item.label}
               </Link>
             );

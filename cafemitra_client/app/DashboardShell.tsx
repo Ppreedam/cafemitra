@@ -40,8 +40,8 @@ const navGroups: NavGroup[] = [
     label: "Services",
     items: [
       { name: "PrintPilot", icon: Printer, href: "/auto-print", match: ["/auto-print"] },
-      // { name: "PDF Tools", icon: FileText, href: "/pdf-tools", match: ["/pdf-tools"] },
-      // { name: "Image Tools", icon: Image, href: "/image-tools", match: ["/image-tools"] },
+      { name: "PDF Tools", icon: FileText, href: "/pdf-tools", match: ["/pdf-tools"] },
+      { name: "Image Tools", icon: Image, href: "/image-tools", match: ["/image-tools"] },
     ],
   },
 ];
@@ -65,7 +65,7 @@ function AppSidebar({ activePath, isCollapsed }: { activePath: string; isCollaps
     <aside className="sidebar">
       <Link className="brand" href="/">
         <span className="brand-main">
-          Repeti<span className="brand-accent">go</span>
+          Repeti<span className="brand-accent">Go</span>
         </span>
       </Link>
 

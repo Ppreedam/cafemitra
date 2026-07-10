@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { apiFetch, hasStoredSession, storeSession } from "@/lib/api";
 import { fallbackPrinters, fetchAgentHealth, saveAgentPrinter, type AgentHealth } from "@/lib/printpilot-agent";
+import { fetchPricingServices, saveServicePrinter } from "@/lib/pricing";
 import { ProfileMenu } from "./ProfileMenu";
 
 type ProfileSummary = {
@@ -42,7 +43,7 @@ const fallbackProfile: ProfileSummary = {
     profilePhoto: "",
   },
   shop: {
-    shopName: "CafeMitra Shop",
+    shopName: "RepetiGo Shop",
   },
 };
 
@@ -119,11 +120,19 @@ export function ProfileTopbar({ isSidebarCollapsed = false, onMenuClick }: Profi
 
   async function refreshPrinters() {
     try {
-      const health = await fetchAgentHealth();
+      const [health, services] = await Promise.all([fetchAgentHealth(), fetchPricingServices()]);
       const printers = Array.isArray(health.printers) && health.printers.length ? health.printers : fallbackPrinters;
+      const autoPrint = services.find((service) => service.serviceKey === "auto_document_print");
+      const savedPrinter = String(autoPrint?.settings.selectedPrinter || "").trim();
       setAgentHealth(health);
       setTopbarPrinters(printers);
-      setSelectedPrinter(health.printer && printers.includes(health.printer) ? health.printer : printers[0] || "");
+      setSelectedPrinter(
+        savedPrinter && printers.includes(savedPrinter)
+          ? savedPrinter
+          : health.printer && printers.includes(health.printer)
+            ? health.printer
+            : printers[0] || "",
+      );
     } catch {
       setAgentHealth(null);
       setTopbarPrinters(fallbackPrinters);
@@ -136,8 +145,10 @@ export function ProfileTopbar({ isSidebarCollapsed = false, onMenuClick }: Profi
     try {
       const result = await saveAgentPrinter(printerName);
       const printers = Array.isArray(result.printers) && result.printers.length ? result.printers : topbarPrinters;
+      const savedPrinter = result.printer || printerName;
+      await saveServicePrinter("auto_document_print", savedPrinter);
       setTopbarPrinters(printers);
-      setSelectedPrinter(result.printer || printerName);
+      setSelectedPrinter(savedPrinter);
       await refreshPrinters();
       window.dispatchEvent(new Event("cafemitra:printers-updated"));
     } catch {

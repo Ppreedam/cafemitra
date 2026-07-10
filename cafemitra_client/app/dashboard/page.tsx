@@ -55,12 +55,12 @@ type Metric = {
 };
 
 const serviceCatalog = [
-  { key: "auto_document_print", aliases: ["cafemitra printpilot", "printpilot"], name: "PrintPilot", icon: Printer, color: "#6d63df", href: "/auto-print" },
-  { key: "whatsapp_print", aliases: ["whatsapp print"], name: "WhatsApp Print", icon: MessageCircle, color: "#42b98e", href: "#" },
-  { key: "passport_photo", aliases: ["passport size photo", "passport photo"], name: "Passport Photo", icon: UserRound, color: "#e95c8d", href: "#" },
-  { key: "id_card_print", aliases: ["id card print"], name: "ID Card Print", icon: IdCard, color: "#45aabc", href: "#" },
-  { key: "admit_card_hub", aliases: ["admit card hub"], name: "Admit Card Hub", icon: ClipboardList, color: "#ff9a52", href: "#" },
-  { key: "document_services", aliases: ["document services"], name: "Document Services", icon: FileText, color: "#4a9dec", href: "#" },
+  { key: "auto_document_print", aliases: ["cafemitra printpilot", "printpilot"], name: "PrintPilot", icon: Printer, color: "#2563eb", href: "/auto-print" },
+  { key: "whatsapp_print", aliases: ["whatsapp print"], name: "WhatsApp Print", icon: MessageCircle, color: "#0d9488", href: "#" },
+  { key: "passport_photo", aliases: ["passport size photo", "passport photo"], name: "Passport Photo", icon: UserRound, color: "#5740ed", href: "#" },
+  { key: "id_card_print", aliases: ["id card print"], name: "ID Card Print", icon: IdCard, color: "#16a1bd", href: "#" },
+  { key: "admit_card_hub", aliases: ["admit card hub"], name: "Admit Card Hub", icon: ClipboardList, color: "#f97316", href: "#" },
+  { key: "document_services", aliases: ["document services"], name: "Document Services", icon: FileText, color: "#1688f5", href: "#" },
 ];
 
 export default function Dashboard() {
@@ -205,11 +205,11 @@ function buildDashboardAnalytics(orders: Order[], profile: ProfileSummary | null
   );
 
   const metrics: Metric[] = [
-    { label: "Today's Revenue", value: formatCurrency(todayRevenue), meta: formatDelta(todayRevenue, yesterdayRevenue, "vs yesterday"), icon: Shield, color: "#6d63df" },
-    { label: "Today's Orders", value: String(todayOrders.length), meta: formatDelta(todayOrders.length, yesterdayOrders.length, "vs yesterday"), icon: ClipboardList, color: "#4a9dec" },
-    { label: "Pending Orders", value: String(pendingOrders), meta: pendingOrders ? "View pending" : "No pending orders", icon: ClipboardList, color: "#ff9a52" },
-    { label: "Wallet Balance", value: formatCurrency(Number(wallet?.summary?.netWithdrawable ?? profile?.user.balance ?? 0)), meta: "After commission", icon: Wallet, color: "#42b98e" },
-    { label: "Total Customers", value: String(customerIds.size), meta: formatDelta(customerIds.size, yesterdayCustomerIds.size, "total growth"), icon: Users, color: "#8b79e8" },
+    { label: "Today's Revenue", value: formatCurrency(todayRevenue), meta: formatDelta(todayRevenue, yesterdayRevenue, "vs yesterday"), icon: Shield, color: "#2563eb" },
+    { label: "Today's Orders", value: String(todayOrders.length), meta: formatDelta(todayOrders.length, yesterdayOrders.length, "vs yesterday"), icon: ClipboardList, color: "#1688f5" },
+    { label: "Pending Orders", value: String(pendingOrders), meta: pendingOrders ? "View pending" : "No pending orders", icon: ClipboardList, color: "#f97316" },
+    { label: "Wallet Balance", value: formatCurrency(Number(wallet?.summary?.netWithdrawable ?? profile?.user.balance ?? 0)), meta: "After commission", icon: Wallet, color: "#0d9488" },
+    { label: "Total Customers", value: String(customerIds.size), meta: formatDelta(customerIds.size, yesterdayCustomerIds.size, "total growth"), icon: Users, color: "#5740ed" },
   ];
 
   const quickServices = serviceCatalog.map((service) => ({

@@ -1,6 +1,7 @@
 import { BadgeCheck, FileText, Sparkles } from "lucide-react";
 import type { InfoPageData } from "./info-page-data";
 import { LandingNavbar } from "./LandingNavbar";
+import { PublicFooter } from "./PublicFooter";
 
 export function InfoPage({ page }: { page: InfoPageData }) {
   return (
@@ -39,6 +40,7 @@ export function InfoPage({ page }: { page: InfoPageData }) {
           </article>
         ))}
       </section>
+      <PublicFooter />
     </main>
   );
 }

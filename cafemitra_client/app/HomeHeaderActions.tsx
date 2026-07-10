@@ -41,7 +41,7 @@ export function HomeHeaderActions() {
           Login
         </Link>
         <Link className="btn btn-primary" href="/register">
-          Sign Up
+          Get Started
         </Link>
       </div>
     );

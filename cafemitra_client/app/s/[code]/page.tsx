@@ -537,7 +537,7 @@ export default function CustomerScanPage() {
         <div className="customer-shop-overlay">
           <div className="customer-shop-identity">
             <div className="customer-shop-copy">
-              <h1>{data.shop.shopName || "CafeMitra Cafe"}</h1>
+              <h1>{data.shop.shopName || "RepetiGo Cafe"}</h1>
               <div className="customer-badges">
                 <span className={data.status.open ? "open" : "closed"}>{data.status.open ? "Open" : "Closed"}</span>
               </div>
@@ -1012,7 +1012,7 @@ function buildUpiLink(order: PrintOrder, shopName: string) {
   const transactionRef = getUpiTransactionRef(order);
   const params = new URLSearchParams({
     pa: "8298972939@okbizaxis",
-    pn: shopName || "Repetigo Print",
+    pn: shopName || "RepetiGo Print",
     mc: "5944",
     aid: "uGICAgICTie7ceg",
     ver: "01",
@@ -1190,7 +1190,7 @@ async function generatePassportSheet(fileUrl: string, background: string, custom
 
   context.fillStyle = "#111a44";
   context.font = "bold 28px Segoe UI, Arial";
-  context.fillText("CafeMitra Passport Photo", 56, sheetHeight - 44);
+  context.fillText("RepetiGo Passport Photo", 56, sheetHeight - 44);
 
   return new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Passport sheet failed"))), "image/png", 0.95);

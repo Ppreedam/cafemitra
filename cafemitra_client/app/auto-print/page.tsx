@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type React from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import QRCode from "qrcode";
 import {
   BarChart3,
@@ -39,7 +39,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { clearSession } from "@/lib/api";
-import { fetchPricingServices, formatPriceItem, savePricingService, type PriceItem, type PriceRange } from "@/lib/pricing";
+import { fetchPricingServices, formatPriceItem, savePricingService, saveServicePrinter, type PriceItem, type PriceRange } from "@/lib/pricing";
 import { fallbackPrinters, fetchAgentHealth, runAgentTestPrint, saveAgentPrinter, type AgentHealth } from "@/lib/printpilot-agent";
 import { DashboardShell } from "../DashboardShell";
 
@@ -113,7 +113,7 @@ const setupStepGuides: Record<SetupStep["key"], { title: string; videoUrl?: stri
     title: "Confirm the agent connection",
     bullets: [
       "Make sure the desktop agent is open.",
-      "Login in the agent with the same Repetigo account.",
+      "Login in the agent with the same RepetiGo account.",
       "Click Retry here and confirm that the status changes to connected.",
     ],
   },
@@ -173,6 +173,7 @@ export default function AutoPrintPage() {
   const [printerMessage, setPrinterMessage] = useState("");
   const [printerError, setPrinterError] = useState("");
   const [isSavingPrinter, setIsSavingPrinter] = useState(false);
+  const [printerSaved, setPrinterSaved] = useState(false);
   const [priceItems, setPriceItems] = useState<PriceItem[]>([
     { id: "black_white", label: "Black & White", rate: 2 },
     { id: "color", label: "Color", rate: 10 },
@@ -181,20 +182,20 @@ export default function AutoPrintPage() {
   const [pricingMessage, setPricingMessage] = useState("");
   const [pricingError, setPricingError] = useState("");
   const [isSavingPricing, setIsSavingPricing] = useState(false);
+  const [pricingSaved, setPricingSaved] = useState(false);
   const [qrReady, setQrReady] = useState(false);
   const [shopCode, setShopCode] = useState("CM0000");
-  const [shopName, setShopName] = useState("CafeMitra Shop");
+  const [shopName, setShopName] = useState("RepetiGo Shop");
   const [qrUrl, setQrUrl] = useState("");
   const [qrImage, setQrImage] = useState("");
   const [testStatus, setTestStatus] = useState<"idle" | "printing" | "success">("idle");
   const [testPrintMessage, setTestPrintMessage] = useState("");
   const [testPrintError, setTestPrintError] = useState("");
-  const printerReady = Boolean(selectedPrinter);
-  const pricingReady = priceItems.length > 0;
-  const qrSetupReady = qrReady || Boolean(qrUrl);
-  const testPrintReady = testStatus === "success" || (agentConnected && printerReady);
-  const printPilotActive = agentConnected && printerReady;
-  const stepCompletion = {
+  const printerReady = printerSaved && Boolean(selectedPrinter);
+  const pricingReady = pricingSaved && priceItems.length > 0;
+  const qrSetupReady = qrReady;
+  const testPrintReady = testStatus === "success";
+  const stepCompletion: Record<SetupStep["key"], boolean> = {
     download: agentDownloaded || agentConnected,
     verify: agentConnected,
     printer: printerReady,
@@ -202,12 +203,21 @@ export default function AutoPrintPage() {
     qr: qrSetupReady,
     test: testPrintReady,
   };
+  const visibleStepCompletion: Record<SetupStep["key"], boolean> = agentConnected
+    ? stepCompletion
+    : {
+        download: false,
+        verify: false,
+        printer: false,
+        pricing: false,
+        qr: false,
+        test: false,
+      };
 
-  const completedCount = useMemo(() => {
-    return Object.values(stepCompletion).filter(Boolean).length;
-  }, [stepCompletion]);
-
-  const progress = `${(completedCount / setupSteps.length) * 100}%`;
+  const completedCount = setupSteps.filter((step) => visibleStepCompletion[step.key]).length;
+  const progressPercent = Math.round((completedCount / setupSteps.length) * 100);
+  const progress = `${progressPercent}%`;
+  const printPilotActive = completedCount === setupSteps.length;
   const currentStep = setupSteps[activeStep];
   const CurrentStepIcon = currentStep.icon;
   const currentGuide = setupStepGuides[currentStep.key];
@@ -218,7 +228,7 @@ export default function AutoPrintPage() {
     const code = `CM${String(storedUser.id || "0").padStart(4, "0")}`;
     const publicBaseUrl = process.env.NEXT_PUBLIC_PUBLIC_APP_URL || window.location.origin;
     setShopCode(code);
-    setShopName(storedShop.shopName || "CafeMitra Shop");
+    setShopName(storedShop.shopName || "RepetiGo Shop");
     setQrUrl(`${publicBaseUrl}/s/${code}`);
 
     fetchPricingServices()
@@ -227,6 +237,12 @@ export default function AutoPrintPage() {
         if (!autoPrint) return;
         setPriceItems(Array.isArray(autoPrint.settings.priceItems) ? autoPrint.settings.priceItems : priceItems);
         setPaymentMode(String(autoPrint.settings.paymentMode ?? "Online Payment"));
+        setPricingSaved(Boolean(autoPrint.settings.pricingSaved));
+        const savedPrinter = String(autoPrint.settings.selectedPrinter || "").trim();
+        if (savedPrinter) {
+          setSelectedPrinter(savedPrinter);
+          setPrinterSaved(true);
+        }
       })
       .catch(() => undefined);
 
@@ -252,6 +268,9 @@ export default function AutoPrintPage() {
 
       const scannedPrinters = Array.isArray(health.printers) && health.printers.length ? health.printers : fallbackPrinters;
       setAvailablePrinters(scannedPrinters);
+      if (!connected) {
+        setPrinterSaved(false);
+      }
 
       if (health.printer && scannedPrinters.includes(health.printer)) {
         setSelectedPrinter(health.printer);
@@ -305,9 +324,12 @@ export default function AutoPrintPage() {
     try {
       const result = await saveAgentPrinter(selectedPrinter);
       const scannedPrinters = Array.isArray(result.printers) && result.printers.length ? result.printers : availablePrinters;
+      const savedPrinter = result.printer || selectedPrinter;
+      await saveServicePrinter("auto_document_print", savedPrinter);
       setAvailablePrinters(scannedPrinters);
-      setSelectedPrinter(result.printer || selectedPrinter);
-      setPrinterMessage(`Printer saved: ${result.printer || selectedPrinter}${result.mockMode ? " (Mock Test Mode)" : ""}`);
+      setSelectedPrinter(savedPrinter);
+      setPrinterSaved(true);
+      setPrinterMessage(`Printer saved: ${savedPrinter}${result.mockMode ? " (Mock Test Mode)" : ""}`);
       await verifyAgent({ silent: true });
       window.dispatchEvent(new Event("cafemitra:printers-updated"));
     } catch (error) {
@@ -325,7 +347,9 @@ export default function AutoPrintPage() {
       await savePricingService("auto_document_print", {
         paymentMode,
         priceItems,
+        pricingSaved: true,
       });
+      setPricingSaved(true);
       setPricingMessage("PrintPilot pricing saved.");
     } catch (error) {
       setPricingError(error instanceof Error ? error.message : "Could not save pricing.");
@@ -335,17 +359,20 @@ export default function AutoPrintPage() {
   }
 
   function addPriceItem() {
+    setPricingSaved(false);
     const nextIndex = priceItems.length + 1;
     setPriceItems((current) => [...current, { id: `${Date.now()}-${nextIndex}`, label: `Charge ${nextIndex}`, rate: 0 }]);
   }
 
   function updatePriceItem(itemId: string, field: keyof PriceItem, value: string) {
+    setPricingSaved(false);
     setPriceItems((current) =>
       current.map((item) => (item.id === itemId ? { ...item, [field]: field === "rate" ? Number(value || 0) : value } : item)),
     );
   }
 
   function addPriceRange(itemId: string) {
+    setPricingSaved(false);
     setPriceItems((current) =>
       current.map((item) => {
         if (item.id !== itemId) return item;
@@ -360,6 +387,7 @@ export default function AutoPrintPage() {
   }
 
   function updatePriceRange(itemId: string, rangeId: string, field: keyof PriceRange, value: string) {
+    setPricingSaved(false);
     setPriceItems((current) =>
       current.map((item) =>
         item.id === itemId
@@ -380,12 +408,14 @@ export default function AutoPrintPage() {
   }
 
   function removePriceRange(itemId: string, rangeId: string) {
+    setPricingSaved(false);
     setPriceItems((current) =>
       current.map((item) => (item.id === itemId ? { ...item, ranges: (item.ranges || []).filter((range) => range.id !== rangeId) } : item)),
     );
   }
 
   function removePriceItem(itemId: string) {
+    setPricingSaved(false);
     setPriceItems((current) => (current.length > 1 ? current.filter((item) => item.id !== itemId) : current));
   }
 
@@ -420,7 +450,7 @@ export default function AutoPrintPage() {
       <div className="dashboard auto-print-dashboard">
           <div className="dashboard-hero auto-print-hero">
             <div>
-              <span className="auto-print-kicker">CafeMitra PrintPilot</span>
+              <span className="auto-print-kicker">RepetiGo PrintPilot</span>
               <h1>PrintPilot Setup</h1>
               <p>Upload. Pay. Print. Customers scan the QR, upload a document, complete payment, and send the job to the PrintPilot printer.</p>
             </div>
@@ -434,7 +464,7 @@ export default function AutoPrintPage() {
                   <strong>{completedCount}/{setupSteps.length} ready</strong>
                   <span>MVP setup progress</span>
                 </div>
-                <span>{Math.round((completedCount / setupSteps.length) * 100)}%</span>
+                  <span>{progressPercent}%</span>
               </div>
               <div className="setup-progress">
                 <span style={{ width: progress }} />
@@ -442,7 +472,7 @@ export default function AutoPrintPage() {
               <div className="wizard-step-list">
                 {setupSteps.map((step, index) => {
                   const Icon = step.icon;
-                  const complete = stepCompletion[step.key];
+                  const complete = visibleStepCompletion[step.key];
 
                   return (
                     <button
@@ -509,7 +539,15 @@ export default function AutoPrintPage() {
                   <div className="printer-radio-list">
                     {availablePrinters.map((printer) => (
                       <label className="printer-radio" key={printer}>
-                        <input checked={selectedPrinter === printer} name="printer" type="radio" onChange={() => setSelectedPrinter(printer)} />
+                        <input
+                          checked={selectedPrinter === printer}
+                          name="printer"
+                          type="radio"
+                          onChange={() => {
+                            setSelectedPrinter(printer);
+                            setPrinterSaved(false);
+                          }}
+                        />
                         <span>{printer}</span>
                       </label>
                     ))}
@@ -519,7 +557,7 @@ export default function AutoPrintPage() {
                   </div>
                   {printerMessage ? <div className="profile-alert success">{printerMessage}</div> : null}
                   {printerError ? <div className="profile-alert error">{printerError}</div> : null}
-                  <button className="btn btn-primary" type="button" onClick={savePrinter} disabled={!selectedPrinter || isSavingPrinter}>
+                  <button className="btn btn-primary" type="button" onClick={savePrinter} disabled={!agentConnected || !selectedPrinter || isSavingPrinter}>
                     <Printer size={16} /> {isSavingPrinter ? "Saving..." : "Save Printer"}
                   </button>
                 </div>
@@ -592,7 +630,15 @@ export default function AutoPrintPage() {
                   </div>
                   <div className="payment-mode-list">
                     {paymentModes.map((mode) => (
-                      <button className={paymentMode === mode ? "active" : ""} key={mode} type="button" onClick={() => setPaymentMode(mode)}>
+                      <button
+                        className={paymentMode === mode ? "active" : ""}
+                        key={mode}
+                        type="button"
+                        onClick={() => {
+                          setPaymentMode(mode);
+                          setPricingSaved(false);
+                        }}
+                      >
                         {mode}
                       </button>
                     ))}
@@ -644,7 +690,7 @@ export default function AutoPrintPage() {
                     <p>{testStatus === "success" ? testPrintMessage : testPrintReady ? `The generated shop QR will print on ${selectedPrinter}.` : `The generated shop QR will be sent to the selected printer: ${selectedPrinter}.`}</p>
                   </div>
                   {testPrintError ? <div className="profile-alert error">{testPrintError}</div> : null}
-                  <button className="btn btn-primary" type="button" onClick={runTestPrint} disabled={!selectedPrinter || testStatus === "printing"}>
+                  <button className="btn btn-primary" type="button" onClick={runTestPrint} disabled={!agentConnected || !printerReady || testStatus === "printing"}>
                     <Play size={16} /> {testStatus === "printing" ? "Sending..." : "Run Test Print"}
                   </button>
                 </div>

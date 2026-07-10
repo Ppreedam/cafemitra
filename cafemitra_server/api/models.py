@@ -71,6 +71,25 @@ class ShopProfile(models.Model):
         return self.shop_name or f"Shop for {self.user_id}"
 
 
+class ContactMessage(models.Model):
+    full_name = models.CharField(max_length=160)
+    email = models.EmailField()
+    phone = models.CharField(max_length=24, blank=True)
+    subject = models.CharField(max_length=120)
+    message = models.TextField()
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["created_at", "is_read"])]
+
+    def __str__(self) -> str:
+        return f"{self.subject} from {self.full_name}"
+
+
 class ServicePricing(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="service_pricing")
     service_key = models.CharField(max_length=80)

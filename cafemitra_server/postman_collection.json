@@ -1,0 +1,1023 @@
+{
+  "info": {
+    "name": "CafeMitra Server API",
+    "_postman_id": "9cc4e3aa-2d47-4b8e-bf39-cafemitra-api",
+    "description": "Import this collection in Postman. Set base_url if your Django server is not running on 127.0.0.1:8000. Source: cafemitra_server/api/urls.py and cafemitra_server/api/views.py.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:8000",
+      "type": "string"
+    },
+    {
+      "key": "email",
+      "value": "owner@example.com",
+      "type": "string"
+    },
+    {
+      "key": "password",
+      "value": "Password123",
+      "type": "string"
+    },
+    {
+      "key": "new_password",
+      "value": "Password1234",
+      "type": "string"
+    },
+    {
+      "key": "phone",
+      "value": "9876543210",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "verification_token",
+      "value": "paste-email-verification-token-here",
+      "type": "string"
+    },
+    {
+      "key": "reset_token",
+      "value": "paste-password-reset-token-here",
+      "type": "string"
+    },
+    {
+      "key": "shop_code",
+      "value": "CM0001",
+      "type": "string"
+    },
+    {
+      "key": "order_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "document_path",
+      "value": "C:\\\\path\\\\to\\\\document.pdf",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Check Server Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/check/server/status/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "check",
+                "server",
+                "status"
+              ]
+            },
+            "description": "GET /api/check/server/status/ | src: api.views.check_server_status"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('status is 201 or account exists', function () {",
+                  "  pm.expect([201, 409, 500]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"fullName\": \"Cafe Owner\",\n  \"phone\": \"{{phone}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/register/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "POST /api/auth/register/ | src: api.views.register_user"
+          },
+          "response": []
+        },
+        {
+          "name": "Verify Email",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.token) pm.collectionVariables.set('token', json.token);",
+                  "  if (json.refreshToken) pm.collectionVariables.set('refresh_token', json.refreshToken);",
+                  "  if (json.user && json.user.id) pm.collectionVariables.set('shop_code', 'CM' + String(json.user.id).padStart(4, '0'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{verification_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/verify-email/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "verify-email"
+              ]
+            },
+            "description": "POST /api/auth/verify-email/ | src: api.views.verify_email | Paste token from console/email into verification_token."
+          },
+          "response": []
+        },
+        {
+          "name": "Resend Verification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/resend-verification/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "resend-verification"
+              ]
+            },
+            "description": "POST /api/auth/resend-verification/ | src: api.views.resend_verification"
+          },
+          "response": []
+        },
+        {
+          "name": "Login User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.token) pm.collectionVariables.set('token', json.token);",
+                  "  if (json.refreshToken) pm.collectionVariables.set('refresh_token', json.refreshToken);",
+                  "  if (json.user && json.user.id) pm.collectionVariables.set('shop_code', 'CM' + String(json.user.id).padStart(4, '0'));",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/login/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ]
+            },
+            "description": "POST /api/auth/login/ | src: api.views.login_user | Saves token, refresh_token, and shop_code on success."
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.token) pm.collectionVariables.set('token', json.token);",
+                  "  if (json.refreshToken) pm.collectionVariables.set('refresh_token', json.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/refresh/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "POST /api/auth/refresh/ | src: api.views.refresh_token"
+          },
+          "response": []
+        },
+        {
+          "name": "Request Password Reset",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/request-password-reset/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "request-password-reset"
+              ]
+            },
+            "description": "POST /api/auth/request-password-reset/ | src: api.views.request_password_reset"
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{reset_token}}\",\n  \"password\": \"{{new_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/reset-password/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "reset-password"
+              ]
+            },
+            "description": "POST /api/auth/reset-password/ | src: api.views.reset_password | Paste token into reset_token."
+          },
+          "response": []
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"{{password}}\",\n  \"newPassword\": \"{{new_password}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/change-password/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "change-password"
+              ]
+            },
+            "description": "POST /api/auth/change-password/ | src: api.views.change_password"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Profile",
+      "item": [
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/profile/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "profile"
+              ]
+            },
+            "description": "GET /api/profile/ | src: api.views.profile"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user\": {\n    \"fullName\": \"Cafe Owner\",\n    \"email\": \"{{email}}\",\n    \"phone\": \"{{phone}}\",\n    \"profilePhoto\": \"\"\n  },\n  \"shop\": {\n    \"shopName\": \"Cyber Cafe Shankar\",\n    \"logo\": \"\",\n    \"banner\": \"\",\n    \"address\": \"Main Road\",\n    \"city\": \"Patna\",\n    \"state\": \"Bihar\",\n    \"pinCode\": \"800001\",\n    \"mobile\": \"{{phone}}\",\n    \"whatsapp\": \"{{phone}}\",\n    \"email\": \"{{email}}\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/profile/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "profile"
+              ]
+            },
+            "description": "PUT /api/profile/ | src: api.views.profile"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Wallet",
+      "item": [
+        {
+          "name": "Get Wallet",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/wallet/?ledgerPage=1&ledgerPageSize=8&ledgerType=all&ledgerFrom=&ledgerTo=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "wallet"
+              ],
+              "query": [
+                {
+                  "key": "ledgerPage",
+                  "value": "1"
+                },
+                {
+                  "key": "ledgerPageSize",
+                  "value": "8"
+                },
+                {
+                  "key": "ledgerType",
+                  "value": "all",
+                  "description": "all | withdrawable | tracked"
+                },
+                {
+                  "key": "ledgerFrom",
+                  "value": "",
+                  "description": "YYYY-MM-DD"
+                },
+                {
+                  "key": "ledgerTo",
+                  "value": "",
+                  "description": "YYYY-MM-DD"
+                }
+              ]
+            },
+            "description": "GET /api/wallet/ | src: api.views.wallet"
+          },
+          "response": []
+        },
+        {
+          "name": "Request Withdrawal",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 1,\n  \"method\": \"UPI\",\n  \"accountDetail\": \"owner@upi\",\n  \"note\": \"Test withdrawal\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/wallet/withdraw/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "withdraw"
+              ]
+            },
+            "description": "POST /api/wallet/withdraw/ | src: api.views.request_withdrawal"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Pricing",
+      "item": [
+        {
+          "name": "Get Pricing Settings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/pricing-settings/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "pricing-settings"
+              ]
+            },
+            "description": "GET /api/pricing-settings/ | src: api.views.pricing_settings"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Pricing Settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceKey\": \"auto_document_print\",\n  \"settings\": {\n    \"paymentMode\": \"Online Payment\",\n    \"priceItems\": [\n      {\n        \"id\": \"black_white\",\n        \"label\": \"Black & White\",\n        \"rate\": 2\n      },\n      {\n        \"id\": \"color\",\n        \"label\": \"Color\",\n        \"rate\": 10\n      }\n    ]\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/pricing-settings/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "pricing-settings"
+              ]
+            },
+            "description": "PUT /api/pricing-settings/ | src: api.views.pricing_settings"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Owner Orders",
+      "item": [
+        {
+          "name": "Order History",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/orders/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "orders"
+              ]
+            },
+            "description": "GET /api/orders/ | src: api.views.order_history"
+          },
+          "response": []
+        },
+        {
+          "name": "Approve Cash Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/orders/{{order_id}}/approve-cash/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "{{order_id}}",
+                "approve-cash"
+              ]
+            },
+            "description": "POST /api/orders/<order_id>/approve-cash/ | src: api.views.approve_cash_order"
+          },
+          "response": []
+        },
+        {
+          "name": "Reject Cash Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/orders/{{order_id}}/reject-cash/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "{{order_id}}",
+                "reject-cash"
+              ]
+            },
+            "description": "POST /api/orders/<order_id>/reject-cash/ | src: api.views.reject_cash_order"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Public Shop And Orders",
+      "item": [
+        {
+          "name": "Public Shop By Code",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/public-shop/{{shop_code}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "public-shop",
+                "{{shop_code}}"
+              ]
+            },
+            "description": "GET /api/public-shop/<code>/ | src: api.views.public_shop_by_code"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Public Print Order",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.order && json.order.id) pm.collectionVariables.set('order_id', json.order.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "document",
+                  "type": "file",
+                  "src": "{{document_path}}"
+                },
+                {
+                  "key": "serviceKey",
+                  "value": "auto_document_print",
+                  "type": "text"
+                },
+                {
+                  "key": "pages",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "copies",
+                  "value": "1",
+                  "type": "text"
+                },
+                {
+                  "key": "priceItemId",
+                  "value": "black_white",
+                  "type": "text"
+                },
+                {
+                  "key": "priceLabel",
+                  "value": "Black & White",
+                  "type": "text"
+                },
+                {
+                  "key": "rate",
+                  "value": "2",
+                  "type": "text"
+                },
+                {
+                  "key": "totalAmount",
+                  "value": "2",
+                  "type": "text"
+                },
+                {
+                  "key": "paymentMode",
+                  "value": "Cash Counter",
+                  "type": "text",
+                  "description": "Online Payment | Cash Counter | No Payment"
+                },
+                {
+                  "key": "customerPhone",
+                  "value": "{{phone}}",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/public-shop/{{shop_code}}/orders/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "public-shop",
+                "{{shop_code}}",
+                "orders"
+              ]
+            },
+            "description": "POST /api/public-shop/<code>/orders/ | src: api.views.public_print_order | multipart/form-data; set document_path to a real local file."
+          },
+          "response": []
+        },
+        {
+          "name": "Public Order Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/public-orders/{{order_id}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "public-orders",
+                "{{order_id}}"
+              ]
+            },
+            "description": "GET /api/public-orders/<order_id>/ | src: api.views.public_order_status"
+          },
+          "response": []
+        },
+        {
+          "name": "Public Mark Order Paid",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/public-orders/{{order_id}}/mark-paid/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "public-orders",
+                "{{order_id}}",
+                "mark-paid"
+              ]
+            },
+            "description": "POST /api/public-orders/<order_id>/mark-paid/ | src: api.views.public_mark_order_paid"
+          },
+          "response": []
+        },
+        {
+          "name": "Public Check UPI Payment",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/public-orders/{{order_id}}/check-upi-payment/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "public-orders",
+                "{{order_id}}",
+                "check-upi-payment"
+              ]
+            },
+            "description": "POST /api/public-orders/<order_id>/check-upi-payment/ | src: api.views.public_check_upi_payment"
+          },
+          "response": []
+        },
+        {
+          "name": "Public Delete Order Document",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/public-orders/{{order_id}}/delete-document/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "public-orders",
+                "{{order_id}}",
+                "delete-document"
+              ]
+            },
+            "description": "POST /api/public-orders/<order_id>/delete-document/ | src: api.views.public_delete_order_document | Works after order status is printed."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Agent",
+      "item": [
+        {
+          "name": "Agent Jobs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/agent/jobs/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "jobs"
+              ]
+            },
+            "description": "GET /api/agent/jobs/ | src: api.views.agent_jobs"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Agent Job Status - Printing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"printing\",\n  \"message\": \"Printing started\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/agent/jobs/{{order_id}}/status/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "jobs",
+                "{{order_id}}",
+                "status"
+              ]
+            },
+            "description": "POST /api/agent/jobs/<order_id>/status/ | src: api.views.agent_job_status | status: printing | printed | failed"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Agent Job Status - Printed",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"printed\",\n  \"message\": \"Printed successfully\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/agent/jobs/{{order_id}}/status/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "jobs",
+                "{{order_id}}",
+                "status"
+              ]
+            },
+            "description": "POST /api/agent/jobs/<order_id>/status/ | src: api.views.agent_job_status | status: printing | printed | failed"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Agent Job Status - Failed",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"failed\",\n  \"message\": \"Print failed\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/agent/jobs/{{order_id}}/status/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "jobs",
+                "{{order_id}}",
+                "status"
+              ]
+            },
+            "description": "POST /api/agent/jobs/<order_id>/status/ | src: api.views.agent_job_status | status: printing | printed | failed"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
