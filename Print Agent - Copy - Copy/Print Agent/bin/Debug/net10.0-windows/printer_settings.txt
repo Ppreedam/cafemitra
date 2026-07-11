@@ -1,2 +1,0 @@
-Microsoft Print to PDF|A4|Grayscale
-Microsoft Print to PDF|A4|Color

@@ -1,4 +1,0 @@
-<Solution>
-  <Project Path="Print Agent/Print Agent.csproj" />
-  <Project Path="PrintAgentUpdater/PrintAgentUpdater.csproj" />
-</Solution>
