@@ -34,12 +34,29 @@ export type TestPrintResult = {
   printers?: string[];
 };
 
+export type PrinterPreset = {
+  printer: string;
+  paperSize: string;
+  colorMode: string;
+};
+
+export type PrinterPresetsResult = {
+  presets?: PrinterPreset[];
+  printers?: string[];
+  paperSizes?: string[];
+  colorModes?: string[];
+};
+
 export const fallbackPrinters = ["Microsoft Print to PDF", "Fax"];
+export const fallbackPaperSizes = ["A4", "A5", "Letter"];
+export const fallbackColorModes = ["Color", "Grayscale"];
 
 const agentStatusEndpoints = ["http://127.0.0.1:8765/status", "http://localhost:8765/status"];
 const agentSettingsEndpoints = ["http://127.0.0.1:8765/settings", "http://localhost:8765/settings"];
 const agentTestPrintEndpoints = ["http://127.0.0.1:8765/test-print", "http://localhost:8765/test-print"];
 const agentPosterPrintEndpoints = ["http://127.0.0.1:8765/poster-print", "http://localhost:8765/poster-print"];
+const agentPrinterPresetsEndpoints = ["http://127.0.0.1:8765/printer-presets", "http://localhost:8765/printer-presets"];
+const agentDeletePrinterPresetEndpoints = ["http://127.0.0.1:8765/printer-presets/delete", "http://localhost:8765/printer-presets/delete"];
 
 export async function fetchAgentHealth() {
   return fetchAgentEndpoint<AgentHealth>(agentStatusEndpoints);
@@ -66,6 +83,26 @@ export async function runAgentPosterPrint(request: TestPrintRequest) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(request),
+  });
+}
+
+export async function fetchAgentPrinterPresets() {
+  return fetchAgentEndpoint<PrinterPresetsResult>(agentPrinterPresetsEndpoints);
+}
+
+export async function saveAgentPrinterPreset(preset: PrinterPreset, original?: PrinterPreset) {
+  return fetchAgentEndpoint<PrinterPresetsResult>(agentPrinterPresetsEndpoints, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...preset, original }),
+  });
+}
+
+export async function deleteAgentPrinterPreset(preset: PrinterPreset) {
+  return fetchAgentEndpoint<PrinterPresetsResult>(agentDeletePrinterPresetEndpoints, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(preset),
   });
 }
 
@@ -97,9 +134,13 @@ async function fetchAgentEndpoint<T>(endpoints: string[], init?: RequestInit) {
 }
 
 function getAgentFallbackMessage(init: RequestInit | undefined, endpoint: string) {
-  if (init?.method !== "POST") return "Agent health check failed.";
+  if (init?.method !== "POST") {
+    return endpoint.includes("printer-presets") ? "Could not load printer settings." : "Agent health check failed.";
+  }
   if (endpoint.includes("poster-print")) return "Could not print QR poster.";
   if (endpoint.includes("test-print")) return "Could not run test print.";
+  if (endpoint.includes("printer-presets/delete")) return "Could not delete printer setting.";
+  if (endpoint.includes("printer-presets")) return "Could not save printer setting.";
   return "Could not save printer.";
 }
 

@@ -42,7 +42,19 @@ import {
 } from "lucide-react";
 import { clearSession } from "@/lib/api";
 import { fetchPricingServices, formatPriceItem, savePricingService, saveServicePrinter, type PriceItem, type PriceRange } from "@/lib/pricing";
-import { fallbackPrinters, fetchAgentHealth, runAgentTestPrint, saveAgentPrinter, type AgentHealth } from "@/lib/printpilot-agent";
+import {
+  deleteAgentPrinterPreset,
+  fallbackColorModes,
+  fallbackPaperSizes,
+  fallbackPrinters,
+  fetchAgentHealth,
+  fetchAgentPrinterPresets,
+  runAgentTestPrint,
+  saveAgentPrinter,
+  saveAgentPrinterPreset,
+  type AgentHealth,
+  type PrinterPreset,
+} from "@/lib/printpilot-agent";
 import { DashboardShell } from "../DashboardShell";
 
 type NavItem = {
@@ -176,6 +188,15 @@ export default function AutoPrintPage() {
   const [printerError, setPrinterError] = useState("");
   const [isSavingPrinter, setIsSavingPrinter] = useState(false);
   const [printerSaved, setPrinterSaved] = useState(false);
+  const [printerPresets, setPrinterPresets] = useState<PrinterPreset[]>([]);
+  const [paperSizeOptions, setPaperSizeOptions] = useState<string[]>(fallbackPaperSizes);
+  const [colorModeOptions, setColorModeOptions] = useState<string[]>(fallbackColorModes);
+  const [presetPaperSize, setPresetPaperSize] = useState(fallbackPaperSizes[0]);
+  const [presetColorMode, setPresetColorMode] = useState(fallbackColorModes[0]);
+  const [editingPreset, setEditingPreset] = useState<PrinterPreset | null>(null);
+  const [presetMessage, setPresetMessage] = useState("");
+  const [presetError, setPresetError] = useState("");
+  const [isSavingPreset, setIsSavingPreset] = useState(false);
   const [priceItems, setPriceItems] = useState<PriceItem[]>([
     { id: "black_white", label: "Black & White", rate: 2 },
     { id: "color", label: "Color", rate: 10 },
@@ -288,12 +309,28 @@ export default function AutoPrintPage() {
           ? formatAgentConnectedMessage(health)
           : "Agent found, but not running. Start it from the desktop app.",
       );
+
+      if (connected) {
+        await loadPrinterPresets();
+      }
     } catch {
       setAgentConnected(false);
       setAgentHealth(null);
       setAgentMessage("Agent not found. Download, open, and start the desktop app.");
     } finally {
       setIsVerifyingAgent(false);
+    }
+  }
+
+  async function loadPrinterPresets() {
+    try {
+      const result = await fetchAgentPrinterPresets();
+      setPrinterPresets(Array.isArray(result.presets) ? result.presets : []);
+      if (Array.isArray(result.paperSizes) && result.paperSizes.length) setPaperSizeOptions(result.paperSizes);
+      if (Array.isArray(result.colorModes) && result.colorModes.length) setColorModeOptions(result.colorModes);
+    } catch {
+      // Presets are a nice-to-have alongside single-printer selection - a
+      // fetch failure here shouldn't block the rest of the setup wizard.
     }
   }
 
@@ -341,6 +378,52 @@ export default function AutoPrintPage() {
       setPrinterError(error instanceof Error ? error.message : "Could not save printer. Is the PrintPilot Agent running?");
     } finally {
       setIsSavingPrinter(false);
+    }
+  }
+
+  async function savePrinterPreset() {
+    setPresetMessage("");
+    setPresetError("");
+    if (!selectedPrinter) {
+      setPresetError("Select a printer first.");
+      return;
+    }
+
+    setIsSavingPreset(true);
+    try {
+      const preset: PrinterPreset = { printer: selectedPrinter, paperSize: presetPaperSize, colorMode: presetColorMode };
+      const result = await saveAgentPrinterPreset(preset, editingPreset ?? undefined);
+      setPrinterPresets(Array.isArray(result.presets) ? result.presets : []);
+      setPresetMessage(`Saved: ${preset.printer} – ${preset.paperSize} – ${preset.colorMode}`);
+      setEditingPreset(null);
+    } catch (error) {
+      setPresetError(error instanceof Error ? error.message : "Could not save printer setting. Is the PrintPilot Agent running?");
+    } finally {
+      setIsSavingPreset(false);
+    }
+  }
+
+  function editPrinterPreset(preset: PrinterPreset) {
+    setEditingPreset(preset);
+    setSelectedPrinter(preset.printer);
+    setPresetPaperSize(preset.paperSize);
+    setPresetColorMode(preset.colorMode);
+    setPresetMessage("");
+    setPresetError("");
+  }
+
+  async function deletePrinterPresetRow(preset: PrinterPreset) {
+    setPresetMessage("");
+    setPresetError("");
+    try {
+      const result = await deleteAgentPrinterPreset(preset);
+      setPrinterPresets(Array.isArray(result.presets) ? result.presets : []);
+      setPresetMessage("Printer setting deleted.");
+      if (editingPreset && editingPreset.printer === preset.printer && editingPreset.paperSize === preset.paperSize && editingPreset.colorMode === preset.colorMode) {
+        setEditingPreset(null);
+      }
+    } catch (error) {
+      setPresetError(error instanceof Error ? error.message : "Could not delete printer setting.");
     }
   }
 
@@ -587,6 +670,60 @@ export default function AutoPrintPage() {
                   <button className="btn btn-primary" type="button" onClick={savePrinter} disabled={!agentConnected || !selectedPrinter || isSavingPrinter}>
                     <Printer size={16} /> {isSavingPrinter ? "Saving..." : "Save Printer"}
                   </button>
+
+                  <div className="panel-title-row compact printer-preset-title">
+                    <div>
+                      <h2>Printer Settings</h2>
+                      <p>Save a paper size + color/grayscale combination per printer. Orders are routed to the printer matching what the customer requested.</p>
+                    </div>
+                  </div>
+                  <div className="printer-preset-form">
+                    <label className="auto-field">
+                      <span>Paper Size</span>
+                      <select value={presetPaperSize} onChange={(event) => setPresetPaperSize(event.target.value)}>
+                        {paperSizeOptions.map((size) => (
+                          <option key={size} value={size}>
+                            {size}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label className="auto-field">
+                      <span>Color / Grayscale</span>
+                      <select value={presetColorMode} onChange={(event) => setPresetColorMode(event.target.value)}>
+                        {colorModeOptions.map((mode) => (
+                          <option key={mode} value={mode}>
+                            {mode}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <button className="btn btn-primary" type="button" onClick={savePrinterPreset} disabled={!agentConnected || !selectedPrinter || isSavingPreset}>
+                      {isSavingPreset ? "Saving..." : editingPreset ? "Update Setting" : "Save Setting"}
+                    </button>
+                  </div>
+                  {presetMessage ? <div className="profile-alert success">{presetMessage}</div> : null}
+                  {presetError ? <div className="profile-alert error">{presetError}</div> : null}
+
+                  <div className="printer-preset-list">
+                    {printerPresets.map((preset) => (
+                      <div className="printer-preset-row" key={`${preset.printer}-${preset.paperSize}-${preset.colorMode}`}>
+                        <div>
+                          <strong>{preset.printer}</strong>
+                          <small>
+                            {preset.paperSize} · {preset.colorMode}
+                          </small>
+                        </div>
+                        <button className="printer-preset-edit" type="button" onClick={() => editPrinterPreset(preset)}>
+                          Edit
+                        </button>
+                        <button className="icon-action-btn danger" type="button" onClick={() => deletePrinterPresetRow(preset)} aria-label="Delete printer setting">
+                          <Trash2 size={17} />
+                        </button>
+                      </div>
+                    ))}
+                    {!printerPresets.length ? <p className="printer-preset-empty">No saved printer settings yet.</p> : null}
+                  </div>
                 </div>
               ) : null}
 

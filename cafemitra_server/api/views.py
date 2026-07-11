@@ -12,7 +12,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models import Max, Q, Sum
-from django.http import JsonResponse
+from django.http import FileResponse, HttpResponse, JsonResponse
 from django.utils.html import escape
 from django.utils import timezone
 from django.utils.dateparse import parse_date
@@ -650,7 +650,7 @@ def check_server_status(request):
     if request.method == "OPTIONS":
         return JsonResponse({})
 
-    return JsonResponse({"status": "ok", "message": "Server is running."})
+    return JsonResponse({"status": "ok", "message": "Server is running version4."})
 
 
 @csrf_exempt
@@ -1376,6 +1376,38 @@ def agent_job_status(request, order_id):
         order.save(update_fields=["status", "agent_message"])
 
     return JsonResponse({"order": public_order(order)})
+
+
+# Desktop agent auto-update. Both endpoints are called anonymously (before
+# the shop owner has logged the agent in), so they carry no auth check.
+# Files live at media/agent/version.txt and media/agent/PrintPilot-latest.zip -
+# bump version.txt and drop the new zip there to ship an update.
+AGENT_UPDATE_DIR = settings.MEDIA_ROOT / "agent"
+AGENT_UPDATE_ZIP_NAME = "PrintPilot-latest.zip"
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def agent_version_check(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    version_file = AGENT_UPDATE_DIR / "version.txt"
+    version = version_file.read_text(encoding="utf-8").strip() if version_file.exists() else ""
+    return HttpResponse(version, content_type="text/plain")
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def agent_update_download(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    zip_path = AGENT_UPDATE_DIR / AGENT_UPDATE_ZIP_NAME
+    if not zip_path.exists():
+        return JsonResponse({"message": "No agent update package is available."}, status=404)
+
+    return FileResponse(open(zip_path, "rb"), as_attachment=True, filename=AGENT_UPDATE_ZIP_NAME, content_type="application/zip")
 
 
 @require_http_methods(["GET", "OPTIONS"])
