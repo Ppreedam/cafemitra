@@ -40,6 +40,7 @@ DEFAULT_SERVICE_PRICING = {
             "paymentMode": "Online Payment",
             "selectedPrinter": "",
             "pricingSaved": False,
+            "isOpen": True,
             "priceItems": [
                 {"id": "black_white", "label": "Black & White", "rate": 2},
                 {"id": "color", "label": "Color", "rate": 10},
@@ -1135,6 +1136,8 @@ def public_print_order(request, code):
     pricing = ServicePricing.objects.filter(user=user, service_key=service_key).first()
     if not pricing:
         return JsonResponse({"message": "Selected service is not available."}, status=400)
+    if not bool((pricing.settings or {}).get("isOpen", True)):
+        return JsonResponse({"message": "This print shop is currently closed. Please try again when the service is open."}, status=403)
 
     pages = positive_int(request.POST.get("pages"), 1)
     copies = positive_int(request.POST.get("copies"), 1)
@@ -1387,12 +1390,14 @@ def public_shop_by_code(request, code):
     shop, _ = ShopProfile.objects.get_or_create(user=user)
     ensure_service_pricing(user)
     pricing = ServicePricing.objects.filter(user=user)
+    auto_print = ServicePricing.objects.filter(user=user, service_key="auto_document_print").first()
+    is_open = bool((auto_print.settings or {}).get("isOpen", True)) if auto_print else True
 
     return JsonResponse(
         {
             "code": cafe_code_for_user(user),
             "shop": public_shop(shop),
             "services": [public_pricing(item) for item in pricing],
-            "status": {"verified": True, "open": True},
+            "status": {"verified": True, "open": is_open},
         }
     )
