@@ -23,7 +23,7 @@ load_env_file(BASE_DIR / ".env")
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-cafemitra-secret-key")
 DEBUG = os.getenv("DJANGO_DEBUG", "1") == "1"
-ALLOWED_HOSTS = [host.strip() for host in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",") if host.strip()]
+ALLOWED_HOSTS = [host.strip() for host in os.getenv("DJANGO_ALLOWED_HOSTS", "api.repetigo.com,repetigo.com,www.repetigo.com,localhost,127.0.0.1").split(",") if host.strip()]
 if DEBUG and "*" not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append("*")
 
@@ -84,10 +84,10 @@ MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CORS_ALLOWED_ORIGINS = {origin.strip() for origin in os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",") if origin.strip()}
+CORS_ALLOWED_ORIGINS = {origin.strip() for origin in os.getenv("CORS_ALLOWED_ORIGINS", "https://repetigo.com,https://www.repetigo.com,http://localhost:3000,http://127.0.0.1:3000").split(",") if origin.strip()}
 CSRF_TRUSTED_ORIGINS = [origin.strip() for origin in os.getenv("CSRF_TRUSTED_ORIGINS", ",".join(CORS_ALLOWED_ORIGINS)).split(",") if origin.strip()]
 
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000").rstrip("/")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://repetigo.com").rstrip("/")
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend" if os.getenv("SMTP_USER") and os.getenv("SMTP_PASSWORD") else "django.core.mail.backends.console.EmailBackend"
 EMAIL_HOST = os.getenv("SMTP_HOST", "smtp.hostinger.com")
