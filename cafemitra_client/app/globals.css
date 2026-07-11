@@ -3663,6 +3663,73 @@ img.profile-photo {
   cursor: pointer;
 }
 
+.printer-preset-title {
+  margin-top: 22px;
+}
+
+.printer-preset-form {
+  display: grid;
+  grid-template-columns: minmax(140px, 1fr) minmax(140px, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.printer-preset-list {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.printer-preset-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  padding: 10px 14px;
+  background: #fff;
+}
+
+.printer-preset-row > div:first-child {
+  display: grid;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.printer-preset-row strong {
+  color: #111a44;
+  font-size: 0.92rem;
+  font-weight: 800;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.printer-preset-row small {
+  color: #606a87;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.printer-preset-edit {
+  border: 1px solid #dcd8ff;
+  border-radius: 8px;
+  padding: 0 12px;
+  height: 34px;
+  color: #5740ed;
+  background: rgba(87, 64, 237, 0.08);
+  font-size: 0.8rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.printer-preset-empty {
+  color: #606a87;
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+
 .pricing-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -7334,7 +7401,8 @@ img.profile-photo {
   .price-range-row,
   .print-pricing-editor .price-item-main,
   .print-pricing-editor .price-range-row,
-  .print-pricing-editor .payment-mode-list {
+  .print-pricing-editor .payment-mode-list,
+  .printer-preset-form {
     grid-template-columns: 1fr;
   }
 

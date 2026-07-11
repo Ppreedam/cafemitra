@@ -29,4 +29,6 @@ urlpatterns = [
     re_path(r"^public-orders/(?P<order_id>[0-9]+)/delete-document/?$", views.public_delete_order_document),
     re_path(r"^agent/jobs/?$", views.agent_jobs),
     re_path(r"^agent/jobs/(?P<order_id>[0-9]+)/status/?$", views.agent_job_status),
+    re_path(r"^agent/version-check/?$", views.agent_version_check),
+    re_path(r"^agent/update/?$", views.agent_update_download),
 ]

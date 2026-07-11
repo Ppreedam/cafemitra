@@ -1,0 +1,17 @@
+{
+  "version": 2,
+  "dgSpecHash": "ScjnNZlSCLo=",
+  "success": true,
+  "projectFilePath": "C:\\Users\\Administrator\\Music\\print\\cafemitra\\PrintPilotSolution\\PrintPilotAgent\\PrintPilotAgent.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\Administrator\\.nuget\\packages\\bblanchon.pdfium.linux\\147.0.7690\\bblanchon.pdfium.linux.147.0.7690.nupkg.sha512",
+    "C:\\Users\\Administrator\\.nuget\\packages\\bblanchon.pdfium.macos\\147.0.7690\\bblanchon.pdfium.macos.147.0.7690.nupkg.sha512",
+    "C:\\Users\\Administrator\\.nuget\\packages\\bblanchon.pdfium.win32\\147.0.7690\\bblanchon.pdfium.win32.147.0.7690.nupkg.sha512",
+    "C:\\Users\\Administrator\\.nuget\\packages\\pdftoimage\\5.2.1\\pdftoimage.5.2.1.nupkg.sha512",
+    "C:\\Users\\Administrator\\.nuget\\packages\\skiasharp\\3.119.2\\skiasharp.3.119.2.nupkg.sha512",
+    "C:\\Users\\Administrator\\.nuget\\packages\\skiasharp.nativeassets.linux.nodependencies\\3.119.2\\skiasharp.nativeassets.linux.nodependencies.3.119.2.nupkg.sha512",
+    "C:\\Users\\Administrator\\.nuget\\packages\\skiasharp.nativeassets.macos\\3.119.2\\skiasharp.nativeassets.macos.3.119.2.nupkg.sha512",
+    "C:\\Users\\Administrator\\.nuget\\packages\\skiasharp.nativeassets.win32\\3.119.2\\skiasharp.nativeassets.win32.3.119.2.nupkg.sha512"
+  ],
+  "logs": []
+}
