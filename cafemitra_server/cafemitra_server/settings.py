@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "api",
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
@@ -44,6 +45,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
 ]
 
 ROOT_URLCONF = "cafemitra_server.urls"
@@ -88,19 +90,26 @@ PRODUCTION_FRONTEND_ORIGINS = {
     "https://repetigo.com",
     "https://www.repetigo.com",
 }
-CORS_ALLOWED_ORIGINS = {
-    origin.strip()
-    for origin in os.getenv(
-        "CORS_ALLOWED_ORIGINS",
-        "http://localhost:3000,http://127.0.0.1:3000",
-    ).split(",")
-    if origin.strip()
-} | PRODUCTION_FRONTEND_ORIGINS
-CSRF_TRUSTED_ORIGINS = list({
-    origin.strip()
-    for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
-    if origin.strip()
-} | CORS_ALLOWED_ORIGINS)
+# CORS_ALLOWED_ORIGINS = {
+#     origin.strip()
+#     for origin in os.getenv(
+#         "CORS_ALLOWED_ORIGINS",
+#         "http://localhost:3000,http://127.0.0.1:3000",
+#     ).split(",")
+#     if origin.strip()
+# } | PRODUCTION_FRONTEND_ORIGINS
+# CSRF_TRUSTED_ORIGINS = list({
+#     origin.strip()
+#     for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",")
+#     if origin.strip()
+# } | CORS_ALLOWED_ORIGINS)
+
+CORS_ALLOWED_ORIGINS = [
+    "https://repetigo.com",
+    "https://www.repetigo.com",
+]
+
+CORS_ALLOW_CREDENTIALS = True
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://repetigo.com").rstrip("/")
 
