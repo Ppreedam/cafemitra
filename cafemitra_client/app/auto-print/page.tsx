@@ -29,9 +29,11 @@ import {
   Printer,
   QrCode,
   RefreshCw,
+  Send,
   Settings,
   Share2,
   ShieldCheck,
+  Smartphone,
   Trash2,
   UserRound,
   Users,
@@ -204,6 +206,8 @@ export default function AutoPrintPage() {
   const [pricingError, setPricingError] = useState("");
   const [isSavingPricing, setIsSavingPricing] = useState(false);
   const [pricingSaved, setPricingSaved] = useState(false);
+  const [isShopOpen, setIsShopOpen] = useState(true);
+  const [isSavingShopStatus, setIsSavingShopStatus] = useState(false);
   const [qrReady, setQrReady] = useState(false);
   const [shopCode, setShopCode] = useState("CM0000");
   const [shopName, setShopName] = useState("RepetiGo Shop");
@@ -214,7 +218,7 @@ export default function AutoPrintPage() {
   const [testPrintError, setTestPrintError] = useState("");
   const printerReady = printerSaved && Boolean(selectedPrinter);
   const pricingReady = pricingSaved && priceItems.length > 0;
-  const qrSetupReady = qrReady;
+  const qrSetupReady = qrReady || (agentConnected && printerReady && pricingReady && Boolean(qrUrl));
   const testPrintReady = testStatus === "success";
   const stepCompletion: Record<SetupStep["key"], boolean> = {
     download: agentDownloaded || agentConnected,
@@ -259,6 +263,7 @@ export default function AutoPrintPage() {
         setPriceItems(Array.isArray(autoPrint.settings.priceItems) ? autoPrint.settings.priceItems : priceItems);
         setPaymentMode(String(autoPrint.settings.paymentMode ?? "Online Payment"));
         setPricingSaved(Boolean(autoPrint.settings.pricingSaved));
+        setIsShopOpen(autoPrint.settings.isOpen !== false);
         const savedPrinter = String(autoPrint.settings.selectedPrinter || "").trim();
         if (savedPrinter) {
           setSelectedPrinter(savedPrinter);
@@ -441,6 +446,19 @@ export default function AutoPrintPage() {
     }
   }
 
+  async function toggleShopOpenStatus() {
+    const nextStatus = !isShopOpen;
+    setIsSavingShopStatus(true);
+    try {
+      await savePricingService("auto_document_print", { isOpen: nextStatus });
+      setIsShopOpen(nextStatus);
+    } catch {
+      setPricingError("Could not update shop open status.");
+    } finally {
+      setIsSavingShopStatus(false);
+    }
+  }
+
   function addPriceItem() {
     setPricingSaved(false);
     const nextIndex = priceItems.length + 1;
@@ -510,8 +528,9 @@ export default function AutoPrintPage() {
     return image;
   }
 
-  function downloadQr() {
-    const svg = buildQrPosterSvg(shopName, shopCode, qrUrl, qrImage);
+  async function downloadQr() {
+    const image = qrImage || (await generateQr({ copyToClipboard: false }));
+    const svg = buildQrPosterSvg(shopName, shopCode, qrUrl, image);
     const blob = new Blob([svg], { type: "image/svg+xml" });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
@@ -537,7 +556,13 @@ export default function AutoPrintPage() {
               <h1>PrintPilot Setup</h1>
               <p>Upload. Pay. Print. Customers scan the QR, upload a document, complete payment, and send the job to the PrintPilot printer.</p>
             </div>
-            <span className={`status-pill ${printPilotActive ? "" : "warning"}`}>{printPilotActive ? "PrintPilot Active" : "Setup in Progress"}</span>
+            <div className="auto-print-hero-actions">
+              <span className={`status-pill ${printPilotActive ? "" : "warning"}`}>{printPilotActive ? "PrintPilot Active" : "Setup in Progress"}</span>
+              <button className={`shop-status-toggle ${isShopOpen ? "open" : "closed"}`} type="button" onClick={toggleShopOpenStatus} disabled={isSavingShopStatus}>
+                <span />
+                {isSavingShopStatus ? "Updating..." : isShopOpen ? "Shop Open" : "Shop Closed"}
+              </button>
+            </div>
           </div>
 
           <section className="auto-print-layout" aria-label="PrintPilot setup wizard">
@@ -579,15 +604,17 @@ export default function AutoPrintPage() {
             </aside>
 
             <section className="panel setup-action-panel">
-              <div className="panel-title-row">
-                <div>
-                  <span className="setup-badge">Step {activeStep + 1}</span>
-                  <h2>{currentStep.title}</h2>
+              {currentStep.key !== "qr" ? (
+                <div className="panel-title-row">
+                  <div>
+                    <span className="setup-badge">Step {activeStep + 1}</span>
+                    <h2>{currentStep.title}</h2>
+                  </div>
+                  <span className="icon-tile" style={{ "--tile-color": "#1688f5" } as React.CSSProperties}>
+                    <CurrentStepIcon size={23} />
+                  </span>
                 </div>
-                <span className="icon-tile" style={{ "--tile-color": "#1688f5" } as React.CSSProperties}>
-                  <CurrentStepIcon size={23} />
-                </span>
-              </div>
+              ) : null}
 
               {currentStep.key === "verify" ? (
                 <div className="wizard-action-content">
@@ -790,30 +817,54 @@ export default function AutoPrintPage() {
 
               {currentStep.key === "qr" ? (
                 <div className="wizard-action-content qr-action">
-                  <div className="qr-card">
-                    <div className="qr-card-header">
-                      <strong>PrintPilot QR Ready</strong>
-                      <span>{shopCode}</span>
-                    </div>
-                    <div className="qr-preview real-qr-preview" aria-label="Generated shop QR preview">
-                      {qrImage ? (
-                        <>
-                          <img src={qrImage} alt="Shop QR code" />
-                          <span className="qr-brand-badge">
-                            <span className="brand-repeti">Repeti</span><span className="brand-go">GO</span>
-                          </span>
-                        </>
-                      ) : (
-                        <QrCode size={140} />
-                      )}
-                    </div>
+                  <div className="qr-poster-shell">
                     <div className="qr-buttons">
-                      <button className="btn btn-primary" disabled={!qrReady} type="button" onClick={downloadQr}>
+                      <button className="btn btn-primary" disabled={!qrSetupReady} type="button" onClick={downloadQr}>
                         <Download size={16} /> Download
                       </button>
-                      <button className="btn" disabled={!qrReady} type="button" onClick={shareQr}>
+                      <button className="btn" disabled={!qrSetupReady} type="button" onClick={shareQr}>
                         <Share2 size={16} /> Share
                       </button>
+                    </div>
+                    <div className="qr-poster-card">
+                      <div className="qr-poster-hero">
+                        <Send size={42} />
+                        <h3>{shopName}</h3>
+                        <p>Scan. Upload. Pay. Print.</p>
+                      </div>
+                      <div className="qr-poster-body">
+                        <div className="poster-qr-frame" aria-label="Generated shop QR preview">
+                          {qrImage ? (
+                            <>
+                              <img src={qrImage} alt="Shop QR code" />
+                              <span className="qr-brand-badge poster-brand-badge">
+                                <span className="brand-repeti">Repeti</span><span className="brand-go">GO</span>
+                              </span>
+                            </>
+                          ) : (
+                            <QrCode size={150} />
+                          )}
+                        </div>
+                        <div className="poster-upload-row">
+                          <span className="poster-icon-tile">
+                            <Smartphone size={28} />
+                          </span>
+                          <strong>Scan to Upload Documents</strong>
+                        </div>
+                        <div className="poster-secure-row">
+                          <span className="poster-shield">
+                            <ShieldCheck size={34} />
+                          </span>
+                          <div>
+                            <strong>100% Secure Document Upload</strong>
+                            <p>Your documents are encrypted, private, and automatically deleted after printing.</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="qr-poster-footer">
+                        <span>Powered by</span>
+                        <strong>Repeti<span>Go</span></strong>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -921,27 +972,45 @@ function formatAgentConnectedMessage(health: AgentHealth) {
 
 function buildQrPosterSvg(shopName: string, shopCode: string, qrUrl: string, qrImage: string) {
   const qrMarkup = qrImage
-    ? `<image href="${qrImage}" x="180" y="244" width="360" height="360"/>
-       <rect x="268" y="405" width="184" height="44" rx="22" fill="#ffffff" stroke="#0d1748" stroke-width="4"/>
-       <text x="360" y="434" text-anchor="middle" font-family="Arial" font-size="23" font-weight="900" fill="#0d1748">Repeti<tspan fill="#4a72bd">GO</tspan></text>
-       <path d="M411 425h18m-8-8 8 8-8 8" fill="none" stroke="#4a72bd" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>`
-    : `<rect x="180" y="244" width="360" height="360" rx="18" fill="#111a44"/>`;
+    ? `<image href="${qrImage}" x="184" y="324" width="352" height="352"/>
+       <rect x="266" y="469" width="188" height="50" rx="25" fill="#ffffff" stroke="#1f63f2" stroke-width="5"/>
+       <text x="360" y="502" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" font-weight="900" fill="#08164a">Repeti<tspan fill="#2b6df3">Go</tspan></text>`
+    : `<rect x="184" y="324" width="352" height="352" rx="18" fill="#eef4ff"/>
+       <path d="M330 470h60v60h-60zM252 374h88v88h-88zM380 374h88v88h-88zM252 584h88v88h-88z" fill="none" stroke="#1f63f2" stroke-width="15"/>`;
 
   return `
-<svg xmlns="http://www.w3.org/2000/svg" width="720" height="900" viewBox="0 0 720 900">
-  <rect width="720" height="900" fill="#f5f7fc"/>
-  <rect x="0" y="0" width="720" height="214" fill="#0d1748"/>
-  <rect x="54" y="54" width="612" height="792" rx="34" fill="#ffffff"/>
-  <rect x="54" y="54" width="612" height="166" rx="34" fill="#5740ed"/>
-  <rect x="54" y="178" width="612" height="42" fill="#5740ed"/>
-  <text x="360" y="112" text-anchor="middle" font-family="Arial" font-size="38" font-weight="900" fill="#ffffff">${escapeSvg(shopName)}</text>
-  <text x="360" y="154" text-anchor="middle" font-family="Arial" font-size="21" font-weight="800" fill="#f7d45c">Scan. Upload. Pay. Print.</text>
-  <rect x="140" y="208" width="440" height="440" rx="30" fill="#ffffff" stroke="#e4e8f5" stroke-width="3"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1120" viewBox="0 0 720 1120">
+  <rect width="720" height="1120" fill="#f5f8ff"/>
+  <rect x="24" y="24" width="672" height="1072" rx="42" fill="#ffffff" stroke="#1f63f2" stroke-width="3"/>
+  <clipPath id="posterClip"><rect x="24" y="24" width="672" height="1072" rx="42"/></clipPath>
+  <g clip-path="url(#posterClip)">
+    <rect x="24" y="24" width="672" height="220" fill="#061340"/>
+    <circle cx="360" cy="42" r="170" fill="#0c2c87" opacity="0.36"/>
+    <path d="M315 80l96-42-26 88-24-31-36 26 28-36z" fill="#2f76ff"/>
+    <path d="M305 85l-44 13M314 103l-32 10M326 118l-25 7" fill="none" stroke="#8fb5ff" stroke-width="7" stroke-linecap="round"/>
+    <text x="360" y="148" text-anchor="middle" font-family="Arial, sans-serif" font-size="48" font-weight="900" fill="#ffffff">${escapeSvg(shopName)}</text>
+    <text x="360" y="195" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" font-weight="900" fill="#ffd21f">Scan. Upload. Pay. Print.</text>
+    <path d="M24 221C204 268 516 268 696 221v66H24z" fill="#1f63f2"/>
+    <path d="M24 238C204 284 516 284 696 238v72H24z" fill="#ffffff"/>
+  </g>
+  <rect x="136" y="292" width="448" height="448" rx="34" fill="#ffffff" stroke="#1f63f2" stroke-width="5"/>
   ${qrMarkup}
-  <text x="360" y="700" text-anchor="middle" font-family="Arial" font-size="30" font-weight="900" fill="#0d1748">${shopCode}</text>
-  <text x="360" y="735" text-anchor="middle" font-family="Arial" font-size="18" font-weight="700" fill="#59658c">Upload documents from your phone</text>
-  <rect x="106" y="772" width="508" height="54" rx="14" fill="#0d1748"/>
-  <text x="360" y="807" text-anchor="middle" font-family="Arial" font-size="20" font-weight="900" fill="#ffffff">Repeti<tspan fill="#77a0ff">GO</tspan> PrintPilot</text>
+  <circle cx="154" cy="796" r="40" fill="#eaf2ff"/>
+  <rect x="141" y="772" width="26" height="48" rx="6" fill="none" stroke="#1f63f2" stroke-width="5"/>
+  <path d="M148 788h13M148 808h13M153 798h18" stroke="#1f63f2" stroke-width="4" stroke-linecap="round"/>
+  <text x="206" y="807" font-family="Arial, sans-serif" font-size="29" font-weight="900" fill="#08164a">Scan to Upload Documents</text>
+  <line x1="84" y1="842" x2="636" y2="842" stroke="#dfe7f4" stroke-width="2"/>
+  <circle cx="154" cy="914" r="48" fill="#eaf2ff"/>
+  <path d="M154 876l32 14v25c0 28-20 42-32 47-12-5-32-19-32-47v-25z" fill="#1f63f2"/>
+  <rect x="142" y="909" width="24" height="22" rx="4" fill="#ffffff"/>
+  <path d="M147 909v-9a7 7 0 0114 0v9" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
+  <text x="214" y="900" font-family="Arial, sans-serif" font-size="27" font-weight="900" fill="#16a34a">100% Secure Document Upload</text>
+  <text x="214" y="936" font-family="Arial, sans-serif" font-size="21" font-weight="700" fill="#08164a">Encrypted, private, and automatically</text>
+  <text x="214" y="964" font-family="Arial, sans-serif" font-size="21" font-weight="700" fill="#08164a">deleted after printing.</text>
+  <rect x="24" y="1018" width="672" height="78" rx="34" fill="#0b6cff"/>
+  <rect x="24" y="1064" width="672" height="32" fill="#0b6cff"/>
+  <text x="304" y="1066" text-anchor="end" font-family="Arial, sans-serif" font-size="25" font-weight="700" fill="#ffffff">Powered by</text>
+  <text x="324" y="1068" font-family="Arial, sans-serif" font-size="36" font-weight="900" fill="#ffffff">Repeti<tspan fill="#9fc2ff">Go</tspan></text>
 </svg>`;
 }
 

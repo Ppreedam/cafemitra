@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import QRCode from "qrcode";
-import { Crop, Eye, FileText, IdCard, Image as ImageIcon, Printer, Trash2, Upload, Wallet, X } from "lucide-react";
+import { Clock3, Crop, Eye, FileText, IdCard, Image as ImageIcon, Printer, Trash2, Upload, Wallet, X } from "lucide-react";
 import { apiUrl } from "@/lib/api";
 import { calculatePriceItemRate, formatPriceItem, mergePricingDefaults, type PriceItem, type PricingService } from "@/lib/pricing";
 
@@ -175,6 +175,7 @@ export default function CustomerScanPage() {
   const canDeletePrintedDocument = order?.status === "printed" && !order.documentDeleted;
   const isOnlinePaymentOrder = order?.paymentStatus === "pending" && paymentMode === "Online Payment";
   const upiLink = useMemo(() => (order && data ? buildUpiLink(order, data.shop.shopName) : ""), [data, order]);
+  const isCafeOpen = data?.status.open !== false;
 
   useEffect(() => {
     if (!isPassportPhoto || !fileUrl || !hasImageFile) {
@@ -403,6 +404,10 @@ export default function CustomerScanPage() {
 
   async function createPrintOrder() {
     if (!finalFile || !selectedItem || !activeService) return;
+    if (!isCafeOpen) {
+      setOrderError("This print shop is currently closed. Please try again when the service is open.");
+      return;
+    }
 
     setOptionsTouched(true);
     setIsSubmittingOrder(true);
@@ -536,8 +541,14 @@ export default function CustomerScanPage() {
       <section className="customer-shop-hero">
         <div className="customer-shop-overlay">
           <div className="customer-shop-identity">
+            <div className="customer-logo">
+              {data.shop.logo ? <img src={data.shop.logo} alt="" /> : <Printer size={21} />}
+            </div>
             <div className="customer-shop-copy">
-              <h1>{data.shop.shopName || "RepetiGo Cafe"}</h1>
+              <div>
+                <span className="customer-brand">RepetiGo PrintPilot</span>
+                <h1>{data.shop.shopName || "RepetiGo Cafe"}</h1>
+              </div>
               <div className="customer-badges">
                 <span className={data.status.open ? "open" : "closed"}>{data.status.open ? "Open" : "Closed"}</span>
               </div>
@@ -546,6 +557,18 @@ export default function CustomerScanPage() {
         </div>
       </section>
 
+      {!isCafeOpen ? (
+        <section className="customer-closed-state">
+          <div className="customer-closed-icon">
+            <Clock3 size={30} />
+          </div>
+          <span>Service Closed</span>
+          <h2>{data.shop.shopName || "This print shop"} is not accepting uploads right now.</h2>
+          <p>Please scan again later when the cafe reopens. Your documents are safe because no file upload is accepted while the service is closed.</p>
+        </section>
+      ) : null}
+
+      {isCafeOpen ? (
       <section className="customer-flow-grid">
         <div className="customer-flow-guide" aria-label="Order steps">
           <div className="customer-progress-summary">
@@ -887,6 +910,7 @@ export default function CustomerScanPage() {
           )}
         </article>
       </section>
+      ) : null}
 
       {isDeleteDocumentOpen ? (
         <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Delete printed document">
