@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PrintPilot")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+181cba0a4825771d890cce6e4ca95f6a415ae150")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+52ce94380adc99260829163c5e77b5ac5bf3ad68")]
 [assembly: System.Reflection.AssemblyProductAttribute("PrintPilot")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PrintPilot")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
