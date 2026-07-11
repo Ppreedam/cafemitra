@@ -1245,6 +1245,26 @@ def reject_cash_order(request, order_id):
 
 
 @csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def order_document(request, order_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    order = PrintOrder.objects.filter(id=order_id, user=user).first()
+    if not order:
+        return JsonResponse({"message": "Order not found."}, status=404)
+    if not order.document:
+        return JsonResponse({"message": "This order has no document."}, status=404)
+
+    filename = order.original_filename or order.document.name.rsplit("/", 1)[-1]
+    return FileResponse(order.document.open("rb"), as_attachment=True, filename=filename)
+
+
+@csrf_exempt
 @require_http_methods(["POST", "OPTIONS"])
 def public_mark_order_paid(request, order_id):
     if request.method == "OPTIONS":
