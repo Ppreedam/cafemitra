@@ -107,11 +107,18 @@ PRODUCTION_FRONTEND_ORIGINS = {
 CORS_ALLOWED_ORIGINS = [
     "https://repetigo.com",
     "https://www.repetigo.com",
+    "http://localhost:3000"
 ]
 
 CORS_ALLOW_CREDENTIALS = True
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://repetigo.com").rstrip("/")
+AI_UPSCALE_API_URL = os.getenv("AI_UPSCALE_API_URL", "").strip()
+AI_UPSCALE_API_KEY = os.getenv("AI_UPSCALE_API_KEY", "").strip()
+AI_UPSCALE_TIMEOUT = int(os.getenv("AI_UPSCALE_TIMEOUT", "120"))
+WEBSITE_SCREENSHOT_API_URL = os.getenv("WEBSITE_SCREENSHOT_API_URL", "").strip()
+WEBSITE_SCREENSHOT_API_KEY = os.getenv("WEBSITE_SCREENSHOT_API_KEY", "").strip()
+WEBSITE_SCREENSHOT_TIMEOUT = int(os.getenv("WEBSITE_SCREENSHOT_TIMEOUT", "120"))
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend" if os.getenv("SMTP_USER") and os.getenv("SMTP_PASSWORD") else "django.core.mail.backends.console.EmailBackend"
 EMAIL_HOST = os.getenv("SMTP_HOST", "smtp.hostinger.com")

@@ -1,0 +1,6 @@
+.photo-object{position:absolute;z-index:4;display:grid;place-items:center;transform:translate(-50%,-50%);border:1px dashed rgba(37,99,235,.75);border-radius:5px;padding:5px;color:transparent;background:rgba(37,99,235,.04);cursor:move;touch-action:none;user-select:none}
+.photo-object.selected{border:2px solid #2563eb;box-shadow:0 0 0 2px rgba(255,255,255,.9);background:rgba(37,99,235,.12)}
+.photo-object.text{min-width:110px;min-height:38px}.photo-object.text:after{content:"Text";color:rgba(37,99,235,.55);font-size:10px;font-weight:800}
+.photo-object.sticker{min-width:48px;min-height:48px;color:inherit;font-size:1.5rem}.photo-object.shape{padding:0}.photo-object.shape.circle{border-radius:50%}
+.photo-object.merge{min-width:55px;min-height:55px}.photo-object.merge:after{content:"Overlay";color:#2563eb;font-size:9px;font-weight:800}
+.photo-object.selected:before{content:"Drag";position:absolute;top:-20px;left:50%;transform:translateX(-50%);border-radius:4px;padding:2px 6px;color:#fff;background:#2563eb;font-size:9px;white-space:nowrap}

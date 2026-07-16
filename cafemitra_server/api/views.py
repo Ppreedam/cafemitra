@@ -1,6 +1,11 @@
 import json
+import base64
+import hashlib
+import hmac
+import ipaddress
 import re
 import secrets
+import socket
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -20,6 +25,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
 from .models import AuthToken, ContactMessage, EmailVerificationToken, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, UserProfile, WalletTransaction, WithdrawalRequest
+from cafemitra_server.product_setting import active_payment_gateway
 
 User = get_user_model()
 
@@ -62,6 +68,172 @@ def parse_body(request):
         return json.loads(request.body.decode("utf-8") or "{}")
     except json.JSONDecodeError:
         return {}
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def ai_upscale_image(request):
+    """Validate an image and relay it to the configured AI upscaling provider."""
+    upload = request.FILES.get("image")
+    if not upload:
+        return JsonResponse({"message": "Select an image to upscale."}, status=400)
+    if upload.size > 15 * 1024 * 1024:
+        return JsonResponse({"message": "Images must be 15 MB or smaller."}, status=413)
+    content_type = (upload.content_type or "").lower()
+    if content_type not in {"image/jpeg", "image/png", "image/webp"}:
+        return JsonResponse({"message": "Only JPG, PNG, and WebP images are supported."}, status=400)
+    scale = request.POST.get("scale", "2")
+    output_format = request.POST.get("output_format", "webp").lower()
+    if scale not in {"2", "4"}:
+        return JsonResponse({"message": "Scale must be 2 or 4."}, status=400)
+    if output_format not in {"webp", "png", "jpeg", "jpg"}:
+        return JsonResponse({"message": "Output format must be webp, png, or jpeg."}, status=400)
+    if not settings.AI_UPSCALE_API_URL:
+        return JsonResponse({"message": "AI Image Upscaler is not configured on the server."}, status=503)
+
+    image_bytes = upload.read()
+    boundary = f"----RepetiGo{secrets.token_hex(16)}"
+    body = _multipart_body(boundary, image_bytes, upload.name, content_type, scale, output_format)
+    headers = {"Content-Type": f"multipart/form-data; boundary={boundary}", "Accept": "image/*"}
+    if settings.AI_UPSCALE_API_KEY:
+        headers["Authorization"] = f"Bearer {settings.AI_UPSCALE_API_KEY}"
+    provider_request = urllib.request.Request(settings.AI_UPSCALE_API_URL, data=body, headers=headers, method="POST")
+    try:
+        with urllib.request.urlopen(provider_request, timeout=settings.AI_UPSCALE_TIMEOUT) as provider_response:
+            result = provider_response.read()
+            result_type = provider_response.headers.get_content_type()
+    except urllib.error.HTTPError as error:
+        detail = error.read(2048).decode("utf-8", errors="replace")
+        return JsonResponse({"message": "AI provider rejected the image.", "providerDetail": detail}, status=502)
+    except (urllib.error.URLError, TimeoutError):
+        return JsonResponse({"message": "AI upscaling service is currently unavailable."}, status=502)
+    if not result or not result_type.startswith("image/"):
+        return JsonResponse({"message": "AI provider did not return a valid image."}, status=502)
+
+    extension = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}.get(result_type, output_format)
+    base_name = re.sub(r"[^A-Za-z0-9._-]+", "-", upload.name.rsplit(".", 1)[0])[:80] or "image"
+    response = HttpResponse(result, content_type=result_type)
+    response["Content-Disposition"] = f'attachment; filename="{base_name}-{scale}x-ai-upscaled.{extension}"'
+    response["Cache-Control"] = "no-store"
+    return response
+
+
+def _multipart_body(boundary, image_bytes, filename, content_type, scale, output_format):
+    safe_filename = re.sub(r'[^A-Za-z0-9._-]+', '-', filename) or "image"
+    chunks = []
+    for name, value in (("scale", scale), ("output_format", output_format)):
+        chunks.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"{name}\"\r\n\r\n{value}\r\n".encode())
+    chunks.append(f"--{boundary}\r\nContent-Disposition: form-data; name=\"image\"; filename=\"{safe_filename}\"\r\nContent-Type: {content_type}\r\n\r\n".encode())
+    chunks.extend((image_bytes, f"\r\n--{boundary}--\r\n".encode()))
+    return b"".join(chunks)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def website_to_image(request):
+    data = parse_body(request)
+    target_url = str(data.get("url", "")).strip()
+    if target_url and not re.match(r"^https?://", target_url, re.I):
+        target_url = f"https://{target_url}"
+    parsed = urllib.parse.urlparse(target_url)
+    if parsed.scheme not in {"http", "https"} or not parsed.hostname or parsed.username or parsed.password:
+        return JsonResponse({"message": "Enter a valid public HTTP or HTTPS website URL."}, status=400)
+    if not _is_public_hostname(parsed.hostname):
+        return JsonResponse({"message": "Local and private network addresses cannot be captured."}, status=400)
+    try:
+        width = int(data.get("width", 1440))
+    except (TypeError, ValueError):
+        width = 1440
+    if width not in {390, 768, 1280, 1440, 1920}:
+        return JsonResponse({"message": "Select a supported browser width."}, status=400)
+    output_format = str(data.get("format", "png")).lower()
+    if output_format not in {"png", "jpeg"}:
+        return JsonResponse({"message": "Output format must be PNG or JPEG."}, status=400)
+    if not settings.WEBSITE_SCREENSHOT_API_URL:
+        return JsonResponse({"message": "Website screenshot service is not configured on the server."}, status=503)
+    payload = json.dumps({"url": target_url, "fullPage": True, "width": width, "format": output_format}).encode("utf-8")
+    headers = {"Content-Type": "application/json", "Accept": "image/*"}
+    if settings.WEBSITE_SCREENSHOT_API_KEY:
+        headers["Authorization"] = f"Bearer {settings.WEBSITE_SCREENSHOT_API_KEY}"
+    provider_request = urllib.request.Request(settings.WEBSITE_SCREENSHOT_API_URL, data=payload, headers=headers, method="POST")
+    try:
+        with urllib.request.urlopen(provider_request, timeout=settings.WEBSITE_SCREENSHOT_TIMEOUT) as provider_response:
+            result = provider_response.read()
+            result_type = provider_response.headers.get_content_type()
+    except urllib.error.HTTPError as error:
+        detail = error.read(2048).decode("utf-8", errors="replace")
+        return JsonResponse({"message": "Screenshot provider rejected this website.", "providerDetail": detail}, status=502)
+    except (urllib.error.URLError, TimeoutError):
+        return JsonResponse({"message": "Website screenshot service is currently unavailable."}, status=502)
+    if not result or result_type not in {"image/png", "image/jpeg"}:
+        return JsonResponse({"message": "Screenshot provider did not return a valid image."}, status=502)
+    extension = "jpg" if result_type == "image/jpeg" else "png"
+    safe_host = re.sub(r"[^A-Za-z0-9.-]+", "-", parsed.hostname)[:100]
+    response = HttpResponse(result, content_type=result_type)
+    response["Content-Disposition"] = f'attachment; filename="{safe_host}-full-page.{extension}"'
+    response["Cache-Control"] = "no-store"
+    return response
+
+
+def _is_public_hostname(hostname):
+    if hostname.lower() == "localhost":
+        return False
+    try:
+        addresses = {entry[4][0] for entry in socket.getaddrinfo(hostname, None)}
+    except socket.gaierror:
+        return False
+    for address in addresses:
+        ip = ipaddress.ip_address(address)
+        if not ip.is_global:
+            return False
+    return bool(addresses)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def detect_faces(request):
+    """Return normalized face boxes; image bytes are processed in memory only."""
+    upload = request.FILES.get("image")
+    if not upload:
+        return JsonResponse({"message": "Select an image for face detection."}, status=400)
+    if upload.size > 15 * 1024 * 1024:
+        return JsonResponse({"message": "Images must be 15 MB or smaller."}, status=413)
+    if (upload.content_type or "").lower() not in {"image/jpeg", "image/png", "image/webp"}:
+        return JsonResponse({"message": "Only JPG, PNG, and WebP images are supported."}, status=400)
+    try:
+        import cv2
+        import numpy as np
+    except ImportError:
+        return JsonResponse({"message": "Face detection is not available on this server."}, status=503)
+    image = cv2.imdecode(np.frombuffer(upload.read(), dtype=np.uint8), cv2.IMREAD_COLOR)
+    if image is None:
+        return JsonResponse({"message": "This image could not be decoded."}, status=400)
+    height, width = image.shape[:2]
+    if max(width, height) > 2400:
+        ratio = 2400 / max(width, height)
+        scan = cv2.resize(image, (round(width * ratio), round(height * ratio)))
+    else:
+        ratio, scan = 1.0, image
+    sensitivity = request.POST.get("sensitivity", "recommended")
+    parameters = {"low": (1.16, 7), "recommended": (1.1, 6), "high": (1.07, 4)}
+    scale_factor, neighbors = parameters.get(sensitivity, parameters["recommended"])
+    gray = cv2.equalizeHist(cv2.cvtColor(scan, cv2.COLOR_BGR2GRAY))
+    cascade = cv2.CascadeClassifier(cv2.data.haarcascades + "haarcascade_frontalface_default.xml")
+    faces = cascade.detectMultiScale(gray, scaleFactor=scale_factor, minNeighbors=neighbors, minSize=(36, 36))
+    if sensitivity != "high" and len(faces):
+        largest_area = max(w * h for _, _, w, h in faces)
+        faces = [face for face in faces if face[2] * face[3] >= largest_area * 0.18]
+    boxes = []
+    for x, y, w, h in faces:
+        x, y, w, h = (value / ratio for value in (x, y, w, h))
+        minimum_area = {"low": 0.012, "recommended": 0.006, "high": 0.003}.get(sensitivity, 0.006)
+        if (w * h) / (width * height) < minimum_area:
+            continue
+        pad_x, pad_y = w * 0.1, h * 0.14
+        left, top = max(0, x - pad_x), max(0, y - pad_y)
+        right, bottom = min(width, x + w + pad_x), min(height, y + h + pad_y)
+        boxes.append({"x": left / width * 100, "y": top / height * 100, "width": (right - left) / width * 100, "height": (bottom - top) / height * 100})
+    return JsonResponse({"faces": boxes, "count": len(boxes), "width": width, "height": height})
 
 
 def public_auth_message(message):
@@ -426,6 +598,7 @@ def public_order(order):
         "totalAmount": float(order.total_amount),
         "paymentMode": order.payment_mode,
         "paymentStatus": order.payment_status,
+        "paymentGateway": order.payment_gateway,
         "status": order.status,
         "fileName": order.original_filename,
         "fileUrl": order.document.url if has_document else "",
@@ -536,6 +709,27 @@ def call_upi_status_api(order):
             last_error = "Payment status check timed out."
 
     return {"status": "error", "message": last_error or "Payment status check failed."}
+
+
+def razorpay_request(path, payload, config):
+    credentials = base64.b64encode(f'{config["key_id"]}:{config["key_secret"]}'.encode()).decode()
+    request = urllib.request.Request(
+        f"https://api.razorpay.com/v1/{path}",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Authorization": f"Basic {credentials}", "Content-Type": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            return json.loads(response.read().decode("utf-8")), None
+    except urllib.error.HTTPError as error:
+        try:
+            detail = json.loads(error.read().decode("utf-8")).get("error", {}).get("description")
+        except (json.JSONDecodeError, AttributeError):
+            detail = None
+        return None, detail or "Razorpay rejected the payment request."
+    except (urllib.error.URLError, TimeoutError):
+        return None, "Razorpay is temporarily unavailable. Please try again."
 
 
 def agent_order(order, request):
@@ -1179,9 +1373,66 @@ def public_print_order(request, code):
         document=document,
         original_filename=document.name,
         customer_phone=str(request.POST.get("customerPhone", "")).strip(),
+        payment_gateway=active_payment_gateway()[0] or "" if payment_status == PrintOrder.PAYMENT_PENDING else "",
     )
 
     return JsonResponse({"order": public_order(order)}, status=201)
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def public_create_razorpay_order(request, order_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+    order = PrintOrder.objects.filter(id=order_id).first()
+    if not order:
+        return JsonResponse({"message": "Order not found."}, status=404)
+    gateway, config = active_payment_gateway()
+    if gateway != "razorpay" or order.payment_gateway != "razorpay":
+        return JsonResponse({"message": "Razorpay is not enabled for this order."}, status=400)
+    if order.payment_status != PrintOrder.PAYMENT_PENDING:
+        return JsonResponse({"message": "This order is not awaiting payment."}, status=400)
+    if not order.gateway_order_id:
+        payload, error = razorpay_request("orders", {
+            "amount": int(order.total_amount * 100), "currency": "INR",
+            "receipt": f"print_{order.id}", "notes": {"order_id": str(order.id), "shop_code": order.shop_code},
+        }, config)
+        if error:
+            return JsonResponse({"message": error}, status=502)
+        order.gateway_order_id = payload["id"]
+        order.save(update_fields=["gateway_order_id"])
+    return JsonResponse({"payment": {
+        "gateway": "razorpay", "keyId": config["key_id"], "gatewayOrderId": order.gateway_order_id,
+        "amount": int(order.total_amount * 100), "currency": "INR", "name": "RepetiGo",
+        "description": f"Print order {order.shop_code}-{order.id:05d}",
+    }})
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def public_verify_razorpay_payment(request, order_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+    order = PrintOrder.objects.filter(id=order_id).first()
+    if not order:
+        return JsonResponse({"message": "Order not found."}, status=404)
+    gateway, config = active_payment_gateway()
+    body = parse_body(request)
+    payment_id = str(body.get("razorpay_payment_id", ""))
+    gateway_order_id = str(body.get("razorpay_order_id", ""))
+    signature = str(body.get("razorpay_signature", ""))
+    if gateway != "razorpay" or not order.gateway_order_id or gateway_order_id != order.gateway_order_id:
+        return JsonResponse({"message": "Invalid payment order."}, status=400)
+    expected = hmac.new(config["key_secret"].encode(), f"{gateway_order_id}|{payment_id}".encode(), hashlib.sha256).hexdigest()
+    if not payment_id or not hmac.compare_digest(expected, signature):
+        return JsonResponse({"message": "Payment signature verification failed."}, status=400)
+    if order.payment_status == PrintOrder.PAYMENT_PENDING:
+        order.payment_status = PrintOrder.PAYMENT_PAID
+        order.status = PrintOrder.STATUS_QUEUED
+        order.paid_at = timezone.now()
+        order.gateway_payment_id = payment_id
+        order.save(update_fields=["payment_status", "status", "paid_at", "gateway_payment_id"])
+    return JsonResponse({"order": public_order(order)})
 
 
 @csrf_exempt

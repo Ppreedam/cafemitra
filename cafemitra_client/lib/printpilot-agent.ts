@@ -110,14 +110,20 @@ async function fetchAgentEndpoint<T>(endpoints: string[], init?: RequestInit) {
   let lastError: unknown;
 
   for (const endpoint of endpoints) {
-    const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 2000);
+    let timeout = 0;
     try {
-      const response = await fetch(endpoint, {
-        cache: "no-store",
-        ...init,
-        signal: controller.signal,
-      });
+      const response = await Promise.race([
+        fetch(endpoint, {
+          cache: "no-store",
+          ...init,
+        }),
+        new Promise<never>((_, reject) => {
+          timeout = window.setTimeout(
+            () => reject(new Error("PrintPilot Agent request timed out.")),
+            2000,
+          );
+        }),
+      ]);
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(getAgentErrorMessage(result, getAgentFallbackMessage(init, endpoint)));
@@ -126,7 +132,7 @@ async function fetchAgentEndpoint<T>(endpoints: string[], init?: RequestInit) {
     } catch (error) {
       lastError = error;
     } finally {
-      window.clearTimeout(timeout);
+      if (timeout) window.clearTimeout(timeout);
     }
   }
 

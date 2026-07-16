@@ -1,0 +1,2 @@
+.blur-box{background:rgba(77,140,255,.06)}
+.blur-box.selected{border-width:2px;box-shadow:0 0 0 1px #fff,0 0 0 3px #4d8cff}

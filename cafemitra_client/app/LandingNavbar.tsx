@@ -6,16 +6,29 @@ import { useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   ArrowRight,
+  Archive,
   Bot,
   ChevronDown,
-  CircleHelp,
   Crop,
   FileWarning,
+  FileImage,
+  FileLock2,
+  FileOutput,
+  FilePenLine,
+  FileText,
+  Files,
   IdCard,
-  Info,
   Printer,
+  RotateCw,
+  Scissors,
+  Sparkles,
+  Stamp,
+  Table2,
+  TextSelect,
+  LockOpen,
+  ListOrdered,
+  Presentation,
   ReceiptText,
-  ScrollText,
   Shield,
   Users,
   X,
@@ -85,53 +98,44 @@ const serviceMenu = [
   },
 ];
 
-const moreMenu = [
-  {
-    name: "About Us",
-    href: "/about-us",
-    icon: Info,
-    color: "#2563eb",
-    summary: "India's document infrastructure story.",
-    description: "Learn why RepetiGo exists, what we are building for Indian print shops, and how our platform keeps document work private and fast.",
-    metric: "Company",
-  },
-  {
-    name: "Help & Support",
-    href: "/help-support",
-    icon: CircleHelp,
-    color: "#0d9488",
-    summary: "Guides, troubleshooting, and setup help.",
-    description: "Find setup steps, FAQs, PrintPilot guidance, and support resources for running RepetiGo smoothly in your shop.",
-    metric: "Support",
-  },
-  {
-    name: "Privacy Policy",
-    href: "/privacy-policy",
-    icon: Shield,
-    color: "#16a34a",
-    summary: "How we protect shop and customer data.",
-    description: "Review how RepetiGo handles document uploads, customer data, AI processing, retention, security, and user rights.",
-    metric: "Privacy",
-  },
-  {
-    name: "Disclaimer",
-    href: "/disclaimer",
-    icon: FileWarning,
-    color: "#f97316",
-    summary: "Important platform limits and responsibilities.",
-    description: "Understand the responsibilities of shop owners and customers when using automation, printing, AI tools, and third-party services.",
-    metric: "Legal",
-  },
-  {
-    name: "Terms & Conditions",
-    href: "/terms-conditions",
-    icon: ScrollText,
-    color: "#5740ed",
-    summary: "Rules for using RepetiGo services.",
-    description: "Read the platform terms covering accounts, acceptable use, payments, content, service availability, and liability.",
-    metric: "Agreement",
-  },
-];
+const pdfToolGroups = [
+  { label: "Organize PDF", color: "#2563eb", tools: [
+    ["Merge PDF", "/pdf-tools/merge-pdf", Files], ["Split PDF", "/pdf-tools/split-pdf", Scissors], ["Remove pages", "/pdf-tools/remove-pages", FileOutput], ["Extract pages", "/pdf-tools/extract-pages", FileOutput], ["Organize PDF", "/pdf-tools/organize-pdf", ListOrdered],
+  ]},
+  { label: "Optimize PDF", color: "#0d9488", tools: [
+    ["Compress PDF", "/pdf-tools/compress-pdf", Archive], ["Repair PDF", "/pdf-tools/repair-pdf", FileWarning], ["OCR PDF", "/pdf-tools/ocr-pdf", TextSelect],
+  ]},
+  { label: "Convert to PDF", color: "#1688f5", tools: [
+    ["JPG to PDF", "/pdf-tools/jpg-to-pdf", FileImage], ["Word to PDF", "/pdf-tools/word-to-pdf", FileText], ["PowerPoint to PDF", "/pdf-tools/powerpoint-to-pdf", Presentation], ["Excel to PDF", "/pdf-tools/excel-to-pdf", Table2], ["HTML to PDF", "/pdf-tools/html-to-pdf", FileText], ["Markdown to PDF", "/pdf-tools/markdown-to-pdf", FileText],
+  ]},
+  { label: "Convert from PDF", color: "#2563eb", tools: [
+    ["PDF to JPG", "/pdf-tools/pdf-to-jpg", FileImage], ["PDF to Word", "/pdf-tools/pdf-to-word", FileText], ["PDF to PowerPoint", "/pdf-tools/pdf-to-powerpoint", Presentation], ["PDF to Excel", "/pdf-tools/pdf-to-excel", Table2], ["PDF to PDF/A", "/pdf-tools/pdf-to-pdfa", FileOutput],
+  ]},
+  { label: "Edit PDF", color: "#16a1bd", tools: [
+    ["Rotate PDF", "/pdf-tools/rotate-pdf", RotateCw], ["Add page numbers", "/pdf-tools/page-numbers", ListOrdered], ["Add watermark", "/pdf-tools/watermark-pdf", Stamp], ["Crop PDF", "/pdf-tools/crop-pdf", Crop], ["Edit PDF", "/pdf-tools/edit-pdf", FilePenLine], ["PDF Forms", "/pdf-tools/pdf-forms", ReceiptText],
+  ]},
+  { label: "PDF Security", color: "#0d1748", tools: [
+    ["Unlock PDF", "/pdf-tools/unlock-pdf", LockOpen], ["Protect PDF", "/pdf-tools/protect-pdf", FileLock2], ["Sign PDF", "/pdf-tools/sign-pdf", FilePenLine], ["Redact PDF", "/pdf-tools/redact-pdf", Shield], ["Compare PDF", "/pdf-tools/compare-pdf", Files],
+  ]},
+] as const;
+
+const imageToolGroups = [
+  { label: "Optimize", color: "#65b741", tools: [
+    ["Compress IMAGE", "/image-tools/compress-image", Archive], ["Upscale", "/image-tools/upscale-image", Sparkles], ["Remove background", "/image-tools/background-remover", FileImage],
+  ]},
+  { label: "Create", color: "#b05a9d", tools: [
+    ["Meme generator", "/image-tools/meme-generator", Sparkles], ["Photo editor", "/image-tools/photo-editor", FilePenLine],
+  ]},
+  { label: "Modify", color: "#20b4d7", tools: [
+    ["Resize IMAGE", "/image-tools/resize-image", Crop], ["Crop IMAGE", "/image-tools/crop-image", Scissors], ["Rotate IMAGE", "/image-tools/rotate-image", RotateCw],
+  ]},
+  { label: "Convert", color: "#f2c400", tools: [
+    ["Image Converter", "/image-tools/image-converter", FileImage], ["Website to Image", "/image-tools/website-to-image", FileImage], ["HEIC to JPG", "/image-tools/convert-to-jpg", FileOutput], ["SVG Converter", "/image-tools/convert-to-jpg", FileImage], ["WebP to PNG", "/image-tools/convert-from-jpg", FileOutput], ["PNG Converter", "/image-tools/convert-to-jpg", FileImage], ["WebP to JPG", "/image-tools/convert-to-jpg", FileOutput], ["JPG Converter", "/image-tools/convert-from-jpg", FileImage], ["PNG to JPG", "/image-tools/convert-to-jpg", FileOutput], ["GIF Converter", "/image-tools/convert-to-jpg", FileImage], ["PNG to SVG", "/image-tools", FileOutput], ["Convert to JPG", "/image-tools/convert-to-jpg", FileOutput], ["Convert from JPG", "/image-tools/convert-from-jpg", FileImage], ["HTML to IMAGE", "/image-tools/html-to-image", FileText],
+  ]},
+  { label: "Security", color: "#4e82bd", tools: [
+    ["Watermark IMAGE", "/image-tools/watermark-image", Stamp], ["Blur face", "/image-tools/blur-face", Shield],
+  ]},
+] as const;
 
 export function Brand() {
   return (
@@ -150,12 +154,11 @@ export function LandingNavbar() {
   const pathname = usePathname();
   const [showNotice, setShowNotice] = useState(true);
   const [activeServiceIndex, setActiveServiceIndex] = useState(0);
-  const [activeMoreIndex, setActiveMoreIndex] = useState(0);
-  const morePaths = moreMenu.map((item) => item.href);
   const isHomeActive = pathname === "/";
   const isServicesActive = pathname === "/print-automation";
+  const isPdfToolsActive = pathname.startsWith("/pdf-tools");
   const isPricingActive = pathname === "/pricing";
-  const isMoreActive = morePaths.includes(pathname);
+  const isImageToolsActive = pathname.startsWith("/image-tools");
   const isContactActive = pathname === "/contact-us";
 
   return (
@@ -185,15 +188,21 @@ export function LandingNavbar() {
             </button>
             <ProductMegaMenu activeIndex={activeServiceIndex} items={serviceMenu} setActiveIndex={setActiveServiceIndex} />
           </div>
+          <div className="nav-dropdown nav-pdf-tools">
+            <button className={isPdfToolsActive ? "nav-dropdown-trigger nav-link-active" : "nav-dropdown-trigger"} type="button">
+              PDF Tools <ChevronDown size={14} aria-hidden />
+            </button>
+            <PdfToolsMegaMenu />
+          </div>
           {releaseFlags.showLatestJobs ? <Link href="/#workflow">Latest Jobs</Link> : null}
           <Link className={isPricingActive ? "nav-link-active" : undefined} href="/pricing">
             Pricing
           </Link>
-          <div className="nav-dropdown nav-more">
-            <button className={isMoreActive ? "nav-dropdown-trigger nav-link-active" : "nav-dropdown-trigger"} type="button">
-              More <ChevronDown size={14} aria-hidden />
+          <div className="nav-dropdown nav-image-tools">
+            <button className={isImageToolsActive ? "nav-dropdown-trigger nav-link-active" : "nav-dropdown-trigger"} type="button">
+              Image Tools <ChevronDown size={14} aria-hidden />
             </button>
-            <CompanyMegaMenu activeIndex={activeMoreIndex} items={moreMenu} setActiveIndex={setActiveMoreIndex} />
+            <ImageToolsMegaMenu />
           </div>
           <Link className={isContactActive ? "nav-link-active" : undefined} href="/contact-us">
             Contact Us
@@ -205,15 +214,31 @@ export function LandingNavbar() {
   );
 }
 
-type CompanyMenuItem = {
-  name: string;
-  href: string;
-  icon: React.ElementType;
-  color: string;
-  summary: string;
-  description: string;
-  metric: string;
-};
+function PdfToolsMegaMenu() {
+  return <div className="nav-mega-menu pdf-tools-mega-menu" aria-label="PDF tools menu">
+    {pdfToolGroups.map((group) => <section className="pdf-menu-group" key={group.label}>
+      <h3>{group.label}</h3>
+      <div>{group.tools.map(([name, href, Icon]) => <Link href={href} key={name}>
+        <span style={{ "--pdf-menu-color": group.color } as React.CSSProperties}><Icon size={16} /></span>
+        <strong>{name}</strong>
+      </Link>)}</div>
+    </section>)}
+    <Link className="pdf-menu-all" href="/pdf-tools">View all PDF tools <ArrowRight size={15} /></Link>
+  </div>;
+}
+
+function ImageToolsMegaMenu() {
+  return <div className="nav-mega-menu pdf-tools-mega-menu image-tools-mega-menu" aria-label="Image tools menu">
+    {imageToolGroups.map((group) => <section className="pdf-menu-group" key={group.label}>
+      <h3>{group.label}</h3>
+      <div>{group.tools.map(([name, href, Icon]) => <Link href={href} key={name}>
+        <span style={{ "--pdf-menu-color": group.color } as React.CSSProperties}><Icon size={16} /></span>
+        <strong>{name}</strong>
+      </Link>)}</div>
+    </section>)}
+    <Link className="pdf-menu-all" href="/image-tools">View all image tools <ArrowRight size={15} /></Link>
+  </div>;
+}
 
 type MegaMenuItem = {
   name: string;
@@ -319,82 +344,6 @@ function ProductMegaMenu({
 
         <Link className="product-preview-link" href={activeItem.comingSoon ? "/#services" : activeItem.href}>
           Learn More <ArrowRight size={15} aria-hidden />
-        </Link>
-      </div>
-    </div>
-  );
-}
-
-function CompanyMegaMenu({
-  activeIndex,
-  items,
-  setActiveIndex,
-}: {
-  activeIndex: number;
-  items: CompanyMenuItem[];
-  setActiveIndex: (index: number) => void;
-}) {
-  const activeItem = items[activeIndex] || items[0];
-  const ActiveIcon = activeItem.icon;
-
-  return (
-    <div className="nav-mega-menu company-mega-menu" aria-label="More pages menu">
-      <div className="company-menu-list">
-        {items.map((item, index) => {
-          const Icon = item.icon;
-          const isActive = index === activeIndex;
-          return (
-            <Link
-              className={isActive ? "company-menu-item company-menu-item-active" : "company-menu-item"}
-              href={item.href}
-              key={item.name}
-              onFocus={() => setActiveIndex(index)}
-              onMouseEnter={() => setActiveIndex(index)}
-            >
-              <span className="company-menu-icon" style={{ "--tile-color": item.color } as React.CSSProperties}>
-                <Icon size={17} />
-              </span>
-              <span className="company-menu-copy">
-                <strong>{item.name}</strong>
-                <span>{item.summary}</span>
-              </span>
-            </Link>
-          );
-        })}
-      </div>
-
-      <div className="company-menu-preview">
-        <span className="company-preview-icon" style={{ "--tile-color": activeItem.color } as React.CSSProperties}>
-          <ActiveIcon size={22} />
-        </span>
-        <div className="company-preview-copy">
-          <span>{activeItem.metric}</span>
-          <h3>{activeItem.name}</h3>
-          <p>{activeItem.description}</p>
-        </div>
-
-        <div className="company-preview-window">
-          <div className="company-window-top">
-            <span />
-            <span />
-            <span />
-            <strong>repetigo.com</strong>
-          </div>
-          <div className="company-window-body">
-            <div className="company-window-hero">
-              <strong>{activeItem.metric}</strong>
-              <span>{activeItem.summary}</span>
-            </div>
-            <div className="company-window-grid">
-              <span>Secure</span>
-              <span>Clear</span>
-              <span>India-ready</span>
-            </div>
-          </div>
-        </div>
-
-        <Link className="company-preview-link" href={activeItem.href}>
-          Open {activeItem.name} <ArrowRight size={15} aria-hidden />
         </Link>
       </div>
     </div>

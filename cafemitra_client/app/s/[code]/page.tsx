@@ -32,6 +32,7 @@ type PrintOrder = {
   tokenId: string;
   tokenNumber: number;
   paymentStatus: string;
+  paymentGateway: string;
   status: string;
   totalAmount: number;
   documentDeleted?: boolean;
@@ -57,6 +58,23 @@ const serviceIcons: Record<string, typeof FileText> = {
   passport_photo: ImageIcon,
   id_card_print: IdCard,
 };
+
+function loadScript(src: string) {
+  return new Promise<void>((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
+    if (existing) {
+      if (existing.dataset.loaded === "true") resolve();
+      else existing.addEventListener("load", () => resolve(), { once: true });
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.onload = () => { script.dataset.loaded = "true"; resolve(); };
+    script.onerror = () => reject(new Error("Razorpay Checkout could not load."));
+    document.body.appendChild(script);
+  });
+}
 
 export default function CustomerScanPage() {
   const params = useParams<{ code: string }>();
@@ -174,6 +192,8 @@ export default function CustomerScanPage() {
   const activeStepLabel = customerSteps[activeStep - 1]?.label || "Service";
   const canDeletePrintedDocument = order?.status === "printed" && !order.documentDeleted;
   const isOnlinePaymentOrder = order?.paymentStatus === "pending" && paymentMode === "Online Payment";
+  const isDirectUpiOrder = isOnlinePaymentOrder && order?.paymentGateway === "direct_upi";
+  const isRazorpayOrder = isOnlinePaymentOrder && order?.paymentGateway === "razorpay";
   const upiLink = useMemo(() => (order && data ? buildUpiLink(order, data.shop.shopName) : ""), [data, order]);
   const isCafeOpen = data?.status.open !== false;
 
@@ -208,7 +228,7 @@ export default function CustomerScanPage() {
   useEffect(() => {
     let isActive = true;
 
-    if (!upiLink || !isOnlinePaymentOrder) {
+    if (!upiLink || !isDirectUpiOrder) {
       setUpiQrDataUrl("");
       return;
     }
@@ -228,10 +248,10 @@ export default function CustomerScanPage() {
     return () => {
       isActive = false;
     };
-  }, [upiLink, isOnlinePaymentOrder]);
+  }, [upiLink, isDirectUpiOrder]);
 
   useEffect(() => {
-    if (!paymentStarted || !order || order.paymentStatus !== "pending") return;
+    if (!paymentStarted || !order || order.paymentStatus !== "pending" || order.paymentGateway !== "direct_upi") return;
 
     paymentPollRef.current = setInterval(() => {
       checkUpiPayment(order.id);
@@ -433,8 +453,12 @@ export default function CustomerScanPage() {
       if (!response.ok) throw new Error(result.message || "Could not create the order.");
       setOrder(result.order);
       if (result.order?.paymentStatus === "pending" && paymentMode === "Online Payment") {
-        setPaymentStarted(true);
-        setPaymentMessage("Scan the QR code or open your UPI app. We will verify payment automatically.");
+        if (result.order.paymentGateway === "razorpay") {
+          await openRazorpay(result.order);
+        } else {
+          setPaymentStarted(true);
+          setPaymentMessage("Scan the QR code or open your UPI app. We will verify payment automatically.");
+        }
       }
     } catch (submitError) {
       setOrderError(submitError instanceof Error ? submitError.message : "Could not create the order.");
@@ -470,6 +494,46 @@ export default function CustomerScanPage() {
     } finally {
       paymentCheckInFlightRef.current = false;
       setIsCheckingPayment(false);
+    }
+  }
+
+  async function openRazorpay(targetOrder: PrintOrder) {
+    setIsSubmittingOrder(true);
+    setOrderError("");
+    try {
+      await loadScript("https://checkout.razorpay.com/v1/checkout.js");
+      const response = await fetch(apiUrl(`/api/public-orders/${targetOrder.id}/razorpay/order/`), { method: "POST" });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.message || "Could not start Razorpay.");
+      const Razorpay = (window as typeof window & { Razorpay?: new (options: Record<string, unknown>) => { open: () => void } }).Razorpay;
+      if (!Razorpay) throw new Error("Razorpay Checkout could not load.");
+      const checkout = new Razorpay({
+        key: result.payment.keyId,
+        amount: result.payment.amount,
+        currency: result.payment.currency,
+        name: result.payment.name,
+        description: result.payment.description,
+        order_id: result.payment.gatewayOrderId,
+        theme: { color: "#2563eb" },
+        handler: async (payment: Record<string, string>) => {
+          const verifyResponse = await fetch(apiUrl(`/api/public-orders/${targetOrder.id}/razorpay/verify/`), {
+            method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payment),
+          });
+          const verified = await verifyResponse.json().catch(() => ({}));
+          if (!verifyResponse.ok) {
+            setOrderError(verified.message || "Payment verification failed.");
+            return;
+          }
+          setOrder(verified.order);
+          setPaymentMessage("Payment received. Your document has been sent to the print queue.");
+        },
+        modal: { ondismiss: () => setPaymentMessage("Payment was not completed. Click Pay with Razorpay to retry.") },
+      });
+      checkout.open();
+    } catch (paymentError) {
+      setOrderError(paymentError instanceof Error ? paymentError.message : "Could not start Razorpay.");
+    } finally {
+      setIsSubmittingOrder(false);
     }
   }
 
@@ -883,7 +947,7 @@ export default function CustomerScanPage() {
             </div>
           ) : null}
           {orderError ? <div className="profile-alert error">{orderError}</div> : null}
-          {isOnlinePaymentOrder ? (
+          {isDirectUpiOrder ? (
             <div className="upi-payment-box">
               <div className="upi-payment-head">
                 <span>UPI Payment</span>
@@ -899,9 +963,9 @@ export default function CustomerScanPage() {
                 {isCheckingPayment ? "Checking..." : "I have paid, check now"}
               </button>
             </div>
-          ) : order && order.paymentStatus === "pending" ? (
-            <button type="button" onClick={markOrderPaid} disabled={isSubmittingOrder}>
-              <Wallet size={18} /> {isSubmittingOrder ? "Processing..." : "Pay Now"}
+          ) : isRazorpayOrder && order ? (
+            <button type="button" onClick={() => openRazorpay(order)} disabled={isSubmittingOrder}>
+              <Wallet size={18} /> {isSubmittingOrder ? "Opening Razorpay..." : "Pay with Razorpay"}
             </button>
           ) : (
             <button type="button" onClick={createPrintOrder} disabled={!hasUploadedFile || !finalFile || isSubmittingOrder || Boolean(order)}>
