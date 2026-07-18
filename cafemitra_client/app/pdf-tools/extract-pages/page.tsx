@@ -1,4 +1,4 @@
-import { SplitPdfTool } from "../split-pdf/page";
+import { SplitPdfTool } from "../split-pdf/SplitPdfClient";
 
 export default function ExtractPagesPage() {
   return <SplitPdfTool

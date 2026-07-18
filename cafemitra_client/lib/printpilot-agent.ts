@@ -59,7 +59,15 @@ const agentPrinterPresetsEndpoints = ["http://127.0.0.1:8765/printer-presets", "
 const agentDeletePrinterPresetEndpoints = ["http://127.0.0.1:8765/printer-presets/delete", "http://localhost:8765/printer-presets/delete"];
 
 export async function fetchAgentHealth() {
-  return fetchAgentEndpoint<AgentHealth>(agentStatusEndpoints);
+  try {
+    return await fetchAgentEndpoint<AgentHealth>(agentStatusEndpoints);
+  } catch {
+    return {
+      status: "stopped",
+      printers: fallbackPrinters,
+      lastCheckAt: new Date().toISOString(),
+    } satisfies AgentHealth;
+  }
 }
 
 export async function saveAgentPrinter(printerName: string) {
@@ -110,20 +118,15 @@ async function fetchAgentEndpoint<T>(endpoints: string[], init?: RequestInit) {
   let lastError: unknown;
 
   for (const endpoint of endpoints) {
+    const controller = new AbortController();
     let timeout = 0;
     try {
-      const response = await Promise.race([
-        fetch(endpoint, {
-          cache: "no-store",
-          ...init,
-        }),
-        new Promise<never>((_, reject) => {
-          timeout = window.setTimeout(
-            () => reject(new Error("PrintPilot Agent request timed out.")),
-            2000,
-          );
-        }),
-      ]);
+      timeout = window.setTimeout(() => controller.abort(), 2000);
+      const response = await fetch(endpoint, {
+        ...init,
+        cache: "no-store",
+        signal: init?.signal ?? controller.signal,
+      });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(getAgentErrorMessage(result, getAgentFallbackMessage(init, endpoint)));

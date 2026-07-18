@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { Archive, ArrowLeft, ArrowRight, Check, Download, FileImage, FileText, Image as ImageIcon, LoaderCircle, Plus, Presentation, RotateCw, ShieldCheck, Table2, Trash2, Upload, type LucideIcon } from "lucide-react";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
@@ -13,10 +14,10 @@ type Config = { title: string; description: string; icon: LucideIcon; accept: st
 type Result = { name: string; blob: Blob; url: string; detail: string; preview?: string };
 
 const configs: Record<ConversionSlug, Config> = {
-  "jpg-to-pdf": { title: "JPG to PDF", description: "Combine JPG and PNG images into a clean, shareable PDF.", icon: FileImage, accept: "image/jpeg,image/png,.jpg,.jpeg,.png", button: "Select images", drop: "or drop JPG and PNG images here", multiple: true, action: "Create PDF", output: "PDF", note: "Images remain private and are processed in your browser." },
+  "jpg-to-pdf": { title: "JPG to PDF", description: "Combine JPG, PNG, HEIC, WEBP, BMP, and GIF images into a clean, shareable PDF.", icon: FileImage, accept: "image/jpeg,image/png,image/heic,image/webp,image/bmp,image/gif,.jpg,.jpeg,.png,.heic,.webp,.bmp,.gif", button: "Select images", drop: "or drop JPG, PNG, HEIC, WEBP, BMP, and GIF images here", multiple: true, action: "Create PDF", output: "PDF", note: "Images remain private and are processed in your browser." },
   "word-to-pdf": { title: "Word to PDF", description: "Turn Word documents into browser-generated PDF files.", icon: FileText, accept: ".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document", button: "Select Word files", drop: "or drop DOCX files here", multiple: true, action: "Convert to PDF", output: "PDF", note: "Text and paragraphs are preserved; advanced Word layouts may be simplified." },
-  "powerpoint-to-pdf": { title: "PowerPoint to PDF", description: "Convert presentation text into a clear PDF document.", icon: Presentation, accept: ".pptx,application/vnd.openxmlformats-officedocument.presentationml.presentation", button: "Select presentations", drop: "or drop PPTX files here", multiple: true, action: "Convert to PDF", output: "PDF", note: "Slide text is preserved. Complex animations and master layouts are simplified." },
-  "excel-to-pdf": { title: "Excel to PDF", description: "Convert spreadsheet sheets into readable PDF pages.", icon: Table2, accept: ".xls,.xlsx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", button: "Select spreadsheets", drop: "or drop Excel files here", multiple: true, action: "Convert to PDF", output: "PDF", note: "Cell values are preserved; very wide sheets wrap across the PDF." },
+  "powerpoint-to-pdf": { title: "PowerPoint to PDF", description: "Convert presentation text into a clear PDF document.", icon: Presentation, accept: ".ppt,.pptx,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation", button: "Select presentations", drop: "or drop PPT and PPTX files here", multiple: true, action: "Convert to PDF", output: "PDF", note: "Slide text is preserved. Complex animations and master layouts are simplified." },
+  "excel-to-pdf": { title: "Excel to PDF", description: "Convert spreadsheet sheets into readable PDF pages.", icon: Table2, accept: ".xls,.xlsx,.csv,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", button: "Select spreadsheets", drop: "or drop Excel and CSV files here", multiple: true, action: "Convert to PDF", output: "PDF", note: "Cell values are preserved; very wide sheets wrap across the PDF." },
   "html-to-pdf": { title: "HTML to PDF", description: "Convert saved HTML documents into clean PDF files.", icon: FileText, accept: ".html,.htm,text/html", button: "Select HTML files", drop: "or drop HTML files here", multiple: true, action: "Convert to PDF", output: "PDF", note: "Readable page text is converted. Remote scripts and tracking are not executed." },
   "markdown-to-pdf": { title: "Markdown to PDF", description: "Convert Markdown documents into clean PDF files.", icon: FileText, accept: ".md,.markdown,text/markdown,text/plain", button: "Select Markdown files", drop: "or drop MD files here", multiple: true, action: "Convert to PDF", output: "PDF", note: "Markdown content is converted privately in your browser." },
   "pdf-to-jpg": { title: "PDF to JPG", description: "Render every PDF page as a high-quality JPG image.", icon: ImageIcon, accept: "application/pdf,.pdf", button: "Select PDF files", drop: "or drop PDFs here", multiple: true, action: "Convert to JPG", output: "JPG", note: "Choose image quality and scale before converting." },
@@ -28,7 +29,7 @@ const configs: Record<ConversionSlug, Config> = {
 
 export function isConversionSlug(value: string): value is ConversionSlug { return value in configs; }
 
-export default function ConversionTool({ slug }: { slug: ConversionSlug }) {
+export default function ConversionTool({ slug, children }: { slug: ConversionSlug; children?: ReactNode }) {
   const config = configs[slug]; const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]); const [results, setResults] = useState<Result[]>([]);
   const [busy, setBusy] = useState(false); const [progress, setProgress] = useState(0); const [error, setError] = useState("");
@@ -57,14 +58,14 @@ export default function ConversionTool({ slug }: { slug: ConversionSlug }) {
     finally { setBusy(false); }
   }
 
-  if (!files.length) return <PdfToolUpload title={config.title} description={config.description} icon={config.icon} inputRef={inputRef} onFiles={add} accept={config.accept} multiple={config.multiple} buttonLabel={config.button} dropLabel={config.drop} />;
+  if (!files.length) return <><PdfToolUpload title={config.title} description={config.description} icon={config.icon} inputRef={inputRef} onFiles={add} accept={config.accept} multiple={config.multiple} buttonLabel={config.button} dropLabel={config.drop} headingLevel={children ? "h2" : "h1"} />{children}</>;
   const Icon = config.icon;
   return <div className="conversion-page">
     <input ref={inputRef} hidden type="file" accept={config.accept} multiple={config.multiple} onChange={(event) => { if (event.target.files?.length) add(event.target.files); event.target.value = ""; }} />
     <div className="conversion-topline"><Link href="/pdf-tools"><ArrowLeft size={17} /> PDF Tools</Link><span><ShieldCheck size={16} /> Files stay in your browser</span></div>
     <div className="conversion-layout">
       <main className="conversion-main">
-        <header><div><span><Icon size={24} /></span><div><small>RepetiGo PDF Tools</small><h1>{config.title}</h1><p>{files.length} file{files.length > 1 ? "s" : ""} · {formatBytes(totalSize)}</p></div></div><button type="button" onClick={() => inputRef.current?.click()}><Plus size={17} /> Add files</button></header>
+        <header><div><span><Icon size={24} /></span><div><small>RepetiGo PDF Tools</small><h2>{config.title}</h2><p>{files.length} file{files.length > 1 ? "s" : ""} · {formatBytes(totalSize)}</p></div></div><button type="button" onClick={() => inputRef.current?.click()}><Plus size={17} /> Add files</button></header>
         {!results.length ? <section className="conversion-file-area">
           <div className="conversion-files">{files.map((file, index) => <article key={`${file.name}-${file.lastModified}-${index}`}><div className="conversion-file-icon"><Icon size={26} /></div><div><strong>{file.name}</strong><small>{formatBytes(file.size)} · Ready to convert</small></div><button type="button" onClick={() => { clearResults(); setFiles((current) => current.filter((_, i) => i !== index)); }} aria-label={`Remove ${file.name}`}><Trash2 size={17} /></button></article>)}</div>
           <button className="conversion-drop-more" type="button" onClick={() => inputRef.current?.click()}><Upload size={23} /><strong>Add more files</strong><small>Choose more compatible files</small></button>
@@ -83,6 +84,7 @@ export default function ConversionTool({ slug }: { slug: ConversionSlug }) {
       </aside>
     </div>
     {results.length ? <ToolPromotionRail context={`${slug}-conversion`} /> : null}
+    {children}
   </div>;
 }
 

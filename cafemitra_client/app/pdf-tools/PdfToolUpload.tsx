@@ -10,14 +10,16 @@ type PdfToolUploadProps = {
   icon: LucideIcon;
   inputRef: MutableRefObject<HTMLInputElement | null>;
   onFiles: (files: FileList) => void;
+  headingLevel?: "h1" | "h2";
   buttonLabel?: string;
   dropLabel?: string;
   accept?: string;
   multiple?: boolean;
 };
 
-export function PdfToolUpload({ title, description, icon: Icon, inputRef, onFiles, buttonLabel = "Select PDF files", dropLabel = "or drop PDFs here", accept = "application/pdf,.pdf", multiple = true }: PdfToolUploadProps) {
+export function PdfToolUpload({ title, description, icon: Icon, inputRef, onFiles, headingLevel = "h1", buttonLabel = "Select PDF files", dropLabel = "or drop PDFs here", accept = "application/pdf,.pdf", multiple = true }: PdfToolUploadProps) {
   const [dragging, setDragging] = useState(false);
+  const Heading = headingLevel;
 
   function drop(event: DragEvent<HTMLElement>) {
     event.preventDefault(); setDragging(false);
@@ -28,7 +30,7 @@ export function PdfToolUpload({ title, description, icon: Icon, inputRef, onFile
     <div className="pdf-upload-topline"><Link href="/pdf-tools"><ArrowLeft size={17} /> PDF Tools</Link><span><ShieldCheck size={16} /> Free, private browser processing</span></div>
     <div className="pdf-upload-content">
       <span className="pdf-upload-mark"><Icon size={32} /></span><span className="auto-print-kicker">Free PDF Tool</span>
-      <h1>{title}</h1><p>{description}</p>
+      <Heading>{title}</Heading><p>{description}</p>
       <button type="button" onClick={() => inputRef.current?.click()}><Upload size={22} /> {buttonLabel}</button><small>{dropLabel}</small>
       <div className="pdf-upload-benefits"><span><Check size={14} /> No login</span><span><Check size={14} /> No upload to server</span><span><Check size={14} /> Completely free</span></div>
     </div>
