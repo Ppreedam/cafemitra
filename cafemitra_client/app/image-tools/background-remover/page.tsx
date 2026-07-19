@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import BackgroundRemoverClient from "./BackgroundRemoverClient";
 
-const pageUrl = "https://www.repetigo.com/tools/image/remove-background/";
+const pageUrl = "https://repetigo.com/image-tools/background-remover";
 
 export const metadata: Metadata = {
   title: "Remove Background from Image Free - India ID Photos, Logos & Signatures | RepetiGo",
@@ -28,7 +28,7 @@ The tool handles the use cases Indian users need most: removing the coloured or 
 
 ✓ AI Auto-Detects Subject   ✓ Transparent PNG Output   ✓ ID Photos, Logos, Signatures   ✓ No Sign-Up   ✓ 100% Browser-Based - Nothing Uploaded
 
-[ Remove Background Free - No Sign-Up → repetigo.com/tools/image/remove-background/ ]
+[ Remove Background Free - No Sign-Up → repetigo.com/image-tools/background-remover ]
 
 H2: How to Remove Background from an Image Online Free in 3 Steps.
 The process is automatic - AI handles the detection and removal without requiring you to manually trace or select anything.
@@ -42,7 +42,7 @@ Click Download. Your image downloads as a PNG file with a transparent background
 
 💡 The download is always a PNG file with a transparent background, not a white background. If a portal specifically requires a filled white-background JPG rather than a transparent PNG, convert the result using the PNG to JPG tool at /image-tools/convert-to-jpg - the transparent areas become white during that conversion.
 
-[ Remove Background Free Now → repetigo.com/tools/image/remove-background/ ]
+[ Remove Background Free Now → repetigo.com/image-tools/background-remover ]
 
 H2: Indian Use Cases - Why Indian Users Remove Image Backgrounds.
 Background removal is one of the most practical image processing tasks in India. Government portals, official applications, and professional digital documents all have specific photo background requirements that users need to meet.
@@ -85,7 +85,7 @@ Digitally attaching your signature to official forms, job applications, and docu
 How to create a digital signature with a transparent background: (1) Write your signature with a dark pen on plain white paper, in good lighting. (2) Take a clear photo of just the signature - crop out excess paper. (3) Upload it to the Remove Background tool here. The AI detects the signature (dark ink) as the subject and removes the white paper as the background. (4) Download the transparent PNG. Your signature now appears as dark ink on a transparent background - when placed on a document, it sits directly on the page with no white box.
 Best results: use dark blue or black ink on clean white paper. Avoid lined or ruled paper (lines can confuse the AI detection). Ensure even lighting with no shadows on the paper.
 
-[ Remove Signature Background Free → repetigo.com/tools/image/remove-background/ ]
+[ Remove Signature Background Free → repetigo.com/image-tools/background-remover ]
 
 H3: Logo Background Removal - For Print, Web, and Overlays
 Business logos saved as JPG files have a white background that appears as a white box when placed on any non-white surface - a coloured banner, a certificate, a WhatsApp message, a presentation slide. Removing the white background and saving as a transparent PNG makes the logo overlay correctly on any background colour.
@@ -203,7 +203,7 @@ PrintPilot - RepetiGo's print shop software - can fold background removal into t
 
 [ Learn About PrintPilot → /products/printpilot/ ]
 [ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Remove Background Now → repetigo.com/tools/image/remove-background/ ]
+[ Or Remove Background Now → repetigo.com/image-tools/background-remover ]
 
 H2: Common Questions About Removing Image Backgrounds.
 H3: Q1: How do I remove the background from an image online free in India?
@@ -251,8 +251,8 @@ All Image Tools
 Complete free image tools suite
 → /image-tools
 
-[ Remove Background Free - No Sign-Up → repetigo.com/tools/image/remove-background/ ]
-[ Explore All Image Tools → repetigo.com/tools/image/ ]`;
+[ Remove Background Free - No Sign-Up → repetigo.com/image-tools/background-remover ]
+[ Explore All Image Tools → repetigo.com/image-tools ]`;
 
 const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
@@ -360,13 +360,13 @@ function renderInlineMappedLinks(text: string) {
 function mapSeoRoute(route: string) {
   const cleanRoute = route.trim().replace(/^(https?:\/\/)?(www\.)?repetigo\.com/i, "").replace(/\/$/, "");
   const routeMap: Record<string, string> = {
-    "/tools/image": "/image-tools",
-    "/tools/image/remove-background": "/image-tools/background-remover",
-    "/tools/image/crop-image": "/image-tools/crop-image",
-    "/tools/image/resize-image": "/image-tools/resize-image",
-    "/tools/image/compress-image": "/image-tools/compress-image",
-    "/tools/image/jpg-to-png": "/image-tools/convert-from-jpg",
-    "/tools/image/png-to-jpg": "/image-tools/convert-to-jpg",
+    "/image-tools": "/image-tools",
+    "/image-tools/background-remover": "/image-tools/background-remover",
+    "/image-tools/crop-image": "/image-tools/crop-image",
+    "/image-tools/resize-image": "/image-tools/resize-image",
+    "/image-tools/compress-image": "/image-tools/compress-image",
+    "/image-tools/jpg-to-png": "/image-tools/convert-from-jpg",
+    "/image-tools/png-to-jpg": "/image-tools/convert-to-jpg",
     "/products/printpilot": "/print-automation",
     "/privacy-policy": "/privacy-policy",
     "/pricing": "/pricing",
@@ -394,7 +394,7 @@ function JsonLd() {
   const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Background Remover", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free AI background remover - automatically detects the subject and produces a transparent PNG. The AI model runs entirely in the browser - no image is ever uploaded to a server.", url: pageUrl };
   const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Remove Background from an Image Online Free", step: [{ "@type": "HowToStep", name: "Upload Image", text: "Upload Your Image" }, { "@type": "HowToStep", name: "AI Removes Background", text: "AI Removes the Background Automatically" }, { "@type": "HowToStep", name: "Download", text: "Download Your Transparent PNG" }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
-  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://www.repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://www.repetigo.com/tools/image/" }, { "@type": "ListItem", position: 3, name: "Remove Background", item: pageUrl }] };
+  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "Remove Background", item: pageUrl }] };
 
   return <>{[softwareApplication, howTo, faqPage, breadcrumb].map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>;
 }

@@ -79,6 +79,8 @@ const navGroups: NavGroup[] = [
 const pdfTools: PdfTool[] = [
   { name: "Merge PDF", description: "Combine PDFs in the order you want with an easy PDF merger.", badge: "PDF", color: "#f26b4f", href: "/pdf-tools/merge-pdf" },
   { name: "Split PDF", description: "Separate pages or whole sets into independent PDF files.", badge: "PDF", color: "#f26b4f" },
+  { name: "Extract Pages", description: "Pull selected PDF pages into a new file without changing the original.", badge: "EXT", color: "#2563eb", href: "/pdf-tools/extract-pages" },
+  { name: "Remove Pages", description: "Delete unwanted, blank, or duplicate PDF pages and download a clean file.", badge: "DEL", color: "#2563eb", href: "/pdf-tools/remove-pages" },
   { name: "Compress PDF", description: "Reduce file size while keeping maximum PDF quality.", badge: "ZIP", color: "#83bd55", href: "/pdf-tools/compress-pdf" },
   { name: "PDF to Word", description: "Convert PDF files into easy to edit DOC and DOCX documents.", badge: "W", color: "#4d80c5" },
   { name: "PDF to PowerPoint", description: "Turn PDF files into editable PPT and PPTX slideshows.", badge: "P", color: "#f26b4f" },

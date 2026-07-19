@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import CropImageClient from "./CropImageClient";
 
-const pageUrl = "https://www.repetigo.com/tools/image/crop-image/";
+const pageUrl = "https://repetigo.com/image-tools/crop-image";
 
 export const metadata: Metadata = {
   title: "Crop Image Online Free India - Circle Crop, Square, Passport Size | RepetiGo",
@@ -28,7 +28,7 @@ The crop image tool works on any device with a browser, accepts JPG, PNG, and WE
 
 ✓ Rectangle, Square & Circle Crop   ✓ Exact Pixel Entry   ✓ Aspect Ratio Lock   ✓ No Sign-Up   ✓ 100% Browser-Based - Nothing Uploaded
 
-[ Crop Image Free - No Sign-Up → repetigo.com/tools/image/crop-image/ ]
+[ Crop Image Free - No Sign-Up → repetigo.com/image-tools/crop-image ]
 
 H2: What Does Cropping an Image Do?
 Cropping removes the outer edges of an image to keep only the area you want. Unlike resizing (which scales the entire image up or down) or compressing (which reduces file size), cropping physically removes parts of the image and keeps only the selected area at its original pixel density.
@@ -74,7 +74,7 @@ The crop frame always shows rule-of-thirds guide lines to help you centre a face
 H3: Step 3 - Download Your Cropped Image
 Click Crop. The tool processes the crop on your own device in under a second. Download the result. A normal rectangular or square crop keeps your original file format - upload a JPG, get a cropped JPG back. A circle crop downloads as a PNG with the area outside the circle made transparent.
 
-[ Crop Image Free Now → repetigo.com/tools/image/crop-image/ ]
+[ Crop Image Free Now → repetigo.com/image-tools/crop-image ]
 
 H2: Circle Crop Image - For Profile Photos and Social Media.
 Circle cropping selects a circular area from a photo so that only the circular region is visible, with everything outside the circle made transparent. This is the standard shape for profile photos on WhatsApp, LinkedIn, YouTube channels, Google accounts, and most messaging apps - they all display profile pictures in a circular frame.
@@ -247,15 +247,15 @@ PrintPilot - RepetiGo's print shop software - can fold correct-framing crops int
 
 [ Learn About PrintPilot → /products/printpilot/ ]
 [ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Crop an Image Now → repetigo.com/tools/image/crop-image/ ]
+[ Or Crop an Image Now → repetigo.com/image-tools/crop-image ]
 
 H2: Common Questions About Cropping Images Online Free.
 H3: Q1: How do I crop an image online for free in India?
-Go to repetigo.com/tools/image/crop-image/, upload your JPG, PNG, or WEBP image, drag the crop frame to select the area you want to keep, and click Crop. Download the result. The tool supports FreeForm, fixed-ratio (1:1, 4:3, 3:4, 16:9, 9:16), and circle crop modes. No account required, no software needed, no daily limit, and your image is never uploaded anywhere since everything runs in your browser.
+Go to repetigo.com/image-tools/crop-image, upload your JPG, PNG, or WEBP image, drag the crop frame to select the area you want to keep, and click Crop. Download the result. The tool supports FreeForm, fixed-ratio (1:1, 4:3, 3:4, 16:9, 9:16), and circle crop modes. No account required, no software needed, no daily limit, and your image is never uploaded anywhere since everything runs in your browser.
 H3: Q2: How do I crop an image to passport size for an Indian government form?
 Enter exact dimensions of 630×810 pixels (35mm×45mm at the current Passport Seva/ICAO spec) in the Width and Height fields, or use the 3:4 ratio option as a close approximation. Position the frame so the face is centred with the full head visible from crown to chin, on a plain white background. Cropping a JPG keeps it as a JPG. After cropping, use Resize Image at /image-tools/resize-image to confirm the exact pixel dimensions, then Compress Image at /image-tools/compress-image if the file is still over the portal's stated KB limit. Government photo specs do change occasionally, so confirm the current figure on your form.
 H3: Q3: How do I crop an image into a circle?
-Open repetigo.com/tools/image/crop-image/, upload your photo, and select Circle from the Aspect Ratio dropdown. The crop frame becomes circular - drag it to position your face within the circle, and drag the corner handles to resize it. Click Crop. The result downloads as a PNG file with everything outside the circle made transparent - the format required for circle profile photos on WhatsApp, LinkedIn, YouTube, and Google accounts.
+Open repetigo.com/image-tools/crop-image, upload your photo, and select Circle from the Aspect Ratio dropdown. The crop frame becomes circular - drag it to position your face within the circle, and drag the corner handles to resize it. Click Crop. The result downloads as a PNG file with everything outside the circle made transparent - the format required for circle profile photos on WhatsApp, LinkedIn, YouTube, and Google accounts.
 H3: Q4: What is the difference between cropping and resizing an image?
 Cropping removes edges - it keeps only the area you select and discards everything else, so the cropped image has fewer pixels than the original. Resizing scales the entire image up or down - nothing is removed, the whole image just gets larger or smaller. For a government portal photo: crop first to frame your face correctly, then resize to the exact portal dimensions. RepetiGo's crop tool is at /image-tools/crop-image and resize tool is at /image-tools/resize-image - they work best used together in sequence.
 H3: Q5: How do I crop images for specific social media platforms?
@@ -295,8 +295,8 @@ All Image Tools
 Complete image tools suite
 → /image-tools
 
-[ Crop Image Free - No Sign-Up → repetigo.com/tools/image/crop-image/ ]
-[ Explore All Image Tools → repetigo.com/tools/image/ ]`;
+[ Crop Image Free - No Sign-Up → repetigo.com/image-tools/crop-image ]
+[ Explore All Image Tools → repetigo.com/image-tools ]`;
 
 const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
@@ -406,14 +406,14 @@ function renderInlineMappedLinks(text: string) {
 function mapSeoRoute(route: string) {
   const cleanRoute = route.trim().replace(/^(https?:\/\/)?(www\.)?repetigo\.com/i, "").replace(/\/$/, "");
   const routeMap: Record<string, string> = {
-    "/tools/image": "/image-tools",
-    "/tools/image/crop-image": "/image-tools/crop-image",
-    "/tools/image/resize-image": "/image-tools/resize-image",
-    "/tools/image/compress-image": "/image-tools/compress-image",
-    "/tools/image/background-remover": "/image-tools/background-remover",
-    "/tools/image/convert-to-jpg": "/image-tools/convert-to-jpg",
-    "/tools/image/ai-upscale-image": "/image-tools/ai-upscale-image",
-    "/tools/image/photo-editor": "/image-tools/photo-editor",
+    "/image-tools": "/image-tools",
+    "/image-tools/crop-image": "/image-tools/crop-image",
+    "/image-tools/resize-image": "/image-tools/resize-image",
+    "/image-tools/compress-image": "/image-tools/compress-image",
+    "/image-tools/background-remover": "/image-tools/background-remover",
+    "/image-tools/convert-to-jpg": "/image-tools/convert-to-jpg",
+    "/image-tools/ai-upscale-image": "/image-tools/ai-upscale-image",
+    "/image-tools/photo-editor": "/image-tools/photo-editor",
     "/products/printpilot": "/print-automation",
     "/privacy-policy": "/privacy-policy",
     "/pricing": "/pricing",
@@ -442,7 +442,7 @@ function JsonLd() {
   const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Crop Image", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online image cropper - rectangle, fixed-ratio, or circle crop with transparent PNG export. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl };
   const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Crop an Image Online Free", step: [{ "@type": "HowToStep", name: "Upload Image", text: "Upload Your Image" }, { "@type": "HowToStep", name: "Choose Ratio", text: "Choose an Aspect Ratio and Drag the Frame" }, { "@type": "HowToStep", name: "Download", text: "Download Your Cropped Image" }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
-  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://www.repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://www.repetigo.com/tools/image/" }, { "@type": "ListItem", position: 3, name: "Crop Image", item: pageUrl }] };
+  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "Crop Image", item: pageUrl }] };
 
   return <>{[softwareApplication, howTo, faqPage, breadcrumb].map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>;
 }

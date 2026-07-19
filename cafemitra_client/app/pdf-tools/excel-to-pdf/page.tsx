@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { DashboardShell } from "../../DashboardShell";
 import ConversionTool from "../ConversionTool";
 
-const pageUrl = "https://repetigo.com/tools/pdf/excel-to-pdf/";
+const pageUrl = "https://repetigo.com/pdf-tools/excel-to-pdf";
 export const metadata: Metadata = {
   title: "Excel to PDF Converter Free - Save Spreadsheets as PDF | RepetiGo",
   description: "Convert Excel to PDF free - save spreadsheets, charts, and multiple sheets as PDF. Works without Microsoft Excel. No sign-up. Files auto-deleted after 60 min. Try free.",
@@ -17,7 +17,7 @@ There are three ways to convert Excel to PDF. If you have Microsoft Excel instal
 This page covers all three methods, the most common formatting problems (columns getting cut off, multi-sheet PDF issues), and when to use RepetiGo's online converter over the built-in options.
 ✓ Works Without Microsoft Excel   ✓ Multiple Sheets → One PDF   ✓ No Sign-Up   ✓ Files Auto-Deleted in 60 Min
 
-[ Convert Excel to PDF Free - No Excel Required → repetigo.com/tools/excel-to-pdf/ ]
+[ Convert Excel to PDF Free - No Excel Required → repetigo.com/pdf-tools/excel-to-pdf ]
 
 H2: Which Method Should I Use to Convert Excel to PDF?
 The right method depends on what software you have and what outcome you need:
@@ -62,7 +62,7 @@ Indian users: if you use Google Workspace through your school or office (common 
 
 H2: Method 3 - RepetiGo Online Converter (No Excel Required).
 When you need to convert an Excel file to PDF without Microsoft Excel installed - or when you received an .xlsx file and need to convert it without opening it - RepetiGo's free online converter handles it in your browser.
-Steps: (1) Go to repetigo.com/tools/excel-to-pdf/. (2) Upload your .xlsx, .xls, or .csv file by clicking Upload or dragging and dropping. (3) Choose which sheets to convert, your page orientation (portrait or landscape), and your scaling preference (fit to page or actual size). (4) Click Convert. (5) Download your PDF - your file is deleted from our servers within 60 minutes.
+Steps: (1) Go to repetigo.com/pdf-tools/excel-to-pdf. (2) Upload your .xlsx, .xls, or .csv file by clicking Upload or dragging and dropping. (3) Choose which sheets to convert, your page orientation (portrait or landscape), and your scaling preference (fit to page or actual size). (4) Click Convert. (5) Download your PDF - your file is deleted from our servers within 60 minutes.
 RepetiGo's online converter is particularly useful for:
 Chromebook users (Chrome OS does not run Microsoft Excel natively)
 Linux users (Excel is not available on Linux - LibreOffice can be used but may have formatting differences)
@@ -163,17 +163,17 @@ For print shops integrated with PrintPilot - RepetiGo's print shop software - do
 Learn about PrintPilot → /products/printpilot/ | QR Document Upload → /features/qr-upload/
 
 [ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Convert Excel to PDF Now → repetigo.com/tools/excel-to-pdf/ ]
+[ Or Convert Excel to PDF Now → repetigo.com/pdf-tools/excel-to-pdf ]
 
 H2: Common Questions About Converting Excel to PDF.
 H3: Q1: How do I convert Excel to PDF?
-There are three methods. If you have Excel installed: File → Save As → select PDF as the file format → Save (Windows) or File → Export → PDF (Mac). If you use Google Sheets: open the file in Google Sheets → File → Download → PDF Document. If you don't have Excel installed: go to repetigo.com/tools/excel-to-pdf/, upload your .xlsx file, configure your settings, click Convert, and download the PDF. All three methods are free. The built-in Excel method is fastest if you have Excel. RepetiGo is for when you don't.
+There are three methods. If you have Excel installed: File → Save As → select PDF as the file format → Save (Windows) or File → Export → PDF (Mac). If you use Google Sheets: open the file in Google Sheets → File → Download → PDF Document. If you don't have Excel installed: go to repetigo.com/pdf-tools/excel-to-pdf, upload your .xlsx file, configure your settings, click Convert, and download the PDF. All three methods are free. The built-in Excel method is fastest if you have Excel. RepetiGo is for when you don't.
 H3: Q2: How do I save an Excel file as a PDF?
 In Microsoft Excel on Windows: File → Save As → change the file type to 'PDF (*.pdf)' → click Options to choose which sheets or page ranges to include → Save. On Mac: File → Export → select PDF → Export. The PDF is saved to the same location as your Excel file. If you want to include all sheets (not just the active one), select all sheet tabs first by right-clicking the first tab → 'Select All Sheets', then perform the Save As.
 H3: Q3: How do I convert an Excel file to PDF using Google Sheets?
 Open Google Drive (drive.google.com). Right-click your .xlsx file → Open with → Google Sheets. Once open in Google Sheets: File → Download → PDF Document (.pdf). A dialog opens where you choose: Page orientation (portrait or landscape), Scale (fit to page or normal), Margins, and which sheets to include. Click Export and the PDF downloads. For Indian users who use Google Workspace (school or business Gmail accounts), this is the most accessible free method without any subscription.
 H3: Q4: Can I convert Excel to PDF without Microsoft Excel installed?
-Yes. Two options: (1) Google Sheets - upload your .xlsx to Google Drive, open in Google Sheets, File → Download → PDF. Requires a Google account. (2) RepetiGo - go to repetigo.com/tools/excel-to-pdf/, upload your .xlsx file, convert, and download. Works in any browser, no account or software required. For Chromebook users (Chrome OS), LibreOffice is not available natively, so RepetiGo's online converter or Google Sheets are the practical options.
+Yes. Two options: (1) Google Sheets - upload your .xlsx to Google Drive, open in Google Sheets, File → Download → PDF. Requires a Google account. (2) RepetiGo - go to repetigo.com/pdf-tools/excel-to-pdf, upload your .xlsx file, convert, and download. Works in any browser, no account or software required. For Chromebook users (Chrome OS), LibreOffice is not available natively, so RepetiGo's online converter or Google Sheets are the practical options.
 H3: Q5: How do I convert multiple sheets in Excel to one PDF?
 Using Microsoft Excel: Before saving, right-click any sheet tab and choose 'Select All Sheets'. All tabs should now be selected (the tab names appear bold). Go to File → Save As → PDF → Save. Excel combines all selected sheets into one PDF with each sheet starting on a new page. If you want to select specific sheets (not all), hold Ctrl and click each tab you want, then Save As → PDF. Using RepetiGo: upload the .xlsx file, in the settings choose 'All sheets' or select specific sheets, then convert - the output is a single PDF with all selected sheets.
 H3: Q6: How do I save multiple sheets in an Excel workbook as one PDF?
@@ -193,28 +193,28 @@ What It Does
 Link
 PDF to Excel
 Extract tables and data from PDF into Excel - the reverse of this tool
-→ /tools/pdf/pdf-to-excel/
+→ /pdf-tools/pdf-to-excel
 Word to PDF
 Convert Word documents to PDF - same workflow as Excel to PDF
-→ /tools/pdf/word-to-pdf/
+→ /pdf-tools/word-to-pdf
 Compress PDF
 Reduce the PDF file size after conversion
-→ /tools/pdf/compress-pdf/
+→ /pdf-tools/compress-pdf
 Split PDF
 Split the multi-sheet PDF into individual pages or sections
-→ /tools/pdf/split-pdf/
+→ /pdf-tools/split-pdf
 Rotate PDF
 Fix page orientation if pages appear sideways after conversion
-→ /tools/pdf/rotate-pdf/
+→ /pdf-tools/rotate-pdf
 JPG to PDF
 Convert images to PDF
-→ /tools/pdf/jpg-to-pdf/
+→ /pdf-tools/jpg-to-pdf
 All PDF Tools
 Complete PDF tools suite
-→ /tools/pdf/
+→ /pdf-tools
 
-[ Convert Excel to PDF Free - No Sign-Up → repetigo.com/tools/excel-to-pdf/ ]
-[ Explore All PDF Tools → repetigo.com/tools/pdf/ ]`;
+[ Convert Excel to PDF Free - No Sign-Up → repetigo.com/pdf-tools/excel-to-pdf ]
+[ Explore All PDF Tools → repetigo.com/pdf-tools ]`;
 
 const faqs = Array.from(excelToPdfContent.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 export default function ExcelToPdfPage() { return <DashboardShell activePath="/pdf-tools"><div className="dashboard generic-pdf-tool-page"><ConversionTool slug="excel-to-pdf"><JsonLd /><article className="tool-seo-content" id="excel-to-pdf-guide"><StructuredSeoCopy content={excelToPdfContent} /></article></ConversionTool></div></DashboardShell>; }
@@ -232,6 +232,6 @@ function isCtaLine(line: string) { return line.trim().startsWith("[") && line.tr
 function CtaLine({ text }: { text: string }) { const inner = text.trim().slice(2, -2); const arrow = inner.indexOf("→"); const href = mapSeoRoute(arrow >= 0 ? inner.slice(arrow + 1) : ""); return <a className="tool-seo-inline-cta" href={href || "#excel-to-pdf-guide"}>{(arrow >= 0 ? inner.slice(0, arrow) : inner).trim()}{href ? <span>→</span> : null}</a>; }
 function renderTableCell(cell: string) { const href = mapSeoRoute(cell.replace(/^→\s*/, "")); return href ? <a className="tool-seo-table-link" href={href}>{getRouteLabel(href)}</a> : renderInlineMappedLinks(cell); }
 function renderInlineMappedLinks(text: string) { return text.split(/(repetigo\.com\/(?:tools\/pdf\/[a-z-]+|tools\/excel-to-pdf|pricing)\/?|\/tools\/pdf\/[a-z-]*\/?|\/tools\/excel-to-pdf\/?|\/products\/printpilot\/?|\/features\/(?:qr-upload|auto-delete)\/?|\/security\/?)/g).map((part, index) => { const href = mapSeoRoute(part.startsWith("repetigo.com") ? `https://${part}` : part); return href ? <a href={href} key={`${part}-${index}`}>{getRouteLabel(href)}</a> : part; }); }
-function mapSeoRoute(route: string) { const clean = route.trim().replace(/^https?:\/\/(www\.)?repetigo\.com/i, "").replace(/\/$/, ""); const routes: Record<string, string> = { "/tools/pdf": "/pdf-tools", "/tools/excel-to-pdf": "/pdf-tools/excel-to-pdf", "/tools/pdf/pdf-to-excel": "/pdf-tools/pdf-to-excel", "/tools/pdf/word-to-pdf": "/pdf-tools/word-to-pdf", "/tools/pdf/compress-pdf": "/pdf-tools/compress-pdf", "/tools/pdf/split-pdf": "/pdf-tools/split-pdf", "/tools/pdf/merge-pdf": "/pdf-tools/merge-pdf", "/tools/pdf/rotate-pdf": "/pdf-tools/rotate-pdf", "/tools/pdf/jpg-to-pdf": "/pdf-tools/jpg-to-pdf", "/products/printpilot": "/print-automation", "/features/qr-upload": "/print-automation", "/features/auto-delete": "/privacy-policy", "/security": "/privacy-policy", "/pricing": "/pricing" }; return routes[clean] || ""; }
+function mapSeoRoute(route: string) { const clean = route.trim().replace(/^https?:\/\/(www\.)?repetigo\.com/i, "").replace(/\/$/, ""); const routes: Record<string, string> = { "/pdf-tools": "/pdf-tools", "/pdf-tools/excel-to-pdf": "/pdf-tools/excel-to-pdf", "/pdf-tools/pdf-to-excel": "/pdf-tools/pdf-to-excel", "/pdf-tools/word-to-pdf": "/pdf-tools/word-to-pdf", "/pdf-tools/compress-pdf": "/pdf-tools/compress-pdf", "/pdf-tools/split-pdf": "/pdf-tools/split-pdf", "/pdf-tools/merge-pdf": "/pdf-tools/merge-pdf", "/pdf-tools/rotate-pdf": "/pdf-tools/rotate-pdf", "/pdf-tools/jpg-to-pdf": "/pdf-tools/jpg-to-pdf", "/products/printpilot": "/print-automation", "/features/qr-upload": "/print-automation", "/features/auto-delete": "/privacy-policy", "/security": "/privacy-policy", "/pricing": "/pricing" }; return routes[clean] || ""; }
 function getRouteLabel(href: string) { const labels: Record<string, string> = { "/pdf-tools": "Explore All PDF Tools", "/pdf-tools/excel-to-pdf": "Open Excel to PDF", "/pdf-tools/pdf-to-excel": "Open PDF to Excel", "/pdf-tools/word-to-pdf": "Open Word to PDF", "/pdf-tools/compress-pdf": "Open Compress PDF", "/pdf-tools/split-pdf": "Open Split PDF", "/pdf-tools/merge-pdf": "Open Merge PDF", "/pdf-tools/rotate-pdf": "Open Rotate PDF", "/pdf-tools/jpg-to-pdf": "Open JPG to PDF", "/print-automation": "Learn About PrintPilot", "/privacy-policy": "Read Privacy Policy", "/pricing": "Start Free Trial" }; return labels[href] || "Open Tool"; }
-function JsonLd() { const schemas = [{ "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Excel to PDF Converter", applicationCategory: "BusinessApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free Excel to PDF converter - convert .xlsx, .xls, .csv files to PDF without Microsoft Excel. No sign-up.", url: pageUrl }, { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert Excel to PDF Online Free", step: [{ "@type": "HowToStep", name: "Upload Excel file" }, { "@type": "HowToStep", name: "Choose sheet and range settings" }, { "@type": "HowToStep", name: "Download PDF" }] }, { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqs.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Tools", item: "https://repetigo.com/tools/" }, { "@type": "ListItem", position: 3, name: "Excel to PDF", item: pageUrl }] }]; return <>{schemas.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>; }
+function JsonLd() { const schemas = [{ "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Excel to PDF Converter", applicationCategory: "BusinessApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free Excel to PDF converter - convert .xlsx, .xls, .csv files to PDF without Microsoft Excel. No sign-up.", url: pageUrl }, { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert Excel to PDF Online Free", step: [{ "@type": "HowToStep", name: "Upload Excel file" }, { "@type": "HowToStep", name: "Choose sheet and range settings" }, { "@type": "HowToStep", name: "Download PDF" }] }, { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqs.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "PDF Tools", item: "https://repetigo.com/pdf-tools" }, { "@type": "ListItem", position: 3, name: "Excel to PDF", item: pageUrl }] }]; return <>{schemas.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>; }

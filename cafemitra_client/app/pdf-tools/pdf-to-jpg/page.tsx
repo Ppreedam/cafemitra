@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { DashboardShell } from "../../DashboardShell";
 import ConversionTool from "../ConversionTool";
 
-const pageUrl = "https://www.repetigo.com/tools/pdf/pdf-to-jpg/";
+const pageUrl = "https://repetigo.com/pdf-tools/pdf-to-jpg";
 
 export const metadata: Metadata = {
   title: "PDF to JPG Converter Free India - Extract Pages as Images | RepetiGo",
@@ -17,19 +17,19 @@ const content = String.raw`H1: PDF to JPG Converter Free. Extract Any PDF Page a
 RepetiGo's free PDF to JPG converter extracts pages from any PDF document and saves them as high-quality JPG image files. Choose your resolution - 96 DPI for web, 150 DPI for general use, or 300 DPI for print-quality output. No software to install, no account to create, no fee to pay.
 The pdf to jpg converter free tool works on any device with a browser - phone, tablet, or laptop. Convert a single page, a range of pages, or all pages at once. Your PDF and all output images are automatically deleted from our servers 60 minutes after you download them.
 ✓ Three Resolution Options (96/150/300 DPI)   ✓ Single Page or All Pages   ✓ No Sign-Up   ✓ Auto-Deleted in 60 Minutes
-[ Convert PDF to JPG Free - No Sign-Up → repetigo.com/tools/pdf/pdf-to-jpg/ ]
+[ Convert PDF to JPG Free - No Sign-Up → repetigo.com/pdf-tools/pdf-to-jpg ]
 
 H2: What Is a PDF to JPG Converter?
 A PDF to JPG converter is a tool that takes one or more pages from a PDF document and saves each page as a JPG image file. The page layout - text, images, graphics, and formatting - is captured exactly as it appears in the PDF and rendered as a raster image at the resolution you choose.
-The reverse process - JPG to PDF - takes images and embeds them in a PDF document. These are two different tools for two different purposes. If you need to convert images into a PDF, use the JPG to PDF converter at /tools/pdf/jpg-to-pdf/.
+The reverse process - JPG to PDF - takes images and embeds them in a PDF document. These are two different tools for two different purposes. If you need to convert images into a PDF, use the JPG to PDF converter at /pdf-tools/jpg-to-pdf.
 PDF to JPG conversion is useful when you need to share individual PDF pages as images - for editing in image software, for posting on social media, for embedding in a presentation, or for printing a specific page without printing the entire document.
-💡 PDF to JPG and JPG to PDF are opposite directions. This page handles PDF → images (extract pages as JPG). For images → PDF, go to the JPG to PDF Converter → /tools/pdf/jpg-to-pdf/
+💡 PDF to JPG and JPG to PDF are opposite directions. This page handles PDF → images (extract pages as JPG). For images → PDF, go to the JPG to PDF Converter → /pdf-tools/jpg-to-pdf
 
 H2: How to Convert PDF to JPG Online Free in 3 Steps.
 Every conversion follows the same three steps. No account required, no daily limit.
 H3: Step 1 - Upload Your PDF File
 Click the Upload button or drag and drop your PDF file into the upload area. The tool accepts one PDF at a time. Upload works on any device - Android phone, iPhone, Windows laptop, or Mac - from your browser. No app download required. Password-protected PDFs cannot be processed - remove password protection before uploading.
-If your PDF is very large (50+ pages), consider splitting it first using the Split PDF tool at /tools/pdf/split-pdf/ to extract only the pages you need before converting to JPG.
+If your PDF is very large (50+ pages), consider splitting it first using the Split PDF tool at /pdf-tools/split-pdf to extract only the pages you need before converting to JPG.
 H3: Step 2 - Select Pages and Choose Resolution
 After upload, thumbnails of each page appear. You can choose to convert:
 All pages - every page becomes a separate JPG file (downloaded as a zip archive for multi-page PDFs)
@@ -43,7 +43,7 @@ For printing, always choose 300 DPI. For web sharing or social media, 96 DPI is 
 H3: Step 3 - Download Your JPG Images
 Click Convert. Processing takes a few seconds for most pages. For high-resolution (300 DPI) conversions of many pages, it may take up to 60 seconds. When complete, single-page conversions download as a single JPG file. Multi-page conversions download as a zip archive containing one JPG per page, named by page number. Your PDF and all output images are automatically deleted within 60 minutes.
 📱 The PDF to JPG converter works on mobile browsers - Safari on iPhone, Chrome on Android. Upload your PDF from the Files app, select your pages and resolution, and download the JPG images directly to your phone. Useful for quickly extracting a PDF page to share on WhatsApp or Instagram.
-[ Convert PDF to JPG Free Now → repetigo.com/tools/pdf/pdf-to-jpg/ ]
+[ Convert PDF to JPG Free Now → repetigo.com/pdf-tools/pdf-to-jpg ]
 
 H2: Choose the Right Resolution - 96, 150, or 300 DPI.
 DPI (dots per inch) determines the resolution of the JPG output. Higher DPI means a sharper, larger image file. Lower DPI means a smaller, faster-loading file. Here is when to use each:
@@ -203,11 +203,11 @@ PrintPilot - RepetiGo's print shop software - handles page extraction as part of
 🖨️ PrintPilot can extract specific pages from customer-uploaded PDFs and route them to different printers in one workflow - without the shop owner manually converting each file. The same page-extraction technology in this standalone tool is native to the PrintPilot print automation platform.
 Learn about PrintPilot → /products/printpilot/  |  QR Document Upload → /features/qr-upload/
 [ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Extract a PDF Page as JPG Now → repetigo.com/tools/pdf/pdf-to-jpg/ ]
+[ Or Extract a PDF Page as JPG Now → repetigo.com/pdf-tools/pdf-to-jpg ]
 
 H2: Common Questions About Converting PDF to JPG Free.
 H3: Q1: How do I convert a PDF to JPG online for free in India?
-Go to repetigo.com/tools/pdf/pdf-to-jpg/, click Upload and select your PDF file, choose which pages to convert (all pages or specific pages), select your resolution (96, 150, or 300 DPI), and click Convert. Your JPG files download automatically - single files as a JPG, multiple pages as a zip archive. No account is required, no software is needed, and there is no daily limit. The pdf to jpg converter free tool works from any browser in India - on phone or laptop.
+Go to repetigo.com/pdf-tools/pdf-to-jpg, click Upload and select your PDF file, choose which pages to convert (all pages or specific pages), select your resolution (96, 150, or 300 DPI), and click Convert. Your JPG files download automatically - single files as a JPG, multiple pages as a zip archive. No account is required, no software is needed, and there is no daily limit. The pdf to jpg converter free tool works from any browser in India - on phone or laptop.
 H3: Q2: How do I save a PDF page as a JPG?
 Use RepetiGo's PDF to JPG converter: upload your PDF, select the specific page number you want to save, choose your resolution, and click Convert. The single page downloads as a JPG file. Alternatively, on Mac: open the PDF in Preview, navigate to the page you want, go to File → Export → JPEG, choose quality, and save. On Windows: take a screenshot of the page using the Snipping Tool (Windows + Shift + S), but note that screenshots capture only screen resolution (96 DPI).
 H3: Q3: How do I extract images from a PDF?
@@ -235,27 +235,27 @@ What It Does
 Link
 JPG to PDF
 Convert images to PDF - the reverse of this tool
-→ /tools/pdf/jpg-to-pdf/
+→ /pdf-tools/jpg-to-pdf
 Compress PDF
 Reduce PDF size before extracting pages
-→ /tools/pdf/compress-pdf/
+→ /pdf-tools/compress-pdf
 Split PDF
 Extract specific page ranges before converting to JPG
-→ /tools/pdf/split-pdf/
+→ /pdf-tools/split-pdf
 Merge PDF
 Combine PDFs before extracting all pages as images
-→ /tools/pdf/merge-pdf/
+→ /pdf-tools/merge-pdf
 Word to PDF
 Convert Word documents to PDF - then extract pages
-→ /tools/pdf/word-to-pdf/
+→ /pdf-tools/word-to-pdf
 Rotate PDF
 Fix page orientation before JPG extraction
-→ /tools/pdf/rotate-pdf/
+→ /pdf-tools/rotate-pdf
 All PDF Tools
 Complete PDF tools suite
-→ /tools/pdf/
-[ Convert PDF to JPG Free - No Sign-Up → repetigo.com/tools/pdf/pdf-to-jpg/ ]
-[ Or Convert JPG to PDF → repetigo.com/tools/pdf/jpg-to-pdf/ ]`;
+→ /pdf-tools
+[ Convert PDF to JPG Free - No Sign-Up → repetigo.com/pdf-tools/pdf-to-jpg ]
+[ Or Convert JPG to PDF → repetigo.com/pdf-tools/jpg-to-pdf ]`;
 
 const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
@@ -406,6 +406,6 @@ function isCta(line: string) { const normalized = stripCtaPrefix(line); return n
 function isStandaloneRouteCta(line: string) { return /^(?:Read our Privacy Policy|Privacy Policy|Auto-Delete|Learn about PrintPilot|QR Document Upload|Try PrintPilot Free|Or Extract a PDF Page as JPG Now)/.test(line); }
 function CtaLine({ text }: { text: string }) { const inner = isCta(text) ? text.slice(1, -1) : text; const arrow = inner.indexOf("→"); const routeMatch = inner.match(/(?:https?:\/\/)?(?:www\.)?repetigo\.com\/[^\s|]+|\/(?:security|features|products|tools)\/[^\s|]*/); const route = mapRoute(arrow >= 0 ? inner.slice(arrow + 1) : routeMatch?.[0] || ""); const label = arrow >= 0 ? inner.slice(0, arrow) : routeMatch ? inner.slice(0, routeMatch.index).replace(/\|\s*$/, "") : inner; return <a className="tool-seo-inline-cta" href={route || "#pdf-to-jpg-guide"}>{label.trim()} <span>→</span></a>; }
 function renderLinks(text: string) { return text.split(/((?:https?:\/\/)?(?:www\.)?repetigo\.com\/[^\s|]+|(?:https?:\/\/)?docs\.repetigo\.com(?:\/[^\s|]+)?|\/(?:tools|features|products|security|pricing|use-cases)\/[^\s|]+)/gi).map((part, index) => { const route = mapRoute(part); if (route) return <a key={`${part}-${index}`} href={route}>{labelFor(route)}</a>; return /^(?:https?:\/\/)?(?:www\.)?repetigo\.com\//i.test(part) || /^(?:https?:\/\/)?docs\.repetigo\.com/i.test(part) || /^\/(?:tools|features|products|security|pricing|use-cases)\//i.test(part) ? <a key={`${part}-${index}`} href="/pdf-tools">Explore PDF Tools</a> : part; }); }
-function mapRoute(route: string) { const raw = route.trim().replace(/[.,)]+$/, ""); if (/^(?:https?:\/\/)?docs\.repetigo\.com/i.test(raw)) return "https://docs.repetigo.com"; const clean = raw.replace(/^(?:https?:\/\/)?(?:www\.)?repetigo\.com/i, "").replace(/\/$/, ""); const routes: Record<string, string> = { "/tools/pdf": "/pdf-tools", "/tools/pdf/pdf-to-jpg": "/pdf-tools/pdf-to-jpg", "/tools/pdf/jpg-to-pdf": "/pdf-tools/jpg-to-pdf", "/tools/pdf/compress-pdf": "/pdf-tools/compress-pdf", "/tools/pdf/split-pdf": "/pdf-tools/split-pdf", "/tools/pdf/merge-pdf": "/pdf-tools/merge-pdf", "/tools/pdf/word-to-pdf": "/pdf-tools/word-to-pdf", "/tools/pdf/rotate-pdf": "/pdf-tools/rotate-pdf", "/tools/pdf/sign-pdf": "/pdf-tools/sign-pdf", "/tools/pdf/pdf-form": "/pdf-tools/pdf-form", "/tools/pdf/protect-pdf": "/pdf-tools/protect-pdf", "/tools/pdf/edit-pdf": "/pdf-tools/edit-pdf", "/tools/pdf/unlock-pdf": "/pdf-tools/unlock-pdf", "/tools/pdf/ocr-pdf": "/pdf-tools/ocr-pdf", "/tools/pdf/compare-pdf": "/pdf-tools/compare-pdf", "/tools/pdf/redact-pdf": "/pdf-tools/redact-pdf", "/tools/pdf/add-watermark": "/pdf-tools/watermark-pdf", "/tools/pdf/add-page-numbers": "/pdf-tools/page-numbers", "/tools/pdf/crop-pdf": "/pdf-tools/crop-pdf", "/products/printpilot": "/print-automation", "/features/qr-upload": "/print-automation", "/features/auto-delete": "/privacy-policy", "/security": "/privacy-policy", "/use-cases/secure-printing": "/print-automation", "/features/audit-trail": "/print-automation", "/pricing": "/pricing" }; return routes[clean] || (/^\/tools\/pdf\//.test(clean) ? `/pdf-tools/${clean.split("/")[3]}` : /^\/features\//.test(clean) || /^\/security/.test(clean) ? "/privacy-policy" : /^\/products\//.test(clean) || /^\/use-cases\//.test(clean) ? "/print-automation" : /^\/pricing/.test(clean) ? "/pricing" : clean === "/tools/pdf" ? "/pdf-tools" : ""); }
+function mapRoute(route: string) { const raw = route.trim().replace(/[.,)]+$/, ""); if (/^(?:https?:\/\/)?docs\.repetigo\.com/i.test(raw)) return "https://docs.repetigo.com"; const clean = raw.replace(/^(?:https?:\/\/)?(?:www\.)?repetigo\.com/i, "").replace(/\/$/, ""); const routes: Record<string, string> = { "/pdf-tools": "/pdf-tools", "/pdf-tools/pdf-to-jpg": "/pdf-tools/pdf-to-jpg", "/pdf-tools/jpg-to-pdf": "/pdf-tools/jpg-to-pdf", "/pdf-tools/compress-pdf": "/pdf-tools/compress-pdf", "/pdf-tools/split-pdf": "/pdf-tools/split-pdf", "/pdf-tools/merge-pdf": "/pdf-tools/merge-pdf", "/pdf-tools/word-to-pdf": "/pdf-tools/word-to-pdf", "/pdf-tools/rotate-pdf": "/pdf-tools/rotate-pdf", "/pdf-tools/sign-pdf": "/pdf-tools/sign-pdf", "/pdf-tools/pdf-forms": "/pdf-tools/pdf-form", "/pdf-tools/protect-pdf": "/pdf-tools/protect-pdf", "/pdf-tools/edit-pdf": "/pdf-tools/edit-pdf", "/pdf-tools/unlock-pdf": "/pdf-tools/unlock-pdf", "/pdf-tools/ocr-pdf": "/pdf-tools/ocr-pdf", "/pdf-tools/compare-pdf": "/pdf-tools/compare-pdf", "/pdf-tools/redact-pdf": "/pdf-tools/redact-pdf", "/pdf-tools/watermark-pdf": "/pdf-tools/watermark-pdf", "/pdf-tools/add-page-numbers": "/pdf-tools/page-numbers", "/pdf-tools/crop-pdf": "/pdf-tools/crop-pdf", "/products/printpilot": "/print-automation", "/features/qr-upload": "/print-automation", "/features/auto-delete": "/privacy-policy", "/security": "/privacy-policy", "/use-cases/secure-printing": "/print-automation", "/features/audit-trail": "/print-automation", "/pricing": "/pricing" }; return routes[clean] || (/^\/tools\/pdf\//.test(clean) ? `/pdf-tools/${clean.split("/")[3]}` : /^\/features\//.test(clean) || /^\/security/.test(clean) ? "/privacy-policy" : /^\/products\//.test(clean) || /^\/use-cases\//.test(clean) ? "/print-automation" : /^\/pricing/.test(clean) ? "/pricing" : clean === "/pdf-tools" ? "/pdf-tools" : ""); }
 function labelFor(route: string) { const labels: Record<string, string> = { "/pdf-tools": "Explore All PDF Tools", "/pdf-tools/pdf-to-jpg": "Open PDF to JPG", "/pdf-tools/jpg-to-pdf": "Open JPG to PDF", "/pdf-tools/compress-pdf": "Open Compress PDF", "/pdf-tools/split-pdf": "Open Split PDF", "/pdf-tools/merge-pdf": "Open Merge PDF", "/pdf-tools/word-to-pdf": "Open Word to PDF", "/pdf-tools/rotate-pdf": "Open Rotate PDF", "/print-automation": "Learn About PrintPilot", "/privacy-policy": "Read Privacy Policy", "/pricing": "Start Free Trial", "https://docs.repetigo.com": "Open API Documentation" }; return labels[route] || "Open PDF Tool"; }
-function JsonLd() { const schemas = [{ "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo PDF to JPG Converter", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free PDF to JPG converter - extract pages as high-quality images at 96, 150, or 300 DPI." }, { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert PDF to JPG Online Free", step: [{ "@type": "HowToStep", name: "Upload PDF" }, { "@type": "HowToStep", name: "Select Pages and DPI" }, { "@type": "HowToStep", name: "Download JPG Images" }] }, { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Tools", item: "https://repetigo.com/tools/" }, { "@type": "ListItem", position: 3, name: "PDF Tools", item: "https://repetigo.com/tools/pdf/" }, { "@type": "ListItem", position: 4, name: "PDF to JPG", item: pageUrl }] }]; return <>{schemas.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>; }
+function JsonLd() { const schemas = [{ "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo PDF to JPG Converter", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free PDF to JPG converter - extract pages as high-quality images at 96, 150, or 300 DPI." }, { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert PDF to JPG Online Free", step: [{ "@type": "HowToStep", name: "Upload PDF" }, { "@type": "HowToStep", name: "Select Pages and DPI" }, { "@type": "HowToStep", name: "Download JPG Images" }] }, { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "PDF Tools", item: "https://repetigo.com/pdf-tools" }, { "@type": "ListItem", position: 3, name: "PDF to JPG", item: pageUrl }] }]; return <>{schemas.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>; }

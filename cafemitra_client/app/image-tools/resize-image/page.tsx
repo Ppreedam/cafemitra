@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import ResizeImageClient from "./ResizeImageClient";
 
-const pageUrl = "https://www.repetigo.com/tools/image/resize-image/";
+const pageUrl = "https://repetigo.com/image-tools/resize-image";
 
 export const metadata: Metadata = {
   title: "Resize Image Online Free India - Exact Pixels, Social Media Sizes | RepetiGo",
@@ -28,7 +28,7 @@ The resize image online free tool accepts JPG, PNG, and WEBP files and works on 
 
 ✓ Enter Exact Pixel Dimensions   ✓ Instagram, Facebook, YouTube Presets   ✓ Aspect Ratio Lock   ✓ No Sign-Up   ✓ 100% Browser-Based - Nothing Uploaded
 
-[ Resize Image Free - No Sign-Up → repetigo.com/tools/image/resize-image/ ]
+[ Resize Image Free - No Sign-Up → repetigo.com/image-tools/resize-image ]
 
 H2: What Does Resizing an Image Do?
 Resizing an image changes its dimensions - the width and height, measured in pixels. When you resize an image, you are making it physically larger or smaller. A 4000×3000 pixel photo resized to 400×300 pixels becomes 10 times smaller in each dimension and roughly 100 times smaller in file size, since file size is broadly proportional to the number of pixels.
@@ -71,7 +71,7 @@ In Export Settings, choose WebP (smaller file, adjustable quality) or PNG (lossl
 H3: Step 3 - Download Your Resized Image
 Click Resize. Processing happens on your own device in under a second for most images. Download the result. The output is always WebP or PNG - if your form or portal specifically requires a JPG (most Indian government portals do), open the result in Convert to JPG at /image-tools/convert-to-jpg before uploading.
 
-[ Resize Image Free Now → repetigo.com/tools/image/resize-image/ ]
+[ Resize Image Free Now → repetigo.com/image-tools/resize-image ]
 
 H2: Image Size Reference - India Documents & Social Media.
 The tool has five built-in one-click presets for social media, listed below. For Indian document photos and every other platform size, enter the width and height manually using the By Size tab and Lock Aspect Ratio - the reference numbers below are commonly cited specs, but government portals do update their requirements from time to time, so always confirm against the current form before submitting.
@@ -276,11 +276,11 @@ PrintPilot - RepetiGo's print shop software - can fold correct-dimension resizin
 
 [ Learn About PrintPilot → /products/printpilot/ ]
 [ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Resize an Image Now → repetigo.com/tools/image/resize-image/ ]
+[ Or Resize an Image Now → repetigo.com/image-tools/resize-image ]
 
 H2: Common Questions About Resizing Images Online Free.
 H3: Q1: How do I resize an image online for free in India?
-Go to repetigo.com/tools/image/resize-image/, upload your JPG, PNG, or WEBP image, then enter your target dimensions in pixels, choose a percentage, or select one of the five built-in social media presets. Click Resize and download. No account is required, no software is needed, and there is no daily limit. Since the tool runs entirely in your browser, your image is never uploaded anywhere.
+Go to repetigo.com/image-tools/resize-image, upload your JPG, PNG, or WEBP image, then enter your target dimensions in pixels, choose a percentage, or select one of the five built-in social media presets. Click Resize and download. No account is required, no software is needed, and there is no daily limit. Since the tool runs entirely in your browser, your image is never uploaded anywhere.
 H3: Q2: How do I resize a photo for an Indian government form or passport?
 This tool doesn't have a one-click "Indian Passport" preset - enter the dimensions manually. For the current Passport Seva format, that's commonly cited as 630×810 pixels (35×45mm) with the file under 250 KB in JPEG. Enter those pixel values with Lock Aspect Ratio on, resize, then use Convert to JPG at /image-tools/convert-to-jpg (since this tool outputs WebP or PNG, not JPG), and finally Compress Image at /image-tools/compress-image if the file is still over the portal's KB limit. Government photo specs do change from time to time, so confirm the exact figure on the form you're submitting.
 H3: Q3: How do I resize an image without cropping or distorting it?
@@ -292,7 +292,7 @@ This tool has an optional Target File Size (KB) field in Export Settings - set i
 H3: Q6: How do I resize an image in Canva?
 In Canva: open your design, go to File → Resize (the Magic Resize feature), enter your target dimensions, and click Resize. Canva's free tier limits resizing to the current design's dimensions, and Magic Resize for standalone images requires a Canva Pro subscription. For resizing a standalone image file (JPG, PNG, WEBP) without a Canva subscription, RepetiGo's resize tool is simpler - upload the file, enter dimensions, download. No account required, no subscription needed.
 H3: Q7: How do I resize an image on iPhone?
-The built-in Photos app lets you crop (Edit → Crop icon) but doesn't resize to exact pixel dimensions. For exact pixel dimensions on iPhone, open Safari, go to repetigo.com/tools/image/resize-image/, upload the photo from your Camera Roll, enter your target dimensions, and download - the file saves to your Files app or Photos. This is useful for resizing before uploading directly to a government portal from your phone.
+The built-in Photos app lets you crop (Edit → Crop icon) but doesn't resize to exact pixel dimensions. For exact pixel dimensions on iPhone, open Safari, go to repetigo.com/image-tools/resize-image, upload the photo from your Camera Roll, enter your target dimensions, and download - the file saves to your Files app or Photos. This is useful for resizing before uploading directly to a government portal from your phone.
 H3: Q8: How do I resize an image in Photoshop or GIMP?
 In Photoshop: go to Image → Image Size, enter your target width and height, ensure Constrain Proportions is checked, choose Bicubic (for downsizing) or Bicubic Smoother (for upsizing) from the Resample dropdown, and click OK. In GIMP (free, open-source): go to Image → Scale Image, enter target width and height, set interpolation to Cubic or Sinc for best quality, click Scale Image, then File → Export As to save. For quick resizing without installing software, RepetiGo's browser-based tool does the same core operation with no installation required.
 H3: Q9: Can I resize multiple images at once?
@@ -324,8 +324,8 @@ All Image Tools
 Complete free image tools suite
 → /image-tools
 
-[ Resize Image Free - No Sign-Up → repetigo.com/tools/image/resize-image/ ]
-[ Explore All Image Tools → repetigo.com/tools/image/ ]`;
+[ Resize Image Free - No Sign-Up → repetigo.com/image-tools/resize-image ]
+[ Explore All Image Tools → repetigo.com/image-tools ]`;
 
 const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
@@ -436,14 +436,14 @@ function renderInlineMappedLinks(text: string) {
 function mapSeoRoute(route: string) {
   const cleanRoute = route.trim().replace(/^(https?:\/\/)?(www\.)?repetigo\.com/i, "").replace(/\/$/, "");
   const routeMap: Record<string, string> = {
-    "/tools/image": "/image-tools",
-    "/tools/image/resize-image": "/image-tools/resize-image",
-    "/tools/image/crop-image": "/image-tools/crop-image",
-    "/tools/image/compress-image": "/image-tools/compress-image",
-    "/tools/image/upscale-image": "/image-tools/ai-upscale-image",
-    "/tools/image/ai-upscale-image": "/image-tools/ai-upscale-image",
-    "/tools/image/background-remover": "/image-tools/background-remover",
-    "/tools/image/convert-to-jpg": "/image-tools/convert-to-jpg",
+    "/image-tools": "/image-tools",
+    "/image-tools/resize-image": "/image-tools/resize-image",
+    "/image-tools/crop-image": "/image-tools/crop-image",
+    "/image-tools/compress-image": "/image-tools/compress-image",
+    "/image-tools/upscale-image": "/image-tools/ai-upscale-image",
+    "/image-tools/ai-upscale-image": "/image-tools/ai-upscale-image",
+    "/image-tools/background-remover": "/image-tools/background-remover",
+    "/image-tools/convert-to-jpg": "/image-tools/convert-to-jpg",
     "/products/printpilot": "/print-automation",
     "/privacy-policy": "/privacy-policy",
     "/pricing": "/pricing",
@@ -471,7 +471,7 @@ function JsonLd() {
   const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Resize Image", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online image resizer - change pixel dimensions or use a social media preset. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl };
   const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Resize an Image Online Free", step: [{ "@type": "HowToStep", name: "Upload Image", text: "Upload Your Image" }, { "@type": "HowToStep", name: "Choose Size", text: "Enter Your Target Size or Choose a Preset" }, { "@type": "HowToStep", name: "Download", text: "Download Your Resized Image" }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
-  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://www.repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://www.repetigo.com/tools/image/" }, { "@type": "ListItem", position: 3, name: "Resize Image", item: pageUrl }] };
+  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "Resize Image", item: pageUrl }] };
 
   return <>{[softwareApplication, howTo, faqPage, breadcrumb].map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>;
 }

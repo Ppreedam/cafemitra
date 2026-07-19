@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import UpscaleImageClient from "./UpscaleImageClient";
 
-const pageUrl = "https://www.repetigo.com/tools/image/upscale-image/";
+const pageUrl = "https://repetigo.com/image-tools/upscale-image";
 
 export const metadata: Metadata = {
   title: "Upscale Image Online Free India - Enlarge Photos 2x/4x | RepetiGo",
@@ -28,7 +28,7 @@ This is RepetiGo's fast, free, always-available upscaler, built for instant enla
 
 ✓ Instant 2x and 4x Enlargement   ✓ JPG, PNG, WebP   ✓ No Sign-Up   ✓ 100% Browser-Based - Nothing Uploaded
 
-[ Upscale Image Free - No Sign-Up → repetigo.com/tools/image/upscale-image/ ]
+[ Upscale Image Free - No Sign-Up → repetigo.com/image-tools/upscale-image ]
 
 H2: What Is Image Upscaling - and What Does This Tool Actually Do?
 Upscaling means making an image larger in pixel dimensions. A basic resize just duplicates or interpolates existing pixels to fill the bigger canvas - the result is blurry and blocky because no new detail is added.
@@ -66,7 +66,7 @@ Pick 2x (doubles width and height - a 400×600 image becomes 800×1200) or 4x (q
 H3: Step 3 - Download Your Upscaled Image
 Click Upscale, then Download. Processing happens on your own device and finishes in under a second for most images - there's no server round-trip. Repeat for each image you uploaded; there is no single "download all" for a batch in this tool.
 
-[ Upscale Your Image Now - Free → repetigo.com/tools/image/upscale-image/ ]
+[ Upscale Your Image Now - Free → repetigo.com/image-tools/upscale-image ]
 
 H2: Indian Use Cases - When You Need to Upscale an Image.
 Scenario
@@ -184,11 +184,11 @@ For photos that are both small and genuinely blurry (an old passport photo photo
 
 [ Learn About PrintPilot → /products/printpilot/ ]
 [ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Upscale an Image Now → repetigo.com/tools/image/upscale-image/ ]
+[ Or Upscale an Image Now → repetigo.com/image-tools/upscale-image ]
 
 H2: Common Questions About Upscaling Images Online Free.
 H3: Q1: How do I upscale an image online for free in India?
-Go to repetigo.com/tools/image/upscale-image/, upload your JPG, PNG, or WebP image, choose 2x or 4x, pick an output format, and click Upscale. The result appears in under a second since everything runs in your browser - no upload, no account, no daily limit. Click Download to save it.
+Go to repetigo.com/image-tools/upscale-image, upload your JPG, PNG, or WebP image, choose 2x or 4x, pick an output format, and click Upscale. The result appears in under a second since everything runs in your browser - no upload, no account, no daily limit. Click Download to save it.
 H3: Q2: Can I upscale a blurry scanned marksheet or old certificate for printing?
 You can try this tool first - it's instant and free. But because this tool doesn't add new AI-generated detail, a genuinely blurry old scan will look bigger, not necessarily sharper. For a real improvement in clarity on a blurry scan, use the AI Image Upscaler at /image-tools/ai-upscale-image, which sends the image to an AI model trained to add plausible detail. If the scan is already a usable size but just looks flat, try adjusting Contrast and reducing Blur in Photo Editor at /image-tools/photo-editor instead.
 H3: Q3: How many pixels do I need for A4 printing, and can upscaling get me there?
@@ -204,7 +204,7 @@ The tool enforces a practical limit on the final output: if width × height at y
 H3: Q8: Is it safe to upload my ID photo or a personal document to this tool?
 Yes - this standard upscaler processes your image entirely inside your browser using your device's own processing power. The file is never uploaded to any RepetiGo server or third party. There's nothing to intercept and nothing for us to store, because we never receive the image in the first place.
 H3: Q9: Can I upscale an image on my phone?
-Yes. This tool works on mobile browsers - Chrome on Android, Safari on iPhone. Open repetigo.com/tools/image/upscale-image/, upload a photo from your Gallery or Files app, choose 2x or 4x, and download the result directly to your phone.
+Yes. This tool works on mobile browsers - Chrome on Android, Safari on iPhone. Open repetigo.com/image-tools/upscale-image, upload a photo from your Gallery or Files app, choose 2x or 4x, and download the result directly to your phone.
 H3: Q10: When should I use the AI Image Upscaler instead of this tool?
 Use this tool when you want an instant result and your source image is reasonably clear - it's faster and nothing is uploaded. Switch to the AI Image Upscaler at /image-tools/ai-upscale-image when the source is genuinely blurry, heavily compressed, or very old, and you need real recovered detail rather than a smooth enlargement. That tool takes longer because it sends your image to an AI provider for processing.
 
@@ -231,8 +231,8 @@ All Image Tools
 Complete free image tools suite
 → /image-tools
 
-[ Upscale Image Free - No Sign-Up → repetigo.com/tools/image/upscale-image/ ]
-[ Explore All Image Tools → repetigo.com/tools/image/ ]`;
+[ Upscale Image Free - No Sign-Up → repetigo.com/image-tools/upscale-image ]
+[ Explore All Image Tools → repetigo.com/image-tools ]`;
 
 const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
@@ -341,13 +341,13 @@ function renderInlineMappedLinks(text: string) {
 function mapSeoRoute(route: string) {
   const cleanRoute = route.trim().replace(/^(https?:\/\/)?(www\.)?repetigo\.com/i, "").replace(/\/$/, "");
   const routeMap: Record<string, string> = {
-    "/tools/image": "/image-tools",
-    "/tools/image/upscale-image": "/image-tools/upscale-image",
-    "/tools/image/ai-upscale-image": "/image-tools/ai-upscale-image",
-    "/tools/image/resize-image": "/image-tools/resize-image",
-    "/tools/image/compress-image": "/image-tools/compress-image",
-    "/tools/image/background-remover": "/image-tools/background-remover",
-    "/tools/image/photo-editor": "/image-tools/photo-editor",
+    "/image-tools": "/image-tools",
+    "/image-tools/upscale-image": "/image-tools/upscale-image",
+    "/image-tools/ai-upscale-image": "/image-tools/ai-upscale-image",
+    "/image-tools/resize-image": "/image-tools/resize-image",
+    "/image-tools/compress-image": "/image-tools/compress-image",
+    "/image-tools/background-remover": "/image-tools/background-remover",
+    "/image-tools/photo-editor": "/image-tools/photo-editor",
     "/products/printpilot": "/print-automation",
     "/privacy-policy": "/privacy-policy",
     "/pricing": "/pricing",
@@ -375,7 +375,7 @@ function JsonLd() {
   const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Upscale Image", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online image upscaler - enlarge JPG, PNG, and WebP images 2x or 4x. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl };
   const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Upscale an Image Online Free", step: [{ "@type": "HowToStep", name: "Upload Image", text: "Upload Your Image" }, { "@type": "HowToStep", name: "Choose Factor", text: "Choose Your Upscale Factor and Output Format" }, { "@type": "HowToStep", name: "Download", text: "Download Your Upscaled Image" }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
-  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://www.repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://www.repetigo.com/tools/image/" }, { "@type": "ListItem", position: 3, name: "Upscale Image", item: pageUrl }] };
+  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "Upscale Image", item: pageUrl }] };
 
   return <>{[softwareApplication, howTo, faqPage, breadcrumb].map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>;
 }

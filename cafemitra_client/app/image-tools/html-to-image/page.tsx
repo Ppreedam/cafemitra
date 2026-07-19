@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import HtmlToImageClient from "./HtmlToImageClient";
 
-const pageUrl = "https://www.repetigo.com/tools/image/html-to-image/";
+const pageUrl = "https://repetigo.com/image-tools/html-to-image";
 
 export const metadata: Metadata = {
   title: "HTML to Image Converter Online Free - Text Preview as PNG | RepetiGo",
@@ -28,7 +28,7 @@ Here's the honest scope of this tool: it does not capture a visual, styled scree
 
 ✓ Upload an HTML File   ✓ Extracts Readable Text Automatically   ✓ PNG Output   ✓ No Sign-Up   ✓ 100% Browser-Based - Nothing Uploaded
 
-[ Convert HTML to Image Free - No Sign-Up → repetigo.com/tools/image/html-to-image/ ]
+[ Convert HTML to Image Free - No Sign-Up → repetigo.com/image-tools/html-to-image ]
 
 H2: What This Tool Actually Does.
 Upload an .html or .htm file. The tool parses the file, removes any <script>, <style>, and <noscript> tags, and pulls out the plain readable text from the page body - the same text a screen reader or a "reader mode" view would show. That text is then drawn onto a clean white canvas, with the file name as a bold title and the extracted text wrapped underneath, and the result downloads as a PNG.
@@ -55,7 +55,7 @@ As soon as the file uploads, the tool reads it, strips out scripts and styling, 
 H3: Step 3 - Download Your Image
 Click Download to save the PNG. Because the file was processed entirely in your browser, nothing was ever uploaded anywhere and there's nothing left on any server.
 
-[ Convert HTML to Image Free Now → repetigo.com/tools/image/html-to-image/ ]
+[ Convert HTML to Image Free Now → repetigo.com/image-tools/html-to-image ]
 
 H2: When This Tool Is Actually Useful.
 Since this tool captures text, not visual design, it's the right fit for situations like these, not for generating designed graphics:
@@ -116,8 +116,8 @@ All Image Tools
 Complete free image tools suite
 → /image-tools
 
-[ Convert HTML to Image Free - No Sign-Up → repetigo.com/tools/image/html-to-image/ ]
-[ Explore All Image Tools → repetigo.com/tools/image/ ]`;
+[ Convert HTML to Image Free - No Sign-Up → repetigo.com/image-tools/html-to-image ]
+[ Explore All Image Tools → repetigo.com/image-tools ]`;
 
 const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
@@ -223,11 +223,11 @@ function renderInlineMappedLinks(text: string) {
 function mapSeoRoute(route: string) {
   const cleanRoute = route.trim().replace(/^(https?:\/\/)?(www\.)?repetigo\.com/i, "").replace(/\/$/, "");
   const routeMap: Record<string, string> = {
-    "/tools/image": "/image-tools",
-    "/tools/image/html-to-image": "/image-tools/html-to-image",
-    "/tools/image/photo-editor": "/image-tools/photo-editor",
-    "/tools/image/compress-image": "/image-tools/compress-image",
-    "/tools/image/resize-image": "/image-tools/resize-image",
+    "/image-tools": "/image-tools",
+    "/image-tools/html-to-image": "/image-tools/html-to-image",
+    "/image-tools/photo-editor": "/image-tools/photo-editor",
+    "/image-tools/compress-image": "/image-tools/compress-image",
+    "/image-tools/resize-image": "/image-tools/resize-image",
     "/privacy-policy": "/privacy-policy",
     "/pricing": "/pricing",
   };
@@ -251,7 +251,7 @@ function JsonLd() {
   const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo HTML to Image", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free tool that extracts the readable text from an uploaded HTML file and renders it as a downloadable PNG image. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl };
   const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert an HTML File's Text to an Image", step: [{ "@type": "HowToStep", name: "Upload HTML File", text: "Upload Your HTML File" }, { "@type": "HowToStep", name: "Automatic Extraction", text: "The Text Is Extracted Automatically" }, { "@type": "HowToStep", name: "Download", text: "Download Your Image" }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
-  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://www.repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://www.repetigo.com/tools/image/" }, { "@type": "ListItem", position: 3, name: "HTML to Image", item: pageUrl }] };
+  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "HTML to Image", item: pageUrl }] };
 
   return <>{[softwareApplication, howTo, faqPage, breadcrumb].map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>;
 }

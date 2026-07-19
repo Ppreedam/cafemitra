@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { DashboardShell } from "../../DashboardShell";
 import PdfEditTool from "../PdfEditTool";
 
-const pageUrl = "https://repetigo.com/tools/pdf/pdf-form/";
+const pageUrl = "https://repetigo.com/pdf-tools/pdf-forms";
 
 export const metadata: Metadata = {
   title: "Fill and Create PDF Forms Free Online | RepetiGo",
@@ -28,7 +28,7 @@ Two of the most common PDF frustrations, solved in one place.
 You have a PDF form that won't let you type into it. Or you need to build a form that your team, clients, or applicants can fill out and return. Either way, RepetiGo's free PDF form tool handles both - fill any existing PDF form in your browser, or create a new fillable PDF form from scratch.
 ✓ Fill flat or interactive PDF forms  ✓ Create fillable PDFs with fields, checkboxes, dropdowns  ✓ Sign after filling  ✓ Works on Mac, Windows, iPhone  ✓ No sign-up  ✓ Files deleted in 60 min
 
-➜  [ Fill or Create PDF Forms Free → repetigo.com/tools/pdf/pdf-form/ ]
+➜  [ Fill or Create PDF Forms Free → repetigo.com/pdf-tools/pdf-forms ]
 
 H2: Fillable vs Flat PDF Forms: What's the Difference?
 Not all PDF forms are the same. When you open a PDF and can click directly into a field and start typing, that is a fillable PDF - it has interactive form fields built in by the original creator. When you try to click and nothing happens, that is a flat PDF - the form design is visible but there are no interactive fields, just a printed layout.
@@ -53,7 +53,7 @@ H3: Step 3 - Download Your Completed Form
 Click Download. Your filled form saves to your device - all entries are permanently embedded in the PDF. It opens correctly in every PDF reader, on every device, exactly as you filled it. Your uploaded file is deleted from our servers within 60 minutes.
 📱  The PDF form filler works in mobile browsers - Safari on iPhone, Chrome on Android. Upload a form from your Files app, fill it on your phone, and download. No app installation required.
 
-➜  [ Fill a PDF Form Now - Free → repetigo.com/tools/pdf/pdf-form/ ]
+➜  [ Fill a PDF Form Now - Free → repetigo.com/pdf-tools/pdf-forms ]
 
 H2: How to Create a Fillable PDF Form Free.
 You have an existing PDF - a brochure, a designed document, a scanned form - and you want to turn it into something others can fill out and return digitally. Or you want to build a new form from a blank canvas. Both work.
@@ -70,7 +70,7 @@ H3: Building Your Fillable Form
 4.  Download your fillable PDF. Share it by email, embed it on a website, or print it for distribution. Anyone with a PDF reader can fill it - or send it back through RepetiGo for digital completion.
 💡  The most common use for this: an HR team has an onboarding form as a PDF but it is flat - people print it, fill it by hand, scan it back. Converting it to a fillable PDF eliminates that entire paper round-trip. Create once, reuse forever.
 
-➜  [ Create a Fillable PDF Form Free → repetigo.com/tools/pdf/pdf-form/ ]
+➜  [ Create a Fillable PDF Form Free → repetigo.com/pdf-tools/pdf-forms ]
 
 H2: Who Uses PDF Forms - and What They Actually Need.
 PDF forms appear in almost every professional and personal context. Here are the most common real scenarios:
@@ -116,17 +116,17 @@ PrintPilot - RepetiGo's print shop automation platform - can handle PDF form fil
 Learn about PrintPilot → /products/printpilot/
 
 ➜  [ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Just Fill a PDF Form Now → repetigo.com/tools/pdf/pdf-form/ ]
+[ Or Just Fill a PDF Form Now → repetigo.com/pdf-tools/pdf-forms ]
 
 H2: Common Questions About Filling and Creating PDF Forms.
 H3: Q1: How do I fill out a PDF form online for free?
-Go to repetigo.com/tools/pdf/pdf-form/, upload your PDF form, click into the fields or use overlay text to type your answers, add a signature if needed, and download the completed form. Free. No account. Works on any device. Your file is auto-deleted in 60 minutes.
+Go to repetigo.com/pdf-tools/pdf-forms, upload your PDF form, click into the fields or use overlay text to type your answers, add a signature if needed, and download the completed form. Free. No account. Works on any device. Your file is auto-deleted in 60 minutes.
 H3: Q2: What's the difference between a fillable and a flat PDF form?
 A fillable PDF has interactive form fields built in - you click a field and type. A flat PDF looks like a form but has no clickable fields - it's a static image of form lines without any interactive layer. RepetiGo handles both: it fills interactive fields directly, and for flat PDFs it adds a text overlay so you can type in the right positions on the page.
 H3: Q3: How do I create a fillable PDF form for free?
 Upload your existing PDF (or start from blank) to RepetiGo's form builder. Use the toolbar to add text fields, checkboxes, radio buttons, dropdowns, and signature fields wherever you need them on the page. Set labels and required/optional flags. Download your fillable PDF. Share it by email - anyone with a PDF reader can fill it, or they can return it through RepetiGo for digital completion.
 H3: Q4: How do I fill out a PDF form on iPhone?
-Open Safari on your iPhone, go to repetigo.com/tools/pdf/pdf-form/, and upload your PDF form from the Files app. Tap into interactive fields to type, or use overlay mode to tap and place text on flat forms. Download the completed form to your iPhone's Files app. No App Store installation required.
+Open Safari on your iPhone, go to repetigo.com/pdf-tools/pdf-forms, and upload your PDF form from the Files app. Tap into interactive fields to type, or use overlay mode to tap and place text on flat forms. Download the completed form to your iPhone's Files app. No App Store installation required.
 H3: Q5: How do I fill out a PDF form on Mac without Adobe?
 macOS Preview can fill interactive PDF forms but cannot fill flat PDFs or create fillable forms. For flat PDFs and form creation, open RepetiGo in Safari on your Mac, upload the form, fill using overlay text mode, and download the completed document. The filled PDF opens correctly in Preview and every other Mac PDF viewer.
 H3: Q6: Can I fill a government form PDF online?
@@ -134,31 +134,31 @@ Yes - RepetiGo fills any PDF form, including government-issued forms. Upload the
 H3: Q7: Can I convert an existing PDF into a fillable form?
 Yes. Upload your existing PDF - a company letterhead, a scanned form, a designed brochure - to RepetiGo's form builder. Use the toolbar to add form fields at the right positions on the existing layout. Download the resulting fillable PDF. The original PDF design is preserved; the form fields are layered on top.
 H3: Q8: Can I sign the PDF form after filling it?
-Yes. After filling your form, you can add a signature before downloading. Draw your signature directly in the tool, type your name in a styled signature font, or upload an image of your handwritten signature. The signature is embedded on the page at the position you choose. To add a legally binding digital signature, use RepetiGo's Sign PDF tool at /tools/pdf/sign-pdf/ after completing the form.
+Yes. After filling your form, you can add a signature before downloading. Draw your signature directly in the tool, type your name in a styled signature font, or upload an image of your handwritten signature. The signature is embedded on the page at the position you choose. To add a legally binding digital signature, use RepetiGo's Sign PDF tool at /pdf-tools/sign-pdf after completing the form.
 H3: Q9: Is it safe to fill a PDF form that contains personal information?
 With RepetiGo, yes. Your file and the data you type are processed in an isolated temporary session, never stored in any database, and permanently deleted within 60 minutes. The tool positions your text on the PDF layout - it does not extract, store, or read the values you enter. No account sign-up means we hold no information about you or your form submissions.
 H3: Q10: Can I make a PDF form fillable in Word?
 Microsoft Word can create fillable form controls and export to PDF, but the process is complex: you must use the Developer tab to insert content controls, then export. Alternatively, create your form design in Word, export it as a standard PDF, then upload that PDF to RepetiGo's form builder to add clickable form fields in a visual editor - typically faster and cleaner than the Word approach.
 
 H2: More Free PDF Tools from RepetiGo.
-•  Sign PDF → /tools/pdf/sign-pdf/ - add a digital signature after filling your form
-•  Edit PDF → /tools/pdf/edit-pdf/ - edit text and content directly in any PDF
-•  OCR PDF → /tools/pdf/ocr-pdf/ - make scanned forms text-selectable before filling
-•  Add Watermark → /tools/pdf/add-watermark/ - stamp DRAFT or CONFIDENTIAL on forms
-•  Compress PDF → /tools/pdf/compress-pdf/ - reduce file size of completed forms before emailing
-•  All PDF Tools → /tools/pdf/ - complete free PDF tools library
+•  Sign PDF → /pdf-tools/sign-pdf - add a digital signature after filling your form
+•  Edit PDF → /pdf-tools/edit-pdf - edit text and content directly in any PDF
+•  OCR PDF → /pdf-tools/ocr-pdf - make scanned forms text-selectable before filling
+•  Add Watermark → /pdf-tools/watermark-pdf - stamp DRAFT or CONFIDENTIAL on forms
+•  Compress PDF → /pdf-tools/compress-pdf - reduce file size of completed forms before emailing
+•  All PDF Tools → /pdf-tools - complete free PDF tools library
 
-➜  [ Fill or Create PDF Forms Free Now → repetigo.com/tools/pdf/pdf-form/ ]
+➜  [ Fill or Create PDF Forms Free Now → repetigo.com/pdf-tools/pdf-forms ]
 No sign-up · Mac · iPhone · Windows · Auto-deleted in 60 minutes`;
 
 const routeMap: Record<string, string> = {
-  "/tools/pdf": "/pdf-tools",
-  "/tools/pdf/pdf-form": "/pdf-tools/pdf-forms",
-  "/tools/pdf/sign-pdf": "/pdf-tools/sign-pdf",
-  "/tools/pdf/edit-pdf": "/pdf-tools/edit-pdf",
-  "/tools/pdf/ocr-pdf": "/pdf-tools/ocr-pdf",
-  "/tools/pdf/add-watermark": "/pdf-tools/watermark-pdf",
-  "/tools/pdf/compress-pdf": "/pdf-tools/compress-pdf",
+  "/pdf-tools": "/pdf-tools",
+  "/pdf-tools/pdf-forms": "/pdf-tools/pdf-forms",
+  "/pdf-tools/sign-pdf": "/pdf-tools/sign-pdf",
+  "/pdf-tools/edit-pdf": "/pdf-tools/edit-pdf",
+  "/pdf-tools/ocr-pdf": "/pdf-tools/ocr-pdf",
+  "/pdf-tools/watermark-pdf": "/pdf-tools/watermark-pdf",
+  "/pdf-tools/compress-pdf": "/pdf-tools/compress-pdf",
   "/products/printpilot": "/print-automation",
   "/features/auto-delete": "/privacy-policy",
   "/security": "/privacy-policy",
@@ -276,7 +276,7 @@ function JsonLd() {
     { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo PDF Forms", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online PDF form filler and form builder for interactive and flat PDFs.", url: pageUrl },
     { "@context": "https://schema.org", "@type": "HowTo", name: "How to Fill a PDF Form Online", step: [{ "@type": "HowToStep", name: "Upload your PDF form" }, { "@type": "HowToStep", name: "Fill in the fields" }, { "@type": "HowToStep", name: "Download your completed form" }] },
     { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqQuestions },
-    { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "PDF Tools", item: "https://repetigo.com/tools/pdf/" }, { "@type": "ListItem", position: 3, name: "PDF Form", item: pageUrl }] },
+    { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "PDF Tools", item: "https://repetigo.com/pdf-tools" }, { "@type": "ListItem", position: 3, name: "PDF Form", item: pageUrl }] },
   ];
   return <>{schemas.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>;
 }

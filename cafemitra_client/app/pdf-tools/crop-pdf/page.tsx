@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { DashboardShell } from "../../DashboardShell";
 import PdfEditTool from "../PdfEditTool";
 
-const pageUrl = "https://repetigo.com/tools/pdf/crop-pdf/";
+const pageUrl = "https://repetigo.com/pdf-tools/crop-pdf";
 
 export const metadata: Metadata = {
   title: "Crop PDF Free Online - Trim Margins and Resize Pages | RepetiGo",
@@ -28,13 +28,13 @@ A scanned document with wide grey borders. A presentation with excessive white m
 No Adobe Acrobat. No software install. Works on Mac, Windows, and iPhone. Files auto-deleted in 60 minutes.
 ✓ Trim all margins equally  ✓ Custom crop by dragging  ✓ Crop to specific dimensions  ✓ Apply to all pages at once  ✓ No sign-up
 
-➜  [ Crop PDF Now - Free, No Sign-Up → repetigo.com/tools/pdf/crop-pdf/ ]
+➜  [ Crop PDF Now - Free, No Sign-Up → repetigo.com/pdf-tools/crop-pdf ]
 
 H2: What Does Cropping a PDF Actually Do?
 When you crop a PDF, you trim the visible page area - removing content or whitespace from the edges of the page and reducing the page dimensions to whatever you select as your new boundary. The result is a PDF with smaller page dimensions where the unwanted edge content is removed.
 Cropping a PDF is not the same as:
-•  Editing text inside the PDF - that is /tools/pdf/edit-pdf/
-•  Removing specific pages - that is /tools/pdf/organize-pdf/
+•  Editing text inside the PDF - that is /pdf-tools/edit-pdf
+•  Removing specific pages - that is /pdf-tools/organize-pdf
 •  Extracting an image from inside the PDF - that is a separate extraction tool
 •  Removing printer's crop marks - those are trim marks used in commercial print design, an unrelated feature
 The primary use cases for cropping a PDF are:
@@ -67,7 +67,7 @@ H3: Step 3 - Download Your Cropped PDF
 Click Download. Your cropped PDF saves to your device - same document, now with reduced page dimensions and trimmed edges. The file is permanently deleted from our servers within 60 minutes. Open the downloaded PDF in any reader and the crop is baked in: there is no 'uncrop' in the file.
 📱  The PDF crop tool works on mobile browsers - Safari on iPhone, Chrome on Android - without any app download. Upload a scanned PDF from your Files app, set the crop margins, and download. Useful for trimming scanner borders when no desktop is available.
 
-➜  [ Crop Your PDF Now - Free → repetigo.com/tools/pdf/crop-pdf/ ]
+➜  [ Crop Your PDF Now - Free → repetigo.com/pdf-tools/crop-pdf ]
 
 H2: What Crop Options Are Available?
 Different documents need different cropping approaches. RepetiGo supports all of them:
@@ -91,10 +91,10 @@ This means:
 •  Any PDF reader that ignores CropBox (including some printers and print RIPs) will display the full uncropped page
 •  If you open the file in Acrobat or another editor, you can 'uncrop' it and recover the hidden content
 •  For a permanently cropped PDF where the trimmed margins are truly gone, use a tool that renders and re-outputs the page - like RepetiGo
-✅  To permanently crop a PDF on Mac - where the white margins are truly removed from the file and the page dimensions physically change - use RepetiGo in Safari or Chrome. Open the browser, go to repetigo.com/tools/pdf/crop-pdf/, upload your PDF, set the crop, and download. The result is a permanently and cleanly trimmed PDF.
+✅  To permanently crop a PDF on Mac - where the white margins are truly removed from the file and the page dimensions physically change - use RepetiGo in Safari or Chrome. Open the browser, go to repetigo.com/pdf-tools/crop-pdf, upload your PDF, set the crop, and download. The result is a permanently and cleanly trimmed PDF.
 Steps to crop a PDF on Mac with RepetiGo:
 1.  Open Safari or Chrome on your Mac
-2.  Go to repetigo.com/tools/pdf/crop-pdf/ and upload your PDF from Finder
+2.  Go to repetigo.com/pdf-tools/crop-pdf and upload your PDF from Finder
 3.  Drag the crop handles or enter margin values in millimetres
 4.  Toggle 'apply to all pages' if the document has multiple pages
 5.  Click Download - the cropped PDF saves to your Mac, permanently trimmed
@@ -134,11 +134,11 @@ Print shop operators crop PDFs constantly - removing scanner borders before repr
 Learn about PrintPilot → /products/printpilot/ | Bulk Printing → /use-cases/bulk-printing/
 
 ➜  [ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Just Crop a PDF Now → repetigo.com/tools/pdf/crop-pdf/ ]
+[ Or Just Crop a PDF Now → repetigo.com/pdf-tools/crop-pdf ]
 
 H2: Common Questions About Cropping PDFs Online Free.
 H3: Q1: How do I crop a PDF for free?
-Go to repetigo.com/tools/pdf/crop-pdf/, upload your PDF, set the crop margins or drag the crop handles on the page preview, and download. Free. No account. Files auto-deleted in 60 minutes.
+Go to repetigo.com/pdf-tools/crop-pdf, upload your PDF, set the crop margins or drag the crop handles on the page preview, and download. Free. No account. Files auto-deleted in 60 minutes.
 H3: Q2: What does cropping a PDF actually do?
 Cropping a PDF permanently reduces the page dimensions by trimming content from one or more edges. The cropped content (typically white margins, scanner borders, or unwanted headers/footers) is removed from the file entirely. The resulting PDF has smaller page dimensions, slightly smaller file size, and no way to 'uncrop' the removed edges. This is different from macOS Preview's crop, which only masks the edges without removing them.
 H3: Q3: How do I remove white space or margins from a PDF?
@@ -159,24 +159,24 @@ H3: Q10: Is there a way to crop a PDF without Adobe Acrobat?
 Yes. RepetiGo's crop tool works entirely in the browser - no Adobe Acrobat licence required. Upload your PDF, set the crop margins or drag the selection, download the permanently cropped PDF. The result is equivalent to Acrobat Pro's crop function, without the subscription cost.
 
 H2: More Free PDF Tools from RepetiGo.
-•  Compress PDF → /tools/pdf/compress-pdf/ - reduce file size after cropping
-•  Edit PDF → /tools/pdf/edit-pdf/ - edit text, fill forms, annotate pages
-•  Add Watermark → /tools/pdf/add-watermark/ - stamp DRAFT or CONFIDENTIAL on pages
-•  Add Page Numbers → /tools/pdf/add-page-numbers/ - number pages after cropping
-•  Organize PDF → /tools/pdf/organize-pdf/ - reorder or remove pages
-•  All PDF Tools → /tools/pdf/ - complete free PDF tools library
+•  Compress PDF → /pdf-tools/compress-pdf - reduce file size after cropping
+•  Edit PDF → /pdf-tools/edit-pdf - edit text, fill forms, annotate pages
+•  Add Watermark → /pdf-tools/watermark-pdf - stamp DRAFT or CONFIDENTIAL on pages
+•  Add Page Numbers → /pdf-tools/add-page-numbers - number pages after cropping
+•  Organize PDF → /pdf-tools/organize-pdf - reorder or remove pages
+•  All PDF Tools → /pdf-tools - complete free PDF tools library
 
-➜  [ Crop PDF Free Now → repetigo.com/tools/pdf/crop-pdf/ ]
+➜  [ Crop PDF Free Now → repetigo.com/pdf-tools/crop-pdf ]
 No sign-up · Trim margins · All pages at once · Auto-deleted in 60 minutes`;
 
 const routeMap: Record<string, string> = {
-  "/tools/pdf": "/pdf-tools",
-  "/tools/pdf/crop-pdf": "/pdf-tools/crop-pdf",
-  "/tools/pdf/edit-pdf": "/pdf-tools/edit-pdf",
-  "/tools/pdf/organize-pdf": "/pdf-tools/organize-pdf",
-  "/tools/pdf/compress-pdf": "/pdf-tools/compress-pdf",
-  "/tools/pdf/add-watermark": "/pdf-tools/watermark-pdf",
-  "/tools/pdf/add-page-numbers": "/pdf-tools/page-numbers",
+  "/pdf-tools": "/pdf-tools",
+  "/pdf-tools/crop-pdf": "/pdf-tools/crop-pdf",
+  "/pdf-tools/edit-pdf": "/pdf-tools/edit-pdf",
+  "/pdf-tools/organize-pdf": "/pdf-tools/organize-pdf",
+  "/pdf-tools/compress-pdf": "/pdf-tools/compress-pdf",
+  "/pdf-tools/watermark-pdf": "/pdf-tools/watermark-pdf",
+  "/pdf-tools/add-page-numbers": "/pdf-tools/page-numbers",
   "/products/printpilot": "/print-automation",
   "/use-cases/bulk-printing": "/print-automation",
   "/features/auto-delete": "/privacy-policy",
@@ -289,7 +289,7 @@ function JsonLd() {
     { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Crop PDF", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online PDF cropping tool for trimming margins, removing white space, and resizing PDF pages.", url: pageUrl },
     { "@context": "https://schema.org", "@type": "HowTo", name: "How to Crop a PDF Online", step: [{ "@type": "HowToStep", name: "Upload your PDF" }, { "@type": "HowToStep", name: "Set your crop area" }, { "@type": "HowToStep", name: "Download your cropped PDF" }] },
     { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqQuestions },
-    { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "PDF Tools", item: "https://repetigo.com/tools/pdf/" }, { "@type": "ListItem", position: 3, name: "Crop PDF", item: pageUrl }] },
+    { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "PDF Tools", item: "https://repetigo.com/pdf-tools" }, { "@type": "ListItem", position: 3, name: "Crop PDF", item: pageUrl }] },
   ];
   return <>{schemas.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>;
 }

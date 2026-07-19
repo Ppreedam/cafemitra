@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import CompressImageClient from "./CompressImageClient";
 
-const pageUrl = "https://www.repetigo.com/tools/image/compress-image/";
+const pageUrl = "https://repetigo.com/image-tools/compress-image";
 
 export const metadata: Metadata = {
   title: "Compress Image Online Free India - Reduce JPG, PNG, WebP Size | RepetiGo",
@@ -29,7 +29,7 @@ The compress image online free tool works entirely on your own device - phone, t
 
 ✓ Adjustable Compression Slider   ✓ JPG, PNG, WebP   ✓ No Sign-Up   ✓ 100% Browser-Based - Nothing Uploaded
 
-[ Compress Image Free - No Sign-Up → repetigo.com/tools/image/compress-image/ ]
+[ Compress Image Free - No Sign-Up → repetigo.com/image-tools/compress-image ]
 
 H2: What Is Image Compression?
 Image compression is the process of reducing a digital image's file size. The image looks almost or completely identical on screen, but the underlying file data is smaller - so it uploads faster, takes less storage space, and fits within a portal's or email's size limit.
@@ -74,7 +74,7 @@ Keeps most of the original detail while still trimming unnecessary file weight.
 H3: Step 3 - Download Your Compressed Image
 Once compression finishes - usually within a few seconds - a Download button appears on the image card, showing the new file size next to the original so you can compare before saving. For several images at once, use Download ZIP to get every compressed file in one archive.
 
-[ Compress Your Image Now - Free → repetigo.com/tools/image/compress-image/ ]
+[ Compress Your Image Now - Free → repetigo.com/image-tools/compress-image ]
 
 H2: Compress Image Without Losing Quality - What You Need to Know.
 The honest answer: RepetiGo's compressor uses lossy compression, so there is always some data trade-off. What "without losing quality" really means in practice is "without visible quality loss at normal viewing sizes." For a portal photo or a WhatsApp image, a 55-70% compression level looks the same as the original on any screen. For a professional print, keep the slider low.
@@ -220,11 +220,11 @@ PrintPilot - RepetiGo's print shop software - can fold image handling into the s
 
 [ Learn About PrintPilot → /products/printpilot/ ]
 [ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Compress an Image Now → repetigo.com/tools/image/compress-image/ ]
+[ Or Compress an Image Now → repetigo.com/image-tools/compress-image ]
 
 H2: Common Questions About Compressing Images Online Free.
 H3: Q1: How do I compress an image online for free in India?
-Go to repetigo.com/tools/image/compress-image/, click Select Images, and choose your JPG, PNG, or WebP file. RepetiGo compresses it automatically at a 60% starting level. Drag the compression slider up or down and watch the live file size update on the image card. When you're happy with the size, click Download. No account is required, no software is needed, and the tool works on any device - phone or laptop - from any browser.
+Go to repetigo.com/image-tools/compress-image, click Select Images, and choose your JPG, PNG, or WebP file. RepetiGo compresses it automatically at a 60% starting level. Drag the compression slider up or down and watch the live file size update on the image card. When you're happy with the size, click Download. No account is required, no software is needed, and the tool works on any device - phone or laptop - from any browser.
 H3: Q2: How do I compress an image without losing quality?
 Keep the compression slider in the lower-to-default range (10-60%) - at these levels, the difference from the original is not visible on a phone or computer screen. For a government portal upload where the file size limit matters more than fine detail, a higher setting (70-90%) is still perfectly usable for identity verification, even though some quality trade-off becomes visible if you zoom in closely.
 H3: Q3: What is the difference between lossy and lossless image compression?
@@ -236,7 +236,7 @@ Upload your PNG - RepetiGo checks it automatically. If the PNG has transparent a
 H3: Q6: Why does my compressed image look blurry or pixelated?
 The compression level was set too high for that particular photo. Drag the slider down to a lower percentage and check the live preview size again. For portals that require a very small file (under 20KB), some softness is unavoidable at that size, but it should still be clear enough for identity verification. If a portal rejects your image for quality reasons, try a slightly lower compression level and reduce the photo's dimensions first using the Resize Image tool at /image-tools/resize-image.
 H3: Q7: Can I compress an image on my phone?
-Yes. RepetiGo's image compressor works on mobile browsers - Chrome on Android, Safari on iPhone. Open repetigo.com/tools/image/compress-image/ on your phone, tap Select Images, choose a photo from your Gallery or Files app, adjust the compression slider, and download the result directly to your phone - useful for compressing an Aadhaar or PAN photo before uploading to a portal, without needing a laptop.
+Yes. RepetiGo's image compressor works on mobile browsers - Chrome on Android, Safari on iPhone. Open repetigo.com/image-tools/compress-image on your phone, tap Select Images, choose a photo from your Gallery or Files app, adjust the compression slider, and download the result directly to your phone - useful for compressing an Aadhaar or PAN photo before uploading to a portal, without needing a laptop.
 H3: Q8: Can I compress multiple images at once?
 Yes. Upload several images in one session - each one is compressed automatically and shown on its own card. The same compression level applies to all of them; drag the slider once and every image updates. Use Download ZIP to get all compressed files in a single archive. If different images need very different compression levels, compress them in separate batches.
 H3: Q9: Is it safe to upload my Aadhaar or PAN card photo to this compressor?
@@ -270,8 +270,8 @@ All Image Tools
 Complete free image tools suite
 → /image-tools
 
-[ Compress Image Free - No Sign-Up → repetigo.com/tools/image/compress-image/ ]
-[ Explore All Image Tools → repetigo.com/tools/image/ ]`;
+[ Compress Image Free - No Sign-Up → repetigo.com/image-tools/compress-image ]
+[ Explore All Image Tools → repetigo.com/image-tools ]`;
 
 const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
@@ -381,14 +381,14 @@ function renderInlineMappedLinks(text: string) {
 function mapSeoRoute(route: string) {
   const cleanRoute = route.trim().replace(/^(https?:\/\/)?(www\.)?repetigo\.com/i, "").replace(/\/$/, "");
   const routeMap: Record<string, string> = {
-    "/tools/image": "/image-tools",
-    "/tools/image/compress-image": "/image-tools/compress-image",
-    "/tools/image/resize-image": "/image-tools/resize-image",
-    "/tools/image/crop-image": "/image-tools/crop-image",
-    "/tools/image/convert-to-jpg": "/image-tools/convert-to-jpg",
-    "/tools/image/background-remover": "/image-tools/background-remover",
-    "/tools/image/upscale-image": "/image-tools/upscale-image",
-    "/tools/pdf/compress-pdf": "/pdf-tools/compress-pdf",
+    "/image-tools": "/image-tools",
+    "/image-tools/compress-image": "/image-tools/compress-image",
+    "/image-tools/resize-image": "/image-tools/resize-image",
+    "/image-tools/crop-image": "/image-tools/crop-image",
+    "/image-tools/convert-to-jpg": "/image-tools/convert-to-jpg",
+    "/image-tools/background-remover": "/image-tools/background-remover",
+    "/image-tools/upscale-image": "/image-tools/upscale-image",
+    "/pdf-tools/compress-pdf": "/pdf-tools/compress-pdf",
     "/products/printpilot": "/print-automation",
     "/privacy-policy": "/privacy-policy",
     "/pricing": "/pricing",
@@ -417,7 +417,7 @@ function JsonLd() {
   const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Image Compressor", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online image compressor with an adjustable quality slider for JPG, PNG, and WebP. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl };
   const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Compress an Image Online Free", step: [{ "@type": "HowToStep", name: "Upload Image", text: "Upload Your Image" }, { "@type": "HowToStep", name: "Adjust Compression", text: "Adjust the Compression Level" }, { "@type": "HowToStep", name: "Download", text: "Download Your Compressed Image" }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
-  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://www.repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://www.repetigo.com/tools/image/" }, { "@type": "ListItem", position: 3, name: "Compress Image", item: pageUrl }] };
+  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "Compress Image", item: pageUrl }] };
 
   return <>{[softwareApplication, howTo, faqPage, breadcrumb].map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>;
 }

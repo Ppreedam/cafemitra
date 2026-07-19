@@ -3,14 +3,14 @@ import { DashboardShell } from "../../DashboardShell";
 import PdfEditTool from "../PdfEditTool";
 import { StructuredSeoCopy } from "../pdf-to-jpg/page";
 
-const pageUrl = "https://repetigo.com/tools/pdf/add-watermark/";
+const pageUrl = "https://repetigo.com/pdf-tools/watermark-pdf";
 export const metadata: Metadata = { title: "Add Watermark to PDF - Free Online, DRAFT/CONFIDENTIAL | RepetiGo", description: "Add a watermark to any PDF free online - stamp DRAFT, CONFIDENTIAL, or custom text on every page. Choose opacity and position. No sign-up. Files auto-deleted after 60 minutes.", alternates: { canonical: pageUrl }, openGraph: { title: "Add Watermark to PDF - Free Online, DRAFT & CONFIDENTIAL | RepetiGo", description: "Add watermark to PDF free - stamp DRAFT, CONFIDENTIAL, or custom text on every page. Choose opacity and position. No sign-up, auto-deleted.", type: "website", url: pageUrl, images: ["https://repetigo.com/og-add-watermark.jpg"] }, twitter: { card: "summary_large_image", title: "Add Watermark to PDF Free Online - RepetiGo", description: "Stamp DRAFT, CONFIDENTIAL, or custom text on any PDF free. No sign-up, auto-deleted." }, robots: { index: true, follow: true } };
 
 const content = String.raw`H1: Add Watermark to Any PDF. Free. DRAFT, CONFIDENTIAL, or Your Own Text.
 Sending out a document that isn't ready to be treated as final? Sharing something that must stay confidential? Mark it correctly before it leaves your hands. RepetiGo's free PDF watermark tool stamps any text - DRAFT, CONFIDENTIAL, FOR REVIEW, SAMPLE, or your own custom message - diagonally across every page of your PDF in under a minute.
 Upload. Set your text. Choose opacity and position. Download. Your file is auto-deleted in 60 minutes. No sign-up. No Adobe Acrobat needed.
 ✓ DRAFT · CONFIDENTIAL · COPY · custom text   ✓ Diagonal or horizontal   ✓ Adjustable opacity   ✓ No sign-up   ✓ Auto-deleted in 60 min
-➜ [ Add Watermark to PDF - Free, No Sign-Up → repetigo.com/tools/pdf/add-watermark/ ]
+➜ [ Add Watermark to PDF - Free, No Sign-Up → repetigo.com/pdf-tools/watermark-pdf ]
 
 H2: What Is a PDF Watermark and Why Do You Need One?
 A PDF watermark is a visible text overlay stamped across every page of a document - semi-transparent so the document content is still readable underneath, but unmistakably present so anyone looking at the page immediately knows its status.
@@ -32,7 +32,7 @@ Preview shows exactly what your watermark will look like before you commit to do
 H3: Step 3 - Download Your Watermarked PDF
 Click Download. Your watermarked PDF is ready - every page of the document now carries your chosen text at the opacity and position you set. The watermark is embedded directly into the PDF file, so it appears in print, in every PDF reader, and on every device without additional settings. Your uploaded file is permanently deleted from our servers within 60 minutes.
 📱 The PDF watermark tool works on mobile browsers - Safari on iPhone, Chrome on Android - without any app. Useful when you need to mark a document as DRAFT on your phone before forwarding in a meeting.
-➜ [ Add Watermark to PDF Now - Free → repetigo.com/tools/pdf/add-watermark/ ]
+➜ [ Add Watermark to PDF Now - Free → repetigo.com/pdf-tools/watermark-pdf ]
 
 H2: How to Add a DRAFT Watermark to a PDF.
 DRAFT is the most common PDF watermark - and for good reason. When a document is still in review, circulating a version without a DRAFT mark creates real risk: recipients might treat preliminary content as approved, make decisions based on numbers that haven't been finalised, or share the document further as if it were complete.
@@ -120,7 +120,7 @@ For shops handling hundreds of daily print jobs, PrintPilot - RepetiGo's print s
 🖨️ PrintPilot processes every customer document automatically - watermarking, page numbering, compression, and AI enhancement all happen in the background before the job hits the print queue.
 Learn about PrintPilot → /products/printpilot/ | Secure Printing → /use-cases/secure-printing/
 ➜ [ Try PrintPilot Free - Full Print Shop Automation → repetigo.com/pricing/ ]
-[ Or Just Add a Watermark Now → repetigo.com/tools/pdf/add-watermark/ ]
+[ Or Just Add a Watermark Now → repetigo.com/pdf-tools/watermark-pdf ]
 
 H2: Common Questions About Adding Watermarks to PDFs.
 H3: Q1: How do I add a watermark to a PDF for free?
@@ -146,17 +146,17 @@ A text watermark embedded by RepetiGo is stamped at the PDF rendering layer - it
 
 H2: More Free PDF Tools from RepetiGo.
 Other tools in the Edit PDF suite:
-• Add Page Numbers to PDF → /tools/pdf/add-page-numbers/ - stamp page numbers on every page
-• Protect PDF → /tools/pdf/protect-pdf/ - password-protect the PDF from being opened
-• Crop PDF → /tools/pdf/crop-pdf/ - trim margins and resize pages
-• Sign PDF → /tools/pdf/sign-pdf/ - add a digital signature
-• Merge PDF → /tools/pdf/merge-pdf/ - combine multiple PDFs before watermarking
-• All PDF Tools → /tools/pdf/ - complete free PDF tools library
-➜ [ Add Watermark to PDF Free Now → repetigo.com/tools/pdf/add-watermark/ ]
+• Add Page Numbers to PDF → /pdf-tools/add-page-numbers - stamp page numbers on every page
+• Protect PDF → /pdf-tools/protect-pdf - password-protect the PDF from being opened
+• Crop PDF → /pdf-tools/crop-pdf - trim margins and resize pages
+• Sign PDF → /pdf-tools/sign-pdf - add a digital signature
+• Merge PDF → /pdf-tools/merge-pdf - combine multiple PDFs before watermarking
+• All PDF Tools → /pdf-tools - complete free PDF tools library
+➜ [ Add Watermark to PDF Free Now → repetigo.com/pdf-tools/watermark-pdf ]
 No sign-up · DRAFT · CONFIDENTIAL · Custom text · Auto-deleted in 60 minutes`;
 
 const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
 export default function WatermarkPdfPage() { return <DashboardShell activePath="/pdf-tools"><div className="dashboard generic-pdf-tool-page"><PdfEditTool slug="watermark-pdf" headingLevel="h2" /><JsonLd /><article className="tool-seo-content" id="watermark-pdf-guide"><StructuredSeoCopy content={content} /></article></div></DashboardShell>; }
 
-function JsonLd() { const schemas = [{ "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo PDF Watermark Tool", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free PDF watermark tool for DRAFT, CONFIDENTIAL, COPY, and custom text watermarks." }, { "@context": "https://schema.org", "@type": "HowTo", name: "How to Add a Watermark to a PDF", step: [{ "@type": "HowToStep", name: "Upload PDF" }, { "@type": "HowToStep", name: "Set watermark text, opacity, and position" }, { "@type": "HowToStep", name: "Download watermarked PDF" }] }, { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Tools", item: "https://repetigo.com/tools/" }, { "@type": "ListItem", position: 3, name: "PDF Tools", item: "https://repetigo.com/tools/pdf/" }, { "@type": "ListItem", position: 4, name: "Add Watermark", item: pageUrl }] }]; return <>{schemas.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>; }
+function JsonLd() { const schemas = [{ "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo PDF Watermark Tool", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free PDF watermark tool for DRAFT, CONFIDENTIAL, COPY, and custom text watermarks." }, { "@context": "https://schema.org", "@type": "HowTo", name: "How to Add a Watermark to a PDF", step: [{ "@type": "HowToStep", name: "Upload PDF" }, { "@type": "HowToStep", name: "Set watermark text, opacity, and position" }, { "@type": "HowToStep", name: "Download watermarked PDF" }] }, { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "PDF Tools", item: "https://repetigo.com/pdf-tools" }, { "@type": "ListItem", position: 3, name: "Add Watermark", item: pageUrl }] }]; return <>{schemas.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>; }

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { DashboardShell } from "../../DashboardShell";
 import ConversionTool from "../ConversionTool";
 
-const pageUrl = "https://repetigo.com/tools/pdf/powerpoint-to-pdf/";
+const pageUrl = "https://repetigo.com/pdf-tools/powerpoint-to-pdf";
 export const metadata: Metadata = {
   title: "PowerPoint to PDF Converter - Free Online, No Sign-Up | RepetiGo",
   description: "Convert PowerPoint to PDF free online - upload your .ppt or .pptx file and download a PDF in seconds. Fonts and layout preserved. No sign-up. Files auto-deleted after 60 min.",
@@ -17,7 +17,7 @@ RepetiGo's free PowerPoint to PDF converter turns any .ppt or .pptx presentation
 The PPT to PDF free tool works on any device with a browser - phone, tablet, or laptop. Your presentation is automatically deleted from our servers 60 minutes after you download it. Nothing is stored. Nothing is shared.
 ✓ No Sign-Up Required  ✓ No Microsoft Office Needed  ✓ Fonts and Layout Preserved  ✓ Files Auto-Deleted in 60 Minutes
 
-➜  [ Convert PowerPoint to PDF Now - Free, No Sign-Up → repetigo.com/tools/pdf/powerpoint-to-pdf/ ]
+➜  [ Convert PowerPoint to PDF Now - Free, No Sign-Up → repetigo.com/pdf-tools/powerpoint-to-pdf ]
 
 H2: What Happens When You Convert PowerPoint to PDF?
 When you convert a PowerPoint to PDF, every slide in your presentation becomes a page in the PDF. The slide content - text, images, charts, shapes, tables, and diagrams - is captured exactly as it appears in the presentation, with fonts embedded so the PDF looks the same on any device, even if the recipient doesn't have the same fonts installed.
@@ -46,7 +46,7 @@ H3: Step 3 - Download Your PDF
 After processing - usually under 60 seconds for most presentations - a download button appears. Click it to save your PowerPoint to PDF output to your device. Your file is automatically and permanently deleted from our servers within 60 minutes. The original .pptx on your device is not affected.
 📱  The PowerPoint to PDF converter works on mobile browsers - Safari on iPhone, Chrome on Android - without any app download. Upload a .pptx file from your Files app directly. Useful for converting presentations before sending to a print shop or submitting to a college portal on the go.
 
-➜  [ Convert Your Presentation to PDF Now - Free → repetigo.com/tools/pdf/powerpoint-to-pdf/ ]
+➜  [ Convert Your Presentation to PDF Now - Free → repetigo.com/pdf-tools/powerpoint-to-pdf ]
 
 H2: What Gets Preserved - and What Doesn't.
 This is the most important question about PowerPoint to PDF conversion. Here is an honest, complete answer:
@@ -194,11 +194,11 @@ This is where PrintPilot - RepetiGo's print shop software - changes the workflow
 Learn about PrintPilot → /products/printpilot/ | QR Document Upload → /features/qr-upload/
 
 ➜  [ Try PrintPilot Free - Full Print Shop Automation → repetigo.com/pricing/ ]
-[ Or Just Convert a Presentation Now → repetigo.com/tools/pdf/powerpoint-to-pdf/ ]
+[ Or Just Convert a Presentation Now → repetigo.com/pdf-tools/powerpoint-to-pdf ]
 
 H2: Common Questions About Converting PowerPoint to PDF.
 H3: Q1: How do I convert PowerPoint to PDF for free?
-To convert PowerPoint to PDF free using RepetiGo: go to repetigo.com/tools/pdf/powerpoint-to-pdf/, click Upload and select your .ppt or .pptx file, wait for the conversion to complete (usually under 60 seconds), and download your PDF. No account is required. No software is needed. The PPT to PDF tool works from any browser - on phone or laptop - with no daily limits and no watermarks on the output.
+To convert PowerPoint to PDF free using RepetiGo: go to repetigo.com/pdf-tools/powerpoint-to-pdf, click Upload and select your .ppt or .pptx file, wait for the conversion to complete (usually under 60 seconds), and download your PDF. No account is required. No software is needed. The PPT to PDF tool works from any browser - on phone or laptop - with no daily limits and no watermarks on the output.
 H3: Q2: How do I save a PowerPoint as a PDF?
 The fastest way to save PowerPoint as PDF without Microsoft Office: upload your file to RepetiGo's free converter and download. If you do have PowerPoint: go to File → Save As (or Export) → choose PDF format → click Save or Export. Both methods produce a PDF where each slide becomes a page, with fonts and layout preserved.
 H3: Q3: Does converting PowerPoint to PDF keep the formatting?
@@ -216,32 +216,32 @@ RepetiGo's PowerPoint to PDF converter handles presentations up to [FILE SIZE LI
 H3: Q9: Is it safe to upload my PowerPoint presentation to a free online tool?
 With RepetiGo, yes. Your file is uploaded over an encrypted TLS connection, processed in an isolated temporary workspace, and permanently deleted within 60 minutes. The conversion engine renders your slides visually - no text or data from your presentation is read, extracted, or stored. No sign-up means no data profile is created. This matters for confidential business presentations, investor pitch decks, or academic work with original research.
 H3: Q10: How do I reduce the file size of a PowerPoint PDF?
-After converting your PowerPoint to PDF, if the resulting PDF is still large (common with image-heavy presentations), use RepetiGo's Compress PDF tool to reduce the size. The Compress PDF tool applies lossless or lossy compression to bring the file size down - useful before emailing a large deck or uploading to a portal with size limits. The two-step workflow: PPT to PDF on this page, then Compress PDF at /tools/pdf/compress-pdf/.
+After converting your PowerPoint to PDF, if the resulting PDF is still large (common with image-heavy presentations), use RepetiGo's Compress PDF tool to reduce the size. The Compress PDF tool applies lossless or lossy compression to bring the file size down - useful before emailing a large deck or uploading to a portal with size limits. The two-step workflow: PPT to PDF on this page, then Compress PDF at /pdf-tools/compress-pdf.
 
 H2: More Free PDF Tools from RepetiGo.
 Tool
 URL
 Best For
 Word to PDF
-/tools/pdf/word-to-pdf/
+/pdf-tools/word-to-pdf
 Convert Word .docx to PDF
 Excel to PDF
-/tools/pdf/excel-to-pdf/
+/pdf-tools/excel-to-pdf
 Convert spreadsheets to PDF
 HTML to PDF
-/tools/pdf/html-to-pdf/
+/pdf-tools/html-to-pdf
 Convert webpages or HTML files to PDF
 Compress PDF
-/tools/pdf/compress-pdf/
+/pdf-tools/compress-pdf
 Reduce PDF file size after conversion
 Merge PDF
-/tools/pdf/merge-pdf/
+/pdf-tools/merge-pdf
 Combine multiple PDFs into one
 All PDF Tools →
-/tools/pdf/
+/pdf-tools
 View the complete free PDF tools library
 
-➜  [ Convert PowerPoint to PDF Free Now → repetigo.com/tools/pdf/powerpoint-to-pdf/ ]
+➜  [ Convert PowerPoint to PDF Free Now → repetigo.com/pdf-tools/powerpoint-to-pdf ]
 No sign-up · Auto-deletes in 60 minutes · .PPT and .PPTX supported`;
 
 const faqs = Array.from(powerpointToPdfContent.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
@@ -257,6 +257,6 @@ function isCtaLine(line: string) { return line.trim().startsWith("[") && line.tr
 function CtaLine({ text }: { text: string }) { const inner = text.trim().slice(2, -2); const arrow = inner.indexOf("→"); const href = mapSeoRoute(arrow >= 0 ? inner.slice(arrow + 1) : ""); return <a className="tool-seo-inline-cta" href={href || "#powerpoint-to-pdf-guide"}>{(arrow >= 0 ? inner.slice(0, arrow) : inner).trim()}{href ? <span>→</span> : null}</a>; }
 function renderTableCell(cell: string) { const href = mapSeoRoute(cell.replace(/^→\s*/, "")); return href ? <a className="tool-seo-table-link" href={href}>{getRouteLabel(href)}</a> : renderInlineMappedLinks(cell); }
 function renderInlineMappedLinks(text: string) { return text.split(/(repetigo\.com\/(?:tools\/pdf\/[a-z-]+|pricing)\/?|\/tools\/pdf\/[a-z-]*\/?|\/products\/printpilot\/?|\/features\/(?:qr-upload|auto-delete)\/?|\/security\/?|\/use-cases\/secure-printing\/?)/g).map((part, index) => { const href = mapSeoRoute(part.startsWith("repetigo.com") ? `https://${part}` : part); return href ? <a href={href} key={`${part}-${index}`}>{getRouteLabel(href)}</a> : part; }); }
-function mapSeoRoute(route: string) { const clean = route.trim().replace(/^https?:\/\/(www\.)?repetigo\.com/i, "").replace(/\/$/, ""); const routes: Record<string, string> = { "/tools/pdf": "/pdf-tools", "/tools/pdf/powerpoint-to-pdf": "/pdf-tools/powerpoint-to-pdf", "/tools/pdf/word-to-pdf": "/pdf-tools/word-to-pdf", "/tools/pdf/html-to-pdf": "/pdf-tools/html-to-pdf", "/tools/pdf/jpg-to-pdf": "/pdf-tools/jpg-to-pdf", "/tools/pdf/excel-to-pdf": "/pdf-tools/excel-to-pdf", "/tools/pdf/compress-pdf": "/pdf-tools/compress-pdf", "/tools/pdf/merge-pdf": "/pdf-tools/merge-pdf", "/products/printpilot": "/print-automation", "/features/qr-upload": "/print-automation", "/features/auto-delete": "/privacy-policy", "/security": "/privacy-policy", "/use-cases/secure-printing": "/privacy-policy", "/pricing": "/pricing" }; return routes[clean] || ""; }
+function mapSeoRoute(route: string) { const clean = route.trim().replace(/^https?:\/\/(www\.)?repetigo\.com/i, "").replace(/\/$/, ""); const routes: Record<string, string> = { "/pdf-tools": "/pdf-tools", "/pdf-tools/powerpoint-to-pdf": "/pdf-tools/powerpoint-to-pdf", "/pdf-tools/word-to-pdf": "/pdf-tools/word-to-pdf", "/pdf-tools/html-to-pdf": "/pdf-tools/html-to-pdf", "/pdf-tools/jpg-to-pdf": "/pdf-tools/jpg-to-pdf", "/pdf-tools/excel-to-pdf": "/pdf-tools/excel-to-pdf", "/pdf-tools/compress-pdf": "/pdf-tools/compress-pdf", "/pdf-tools/merge-pdf": "/pdf-tools/merge-pdf", "/products/printpilot": "/print-automation", "/features/qr-upload": "/print-automation", "/features/auto-delete": "/privacy-policy", "/security": "/privacy-policy", "/use-cases/secure-printing": "/privacy-policy", "/pricing": "/pricing" }; return routes[clean] || ""; }
 function getRouteLabel(href: string) { const labels: Record<string, string> = { "/pdf-tools": "Explore All PDF Tools", "/pdf-tools/powerpoint-to-pdf": "Open PowerPoint to PDF", "/pdf-tools/word-to-pdf": "Open Word to PDF", "/pdf-tools/html-to-pdf": "Open HTML to PDF", "/pdf-tools/jpg-to-pdf": "Open JPG to PDF", "/pdf-tools/excel-to-pdf": "Open Excel to PDF", "/pdf-tools/compress-pdf": "Open Compress PDF", "/pdf-tools/merge-pdf": "Open Merge PDF", "/print-automation": "Learn About PrintPilot", "/privacy-policy": "Read Privacy Policy", "/pricing": "Start Free Trial" }; return labels[href] || "Open Tool"; }
-function JsonLd() { const schemas = [{ "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo PowerPoint to PDF Converter", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online PowerPoint to PDF converter - upload .ppt or .pptx, download PDF with layout preserved.", url: pageUrl }, { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert PowerPoint to PDF Online Free", step: [{ "@type": "HowToStep", name: "Upload PPT or PPTX file" }, { "@type": "HowToStep", name: "RepetiGo converts slides to PDF" }, { "@type": "HowToStep", name: "Download PDF" }] }, { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqs.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Tools", item: "https://repetigo.com/tools/" }, { "@type": "ListItem", position: 3, name: "PDF Tools", item: "https://repetigo.com/tools/pdf/" }, { "@type": "ListItem", position: 4, name: "PowerPoint to PDF", item: pageUrl }] }]; return <>{schemas.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>; }
+function JsonLd() { const schemas = [{ "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo PowerPoint to PDF Converter", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online PowerPoint to PDF converter - upload .ppt or .pptx, download PDF with layout preserved.", url: pageUrl }, { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert PowerPoint to PDF Online Free", step: [{ "@type": "HowToStep", name: "Upload PPT or PPTX file" }, { "@type": "HowToStep", name: "RepetiGo converts slides to PDF" }, { "@type": "HowToStep", name: "Download PDF" }] }, { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqs.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "PDF Tools", item: "https://repetigo.com/pdf-tools" }, { "@type": "ListItem", position: 3, name: "PowerPoint to PDF", item: pageUrl }] }]; return <>{schemas.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>; }

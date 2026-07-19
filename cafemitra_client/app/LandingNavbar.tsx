@@ -39,7 +39,7 @@ import { releaseFlags } from "./release-flags";
 const serviceMenu = [
   {
     name: "PrintPilot",
-    href: "/print-automation",
+    href: "/auto-print",
     icon: Printer,
     color: "#2563eb",
     summary: "AI-powered print queue, counter workflow, and printer automation.",
@@ -153,7 +153,6 @@ export function Brand() {
 export function LandingNavbar() {
   const pathname = usePathname();
   const [showNotice, setShowNotice] = useState(true);
-  const [activeServiceIndex, setActiveServiceIndex] = useState(0);
   const isHomeActive = pathname === "/";
   const isServicesActive = pathname === "/print-automation";
   const isPdfToolsActive = pathname.startsWith("/pdf-tools");
@@ -184,9 +183,9 @@ export function LandingNavbar() {
           </Link>
           <div className="nav-dropdown nav-services">
             <button className={isServicesActive ? "nav-dropdown-trigger nav-link-active" : "nav-dropdown-trigger"} type="button">
-              Services <ChevronDown size={14} aria-hidden />
+              Automation Tools <ChevronDown size={14} aria-hidden />
             </button>
-            <ProductMegaMenu activeIndex={activeServiceIndex} items={serviceMenu} setActiveIndex={setActiveServiceIndex} />
+            <ProductMegaMenu items={serviceMenu} />
           </div>
           <div className="nav-dropdown nav-pdf-tools">
             <button className={isPdfToolsActive ? "nav-dropdown-trigger nav-link-active" : "nav-dropdown-trigger"} type="button">
@@ -217,7 +216,7 @@ export function LandingNavbar() {
 function PdfToolsMegaMenu() {
   return <div className="nav-mega-menu pdf-tools-mega-menu" aria-label="PDF tools menu">
     {pdfToolGroups.map((group) => <section className="pdf-menu-group" key={group.label}>
-      <h3>{group.label}</h3>
+      <div className="pdf-menu-group-title">{group.label}</div>
       <div>{group.tools.map(([name, href, Icon]) => <Link href={href} key={name}>
         <span style={{ "--pdf-menu-color": group.color } as React.CSSProperties}><Icon size={16} /></span>
         <strong>{name}</strong>
@@ -230,7 +229,7 @@ function PdfToolsMegaMenu() {
 function ImageToolsMegaMenu() {
   return <div className="nav-mega-menu pdf-tools-mega-menu image-tools-mega-menu" aria-label="Image tools menu">
     {imageToolGroups.map((group) => <section className="pdf-menu-group" key={group.label}>
-      <h3>{group.label}</h3>
+      <div className="pdf-menu-group-title">{group.label}</div>
       <div>{group.tools.map(([name, href, Icon]) => <Link href={href} key={name}>
         <span style={{ "--pdf-menu-color": group.color } as React.CSSProperties}><Icon size={16} /></span>
         <strong>{name}</strong>
@@ -251,101 +250,21 @@ type MegaMenuItem = {
   comingSoon?: boolean;
 };
 
-function ProductMegaMenu({
-  activeIndex,
-  items,
-  setActiveIndex,
-}: {
-  activeIndex: number;
-  items: MegaMenuItem[];
-  setActiveIndex: (index: number) => void;
-}) {
-  const activeItem = items[activeIndex] || items[0];
-  const ActiveIcon = activeItem.icon;
-
+function ProductMegaMenu({ items }: { items: MegaMenuItem[] }) {
   return (
-    <div className="nav-mega-menu product-mega-menu" aria-label="Services menu">
-      <div className="product-menu-list">
-        {items.map((item, index) => {
-          const Icon = item.icon;
-          const isActive = index === activeIndex;
-          const className = isActive ? "product-menu-item product-menu-item-active" : "product-menu-item";
-          const content = (
-            <>
-              <span className="product-menu-icon" style={{ "--tile-color": item.color } as React.CSSProperties}>
-                <Icon size={17} />
-              </span>
-              <span className="product-menu-copy">
-                <strong>{item.name}</strong>
-                <span>{item.summary}</span>
-              </span>
-              {item.comingSoon ? <span className="coming-soon-badge">Soon</span> : null}
-            </>
-          );
+    <div className="nav-mega-menu services-simple-menu" aria-label="Services menu">
+      {items.map((item) => {
+        const Icon = item.icon;
 
-          if (item.comingSoon) {
-            return (
-              <button className={className} key={item.name} onFocus={() => setActiveIndex(index)} onMouseEnter={() => setActiveIndex(index)} type="button">
-                {content}
-              </button>
-            );
-          }
-
-          return (
-            <Link className={className} href={item.href} key={item.name} onFocus={() => setActiveIndex(index)} onMouseEnter={() => setActiveIndex(index)}>
-              {content}
-            </Link>
-          );
-        })}
-      </div>
-
-      <div className="product-menu-preview">
-        <span className="product-preview-icon" style={{ "--tile-color": activeItem.color } as React.CSSProperties}>
-          <ActiveIcon size={22} />
-        </span>
-        <div className="product-preview-copy">
-          <span>{activeItem.metric}</span>
-          <h3>{activeItem.name}</h3>
-          <p>{activeItem.description}</p>
-        </div>
-
-        <div className="product-preview-window">
-          <div className="product-window-top">
-            <span />
-            <span />
-            <span />
-            <strong>app.repetigo.com</strong>
-          </div>
-          <div className="product-window-card">
-            <div className="product-window-head">
-              <span className="product-window-device">
-                <Printer size={16} />
-              </span>
-              <div>
-                <strong>HP LaserJet Pro</strong>
-                <small>{activeItem.metric} - Page 3 of 5</small>
-              </div>
-              <span className="product-window-progress" />
-            </div>
-            <div className="product-window-row">
-              <span>contract_final.pdf</span>
-              <strong>85%</strong>
-            </div>
-            <div className="product-window-row">
-              <span>photo_id.jpg</span>
-              <strong>100%</strong>
-            </div>
-            <div className="product-window-row">
-              <span>form_aadhaar.pdf</span>
-              <strong>40%</strong>
-            </div>
-          </div>
-        </div>
-
-        <Link className="product-preview-link" href={activeItem.comingSoon ? "/#services" : activeItem.href}>
-          Learn More <ArrowRight size={15} aria-hidden />
-        </Link>
-      </div>
+        return (
+          <Link href={item.href} key={item.name}>
+            <span style={{ "--service-menu-color": item.color } as React.CSSProperties}>
+              <Icon size={16} aria-hidden />
+            </span>
+            <strong>{item.name}</strong>
+          </Link>
+        );
+      })}
     </div>
   );
 }

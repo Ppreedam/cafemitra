@@ -3,14 +3,14 @@ import { DashboardShell } from "../../DashboardShell";
 import PdfSecurityTool from "../PdfSecurityTool";
 import { StructuredSeoCopy } from "../pdf-to-jpg/page";
 
-const pageUrl = "https://repetigo.com/tools/pdf/sign-pdf/";
+const pageUrl = "https://repetigo.com/pdf-tools/sign-pdf";
 export const metadata: Metadata = { title: "Sign PDF Free Online - Draw, Type or Upload Signature | RepetiGo", description: "Sign any PDF free online - draw, type, or upload your signature. Sign contracts, agreements, and forms on Mac, iPhone, or Android. No Adobe. No sign-up. Files deleted in 60 minutes.", alternates: { canonical: pageUrl }, openGraph: { title: "Sign PDF Free Online - Draw, Type or Upload Signature | RepetiGo", description: "Sign any PDF free online. Draw, type, or upload your signature on Mac, iPhone, or Android. No Adobe, no sign-up, auto-deleted in 60 minutes.", type: "website", url: pageUrl, images: ["https://repetigo.com/og-sign-pdf.jpg"] }, twitter: { card: "summary_large_image", title: "Sign PDF Free Online - RepetiGo", description: "Draw, type or upload a signature to any PDF free. No Adobe, no sign-up." }, robots: { index: true, follow: true } };
 
 const content = String.raw`H1: Sign Any PDF Free. Draw, Type, or Upload Your Signature. No Adobe, No Printer.
 You have a PDF that needs your signature. No printer nearby. No scanner. No Adobe Acrobat subscription. No problem.
 RepetiGo's free PDF signing tool lets you sign any PDF directly in your browser - draw your signature with a mouse or finger, type your name in a signature font, or upload a photo of your handwritten signature. Works on Mac, iPhone, Android, and Windows. Sign and send in under two minutes.
 ✓ Draw, type, or upload signature   ✓ Works on Mac, iPhone, Android   ✓ Sign contracts, forms, agreements   ✓ No Adobe   ✓ No sign-up   ✓ Files deleted in 60 minutes
-➜ [ Sign PDF Free Now → repetigo.com/tools/pdf/sign-pdf/ ]
+➜ [ Sign PDF Free Now → repetigo.com/pdf-tools/sign-pdf ]
 
 H2: Three Ways to Sign a PDF - Draw, Type, or Upload.
 You can add your signature to a PDF in three ways. Each works on every device - choose whichever fits how you work:
@@ -60,28 +60,28 @@ Click or tap the position on the page where you want your signature to appear. C
 Drag the signature to exactly the right position. Resize it to fit the signature field. Add a date stamp alongside if required.
 H3: Step 3 - Download Your Signed PDF
 Click Download. Your signed PDF saves to your device - signature permanently embedded in the document. Opens correctly in every PDF reader. Your uploaded file is deleted from our servers within 60 minutes.
-📋 Need to fill in form fields before signing? Use RepetiGo's PDF Form tool at /tools/pdf/pdf-form/ to complete all fields first, then come back to Sign PDF to add your signature.
-➜ [ Sign Your PDF Now - Free → repetigo.com/tools/pdf/sign-pdf/ ]
+📋 Need to fill in form fields before signing? Use RepetiGo's PDF Form tool at /pdf-tools/pdf-forms to complete all fields first, then come back to Sign PDF to add your signature.
+➜ [ Sign Your PDF Now - Free → repetigo.com/pdf-tools/sign-pdf ]
 
 H2: How to Sign a PDF on Mac Free.
 macOS has two built-in options - Preview and Safari - but neither offers the draw-on-screen, type-your-name, or upload-image flexibility of RepetiGo. Here is how each option compares:
 • Preview (free, built-in): Can create a signature using your Mac's camera (show your handwritten signature on paper) or using the trackpad. Limited font/style options. No upload from file. Works for basic signing.
 • RepetiGo (free, browser): Draw with trackpad, type in styled font, or upload an existing signature image. More control over placement and size. Works in Safari or Chrome - no installation.
 • Adobe Acrobat Pro (paid): Full-featured. Subscription required.
-To sign a PDF on Mac with RepetiGo: open Safari or Chrome, go to repetigo.com/tools/pdf/sign-pdf/, upload your PDF, use the trackpad to draw your signature or type it, and download the signed document. The whole process takes under two minutes.
+To sign a PDF on Mac with RepetiGo: open Safari or Chrome, go to repetigo.com/pdf-tools/sign-pdf, upload your PDF, use the trackpad to draw your signature or type it, and download the signed document. The whole process takes under two minutes.
 ✅ On MacBook with a trackpad: the Draw method gives you the most natural result - sign with your finger on the glass as if writing on paper.
 
 H2: How to Sign a PDF on iPhone and Android.
 Signing PDFs on mobile is seamless with RepetiGo - no app installation required. Open the tool directly in your phone's browser.
 H3: Sign a PDF on iPhone
 1. Open Safari on your iPhone
-2. Go to repetigo.com/tools/pdf/sign-pdf/
+2. Go to repetigo.com/pdf-tools/sign-pdf
 3. Tap Upload and select your PDF from the Files app
 4. Tap the signature position on the document
 5. Draw your signature with your finger (or Apple Pencil on iPad)
 6. Download the signed PDF to your iPhone's Files app - share immediately via email or messaging
 H3: Sign a PDF on Android
-The process is identical on Android - open Chrome, go to repetigo.com/tools/pdf/sign-pdf/, upload your PDF from Files, draw or type your signature, and download. No Play Store app needed. Works on Samsung, Google Pixel, OnePlus, and all other Android phones.
+The process is identical on Android - open Chrome, go to repetigo.com/pdf-tools/sign-pdf, upload your PDF from Files, draw or type your signature, and download. No Play Store app needed. Works on Samsung, Google Pixel, OnePlus, and all other Android phones.
 📱 On iPhone or iPad, the Draw method using your finger gives you full handwriting control. The signature captures your natural pen style just as it would on paper - useful for contracts and agreements where your signature style is part of the document.
 
 H2: Sign PDF Without Adobe Acrobat.
@@ -127,43 +127,43 @@ Print shops and CSC centres increasingly field requests from customers who need 
 🖨️ PrintPilot: customer signs digitally on their own device → signed PDF queued for printing → customer collects. The operator never handles the customer's private document.
 Learn about PrintPilot → /products/printpilot/
 ➜ [ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Sign a PDF Now → repetigo.com/tools/pdf/sign-pdf/ ]
+[ Or Sign a PDF Now → repetigo.com/pdf-tools/sign-pdf ]
 
 H2: Common Questions About Signing PDFs.
 H3: Q1: How do I sign a PDF for free without Adobe?
-Go to repetigo.com/tools/pdf/sign-pdf/, upload your PDF, and choose your signature method - draw with mouse/trackpad/finger, type your name, or upload a signature image. Place the signature on the document and download. Free, no account, no Adobe. Files auto-deleted in 60 minutes.
+Go to repetigo.com/pdf-tools/sign-pdf, upload your PDF, and choose your signature method - draw with mouse/trackpad/finger, type your name, or upload a signature image. Place the signature on the document and download. Free, no account, no Adobe. Files auto-deleted in 60 minutes.
 H3: Q2: What are the three ways to sign a PDF?
 Draw: freehand with mouse, trackpad, or finger - most natural, looks like a handwritten signature. Type: your name in a styled signature font - clear and consistent. Upload: a JPG or PNG photo of your handwritten signature - places your exact real signature on the document. All three methods work on every device.
 H3: Q3: Is an electronic signature on a PDF legally valid?
 Yes, for the vast majority of everyday documents - employment contracts, NDAs, rental agreements, purchase orders, and general business agreements. The US Electronic Signatures in Global and National Commerce Act (eSign Act) and India's IT Act 2000 both recognise electronic signatures as legally binding. Some specific regulated contexts require a PKI-based digital signature certificate - for those, you need a Certificate Authority-issued DSC.
 H3: Q4: How do I sign a PDF on iPhone?
-Open Safari on your iPhone, go to repetigo.com/tools/pdf/sign-pdf/, and upload your PDF from the Files app. Tap where you want your signature, draw it with your finger, and download the signed PDF. No App Store installation required. The signed file goes directly to your iPhone's Files app for sharing.
+Open Safari on your iPhone, go to repetigo.com/pdf-tools/sign-pdf, and upload your PDF from the Files app. Tap where you want your signature, draw it with your finger, and download the signed PDF. No App Store installation required. The signed file goes directly to your iPhone's Files app for sharing.
 H3: Q5: How do I sign a PDF on Mac without Adobe?
-Open Safari or Chrome on your Mac, go to repetigo.com/tools/pdf/sign-pdf/, upload your PDF, and draw your signature using the trackpad or type it in a signature font. Download the signed PDF. No software installation, no Adobe licence. The entire process takes under two minutes.
+Open Safari or Chrome on your Mac, go to repetigo.com/pdf-tools/sign-pdf, upload your PDF, and draw your signature using the trackpad or type it in a signature font. Download the signed PDF. No software installation, no Adobe licence. The entire process takes under two minutes.
 H3: Q6: Can I sign a PDF on Android?
-Yes. Open Chrome on your Android phone, go to repetigo.com/tools/pdf/sign-pdf/, upload your PDF from the Files app, draw your signature with your finger, and download the signed document. Works on all Android phones - Samsung, Google Pixel, OnePlus, and others. No app installation required.
+Yes. Open Chrome on your Android phone, go to repetigo.com/pdf-tools/sign-pdf, upload your PDF from the Files app, draw your signature with your finger, and download the signed document. Works on all Android phones - Samsung, Google Pixel, OnePlus, and others. No app installation required.
 H3: Q7: What is the difference between an electronic signature and a digital signature?
 An electronic signature is a visual representation of your signature placed on a PDF - drawn, typed, or uploaded. Legally valid for most contracts. A digital signature is a cryptographic certificate-based signature that provides mathematical verification of identity and tamper-evidence - required for specific regulated use cases like government e-filing. For everyday professional and personal documents, an electronic signature is exactly what you need.
 H3: Q8: Can I fill in a PDF form and sign it in one step?
-Yes - use both tools in sequence. First, go to RepetiGo's PDF Form tool at /tools/pdf/pdf-form/ to fill in all the form fields. Download the filled form. Then upload the filled PDF to the Sign PDF tool, add your signature, and download the fully completed and signed document.
+Yes - use both tools in sequence. First, go to RepetiGo's PDF Form tool at /pdf-tools/pdf-forms to fill in all the form fields. Download the filled form. Then upload the filled PDF to the Sign PDF tool, add your signature, and download the fully completed and signed document.
 H3: Q9: Can I edit a PDF after signing it?
-Signed PDFs are typically locked against editing - this protects document integrity after signing. If you need to make changes to a signed PDF: open the PDF in RepetiGo's Edit PDF tool at /tools/pdf/edit-pdf/, make your corrections, download the edited unsigned version, and then re-sign the corrected document using the Sign PDF tool. Never alter a document after signing without re-signing it.
+Signed PDFs are typically locked against editing - this protects document integrity after signing. If you need to make changes to a signed PDF: open the PDF in RepetiGo's Edit PDF tool at /pdf-tools/edit-pdf, make your corrections, download the edited unsigned version, and then re-sign the corrected document using the Sign PDF tool. Never alter a document after signing without re-signing it.
 H3: Q10: Is it safe to upload a contract or legal agreement to sign online?
 With RepetiGo, yes. Your file uploads over TLS encryption, processes in an isolated temporary session, and is permanently deleted within 60 minutes of upload. The signing engine places your signature on the PDF without reading, storing, or analysing the document content. No sign-up means we hold no data about you or your documents.
 
 H2: More Free PDF Tools from RepetiGo.
-• PDF Form → /tools/pdf/pdf-form/ - fill in form fields before signing
-• Protect PDF → /tools/pdf/protect-pdf/ - lock the signed document with a password
-• Edit PDF → /tools/pdf/edit-pdf/ - edit content before signing
-• Compare PDF → /tools/pdf/compare-pdf/ - verify the signed version matches what was agreed
-• Unlock PDF → /tools/pdf/unlock-pdf/ - remove restrictions if the PDF is locked
-• Redact PDF → /tools/pdf/redact-pdf/ - black out sensitive content before signing
-• All PDF Tools → /tools/pdf/ - complete free PDF tools library
-➜ [ Sign PDF Free Now → repetigo.com/tools/pdf/sign-pdf/ ]
+• PDF Form → /pdf-tools/pdf-forms - fill in form fields before signing
+• Protect PDF → /pdf-tools/protect-pdf - lock the signed document with a password
+• Edit PDF → /pdf-tools/edit-pdf - edit content before signing
+• Compare PDF → /pdf-tools/compare-pdf - verify the signed version matches what was agreed
+• Unlock PDF → /pdf-tools/unlock-pdf - remove restrictions if the PDF is locked
+• Redact PDF → /pdf-tools/redact-pdf - black out sensitive content before signing
+• All PDF Tools → /pdf-tools - complete free PDF tools library
+➜ [ Sign PDF Free Now → repetigo.com/pdf-tools/sign-pdf ]
 Draw · Type · Upload · Mac · iPhone · Android · No sign-up · Auto-deleted in 60 minutes`;
 
 const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
 export default function SignPdfPage() { return <DashboardShell activePath="/pdf-tools"><div className="dashboard generic-pdf-tool-page"><PdfSecurityTool slug="sign-pdf"><JsonLd /><article className="tool-seo-content" id="sign-pdf-guide"><StructuredSeoCopy content={content} /></article></PdfSecurityTool></div></DashboardShell>; }
 
-function JsonLd() { const schemas = [{ "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Sign PDF", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free PDF signing tool. Draw, type, or upload a signature to sign any PDF without Adobe." }, { "@context": "https://schema.org", "@type": "HowTo", name: "How to Sign a PDF Free Online", step: [{ "@type": "HowToStep", name: "Upload Your PDF" }, { "@type": "HowToStep", name: "Add Your Signature" }, { "@type": "HowToStep", name: "Download Your Signed PDF" }] }, { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Tools", item: "https://repetigo.com/tools/" }, { "@type": "ListItem", position: 3, name: "PDF Tools", item: "https://repetigo.com/tools/pdf/" }, { "@type": "ListItem", position: 4, name: "Sign PDF", item: pageUrl }] }]; return <>{schemas.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>; }
+function JsonLd() { const schemas = [{ "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Sign PDF", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free PDF signing tool. Draw, type, or upload a signature to sign any PDF without Adobe." }, { "@context": "https://schema.org", "@type": "HowTo", name: "How to Sign a PDF Free Online", step: [{ "@type": "HowToStep", name: "Upload Your PDF" }, { "@type": "HowToStep", name: "Add Your Signature" }, { "@type": "HowToStep", name: "Download Your Signed PDF" }] }, { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "PDF Tools", item: "https://repetigo.com/pdf-tools" }, { "@type": "ListItem", position: 3, name: "Sign PDF", item: pageUrl }] }]; return <>{schemas.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>; }

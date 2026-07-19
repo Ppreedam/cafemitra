@@ -14,9 +14,9 @@ type SplitResult = { name: string; blob: Blob; url: string; pages: number };
 type SplitMode = "range" | "pages" | "size";
 type RangeMode = "custom" | "fixed" | "smart";
 
-type SplitPdfToolProps = { initialMode?: SplitMode; toolTitle?: string; uploadTitle?: string; uploadDescription?: string; children?: ReactNode };
+type SplitPdfToolProps = { initialMode?: SplitMode; toolTitle?: string; uploadTitle?: string; uploadDescription?: string; children?: ReactNode; uploadHeadingLevel?: "h1" | "h2" };
 
-export function SplitPdfTool({ initialMode = "range", toolTitle = "Split PDF", uploadTitle = "Split PDF", uploadDescription = "Separate pages, page ranges or file-size groups into independent PDF documents.", children }: SplitPdfToolProps) {
+export function SplitPdfTool({ initialMode = "range", toolTitle = "Split PDF", uploadTitle = "Split PDF", uploadDescription = "Separate pages, page ranges or file-size groups into independent PDF documents.", children, uploadHeadingLevel }: SplitPdfToolProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const urls = useRef(new Set<string>());
   const [file, setFile] = useState<File | null>(null);
@@ -60,7 +60,7 @@ export function SplitPdfTool({ initialMode = "range", toolTitle = "Split PDF", u
     try {
       const source = await PDFDocument.load(await file.arrayBuffer()); const groups = getGroups(source.getPageCount());
       if (!groups.length || groups.some((group) => !group.length)) throw new Error("Select at least one valid page or range.");
-      const outputGroups = mode === "range" && mergeRanges ? [Array.from(new Set(groups.flat()))] : groups;
+      const outputGroups = toolTitle === "Extract pages" && mode === "pages" ? [Array.from(new Set(groups.flat()))] : mode === "range" && mergeRanges ? [Array.from(new Set(groups.flat()))] : groups;
       const nextResults: SplitResult[] = [];
       for (let index = 0; index < outputGroups.length; index += 1) {
         const group = outputGroups[index]; const output = await PDFDocument.create(); const copied = await output.copyPages(source, group); copied.forEach((page) => output.addPage(page));
@@ -84,7 +84,7 @@ export function SplitPdfTool({ initialMode = "range", toolTitle = "Split PDF", u
     const zip = new JSZip(); results.forEach((result) => zip.file(result.name, result.blob)); const blob = await zip.generateAsync({ type: "blob" }); const url = URL.createObjectURL(blob); triggerDownload(url, `${baseName(file?.name || "split")}-split.zip`); setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  if (!file) return <DashboardShell activePath="/pdf-tools"><div className="dashboard split-pdf-page"><PdfToolUpload title={uploadTitle} description={uploadDescription} icon={Scissors} inputRef={inputRef} onFiles={(files) => void chooseFile(files)} multiple={false} buttonLabel="Select PDF file" headingLevel={children ? "h2" : "h1"} />{children}</div></DashboardShell>;
+  if (!file) return <DashboardShell activePath="/pdf-tools"><div className="dashboard split-pdf-page"><PdfToolUpload title={uploadTitle} description={uploadDescription} icon={Scissors} inputRef={inputRef} onFiles={(files) => void chooseFile(files)} multiple={false} buttonLabel="Select PDF file" headingLevel={uploadHeadingLevel || (children ? "h2" : "h1")} />{children}</div></DashboardShell>;
 
   return <DashboardShell activePath="/pdf-tools"><div className="dashboard split-pdf-page">
     <input ref={inputRef} hidden type="file" accept="application/pdf,.pdf" onChange={(event) => { if (event.target.files?.length) void chooseFile(event.target.files); event.target.value = ""; }} />
@@ -101,7 +101,7 @@ export function SplitPdfTool({ initialMode = "range", toolTitle = "Split PDF", u
             {rangeMode === "fixed" ? <label className="split-number-setting">Pages per PDF<input type="number" min="1" max={pages.length} value={fixedPages} onChange={(event) => { setFixedPages(Number(event.target.value)); resetResults(); }} /></label> : null}
             {rangeMode === "smart" ? <label className="split-number-setting">Number of balanced PDFs<input type="number" min="2" max={pages.length} value={smartParts} onChange={(event) => { setSmartParts(Number(event.target.value)); resetResults(); }} /><small>Pages are balanced automatically across output files.</small></label> : null}
             <label className="split-checkbox"><input type="checkbox" checked={mergeRanges} onChange={(event) => setMergeRanges(event.target.checked)} /> Merge all ranges into one PDF file</label></> : null}
-          {mode === "pages" ? <><h2>Select pages</h2><p>Click page thumbnails to include or exclude them. Every selected page becomes a separate PDF.</p><div className="split-selection-actions"><button type="button" onClick={() => setSelectedPages(new Set(pages.map((page) => page.index)))}>Select all</button><button type="button" onClick={() => setSelectedPages(new Set())}>Clear</button></div><strong className="split-count">{selectedPages.size} of {pages.length} selected</strong></> : null}
+          {mode === "pages" ? <><h2>Select pages</h2><p>Click page thumbnails to include or exclude them. {toolTitle === "Extract pages" ? "Selected pages are copied into one new PDF." : "Every selected page becomes a separate PDF."}</p><div className="split-selection-actions"><button type="button" onClick={() => setSelectedPages(new Set(pages.map((page) => page.index)))}>Select all</button><button type="button" onClick={() => setSelectedPages(new Set())}>Clear</button></div><strong className="split-count">{selectedPages.size} of {pages.length} selected</strong></> : null}
           {mode === "size" ? <><h2>Split by size</h2><p>Create PDFs close to your preferred maximum size. Final size can vary based on page content.</p><label className="split-number-setting">Maximum size per PDF<div><input type="number" min={sizeUnit === "MB" ? .1 : 100} step={sizeUnit === "MB" ? .1 : 10} value={maxSizeMb} onChange={(event) => setMaxSizeMb(Math.max(sizeUnit === "MB" ? .1 : 100, Number(event.target.value)))} /><select value={sizeUnit} aria-label="File size unit" onChange={(event) => { const next = event.target.value as "KB" | "MB"; setMaxSizeMb((value) => next === "KB" ? Math.max(100, Math.round(value * 1024)) : Number((value / 1024).toFixed(2))); setSizeUnit(next); resetResults(); }}><option value="KB">KB</option><option value="MB">MB</option></select></div><small>{sizeUnit === "MB" ? `${Math.round(maxSizeMb * 1024)} KB` : `${(maxSizeMb / 1024).toFixed(2)} MB`} equivalent</small></label></> : null}
         </div>
         <div className="split-side-actions">{processing ? <div className="split-progress"><span>Creating PDFs… {progress}%</span><progress value={progress} max="100" /></div> : null}<button className="split-submit" type="button" disabled={processing || loading || (mode === "pages" && !selectedPages.size)} onClick={splitPdf}>{processing ? <LoaderCircle className="spin" size={20} /> : <Scissors size={20} />} {processing ? "Creating PDFs…" : toolTitle}<ArrowRight size={18} /></button></div>

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import PngToJpgClient from "./PngToJpgClient";
 
-const pageUrl = "https://www.repetigo.com/tools/image/png-to-jpg/";
+const pageUrl = "https://repetigo.com/image-tools/png-to-jpg";
 
 export const metadata: Metadata = {
   title: "PNG to JPG Converter Online Free - India Govt Portals & More | RepetiGo",
@@ -28,7 +28,7 @@ Most Indian users need to convert PNG to JPG because government portals, banking
 
 ✓ Instant PNG to JPG Conversion   ✓ Batch Convert Multiple Files   ✓ Adjustable Quality   ✓ No Sign-Up   ✓ 100% Browser-Based - Nothing Uploaded
 
-[ Convert PNG to JPG Free - No Sign-Up → repetigo.com/tools/image/png-to-jpg/ ]
+[ Convert PNG to JPG Free - No Sign-Up → repetigo.com/image-tools/png-to-jpg ]
 
 H2: PNG vs JPG - What's the Difference and When Should You Convert?
 PNG and JPG are the two most common image formats, and they work in fundamentally different ways. Understanding the difference helps you know when converting is the right choice - and when it is not.
@@ -76,7 +76,7 @@ When you have more than one image uploaded, the same quality setting applies to 
 H3: Step 3 - Download Your JPG
 Click Convert at [quality]% to re-apply the current setting to every uploaded image, or just download the result that was generated automatically on upload. For a batch, click Download ZIP to get every converted JPG in one archive. Because nothing was ever uploaded, there's nothing left on any server once you're done. The output file name matches your original, with the extension changed to .jpg.
 
-[ Convert PNG to JPG Free Now → repetigo.com/tools/image/png-to-jpg/ ]
+[ Convert PNG to JPG Free Now → repetigo.com/image-tools/png-to-jpg ]
 
 H2: Why Indian Users Convert PNG to JPG.
 PNG to JPG conversion is one of the most common image tasks for Indian users specifically because of how Indian digital infrastructure works. Here are the most common reasons:
@@ -197,11 +197,11 @@ PrintPilot - RepetiGo's print shop software - can fold format conversion into th
 
 [ Learn About PrintPilot → /products/printpilot/ ]
 [ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Convert PNG to JPG Now → repetigo.com/tools/image/png-to-jpg/ ]
+[ Or Convert PNG to JPG Now → repetigo.com/image-tools/png-to-jpg ]
 
 H2: Common Questions About Converting PNG to JPG.
 H3: Q1: How do I convert PNG to JPG online free in India?
-Go to repetigo.com/tools/image/png-to-jpg/, click Upload and select your PNG file or files. RepetiGo converts automatically at 90% quality. Drag the quality slider if you want a different balance of size and detail, then download the JPG - or Download ZIP for a batch. No account required, no software needed, and your file is never uploaded anywhere since everything runs in your browser. For Indian government portal uploads, check the portal's required file size limit after converting, and use Compress Image if the JPG is still too large.
+Go to repetigo.com/image-tools/png-to-jpg, click Upload and select your PNG file or files. RepetiGo converts automatically at 90% quality. Drag the quality slider if you want a different balance of size and detail, then download the JPG - or Download ZIP for a batch. No account required, no software needed, and your file is never uploaded anywhere since everything runs in your browser. For Indian government portal uploads, check the portal's required file size limit after converting, and use Compress Image if the JPG is still too large.
 H3: Q2: Why does the Indian government portal reject my PNG file?
 Indian government portals (NTA, SSC, IBPS, scholarship portals, banking application portals) specify JPG or JPEG as the only accepted image format. PNG is a different format and is rejected regardless of the image's visual quality - the portal's upload validation checks the file extension and MIME type, and a .png file with an image/png type gets rejected outright. The fix: convert your PNG to JPG using RepetiGo's converter, then re-upload the .jpg file. The image looks the same - only the format changes.
 H3: Q3: Does converting PNG to JPG reduce quality?
@@ -215,7 +215,7 @@ Using Mac Preview (built-in, free): open your PNG in Preview, go to File → Exp
 H3: Q7: How do I convert PNG to JPG on Windows?
 Using Microsoft Paint (built-in, free): open your PNG in Paint, go to File → Save As → JPEG picture, name the file, and click Save. Using the Photos app (Windows 10/11): open the PNG, click the three-dot menu → Edit & Create → Edit, then save a copy choosing JPEG as the format. For converting several PNG files at once with one shared quality setting, RepetiGo's browser-based batch converter in Chrome is faster than converting files one by one.
 H3: Q8: How do I convert PNG to JPG on iPhone?
-The most reliable method: open Safari on your iPhone, go to repetigo.com/tools/image/png-to-jpg/, tap the upload area, select your PNG from the Photos app, adjust quality if needed, and download the JPG to your Files app. You can then select that downloaded JPG when uploading to a government portal directly from your phone.
+The most reliable method: open Safari on your iPhone, go to repetigo.com/image-tools/png-to-jpg, tap the upload area, select your PNG from the Photos app, adjust quality if needed, and download the JPG to your Files app. You can then select that downloaded JPG when uploading to a government portal directly from your phone.
 H3: Q9: Can I convert multiple PNG files to JPG at once?
 Yes. Upload several PNG (or WebP, GIF, SVG) files in one session - each is converted automatically and shown on its own card. The same quality setting applies to all of them; adjust the slider once and click Convert to re-apply it to every file. Use Download ZIP to get all the converted JPGs in a single archive - useful for converting a set of screenshots or images before uploading them to a portal.
 H3: Q10: Is it safe to upload my files to a free PNG to JPG converter?
@@ -242,8 +242,8 @@ All Image Tools
 Complete image tools suite
 → /image-tools
 
-[ Convert PNG to JPG Free - No Sign-Up → repetigo.com/tools/image/png-to-jpg/ ]
-[ Explore All Image Tools → repetigo.com/tools/image/ ]`;
+[ Convert PNG to JPG Free - No Sign-Up → repetigo.com/image-tools/png-to-jpg ]
+[ Explore All Image Tools → repetigo.com/image-tools ]`;
 
 const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
@@ -352,13 +352,12 @@ function renderInlineMappedLinks(text: string) {
 function mapSeoRoute(route: string) {
   const cleanRoute = route.trim().replace(/^(https?:\/\/)?(www\.)?repetigo\.com/i, "").replace(/\/$/, "");
   const routeMap: Record<string, string> = {
-    "/tools/image": "/image-tools",
-    "/tools/image/png-to-jpg": "/image-tools/png-to-jpg",
-    "/tools/image/jpg-to-png": "/image-tools/convert-from-jpg",
-    "/tools/image/compress-image": "/image-tools/compress-image",
-    "/tools/image/resize-image": "/image-tools/resize-image",
-    "/tools/image/background-remover": "/image-tools/background-remover",
-    "/tools/image/remove-background": "/image-tools/background-remover",
+    "/image-tools": "/image-tools",
+    "/image-tools/png-to-jpg": "/image-tools/png-to-jpg",
+    "/image-tools/jpg-to-png": "/image-tools/convert-from-jpg",
+    "/image-tools/compress-image": "/image-tools/compress-image",
+    "/image-tools/resize-image": "/image-tools/resize-image",
+    "/image-tools/background-remover": "/image-tools/background-remover",
     "/products/printpilot": "/print-automation",
     "/privacy-policy": "/privacy-policy",
     "/pricing": "/pricing",
@@ -385,7 +384,7 @@ function JsonLd() {
   const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo PNG to JPG Converter", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online PNG to JPG converter with adjustable quality and batch conversion. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl };
   const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert PNG to JPG Online Free", step: [{ "@type": "HowToStep", name: "Upload PNG", text: "Upload Your PNG File" }, { "@type": "HowToStep", name: "Choose Quality", text: "Choose Quality Settings" }, { "@type": "HowToStep", name: "Download", text: "Download Your JPG" }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
-  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://www.repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://www.repetigo.com/tools/image/" }, { "@type": "ListItem", position: 3, name: "PNG to JPG", item: pageUrl }] };
+  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "PNG to JPG", item: pageUrl }] };
 
   return <>{[softwareApplication, howTo, faqPage, breadcrumb].map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>;
 }

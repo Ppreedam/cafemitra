@@ -107,9 +107,7 @@ function JsonLd() {
       "@type": "BreadcrumbList",
       itemListElement: [
         { "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" },
-        { "@type": "ListItem", position: 2, name: "Tools", item: "https://repetigo.com/tools/" },
-        { "@type": "ListItem", position: 3, name: "PDF Tools", item: "https://repetigo.com/tools/pdf/" },
-        { "@type": "ListItem", position: 4, name: "Repair PDF", item: "https://repetigo.com/tools/pdf/repair-pdf/" },
+        { "@type": "ListItem", position: 2, name: "PDF Tools", item: "https://repetigo.com/pdf-tools" }, { "@type": "ListItem", position: 3, name: "Repair PDF", item: "https://repetigo.com/pdf-tools/repair-pdf" },
       ],
     },
   ];

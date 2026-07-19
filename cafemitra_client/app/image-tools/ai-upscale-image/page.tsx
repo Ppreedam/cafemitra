@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import AiUpscaleImageClient from "./AiUpscaleImageClient";
 
-const pageUrl = "https://www.repetigo.com/tools/image/ai-upscale-image/";
+const pageUrl = "https://repetigo.com/image-tools/ai-upscale-image";
 
 export const metadata: Metadata = {
   title: "AI Image Upscaler Free India - Enlarge Blurry Scans & Old Photos | RepetiGo",
@@ -28,7 +28,7 @@ This is a separate, slower cousin of RepetiGo's free Upscale Image tool at /imag
 
 ✓ Real AI-Added Detail   ✓ 2x and 4x Upscaling   ✓ JPG, PNG, WebP up to 15 MB   ✓ No Sign-Up
 
-[ Try the AI Image Upscaler Free → repetigo.com/tools/image/ai-upscale-image/ ]
+[ Try the AI Image Upscaler Free → repetigo.com/image-tools/ai-upscale-image ]
 
 H2: What Is AI Image Upscaling - and How Is It Different from a Basic Resize?
 A basic resize (or RepetiGo's own instant Upscale Image tool) makes an image larger by duplicating or smoothly interpolating the pixels that already exist. Nothing new is added - the image is bigger, but any blur or softness in the original is still there, just at a larger size.
@@ -60,7 +60,7 @@ AI mode is on by default on this page. Choose 2x (doubles width and height) or 4
 H3: Step 3 - Download Your AI-Upscaled Image
 Click AI Upscale. Your image is sent to our configured AI provider, processed, and returned - this typically takes 10-60 seconds depending on file size and scale. Click Download to save the result.
 
-[ Upscale an Image with AI Now → repetigo.com/tools/image/ai-upscale-image/ ]
+[ Upscale an Image with AI Now → repetigo.com/image-tools/ai-upscale-image ]
 
 H2: Indian Use Cases for AI Image Upscaling.
 Scenario
@@ -164,11 +164,11 @@ PrintPilot - RepetiGo's print shop software - can route a job into AI upscaling 
 
 [ Learn About PrintPilot → /products/printpilot/ ]
 [ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Try the AI Image Upscaler Now → repetigo.com/tools/image/ai-upscale-image/ ]
+[ Or Try the AI Image Upscaler Now → repetigo.com/image-tools/ai-upscale-image ]
 
 H2: Common Questions About AI Image Upscaling.
 H3: Q1: How do I use the AI image upscaler for free in India?
-Go to repetigo.com/tools/image/ai-upscale-image/, upload your JPG, PNG, or WebP image (up to 15 MB), choose 2x or 4x, and click AI Upscale. Your image is sent to our configured AI provider, processed in roughly 10-60 seconds, and returned as a sharper, larger file. No account is required, and there's no charge.
+Go to repetigo.com/image-tools/ai-upscale-image, upload your JPG, PNG, or WebP image (up to 15 MB), choose 2x or 4x, and click AI Upscale. Your image is sent to our configured AI provider, processed in roughly 10-60 seconds, and returned as a sharper, larger file. No account is required, and there's no charge.
 H3: Q2: Can this AI upscaler fix a blurry scanned marksheet or old certificate for printing?
 Yes - this is one of the main use cases this tool is built for. Upload the scan, choose 2x for a reasonable-quality original or 4x for a very small or soft scan, and let the AI model add detail. The result will be noticeably clearer than a plain resize, though very old or extremely blurry scans still have real limits - the AI is making an informed prediction, not recovering lost information.
 H3: Q3: How is this different from RepetiGo's free Upscale Image tool?
@@ -211,8 +211,8 @@ All Image Tools
 Complete free image tools suite
 → /image-tools
 
-[ Try the AI Image Upscaler Free → repetigo.com/tools/image/ai-upscale-image/ ]
-[ Explore All Image Tools → repetigo.com/tools/image/ ]`;
+[ Try the AI Image Upscaler Free → repetigo.com/image-tools/ai-upscale-image ]
+[ Explore All Image Tools → repetigo.com/image-tools ]`;
 
 const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
@@ -321,13 +321,13 @@ function renderInlineMappedLinks(text: string) {
 function mapSeoRoute(route: string) {
   const cleanRoute = route.trim().replace(/^(https?:\/\/)?(www\.)?repetigo\.com/i, "").replace(/\/$/, "");
   const routeMap: Record<string, string> = {
-    "/tools/image": "/image-tools",
-    "/tools/image/ai-upscale-image": "/image-tools/ai-upscale-image",
-    "/tools/image/upscale-image": "/image-tools/upscale-image",
-    "/tools/image/resize-image": "/image-tools/resize-image",
-    "/tools/image/compress-image": "/image-tools/compress-image",
-    "/tools/image/background-remover": "/image-tools/background-remover",
-    "/tools/image/photo-editor": "/image-tools/photo-editor",
+    "/image-tools": "/image-tools",
+    "/image-tools/ai-upscale-image": "/image-tools/ai-upscale-image",
+    "/image-tools/upscale-image": "/image-tools/upscale-image",
+    "/image-tools/resize-image": "/image-tools/resize-image",
+    "/image-tools/compress-image": "/image-tools/compress-image",
+    "/image-tools/background-remover": "/image-tools/background-remover",
+    "/image-tools/photo-editor": "/image-tools/photo-editor",
     "/products/printpilot": "/print-automation",
     "/privacy-policy": "/privacy-policy",
     "/pricing": "/pricing",
@@ -355,7 +355,7 @@ function JsonLd() {
   const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo AI Image Upscaler", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free AI-powered image upscaler - enlarge blurry scans, old photos, and low-resolution images with genuine AI-added detail. Built for document and print shop workflows in India.", url: pageUrl };
   const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Use the AI Image Upscaler", step: [{ "@type": "HowToStep", name: "Upload Image", text: "Upload Your Image" }, { "@type": "HowToStep", name: "Choose Settings", text: "Turn On AI Mode and Choose Your Settings" }, { "@type": "HowToStep", name: "Download", text: "Download Your AI-Upscaled Image" }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
-  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://www.repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://www.repetigo.com/tools/image/" }, { "@type": "ListItem", position: 3, name: "AI Image Upscaler", item: pageUrl }] };
+  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "AI Image Upscaler", item: pageUrl }] };
 
   return <>{[softwareApplication, howTo, faqPage, breadcrumb].map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>;
 }

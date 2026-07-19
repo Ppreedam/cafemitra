@@ -3,7 +3,7 @@ import Link from "next/link";
 import { LandingNavbar } from "../../../LandingNavbar";
 import { PublicFooter } from "../../../PublicFooter";
 
-const blogUrl = "https://www.repetigo.com/blog/pdf/how-to-merge-pdf-online";
+const blogUrl = "https://repetigo.com/blog/pdf/how-to-merge-pdf-online";
 
 export const metadata: Metadata = {
   title: "How to Merge PDF Files Online Free in India | RepetiGo Guide",

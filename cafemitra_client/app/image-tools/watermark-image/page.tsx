@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import WatermarkImageClient from "./WatermarkImageClient";
 
-const pageUrl = "https://www.repetigo.com/tools/image/watermark-image/";
+const pageUrl = "https://repetigo.com/image-tools/watermark-image";
 
 export const metadata: Metadata = {
   title: "Add Watermark to Image Online Free India - Text, Logo, Batch | RepetiGo",
@@ -28,7 +28,7 @@ Adding a watermark to an image embeds a visible mark - your name, studio logo, "
 
 ✓ Text and Logo Watermarks (Combine Both)   ✓ Drag to Position, Any Rotation   ✓ Apply the Same Watermark to Multiple Images   ✓ No Sign-Up   ✓ No RepetiGo Branding on Your Output
 
-[ Add Watermark to Image Free - No Sign-Up → repetigo.com/tools/image/watermark-image/ ]
+[ Add Watermark to Image Free - No Sign-Up → repetigo.com/image-tools/watermark-image ]
 
 H2: Why Add a Watermark to Your Image?
 A watermark serves as both a visible identification mark and a deterrent against unauthorized use. Different users add watermarks for different reasons - here are the most common:
@@ -68,7 +68,7 @@ India tip: for certificates and official documents, add your institution name as
 H3: Step 3 - Download Your Watermarked Image
 Click Watermark Image (or Download Watermarked Image). The watermark is permanently drawn into the image on your device, and downloads as PNG or JPG - whichever you choose. If you want the same watermark on more photos, scroll down to Apply This Watermark to More Images, upload the rest, click Apply, and download them individually or all together as a ZIP.
 
-[ Add Watermark Free Now → repetigo.com/tools/image/watermark-image/ ]
+[ Add Watermark Free Now → repetigo.com/image-tools/watermark-image ]
 
 H2: Types of Watermarks - Text, Logo, and Combining Both.
 H3: Text Watermark
@@ -202,11 +202,11 @@ PrintPilot - RepetiGo's print shop software - can fold proof watermarking into t
 
 [ Learn About PrintPilot → /products/printpilot/ ]
 [ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Add Watermark Now → repetigo.com/tools/image/watermark-image/ ]
+[ Or Add Watermark Now → repetigo.com/image-tools/watermark-image ]
 
 H2: Common Questions About Adding Watermarks to Images.
 H3: Q1: How do I add a watermark to an image online free in India?
-Go to repetigo.com/tools/image/watermark-image/, upload your JPG, PNG, or WEBP image. Click Add Text (type your text, then adjust font, colour, opacity, and rotation) or Add Image (upload your logo). Drag the watermark to wherever you want it on the photo. Click Watermark Image to download the result as PNG or JPG. No account required, no RepetiGo branding added to your output, and your image is never uploaded anywhere since everything runs in your browser.
+Go to repetigo.com/image-tools/watermark-image, upload your JPG, PNG, or WEBP image. Click Add Text (type your text, then adjust font, colour, opacity, and rotation) or Add Image (upload your logo). Drag the watermark to wherever you want it on the photo. Click Watermark Image to download the result as PNG or JPG. No account required, no RepetiGo branding added to your output, and your image is never uploaded anywhere since everything runs in your browser.
 H3: Q2: How do I watermark a certificate or marksheet to prevent falsification?
 Upload your certificate scan. Click Add Text and type your institution name or a notice like "XYZ College - Not for Reproduction." Set the rotation slider to around 45° for a diagonal look, and opacity to 30-40% - clearly visible without obscuring the certificate content. Drag it across the centre of the image. Download. The diagonal watermark makes it noticeably harder to edit the certificate content without disturbing it. For stronger protection, add a second or third copy of the same text layer and drag each to a different part of the image.
 H3: Q3: How do I watermark my photos to protect my copyright?
@@ -247,8 +247,8 @@ All Image Tools
 Complete image tools suite
 → /image-tools
 
-[ Add Watermark Free - No Sign-Up → repetigo.com/tools/image/watermark-image/ ]
-[ Explore All Image Tools → repetigo.com/tools/image/ ]`;
+[ Add Watermark Free - No Sign-Up → repetigo.com/image-tools/watermark-image ]
+[ Explore All Image Tools → repetigo.com/image-tools ]`;
 
 const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
@@ -358,12 +358,12 @@ function renderInlineMappedLinks(text: string) {
 function mapSeoRoute(route: string) {
   const cleanRoute = route.trim().replace(/^(https?:\/\/)?(www\.)?repetigo\.com/i, "").replace(/\/$/, "");
   const routeMap: Record<string, string> = {
-    "/tools/image": "/image-tools",
-    "/tools/image/watermark-image": "/image-tools/watermark-image",
-    "/tools/image/background-remover": "/image-tools/background-remover",
-    "/tools/image/crop-image": "/image-tools/crop-image",
-    "/tools/image/resize-image": "/image-tools/resize-image",
-    "/tools/image/compress-image": "/image-tools/compress-image",
+    "/image-tools": "/image-tools",
+    "/image-tools/watermark-image": "/image-tools/watermark-image",
+    "/image-tools/background-remover": "/image-tools/background-remover",
+    "/image-tools/crop-image": "/image-tools/crop-image",
+    "/image-tools/resize-image": "/image-tools/resize-image",
+    "/image-tools/compress-image": "/image-tools/compress-image",
     "/products/printpilot": "/print-automation",
     "/privacy-policy": "/privacy-policy",
     "/pricing": "/pricing",
@@ -390,7 +390,7 @@ function JsonLd() {
   const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Watermark Image", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online image watermark tool - add text or logo watermarks and apply the same watermark to multiple images. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl };
   const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Add a Watermark to an Image Online Free", step: [{ "@type": "HowToStep", name: "Upload Image", text: "Upload Your Image" }, { "@type": "HowToStep", name: "Set Watermark", text: "Set Your Watermark - Text, Logo, or Both" }, { "@type": "HowToStep", name: "Download", text: "Download Your Watermarked Image" }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
-  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://www.repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://www.repetigo.com/tools/image/" }, { "@type": "ListItem", position: 3, name: "Watermark Image", item: pageUrl }] };
+  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "Watermark Image", item: pageUrl }] };
 
   return <>{[softwareApplication, howTo, faqPage, breadcrumb].map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>;
 }

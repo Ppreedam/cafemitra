@@ -29,7 +29,15 @@ const configs: Record<ConversionSlug, Config> = {
 
 export function isConversionSlug(value: string): value is ConversionSlug { return value in configs; }
 
-export default function ConversionTool({ slug, children }: { slug: ConversionSlug; children?: ReactNode }) {
+type ConversionToolProps = {
+  slug: ConversionSlug;
+  children?: ReactNode;
+  uploadTitle?: string;
+  uploadDescription?: string;
+  uploadHeadingLevel?: "h1" | "h2";
+};
+
+export default function ConversionTool({ slug, children, uploadTitle, uploadDescription, uploadHeadingLevel }: ConversionToolProps) {
   const config = configs[slug]; const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<File[]>([]); const [results, setResults] = useState<Result[]>([]);
   const [busy, setBusy] = useState(false); const [progress, setProgress] = useState(0); const [error, setError] = useState("");
@@ -58,7 +66,7 @@ export default function ConversionTool({ slug, children }: { slug: ConversionSlu
     finally { setBusy(false); }
   }
 
-  if (!files.length) return <><PdfToolUpload title={config.title} description={config.description} icon={config.icon} inputRef={inputRef} onFiles={add} accept={config.accept} multiple={config.multiple} buttonLabel={config.button} dropLabel={config.drop} headingLevel={children ? "h2" : "h1"} />{children}</>;
+  if (!files.length) return <><PdfToolUpload title={uploadTitle || config.title} description={uploadDescription || config.description} icon={config.icon} inputRef={inputRef} onFiles={add} accept={config.accept} multiple={config.multiple} buttonLabel={config.button} dropLabel={config.drop} headingLevel={uploadHeadingLevel || (children ? "h2" : "h1")} />{children}</>;
   const Icon = config.icon;
   return <div className="conversion-page">
     <input ref={inputRef} hidden type="file" accept={config.accept} multiple={config.multiple} onChange={(event) => { if (event.target.files?.length) add(event.target.files); event.target.value = ""; }} />

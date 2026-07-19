@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import BlurFaceClient from "./BlurFaceClient";
 
-const pageUrl = "https://www.repetigo.com/tools/image/blur-face/";
+const pageUrl = "https://repetigo.com/image-tools/blur-face";
 
 export const metadata: Metadata = {
   title: "Blur Face Online Free India - Hide Faces in Photos Instantly | RepetiGo",
@@ -28,7 +28,7 @@ Whether you need to blur faces in photos before posting on social media, protect
 
 ✓ Automatic Face Detection   ✓ Manual Selection for Any Area   ✓ Adjustable Blur Strength   ✓ No Sign-Up   ✓ Blurred Photo Never Leaves Your Browser
 
-[ Blur Face Free - No Sign-Up → repetigo.com/tools/image/blur-face/ ]
+[ Blur Face Free - No Sign-Up → repetigo.com/image-tools/blur-face ]
 
 H2: What Is a Face Blur Tool? (And Why Should You Use One?)
 A face blur tool is an image editing tool that obscures human faces in a photo so the person can no longer be identified. RepetiGo's tool applies a Gaussian blur - a smooth, out-of-focus softening effect - over the selected area, with adjustable strength so you can make it as subtle or as strong as you need.
@@ -69,7 +69,7 @@ India tip: when blurring an Aadhaar card or PAN card before sharing with a print
 H3: Step 3 - Download Your Photo with the Face Blurred
 Click Download Blurred Image (or Blur Face). The blur is rendered directly onto the image on your own device and downloads as a PNG file. Only the coordinates needed to detect faces were ever sent anywhere - the actual blurred image you download is generated and stays entirely in your browser.
 
-[ Blur Face Free Now → repetigo.com/tools/image/blur-face/ ]
+[ Blur Face Free Now → repetigo.com/image-tools/blur-face ]
 
 H2: Why Blur Faces in Photos? Indian Use Cases.
 In India, face blurring in photos has specific practical relevance - from protecting children in school events, to complying with India's Digital Personal Data Protection Act 2023, to preventing ID fraud. Here are the most common scenarios:
@@ -186,13 +186,13 @@ The standalone blur face tool on this page handles individual, manual cases well
 
 [ Learn About PrintPilot → /products/printpilot/ ]
 [ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Blur a Face Now → repetigo.com/tools/image/blur-face/ ]
+[ Or Blur a Face Now → repetigo.com/image-tools/blur-face ]
 
 H2: Common Questions About Face Blurring Online.
 H3: Q1: How Do I Blur a Face in a Picture?
-Go to repetigo.com/tools/image/blur-face/ and click Upload. Select your JPG, PNG, or WEBP photo. Automatic detection outlines any faces it finds within a few seconds - or switch to Customised Detection and draw a box over the face yourself. Adjust the blur strength slider (6-50px). Click Download Blurred Image. The photo downloads as a PNG with the face permanently blurred. No account or sign-up required.
+Go to repetigo.com/image-tools/blur-face and click Upload. Select your JPG, PNG, or WEBP photo. Automatic detection outlines any faces it finds within a few seconds - or switch to Customised Detection and draw a box over the face yourself. Adjust the blur strength slider (6-50px). Click Download Blurred Image. The photo downloads as a PNG with the face permanently blurred. No account or sign-up required.
 H3: Q2: How to Blur Faces in a Photo on iPhone (Free)
-There are two ways to blur faces in photos on iPhone - one built into the phone, one faster in your browser. Built-in iPhone method (Markup): open the Photos app, select your photo, tap Edit, tap the three-dot menu, choose Markup, select the Pen tool, and draw over the face - this draws lines on top of the face rather than a proper blur, so the result looks drawn-on rather than naturally softened. Browser method (RepetiGo): open Safari on your iPhone, go to repetigo.com/tools/image/blur-face/, tap Upload, select the photo from your Camera Roll, let automatic detection find the face, adjust the blur, and download the result to your Files app. This gives a natural-looking blur in under a minute and works on any iPhone model.
+There are two ways to blur faces in photos on iPhone - one built into the phone, one faster in your browser. Built-in iPhone method (Markup): open the Photos app, select your photo, tap Edit, tap the three-dot menu, choose Markup, select the Pen tool, and draw over the face - this draws lines on top of the face rather than a proper blur, so the result looks drawn-on rather than naturally softened. Browser method (RepetiGo): open Safari on your iPhone, go to repetigo.com/image-tools/blur-face, tap Upload, select the photo from your Camera Roll, let automatic detection find the face, adjust the blur, and download the result to your Files app. This gives a natural-looking blur in under a minute and works on any iPhone model.
 H3: Q3: How to Blur Faces in Photos Without Photoshop
 You don't need Photoshop to blur faces in photos. RepetiGo's browser-based tool gives you automatic face detection plus adjustable Gaussian blur without any software installation. In Photoshop, for reference, you'd use Select → Subject, then Filter → Blur Gallery → Field Blur or Iris Blur, position the blur on the face, adjust the intensity, and export - and you'd need an active Adobe Creative Cloud subscription to do it. RepetiGo's method - upload, detect, adjust strength, download - takes about 20-30 seconds and is free with no software or subscription required.
 H3: Q4: Can I Blur Multiple Faces in One Photo?
@@ -226,8 +226,8 @@ All Image Tools
 Complete free image tools suite
 → /image-tools
 
-[ Blur Face Free - No Sign-Up → repetigo.com/tools/image/blur-face/ ]
-[ Explore All Image Tools → repetigo.com/tools/image/ ]`;
+[ Blur Face Free - No Sign-Up → repetigo.com/image-tools/blur-face ]
+[ Explore All Image Tools → repetigo.com/image-tools ]`;
 
 const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
@@ -335,13 +335,13 @@ function renderInlineMappedLinks(text: string) {
 function mapSeoRoute(route: string) {
   const cleanRoute = route.trim().replace(/^(https?:\/\/)?(www\.)?repetigo\.com/i, "").replace(/\/$/, "");
   const routeMap: Record<string, string> = {
-    "/tools/image": "/image-tools",
-    "/tools/image/blur-face": "/image-tools/blur-face",
-    "/tools/image/background-remover": "/image-tools/background-remover",
-    "/tools/image/compress-image": "/image-tools/compress-image",
-    "/tools/image/crop-image": "/image-tools/crop-image",
-    "/tools/image/watermark-image": "/image-tools/watermark-image",
-    "/tools/image/resize-image": "/image-tools/resize-image",
+    "/image-tools": "/image-tools",
+    "/image-tools/blur-face": "/image-tools/blur-face",
+    "/image-tools/background-remover": "/image-tools/background-remover",
+    "/image-tools/compress-image": "/image-tools/compress-image",
+    "/image-tools/crop-image": "/image-tools/crop-image",
+    "/image-tools/watermark-image": "/image-tools/watermark-image",
+    "/image-tools/resize-image": "/image-tools/resize-image",
     "/use-cases/secure-printing": "/print-automation",
     "/products/printpilot": "/print-automation",
     "/legal/privacy-policy": "/privacy-policy",
@@ -371,7 +371,7 @@ function JsonLd() {
   const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Blur Face Tool", applicationCategory: "MultimediaApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free browser-based face blur tool with automatic detection and manual selection. Face detection is processed in memory only and never stored; the blurred image is generated entirely in the browser.", url: pageUrl };
   const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Blur a Face in a Photo Online Free", step: [{ "@type": "HowToStep", name: "Upload Photo", text: "Upload Your Photo" }, { "@type": "HowToStep", name: "Detect or Draw", text: "Let Automatic Detection Find Faces, or Draw Your Own" }, { "@type": "HowToStep", name: "Download", text: "Download Your Photo with the Face Blurred" }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
-  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://www.repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://www.repetigo.com/tools/image/" }, { "@type": "ListItem", position: 3, name: "Blur Face", item: pageUrl }] };
+  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "Blur Face", item: pageUrl }] };
 
   return <>{[softwareApplication, howTo, faqPage, breadcrumb].map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>;
 }

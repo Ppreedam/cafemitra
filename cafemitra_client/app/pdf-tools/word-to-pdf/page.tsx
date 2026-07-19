@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { DashboardShell } from "../../DashboardShell";
 import ConversionTool from "../ConversionTool";
 
-const pageUrl = "https://www.repetigo.com/tools/pdf/word-to-pdf/";
+const pageUrl = "https://repetigo.com/pdf-tools/word-to-pdf";
 export const metadata: Metadata = { title: "Word to PDF Converter Free India - Convert DOCX Instantly | RepetiGo", description: "Convert Word to PDF free online - DOCX, DOC, ODT, RTF supported. Formatting preserved exactly. No sign-up, no Microsoft Word needed. Files auto-deleted after 60 min.", alternates: { canonical: pageUrl }, openGraph: { title: "Word to PDF Converter Free India - Convert DOCX Instantly | RepetiGo", description: "Free Word to PDF converter. DOCX, DOC, ODT, RTF supported. Formatting preserved. No sign-up, auto-deleted 60 min.", type: "website", url: pageUrl, images: ["https://repetigo.com/og-word-to-pdf.jpg"] }, twitter: { card: "summary_large_image", title: "Word to PDF Converter Free - RepetiGo", description: "Convert DOCX to PDF free. Formatting preserved. No sign-up, auto-deleted. India-built." }, robots: { index: true, follow: true } };
 
 const wordToPdfContent = String.raw`H1: Word to PDF Converter Free. Convert DOCX to PDF Without Losing Formatting.
@@ -10,7 +10,7 @@ RepetiGo's free Word to PDF converter turns your Microsoft Word documents - DOCX
 The word to pdf converter free tool requires no Microsoft Word installation, no sign-up, and no payment. It works entirely in your browser on any device. Your document is automatically deleted from our servers 60 minutes after you download the PDF.
 ✓ Formatting 100% Preserved   ✓ No Microsoft Word Required   ✓ No Sign-Up   ✓ Files Auto-Deleted in 60 Minutes
 
-[ Convert Word to PDF Free - No Sign-Up → repetigo.com/tools/pdf/word-to-pdf/ ]
+[ Convert Word to PDF Free - No Sign-Up → repetigo.com/pdf-tools/word-to-pdf ]
 
 H2: What Is a Word to PDF Converter?
 A Word to PDF converter is a tool that transforms a Word document (DOCX, DOC, or compatible format) into a PDF file. The resulting PDF is a locked version of your document - the layout, fonts, images, and formatting are frozen exactly as they appear in Word, so the file looks the same on any device, any operating system, and any PDF viewer.
@@ -72,7 +72,7 @@ H3: Step 3 - Convert and Download Your PDF
 Click Convert. Processing takes a few seconds for standard documents - large documents with many images or complex tables may take up to 30 seconds. When complete, a download button appears. Click it to save your PDF. Your uploaded document and the converted PDF are automatically deleted from our servers within 60 minutes. The original document on your device is not affected.
 📱  The Word to PDF converter works on mobile browsers - Chrome on Android, Safari on iPhone. Upload your DOCX file from your phone's Files app, choose your settings, and download the PDF. This is useful for converting and submitting documents directly from your phone without transferring to a laptop first.
 
-[ Convert Word to PDF Free Now → repetigo.com/tools/pdf/word-to-pdf/ ]
+[ Convert Word to PDF Free Now → repetigo.com/pdf-tools/word-to-pdf ]
 
 H2: Saving Word as PDF - The Built-In Way vs The Online Way.
 There are two ways to convert a Word document to PDF: using the built-in 'Save As PDF' function in Microsoft Word itself, or using an online converter like RepetiGo. Both produce a PDF - but they serve different situations.
@@ -89,7 +89,7 @@ Open in Word. Go to File → Print → Select 'Microsoft Print to PDF' or 'Save 
 Alternative built-in method on Windows. Same result as Save As.
 Same as above - requires Word.
 RepetiGo Word to PDF Converter
-Upload DOCX to repetigo.com/tools/pdf/word-to-pdf/. Click Convert. Download PDF.
+Upload DOCX to repetigo.com/pdf-tools/word-to-pdf. Click Convert. Download PDF.
 You don't have Word installed. You're on a phone, Chromebook, or Linux. You need to convert a file received from someone else without opening it in Word.
 Requires internet connection. File size limit applies.
 Google Docs - Download as PDF
@@ -230,13 +230,13 @@ PrintPilot - RepetiGo's print shop software - eliminates this entirely. When a c
 Learn about PrintPilot → /products/printpilot/  |  QR Document Upload → /features/qr-upload/
 
 [ Try PrintPilot Free - Print Shop Automation → repetigo.com/pricing/ ]
-[ Or Convert a Word Document Now → repetigo.com/tools/pdf/word-to-pdf/ ]
+[ Or Convert a Word Document Now → repetigo.com/pdf-tools/word-to-pdf ]
 
 H2: Common Questions About Converting Word to PDF Free.
 H3: Q1: How do I convert a Word document to PDF online for free in India?
-Go to repetigo.com/tools/pdf/word-to-pdf/, click Upload and select your DOCX, DOC, ODT, or RTF file, choose your output settings (A4, Portrait, Standard quality recommended for Indian portals), and click Convert. Your PDF downloads automatically. No account is required, no Microsoft Word is needed, and there is no daily limit. The word to pdf converter free tool works from any browser - on phone or laptop - with no restrictions for users in India.
+Go to repetigo.com/pdf-tools/word-to-pdf, click Upload and select your DOCX, DOC, ODT, or RTF file, choose your output settings (A4, Portrait, Standard quality recommended for Indian portals), and click Convert. Your PDF downloads automatically. No account is required, no Microsoft Word is needed, and there is no daily limit. The word to pdf converter free tool works from any browser - on phone or laptop - with no restrictions for users in India.
 H3: Q2: How do I save a Word document as a PDF?
-There are two ways. Method 1 - using Microsoft Word (if installed): Open your document in Word, go to File → Save As, choose PDF from the file type dropdown, select your save location, and click Save. On Mac: File → Export → PDF. Method 2 - using RepetiGo (if Word is not available): Upload your DOCX to repetigo.com/tools/pdf/word-to-pdf/, click Convert, and download the PDF. Both methods preserve formatting. The built-in Word method is faster if Word is installed. The online converter is the answer when Word is not available.
+There are two ways. Method 1 - using Microsoft Word (if installed): Open your document in Word, go to File → Save As, choose PDF from the file type dropdown, select your save location, and click Save. On Mac: File → Export → PDF. Method 2 - using RepetiGo (if Word is not available): Upload your DOCX to repetigo.com/pdf-tools/word-to-pdf, click Convert, and download the PDF. Both methods preserve formatting. The built-in Word method is faster if Word is installed. The online converter is the answer when Word is not available.
 H3: Q3: Can I convert Word to PDF without Microsoft Word installed?
 Yes. RepetiGo's word to pdf converter free works entirely in your browser - no Microsoft Word, no Office 365, no software installation of any kind is needed. This is particularly useful for users on Chromebook (which does not run native Windows software), Linux (where Word is not available), Android or iPhone (where Word requires a paid subscription for editing), or users who received a DOCX file from someone else and need to convert it without opening it in Word.
 H3: Q4: Does converting Word to PDF preserve formatting, fonts, and tables?
@@ -244,11 +244,11 @@ Yes - formatting, fonts, tables, images, headers, footers, and page breaks are a
 H3: Q5: How do I convert Word to PDF without losing formatting?
 Use RepetiGo's converter with Standard quality output. The Standard setting preserves all formatting - fonts embedded, table structure intact, image quality unchanged. Avoid the Compressed output option if formatting accuracy is critical (it reduces image resolution for a smaller file). For job applications, college admissions, and professional documents, always use Standard quality. If your converted PDF looks different from your Word document, the most common cause is a non-standard font that is not embedded correctly - replace it with a standard web-safe font (Arial, Times New Roman, Calibri) in Word before converting.
 H3: Q6: What is the maximum file size for Word to PDF conversion?
-The converter accepts Word documents up to [SIZE LIMIT] in file size. Most standard Word documents - resumes, reports, forms - are well under 5MB and convert without issues. Documents with many high-resolution embedded images may approach the limit. If your document exceeds the limit, reduce image resolutions in Word (right-click image → Compress Pictures) before uploading. After conversion, if the PDF is too large for a portal upload limit, use the Compress PDF tool at /tools/pdf/compress-pdf/ to reduce the PDF file size.
+The converter accepts Word documents up to [SIZE LIMIT] in file size. Most standard Word documents - resumes, reports, forms - are well under 5MB and convert without issues. Documents with many high-resolution embedded images may approach the limit. If your document exceeds the limit, reduce image resolutions in Word (right-click image → Compress Pictures) before uploading. After conversion, if the PDF is too large for a portal upload limit, use the Compress PDF tool at /pdf-tools/compress-pdf to reduce the PDF file size.
 H3: Q7: Can I convert a DOCX file received from someone else?
 Yes. You do not need to be the author of the document to convert it. Upload any DOCX, DOC, or other supported file - including files received by email, WhatsApp, or shared via Google Drive or OneDrive. The converter processes the file structure and outputs a PDF. If the document is password-protected, you will need to remove the password in Word (or ask the sender for the unprotected version) before uploading - the converter cannot process password-protected files.
 H3: Q8: How do I convert Word to PDF on my phone or Mac?
-On Android phone: open Chrome, go to repetigo.com/tools/pdf/word-to-pdf/, tap Upload, and select your file from Files app. On iPhone: open Safari or Chrome, go to the tool, tap Upload, and select from Files. On Mac: open any browser, go to the tool, drag your document into the upload area. Alternatively, on Mac, use File → Export as PDF in Word, or File → Print → Save as PDF. On phone without the Word app: RepetiGo's browser-based tool is the easiest method - no app download required.
+On Android phone: open Chrome, go to repetigo.com/pdf-tools/word-to-pdf, tap Upload, and select your file from Files app. On iPhone: open Safari or Chrome, go to the tool, tap Upload, and select from Files. On Mac: open any browser, go to the tool, drag your document into the upload area. Alternatively, on Mac, use File → Export as PDF in Word, or File → Print → Save as PDF. On phone without the Word app: RepetiGo's browser-based tool is the easiest method - no app download required.
 H3: Q9: Can Google Docs convert Word to PDF?
 Yes, but with extra steps. Upload your DOCX to Google Drive, open it in Google Docs, go to File → Download → PDF Document (.pdf). Google Docs downloads a PDF version. The limitation: complex Word formatting (multi-column layouts, specific fonts, intricate tables) may not render identically in Google Docs before download. For simple documents, Google Docs works well. For formatting-critical documents, RepetiGo's dedicated Word to PDF converter produces more accurate output because it directly converts the Word file format without rendering through Google's interface first.
 H3: Q10: What is the difference between Word to PDF and PDF to Word conversion?
@@ -260,32 +260,32 @@ What It Does
 Link
 Compress PDF
 Reduce PDF file size after conversion - if output exceeds portal limit
-→ /tools/pdf/compress-pdf/
+→ /pdf-tools/compress-pdf
 Merge PDF
 Combine your converted PDF with other PDFs into one file
-→ /tools/pdf/merge-pdf/
+→ /pdf-tools/merge-pdf
 Split PDF
 Divide the converted PDF by section or page range
-→ /tools/pdf/split-pdf/
+→ /pdf-tools/split-pdf
 JPG to PDF
 Convert images to PDF - then merge with your Word PDF
-→ /tools/pdf/jpg-to-pdf/
+→ /pdf-tools/jpg-to-pdf
 PDF to JPG
 Extract PDF pages as images
-→ /tools/pdf/pdf-to-jpg/
+→ /pdf-tools/pdf-to-jpg
 Rotate PDF
 Fix page orientation after conversion
-→ /tools/pdf/rotate-pdf/
+→ /pdf-tools/rotate-pdf
 All PDF Tools
 Complete PDF tools suite
-→ /tools/pdf/
+→ /pdf-tools
 
-[ Convert Word to PDF Free - No Sign-Up → repetigo.com/tools/pdf/word-to-pdf/ ]
-[ Explore All PDF Tools → repetigo.com/tools/pdf/ ]`;
+[ Convert Word to PDF Free - No Sign-Up → repetigo.com/pdf-tools/word-to-pdf ]
+[ Explore All PDF Tools → repetigo.com/pdf-tools ]`;
 
 const faqs = Array.from(normalizeMojibake(wordToPdfContent).matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 export default function WordToPdfPage() { return <DashboardShell activePath="/pdf-tools"><div className="dashboard generic-pdf-tool-page"><ConversionTool slug="word-to-pdf"><JsonLd /><article className="tool-seo-content" id="word-to-pdf-guide"><StructuredSeoCopy content={wordToPdfContent} /></article></ConversionTool></div></DashboardShell>; }
-function JsonLd() { const schemas = [{ "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Word to PDF Converter", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free Word to PDF converter - DOCX, DOC, ODT, RTF supported. Formatting preserved." }, { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert Word to PDF Online Free", step: [{ "@type": "HowToStep", name: "Upload Document" }, { "@type": "HowToStep", name: "Choose Settings" }, { "@type": "HowToStep", name: "Convert and Download" }] }, { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqs.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Tools", item: "https://repetigo.com/tools/" }, { "@type": "ListItem", position: 3, name: "PDF Tools", item: "https://repetigo.com/tools/pdf/" }, { "@type": "ListItem", position: 4, name: "Word to PDF", item: pageUrl }] }]; return <>{schemas.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>; }
+function JsonLd() { const schemas = [{ "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Word to PDF Converter", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free Word to PDF converter - DOCX, DOC, ODT, RTF supported. Formatting preserved." }, { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert Word to PDF Online Free", step: [{ "@type": "HowToStep", name: "Upload Document" }, { "@type": "HowToStep", name: "Choose Settings" }, { "@type": "HowToStep", name: "Convert and Download" }] }, { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqs.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "PDF Tools", item: "https://repetigo.com/pdf-tools" }, { "@type": "ListItem", position: 3, name: "Word to PDF", item: pageUrl }] }]; return <>{schemas.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>; }
 
 type SeoTable = { headers: string[]; rows: string[][] };
 function StructuredSeoCopy({ content }: { content: string }) { const normal = separateBlocks(normalizeMojibake(content)); return <>{normal.split(/\n{2,}/).map((block, index) => { const text = block.trim(); if (!text) return null; const [first, ...rest] = text.split("\n"); if (first.startsWith("H1: ")) return <h1 key={index}>{first.slice(4)}</h1>; if (first.startsWith("H2: ")) return <h2 key={index}>{first.slice(4)}</h2>; if (first.startsWith("H3: ")) return <h3 key={index}>{first.slice(4)}</h3>; const table = getKnownTable(text); if (table) return <SeoTable key={index} {...table} />; if (first.startsWith("✓")) return <div className="tool-seo-badges" key={index}>{text.split(/\s{2,}/).map((item) => <span key={item}>{item}</span>)}</div>; const lines = text.split("\n"); const ctas = lines.filter(isCtaLine); if (ctas.length) return <section className="tool-seo-copy-block" key={index}><div className="tool-seo-cta-stack">{ctas.map((line) => <CtaLine key={line} text={line} />)}</div>{lines.filter((line) => !isCtaLine(line)).map((line) => <p key={line}>{renderInlineMappedLinks(line)}</p>)}</section>; return <div className="tool-seo-copy-paragraph" key={index}>{lines.map((line, lineIndex) => <p key={lineIndex}>{renderInlineMappedLinks(line)}</p>)}</div>; })}</>; }
@@ -297,6 +297,6 @@ function isCtaLine(line: string) { return line.startsWith("[") && line.endsWith(
 function CtaLine({ text }: { text: string }) { const inner = text.slice(2, -2); const arrow = inner.indexOf("→"); const href = mapSeoRoute(arrow >= 0 ? inner.slice(arrow + 1) : ""); return <a className="tool-seo-inline-cta" href={href || "#word-to-pdf-guide"}>{(arrow >= 0 ? inner.slice(0, arrow) : inner).trim()}{href ? <span>→</span> : null}</a>; }
 function renderTableCell(cell: string) { const href = mapSeoRoute(cell.replace(/^→\s*/, "")); return href ? <a className="tool-seo-table-link" href={href}>{getRouteLabel(href)}</a> : renderInlineMappedLinks(cell); }
 function renderInlineMappedLinks(text: string) { return text.split(/(repetigo\.com\/(?:tools\/pdf\/[a-z-]+|pricing)\/?|\/tools\/pdf\/[a-z-]*\/?|\/products\/printpilot\/?|\/features\/(?:qr-upload|auto-delete)\/?|\/security\/?|\/use-cases\/secure-printing\/?)/g).map((part, index) => { const href = mapSeoRoute(part.startsWith("repetigo.com") ? `https://${part}` : part); return href ? <a href={href} key={`${part}-${index}`}>{getRouteLabel(href)}</a> : part; }); }
-function mapSeoRoute(route: string) { const clean = route.trim().replace(/^https?:\/\/(www\.)?repetigo\.com/i, "").replace(/\/$/, ""); const routes: Record<string, string> = { "/tools/pdf": "/pdf-tools", "/tools/pdf/word-to-pdf": "/pdf-tools/word-to-pdf", "/tools/pdf/compress-pdf": "/pdf-tools/compress-pdf", "/tools/pdf/merge-pdf": "/pdf-tools/merge-pdf", "/tools/pdf/split-pdf": "/pdf-tools/split-pdf", "/tools/pdf/jpg-to-pdf": "/pdf-tools/jpg-to-pdf", "/tools/pdf/rotate-pdf": "/pdf-tools/rotate-pdf", "/tools/pdf/pdf-to-jpg": "/pdf-tools/pdf-to-jpg", "/products/printpilot": "/print-automation", "/features/qr-upload": "/print-automation", "/features/auto-delete": "/privacy-policy", "/security": "/privacy-policy", "/use-cases/secure-printing": "/privacy-policy", "/pricing": "/pricing" }; return routes[clean] || ""; }
+function mapSeoRoute(route: string) { const clean = route.trim().replace(/^https?:\/\/(www\.)?repetigo\.com/i, "").replace(/\/$/, ""); const routes: Record<string, string> = { "/pdf-tools": "/pdf-tools", "/pdf-tools/word-to-pdf": "/pdf-tools/word-to-pdf", "/pdf-tools/compress-pdf": "/pdf-tools/compress-pdf", "/pdf-tools/merge-pdf": "/pdf-tools/merge-pdf", "/pdf-tools/split-pdf": "/pdf-tools/split-pdf", "/pdf-tools/jpg-to-pdf": "/pdf-tools/jpg-to-pdf", "/pdf-tools/rotate-pdf": "/pdf-tools/rotate-pdf", "/pdf-tools/pdf-to-jpg": "/pdf-tools/pdf-to-jpg", "/products/printpilot": "/print-automation", "/features/qr-upload": "/print-automation", "/features/auto-delete": "/privacy-policy", "/security": "/privacy-policy", "/use-cases/secure-printing": "/privacy-policy", "/pricing": "/pricing" }; return routes[clean] || ""; }
 function getRouteLabel(href: string) { const labels: Record<string, string> = { "/pdf-tools": "Explore All PDF Tools", "/pdf-tools/word-to-pdf": "Open Word to PDF", "/pdf-tools/compress-pdf": "Open Compress PDF", "/pdf-tools/merge-pdf": "Open Merge PDF", "/pdf-tools/split-pdf": "Open Split PDF", "/pdf-tools/jpg-to-pdf": "Open JPG to PDF", "/pdf-tools/rotate-pdf": "Open Rotate PDF", "/pdf-tools/pdf-to-jpg": "Open PDF to JPG", "/print-automation": "Learn About PrintPilot", "/privacy-policy": "Read Privacy Policy", "/pricing": "Start Free Trial" }; return labels[href] || "Open Tool"; }
 function normalizeMojibake(value: string) { return value.replaceAll("âœ“", "✓").replaceAll("âœ•", "✕").replaceAll("âœ—", "✕").replaceAll("âš ï¸", "⚠️").replaceAll("ðŸ’¡", "💡").replaceAll("ðŸ“±", "📱").replaceAll("ðŸ”’", "🔒").replaceAll("ðŸ”", "🔐").replaceAll("ðŸ—‘ï¸", "🗑️").replaceAll("ðŸ‘ï¸", "👁️").replaceAll("ðŸš«", "🚫").replaceAll("ðŸ–¨ï¸", "🖨️").replaceAll("âžœ", "➜").replaceAll("â†’", "→").replaceAll("â€“", "–").replaceAll("â€”", "—").replaceAll("â‚¹", "₹").replaceAll("â˜…", "★").replaceAll("Â·", "·").replaceAll("ðŸ“„", "📄").replaceAll("ðŸŽ“", "🎓").replaceAll("ðŸ›ï¸", "🏛️").replaceAll("ðŸ“‹", "📋").replaceAll("ðŸ¤", "🤝").replaceAll("âœï¸", "✍️").replaceAll("â‰¤", "≤").replaceAll("â‰¥", "≥").replaceAll("âœ…", "✅").replaceAll("ðŸš€", "🚀").replaceAll("ðŸ§¾", "🧾"); }

@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { DashboardShell } from "../../DashboardShell";
 import ConversionTool from "../ConversionTool";
 
-const pageUrl = "https://www.repetigo.com/tools/pdf/pdf-to-excel/";
+const pageUrl = "https://repetigo.com/pdf-tools/pdf-to-excel";
 
 export const metadata: Metadata = {
   title: "Convert PDF to Excel Free - Extract Tables & Data | RepetiGo",
@@ -18,7 +18,7 @@ RepetiGo's free PDF to Excel converter extracts tables, financial data, and stru
 The convert pdf to excel free tool works in any browser on any device. No software to install, no account to create, no limit on conversions. Your PDF is automatically deleted from our servers 60 minutes after you download the Excel output.
 ✓ Extract Tables & Financial Data   ✓ Text & Scanned PDFs   ✓ No Sign-Up   ✓ Auto-Deleted in 60 Minutes
 
-[ Convert PDF to Excel Free - No Sign-Up → repetigo.com/tools/pdf/pdf-to-excel/ ]
+[ Convert PDF to Excel Free - No Sign-Up → repetigo.com/pdf-tools/pdf-to-excel ]
 
 H2: What Does a PDF to Excel Converter Do?
 A PDF to Excel converter extracts structured data from a PDF document - primarily tables, rows, columns, and numeric data - and converts it into an Excel spreadsheet format (.xlsx) where each cell can be edited, sorted, filtered, and used in formulas.
@@ -54,13 +54,13 @@ Handwritten content captured in scan
 30–60% - very variable
 Not recommended. Manual entry is faster for handwritten tables.
 
-📷  If your PDF is a scanned document and the quality is poor, consider re-scanning at 300 DPI with the page flat and straight. The higher the scan quality, the better the Excel conversion accuracy. Use the Rotate PDF tool at /tools/pdf/rotate-pdf/ to fix a skewed scan before converting.
+📷  If your PDF is a scanned document and the quality is poor, consider re-scanning at 300 DPI with the page flat and straight. The higher the scan quality, the better the Excel conversion accuracy. Use the Rotate PDF tool at /pdf-tools/rotate-pdf to fix a skewed scan before converting.
 
 H2: How to Convert PDF to Excel Free in 3 Steps.
 Every conversion follows the same three steps. No account required, no daily limit.
 H3: Step 1 - Upload Your PDF File
 Click the Upload button or drag and drop your PDF into the upload area. Maximum file size: [SIZE LIMIT]. The tool accepts standard PDF files. Password-protected PDFs must have the protection removed before upload. Upload works on any device - Android phone, iPhone, Windows laptop, Mac, or Chromebook - from your browser. No app download required.
-If your PDF is very large (50+ pages) but you only need data from specific pages, consider splitting it first using the Split PDF tool at /tools/pdf/split-pdf/. Processing a smaller PDF extracts data faster and more accurately.
+If your PDF is very large (50+ pages) but you only need data from specific pages, consider splitting it first using the Split PDF tool at /pdf-tools/split-pdf. Processing a smaller PDF extracts data faster and more accurately.
 H3: Step 2 - Select Pages or Tables
 After upload, you can choose to convert the entire document or select specific pages. For large documents with many pages of non-tabular content (text paragraphs, images, headers), selecting only the pages that contain the tables you need produces cleaner output with less manual cleanup required.
 The tool extracts all detected tables from the selected pages. If a page contains both text and a table, the table is extracted and the text is not included in the Excel output - the output focuses on structured data, not prose.
@@ -68,7 +68,7 @@ H3: Step 3 - Download Your Excel File
 Click Convert. Processing time varies by PDF type and complexity - text PDFs convert in a few seconds; scanned PDFs requiring OCR may take 30–60 seconds per page. When complete, your Excel file downloads as an .xlsx file. Each detected table appears as a separate worksheet in the workbook, or all tables appear in sequence on one sheet - depending on the document structure.
 📊  The downloaded .xlsx file opens in Microsoft Excel, Google Sheets (upload to Drive), LibreOffice Calc (free, no subscription needed), and any application that reads the Excel format. You do not need Microsoft Excel installed to open the output file.
 
-[ Convert PDF to Excel Free Now → repetigo.com/tools/pdf/pdf-to-excel/ ]
+[ Convert PDF to Excel Free Now → repetigo.com/pdf-tools/pdf-to-excel ]
 
 H2: Why Indian Professionals Convert PDF to Excel.
 Use Case
@@ -197,14 +197,14 @@ For print shops integrated with RepetiGo's PrintPilot platform, document process
 Learn about PrintPilot → /products/printpilot/
 
 [ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Convert PDF to Excel Now → repetigo.com/tools/pdf/pdf-to-excel/ ]
+[ Or Convert PDF to Excel Now → repetigo.com/pdf-tools/pdf-to-excel ]
 
 H2: Common Questions - PDF to Excel, Insert PDF in Excel, Copy Tables, and More.
 This FAQ covers three related user intents: (1) Converting PDF data into Excel, (2) Inserting a PDF file object into an Excel workbook, and (3) Copying PDF tables manually into Excel.
 H3: Q1: How do I convert a PDF to Excel online for free?
-Go to repetigo.com/tools/pdf/pdf-to-excel/, click Upload and select your PDF file, choose the pages containing the data you want to extract, and click Convert. Your Excel file downloads as an .xlsx workbook. No account is required, no software is needed, and there is no daily limit. The convert pdf to excel free tool works from any browser - on phone or laptop. For text-based PDFs (bank statements, downloaded reports), conversion is fast and accurate. For scanned PDFs, the tool applies OCR before extraction.
+Go to repetigo.com/pdf-tools/pdf-to-excel, click Upload and select your PDF file, choose the pages containing the data you want to extract, and click Convert. Your Excel file downloads as an .xlsx workbook. No account is required, no software is needed, and there is no daily limit. The convert pdf to excel free tool works from any browser - on phone or laptop. For text-based PDFs (bank statements, downloaded reports), conversion is fast and accurate. For scanned PDFs, the tool applies OCR before extraction.
 H3: Q2: Which pages should I select when converting a PDF to Excel?
-Select only the pages that contain the tables or data you need. If your PDF is a 50-page annual report but only pages 12–18 contain the financial tables you want, select only those pages. Selecting the entire document when you only need specific pages produces an Excel file with many empty or text-only worksheets that require manual cleanup. Use the Split PDF tool at /tools/pdf/split-pdf/ first if you need to extract a specific page range regularly.
+Select only the pages that contain the tables or data you need. If your PDF is a 50-page annual report but only pages 12–18 contain the financial tables you want, select only those pages. Selecting the entire document when you only need specific pages produces an Excel file with many empty or text-only worksheets that require manual cleanup. Use the Split PDF tool at /pdf-tools/split-pdf first if you need to extract a specific page range regularly.
 H3: Q3: Can I convert a scanned PDF to Excel?
 Yes, but with caveats. Scanned PDFs (image-only PDFs where you cannot select text) require OCR before conversion. RepetiGo's tool applies OCR automatically to scanned PDFs. The accuracy depends on scan quality: high-resolution scans (300 DPI) of clearly printed text convert well (80–93% accuracy). Low-quality phone photos of documents convert with lower accuracy (60–80%). For scanned financial documents like paper bank statements or printed receipts, always verify all numeric values in the Excel output against the original PDF before using the data.
 H3: Q4: Why does my PDF to Excel conversion have formatting errors?
@@ -212,7 +212,7 @@ Several factors cause formatting errors: (1) Scanned PDFs with OCR - the charact
 H3: Q5: How do I insert a PDF into Excel (as a file attachment)?
 This is a different operation from PDF-to-Excel data extraction - inserting a PDF means embedding the PDF file as a clickable object within an Excel workbook, not converting its data. To insert a PDF into Excel: open Excel, go to the Insert tab, click Object (in the Text group), select 'Create from file', click Browse and select your PDF file, tick 'Display as icon' if you want it to appear as an icon rather than the first page of the PDF, and click OK. The PDF appears as an embedded object in your Excel sheet. Double-clicking it opens the PDF in your default PDF viewer. This works in Microsoft Excel on Windows and Mac. It does not extract data - the PDF is attached as a file object.
 H3: Q6: How do I copy a table from a PDF to Excel?
-There are two methods. Method 1 - using RepetiGo (automatic): Upload the PDF to repetigo.com/tools/pdf/pdf-to-excel/, convert, and download the .xlsx file with the table already extracted into Excel cells. Method 2 - manual copy-paste: Open the PDF in a viewer, click at the top-left of the table, drag to select the entire table, copy (Ctrl+C or Cmd+C), open Excel, click cell A1, and paste (Ctrl+V or Cmd+V). For text-based PDFs, this sometimes works well for simple tables. For complex multi-column tables or scanned PDFs, the paste result may not align correctly to columns and requires manual cleanup. RepetiGo's automatic extraction produces cleaner output for multi-column tables.
+There are two methods. Method 1 - using RepetiGo (automatic): Upload the PDF to repetigo.com/pdf-tools/pdf-to-excel, convert, and download the .xlsx file with the table already extracted into Excel cells. Method 2 - manual copy-paste: Open the PDF in a viewer, click at the top-left of the table, drag to select the entire table, copy (Ctrl+C or Cmd+C), open Excel, click cell A1, and paste (Ctrl+V or Cmd+V). For text-based PDFs, this sometimes works well for simple tables. For complex multi-column tables or scanned PDFs, the paste result may not align correctly to columns and requires manual cleanup. RepetiGo's automatic extraction produces cleaner output for multi-column tables.
 H3: Q7: How do I save an Excel file as a PDF?
 The reverse direction - Excel to PDF - is a built-in Microsoft Excel feature that does not require any external tool. In Excel on Windows or Mac: go to File → Save As → select PDF from the file format dropdown, choose your save location, and click Save. Alternatively: File → Export → Create PDF/XPS → Publish. On Excel for Windows, you can also go to File → Print → select 'Microsoft Print to PDF' printer → Print. In Google Sheets: File → Download → PDF Document. All methods produce a PDF that looks exactly like the Excel spreadsheet. No external converter is needed for Excel→PDF.
 H3: Q8: How does RepetiGo compare to Adobe Acrobat for PDF to Excel conversion?
@@ -228,28 +228,28 @@ What It Does
 Link
 Compress PDF
 Reduce PDF size before converting to Excel
-→ /tools/pdf/compress-pdf/
+→ /pdf-tools/compress-pdf
 Split PDF
 Extract specific pages before conversion
-→ /tools/pdf/split-pdf/
+→ /pdf-tools/split-pdf
 Rotate PDF
 Fix scanned PDF orientation before converting
-→ /tools/pdf/rotate-pdf/
+→ /pdf-tools/rotate-pdf
 Merge PDF
 Combine multiple PDFs before extracting data
-→ /tools/pdf/merge-pdf/
+→ /pdf-tools/merge-pdf
 Word to PDF
 Convert Word documents to PDF
-→ /tools/pdf/word-to-pdf/
+→ /pdf-tools/word-to-pdf
 JPG to PDF
 Convert images to PDF
-→ /tools/pdf/jpg-to-pdf/
+→ /pdf-tools/jpg-to-pdf
 All PDF Tools
 Complete PDF tools suite
-→ /tools/pdf/
+→ /pdf-tools
 
-[ Convert PDF to Excel Free - No Sign-Up → repetigo.com/tools/pdf/pdf-to-excel/ ]
-[ Explore All PDF Tools → repetigo.com/tools/pdf/ ]`;
+[ Convert PDF to Excel Free - No Sign-Up → repetigo.com/pdf-tools/pdf-to-excel ]
+[ Explore All PDF Tools → repetigo.com/pdf-tools ]`;
 
 const faqSchemaQuestions = Array.from(pdfToExcelContent.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
@@ -265,6 +265,6 @@ function isCtaLine(line: string) { return line.startsWith("[") && line.endsWith(
 function CtaLine({ text }: { text: string }) { const inner = text.slice(2, -2); const arrow = inner.indexOf("→"); const href = mapSeoRoute(arrow >= 0 ? inner.slice(arrow + 1) : ""); return <a className="tool-seo-inline-cta" href={href || "#pdf-to-excel-guide"}>{(arrow >= 0 ? inner.slice(0, arrow) : inner).trim()}{href ? <span>→</span> : null}</a>; }
 function renderTableCell(cell: string) { const href = mapSeoRoute(cell.replace(/^→\s*/, "")); return href ? <a className="tool-seo-table-link" href={href}>{getRouteLabel(href)}</a> : renderInlineMappedLinks(cell); }
 function renderInlineMappedLinks(text: string) { return text.split(/(repetigo\.com\/(?:tools\/pdf\/[a-z-]+|pricing)\/?|\/tools\/pdf\/[a-z-]*\/?|\/products\/printpilot\/?|\/security\/?)/g).map((part, index) => { const href = mapSeoRoute(part.startsWith("repetigo.com") ? `https://${part}` : part); return href ? <a href={href} key={`${part}-${index}`}>{getRouteLabel(href)}</a> : part; }); }
-function mapSeoRoute(route: string) { const clean = route.trim().replace(/^https?:\/\/(www\.)?repetigo\.com/i, "").replace(/\/$/, ""); const routes: Record<string, string> = { "/tools/pdf": "/pdf-tools", "/tools/pdf/pdf-to-excel": "/pdf-tools/pdf-to-excel", "/tools/pdf/compress-pdf": "/pdf-tools/compress-pdf", "/tools/pdf/split-pdf": "/pdf-tools/split-pdf", "/tools/pdf/rotate-pdf": "/pdf-tools/rotate-pdf", "/tools/pdf/merge-pdf": "/pdf-tools/merge-pdf", "/tools/pdf/word-to-pdf": "/pdf-tools/word-to-pdf", "/tools/pdf/jpg-to-pdf": "/pdf-tools/jpg-to-pdf", "/tools/pdf/pdf-to-jpg": "/pdf-tools/pdf-to-jpg", "/products/printpilot": "/print-automation", "/security": "/privacy-policy", "/pricing": "/pricing" }; return routes[clean] || ""; }
+function mapSeoRoute(route: string) { const clean = route.trim().replace(/^https?:\/\/(www\.)?repetigo\.com/i, "").replace(/\/$/, ""); const routes: Record<string, string> = { "/pdf-tools": "/pdf-tools", "/pdf-tools/pdf-to-excel": "/pdf-tools/pdf-to-excel", "/pdf-tools/compress-pdf": "/pdf-tools/compress-pdf", "/pdf-tools/split-pdf": "/pdf-tools/split-pdf", "/pdf-tools/rotate-pdf": "/pdf-tools/rotate-pdf", "/pdf-tools/merge-pdf": "/pdf-tools/merge-pdf", "/pdf-tools/word-to-pdf": "/pdf-tools/word-to-pdf", "/pdf-tools/jpg-to-pdf": "/pdf-tools/jpg-to-pdf", "/pdf-tools/pdf-to-jpg": "/pdf-tools/pdf-to-jpg", "/products/printpilot": "/print-automation", "/security": "/privacy-policy", "/pricing": "/pricing" }; return routes[clean] || ""; }
 function getRouteLabel(href: string) { const labels: Record<string, string> = { "/pdf-tools": "Explore All PDF Tools", "/pdf-tools/pdf-to-excel": "Open PDF to Excel", "/pdf-tools/compress-pdf": "Open Compress PDF", "/pdf-tools/split-pdf": "Open Split PDF", "/pdf-tools/rotate-pdf": "Open Rotate PDF", "/pdf-tools/merge-pdf": "Open Merge PDF", "/pdf-tools/word-to-pdf": "Open Word to PDF", "/pdf-tools/jpg-to-pdf": "Open JPG to PDF", "/pdf-tools/pdf-to-jpg": "Open PDF to JPG", "/print-automation": "Learn About PrintPilot", "/privacy-policy": "Read Privacy Policy", "/pricing": "Start Free Trial" }; return labels[href] || "Open Tool"; }
-function JsonLd() { const schemas = [{ "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo PDF to Excel Converter", applicationCategory: "BusinessApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free PDF to Excel converter - extract tables and data from PDF into editable Excel spreadsheets. OCR for scanned PDFs." }, { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert PDF to Excel Online Free", step: [{ "@type": "HowToStep", name: "Upload PDF" }, { "@type": "HowToStep", name: "Select Pages or Tables" }, { "@type": "HowToStep", name: "Download Excel" }] }, { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Tools", item: "https://repetigo.com/tools/" }, { "@type": "ListItem", position: 3, name: "PDF Tools", item: "https://repetigo.com/tools/pdf/" }, { "@type": "ListItem", position: 4, name: "PDF to Excel", item: pageUrl }] }]; return <>{schemas.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>; }
+function JsonLd() { const schemas = [{ "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo PDF to Excel Converter", applicationCategory: "BusinessApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free PDF to Excel converter - extract tables and data from PDF into editable Excel spreadsheets. OCR for scanned PDFs." }, { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert PDF to Excel Online Free", step: [{ "@type": "HowToStep", name: "Upload PDF" }, { "@type": "HowToStep", name: "Select Pages or Tables" }, { "@type": "HowToStep", name: "Download Excel" }] }, { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "PDF Tools", item: "https://repetigo.com/pdf-tools" }, { "@type": "ListItem", position: 3, name: "PDF to Excel", item: pageUrl }] }]; return <>{schemas.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>; }

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { SplitPdfTool } from "./SplitPdfClient";
 
-const pageUrl = "https://www.repetigo.com/tools/pdf/split-pdf/";
+const pageUrl = "https://repetigo.com/pdf-tools/split-pdf";
 
 export const metadata: Metadata = {
   title: "Split PDF Online Free - Divide PDF Files Instantly | RepetiGo",
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
       "Free PDF splitter - divide by page range, extract pages, split into multiple files. No sign-up, auto-deleted 60 min. Works on any device.",
     type: "website",
     url: pageUrl,
-    images: ["https://www.repetigo.com/og-split-pdf.jpg"],
+    images: ["https://repetigo.com/og-split-pdf.jpg"],
   },
   twitter: {
     card: "summary_large_image",
@@ -37,7 +37,7 @@ The split PDF online free tool works on any device with a browser - phone, table
 
 ✓ No Sign-Up Required   ✓ Three Split Methods   ✓ Works on Phone & Laptop   ✓ Files Auto-Deleted in 60 Minutes
 
-[ Split PDF Now - Free, No Sign-Up → repetigo.com/tools/pdf/split-pdf/ ]
+[ Split PDF Now - Free, No Sign-Up → repetigo.com/pdf-tools/split-pdf ]
 
 
 
@@ -50,7 +50,7 @@ A PDF splitter (also called a PDF split tool or PDF divider) handles this automa
 
 Splitting PDFs is lossless - every page in every output file is identical in quality to the same page in the original. No re-rendering, no compression, no quality reduction. The split files are simply subsets of the original document's page structure.
 
-💡  PDF splitting is the reverse of PDF merging. Merge combines multiple PDFs into one. Split divides one PDF into multiple files. Both operations are lossless - no quality is lost in either direction. If you need to merge PDFs, use the Merge PDF tool at /tools/pdf/merge-pdf/
+💡  PDF splitting is the reverse of PDF merging. Merge combines multiple PDFs into one. Split divides one PDF into multiple files. Both operations are lossless - no quality is lost in either direction. If you need to merge PDFs, use the Merge PDF tool at /pdf-tools/merge-pdf
 
 
 
@@ -60,7 +60,7 @@ H2: How to Split PDF Files in 3 Steps.
 Every split follows the same three steps. No account required, no daily limit, no software installation.
 
 H3: Step 1 - Upload Your PDF File
-Click the Upload button or drag and drop your PDF file into the upload area. The tool accepts one PDF at a time, up to [FILE SIZE LIMIT]. Upload works on any device - iPhone, Android, Windows laptop, or Mac - from your browser. No app download required. If your PDF is very large and slow to upload, use the Compress PDF tool at /tools/pdf/compress-pdf/ first to reduce its file size, then upload the compressed version.
+Click the Upload button or drag and drop your PDF file into the upload area. The tool accepts one PDF at a time, up to [FILE SIZE LIMIT]. Upload works on any device - iPhone, Android, Windows laptop, or Mac - from your browser. No app download required. If your PDF is very large and slow to upload, use the Compress PDF tool at /pdf-tools/compress-pdf first to reduce its file size, then upload the compressed version.
 Only one PDF can be uploaded per split session. If you need to split multiple PDFs, run separate sessions.
 
 H3: Step 2 - Choose How to Split
@@ -88,7 +88,7 @@ After processing - usually under 30 seconds - your split files appear as individ
 📱  The split PDF free tool works on mobile browsers - Safari on iPhone, Chrome on Android - without any app download. Upload directly from your Files app, choose your split method, and download the output files to your phone. Useful for extracting specific pages from scanned documents on the go.
 
 
-[ Split Your PDF Free Now → repetigo.com/tools/pdf/split-pdf/ ]
+[ Split Your PDF Free Now → repetigo.com/pdf-tools/split-pdf ]
 
 
 
@@ -218,7 +218,7 @@ Form fields - where present in original pages
 Document structure - what was one file is now multiple files
 
 
-✅  If your output files are larger than you need after splitting - for example, a single extracted page is still 5MB because it contains a high-resolution scan - use the Compress PDF tool at /tools/pdf/compress-pdf/ to reduce the size. The compress tool works on split output files just as well as on any other PDF.
+✅  If your output files are larger than you need after splitting - for example, a single extracted page is still 5MB because it contains a high-resolution scan - use the Compress PDF tool at /pdf-tools/compress-pdf to reduce the size. The compress tool works on split output files just as well as on any other PDF.
 
 
 
@@ -262,7 +262,7 @@ For shops processing 50 to 200 documents per day, eliminating manual page select
 Learn about PrintPilot → /products/printpilot/  |  QR Document Upload → /features/qr-upload/
 
 [ Try PrintPilot Free - Print Shop Automation → repetigo.com/pricing/ ]
-[ Or Just Split a PDF Now → repetigo.com/tools/pdf/split-pdf/ ]
+[ Or Just Split a PDF Now → repetigo.com/pdf-tools/split-pdf ]
 
 
 
@@ -270,14 +270,14 @@ Learn about PrintPilot → /products/printpilot/  |  QR Document Upload → /fea
 H2: Common Questions About Splitting PDFs Online Free.
 
 H3: Q1: How do I split a PDF file online for free in India?
-To split PDF online free using RepetiGo: go to repetigo.com/tools/pdf/split-pdf/, click Upload and select your PDF file, choose your split method (by page range, single page, or all pages), enter your page specifications, and click Split. Your output files download automatically. No account is required, no software is needed, and there is no daily limit. The split PDF online free tool works from any browser in India - on phone or laptop.
+To split PDF online free using RepetiGo: go to repetigo.com/pdf-tools/split-pdf, click Upload and select your PDF file, choose your split method (by page range, single page, or all pages), enter your page specifications, and click Split. Your output files download automatically. No account is required, no software is needed, and there is no daily limit. The split PDF online free tool works from any browser in India - on phone or laptop.
 
 H3: Q2: How do I split PDF pages into separate files?
 Choose the 'Split Every Page into a Separate File' method. Upload your PDF, select this option, and click Split. Each page of your PDF becomes its own individual PDF file. For a 12-page document, you get 12 separate one-page PDF files. For a large number of pages, output files are packaged as a zip archive for download. This method is useful when each page of your PDF is a separate form or document that needs to be filed or submitted individually.
 
 
 H3: Q3: How do I split a large PDF into smaller files?
-Use the 'Split by Page Range' method. Upload your PDF, define the page ranges for each output file - for example, '1-20' for the first file and '21-50' for the second - and click Split. For a very large PDF (over 50 pages), you can define as many ranges as you need in one session. If the output files are still larger than you need, use the Compress PDF tool at /tools/pdf/compress-pdf/ to reduce each output file's size after splitting.
+Use the 'Split by Page Range' method. Upload your PDF, define the page ranges for each output file - for example, '1-20' for the first file and '21-50' for the second - and click Split. For a very large PDF (over 50 pages), you can define as many ranges as you need in one session. If the output files are still larger than you need, use the Compress PDF tool at /pdf-tools/compress-pdf to reduce each output file's size after splitting.
 
 H3: Q4: How do I split a PDF into separate files by page?
 Use the 'Split by Page Range' method and define ranges for each output file. For example, to split a 30-page document into three files of 10 pages each: enter '1-10' for the first file, '11-20' for the second, and '21-30' for the third. All three files are generated in one session and available for download together. Alternatively, use 'Split Every Page into a Separate File' to make each individual page its own PDF file.
@@ -289,7 +289,7 @@ H3: Q6: Can I extract just one page from a PDF?
 Yes. Use the 'Extract a Single Page' method. Enter the page number you want to extract, and the tool creates a standalone single-page PDF from that page. The most common use case in India: a combined scan has your Aadhaar card on page 1, PAN card on page 2, and other documents on later pages. To extract only the Aadhaar page, enter '1' in the single-page extractor and download a standalone one-page PDF of your Aadhaar. The rest of the document is available as a second output file.
 
 H3: Q7: Should I compress or split a PDF first?
-It depends on what you need. If your PDF is too large to upload anywhere, compress it first at /tools/pdf/compress-pdf/ to reduce the file size, then upload the compressed version to the split tool. If your PDF contains specific pages you need to extract, split it first to get only the pages you need - the output file will naturally be smaller than the full document. If the extracted pages are still too large, compress the output file afterwards. There is no rule - compress and split can be done in either order depending on your goal.
+It depends on what you need. If your PDF is too large to upload anywhere, compress it first at /pdf-tools/compress-pdf to reduce the file size, then upload the compressed version to the split tool. If your PDF contains specific pages you need to extract, split it first to get only the pages you need - the output file will naturally be smaller than the full document. If the extracted pages are still too large, compress the output file afterwards. There is no rule - compress and split can be done in either order depending on your goal.
 
 H3: Q8: Can I split a PDF on my phone?
 Yes. The split PDF free tool works on mobile browsers - Safari on iPhone, Chrome on Android - without any app download. Upload your PDF from your phone's Files app (iPhone) or File Manager (Android), choose your split method, enter your page specifications, and download the output files directly to your phone. On a slow mobile data connection, large files may take longer to upload and download, but the split tool works normally on any mobile browser.
@@ -301,7 +301,7 @@ H3: Q10: Is it safe to upload a sensitive PDF to a free online splitter?
 RepetiGo's split PDF tool uses HTTPS encryption for all file transfers. Files are processed in isolated temporary sessions with no connection to any user account. All uploaded files and output files are automatically deleted within 60 minutes of download. No file content - text, images, personal data - is read, extracted, or used for any purpose other than the split operation. For documents containing highly sensitive information (full bank statements, legal agreements, complete medical records), you may prefer a locally-installed tool if you have concerns about uploading to any online service. RepetiGo's privacy policy is at /security/.
 
 H3: Q11: What is the difference between splitting and compressing a PDF?
-Splitting a PDF divides it into multiple separate files - the same total content, distributed across more files. File size is roughly proportional to the number of pages in each output. No content is removed or altered. Compressing a PDF reduces the file size of one document by optimising how its data is stored - the page count stays the same, the file just gets smaller. Use split when you need separate files. Use compress when you need a smaller file. They are different tools for different problems. RepetiGo offers both: split at /tools/pdf/split-pdf/ and compress at /tools/pdf/compress-pdf/.
+Splitting a PDF divides it into multiple separate files - the same total content, distributed across more files. File size is roughly proportional to the number of pages in each output. No content is removed or altered. Compressing a PDF reduces the file size of one document by optimising how its data is stored - the page count stays the same, the file just gets smaller. Use split when you need separate files. Use compress when you need a smaller file. They are different tools for different problems. RepetiGo offers both: split at /pdf-tools/split-pdf and compress at /pdf-tools/compress-pdf.
 
 
 
@@ -312,32 +312,32 @@ What It Does
 Link
 Compress PDF
 Reduce PDF file size - use after splitting if output is still too large
-→ /tools/pdf/compress-pdf/
+→ /pdf-tools/compress-pdf
 Merge PDF
 Combine multiple PDFs into one - the reverse of splitting
-→ /tools/pdf/merge-pdf/
+→ /pdf-tools/merge-pdf
 JPG to PDF
 Convert images to PDF before splitting
-→ /tools/pdf/jpg-to-pdf/
+→ /pdf-tools/jpg-to-pdf
 PDF to JPG
 Extract pages as images
-→ /tools/pdf/pdf-to-jpg/
+→ /pdf-tools/pdf-to-jpg
 Word to PDF
 Convert Word to PDF before splitting
-→ /tools/pdf/word-to-pdf/
+→ /pdf-tools/word-to-pdf
 Rotate PDF
 Fix page orientation before or after splitting
-→ /tools/pdf/rotate-pdf/
+→ /pdf-tools/rotate-pdf
 All PDF Tools
 Complete PDF tools suite
-→ /tools/pdf/
+→ /pdf-tools
 
 
-[ Split PDF Free - No Sign-Up → repetigo.com/tools/pdf/split-pdf/ ]
-[ Explore All PDF Tools → repetigo.com/tools/pdf/ ]`;
+[ Split PDF Free - No Sign-Up → repetigo.com/pdf-tools/split-pdf ]
+[ Explore All PDF Tools → repetigo.com/pdf-tools ]`;
 
 const faqSchemaQuestions = [
-  ["How do I split a PDF file online for free in India?", "To split PDF online free using RepetiGo: go to repetigo.com/tools/pdf/split-pdf/, click Upload and select your PDF file, choose your split method (by page range, single page, or all pages), enter your page specifications, and click Split. Your output files download automatically. No account is required, no software is needed, and there is no daily limit. The split PDF online free tool works from any browser in India - on phone or laptop."],
+  ["How do I split a PDF file online for free in India?", "To split PDF online free using RepetiGo: go to repetigo.com/pdf-tools/split-pdf, click Upload and select your PDF file, choose your split method (by page range, single page, or all pages), enter your page specifications, and click Split. Your output files download automatically. No account is required, no software is needed, and there is no daily limit. The split PDF online free tool works from any browser in India - on phone or laptop."],
   ["How do I split PDF pages into separate files?", "Choose the 'Split Every Page into a Separate File' method. Upload your PDF, select this option, and click Split. Each page of your PDF becomes its own individual PDF file."],
   ["How do I split a large PDF into smaller files?", "Use the 'Split by Page Range' method. Upload your PDF, define the page ranges for each output file, and click Split."],
   ["How do I split a PDF into separate files by page?", "Use the 'Split by Page Range' method and define ranges for each output file. Alternatively, use 'Split Every Page into a Separate File' to make each individual page its own PDF file."],
@@ -480,14 +480,14 @@ function renderInlineMappedLinks(text: string) {
 function mapSeoRoute(route: string) {
   const cleanRoute = route.trim().replace(/^https?:\/\/(www\.)?repetigo\.com/i, "").replace(/\/$/, "");
   const routeMap: Record<string, string> = {
-    "/tools/pdf": "/pdf-tools",
-    "/tools/pdf/split-pdf": "/pdf-tools/split-pdf",
-    "/tools/pdf/merge-pdf": "/pdf-tools/merge-pdf",
-    "/tools/pdf/compress-pdf": "/pdf-tools/compress-pdf",
-    "/tools/pdf/jpg-to-pdf": "/pdf-tools/jpg-to-pdf",
-    "/tools/pdf/pdf-to-jpg": "/pdf-tools/pdf-to-jpg",
-    "/tools/pdf/word-to-pdf": "/pdf-tools/word-to-pdf",
-    "/tools/pdf/rotate-pdf": "/pdf-tools/rotate-pdf",
+    "/pdf-tools": "/pdf-tools",
+    "/pdf-tools/split-pdf": "/pdf-tools/split-pdf",
+    "/pdf-tools/merge-pdf": "/pdf-tools/merge-pdf",
+    "/pdf-tools/compress-pdf": "/pdf-tools/compress-pdf",
+    "/pdf-tools/jpg-to-pdf": "/pdf-tools/jpg-to-pdf",
+    "/pdf-tools/pdf-to-jpg": "/pdf-tools/pdf-to-jpg",
+    "/pdf-tools/word-to-pdf": "/pdf-tools/word-to-pdf",
+    "/pdf-tools/rotate-pdf": "/pdf-tools/rotate-pdf",
     "/products/printpilot": "/print-automation",
     "/features/qr-upload": "/print-automation",
     "/features/auto-delete": "/privacy-policy",
@@ -549,10 +549,8 @@ function JsonLd() {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
     itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "https://www.repetigo.com/" },
-      { "@type": "ListItem", position: 2, name: "Tools", item: "https://www.repetigo.com/tools/" },
-      { "@type": "ListItem", position: 3, name: "PDF Tools", item: "https://www.repetigo.com/tools/pdf/" },
-      { "@type": "ListItem", position: 4, name: "Split PDF", item: pageUrl },
+      { "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" },
+      { "@type": "ListItem", position: 2, name: "PDF Tools", item: "https://repetigo.com/pdf-tools" }, { "@type": "ListItem", position: 3, name: "Split PDF", item: pageUrl },
     ],
   };
 

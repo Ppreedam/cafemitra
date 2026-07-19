@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import RotateImageClient from "./RotateImageClient";
 
-const pageUrl = "https://www.repetigo.com/tools/image/rotate-image/";
+const pageUrl = "https://repetigo.com/image-tools/rotate-image";
 
 export const metadata: Metadata = {
   title: "Rotate Image Online Free India - 90°, 180°, 270° & Custom Angle | RepetiGo",
@@ -28,7 +28,7 @@ Whether you need to fix a photo taken sideways on a phone, straighten a scanned 
 
 ✓ 90° / 180° / 270° / Custom Angle   ✓ Flip Horizontal & Vertical   ✓ Batch Rotate Multiple Files   ✓ No Sign-Up   ✓ 100% Browser-Based - Nothing Uploaded
 
-[ Rotate Image Free - No Sign-Up → repetigo.com/tools/image/rotate-image/ ]
+[ Rotate Image Free - No Sign-Up → repetigo.com/image-tools/rotate-image ]
 
 H2: What Does Rotating an Image Do?
 Image rotation changes the orientation of a photo or graphic by turning it a specified number of degrees. When you rotate an image, the content stays the same - only its orientation changes. A portrait photo (tall) rotated 90° becomes a landscape photo (wide), and a landscape photo rotated 90° the other way becomes portrait.
@@ -70,7 +70,7 @@ When you have more than one image uploaded, these settings apply to every image 
 H3: Step 3 - Download Your Rotated Image
 Click Rotate All. Processing happens on your own device and finishes in a couple of seconds per image. Download an individual result, or click Download ZIP to get every rotated image from the batch in one archive. Because nothing was ever uploaded, there's nothing left on any server once you're done. The downloaded file keeps the same format as the original - JPG in, JPG out.
 
-[ Rotate Image Free Now → repetigo.com/tools/image/rotate-image/ ]
+[ Rotate Image Free Now → repetigo.com/image-tools/rotate-image ]
 
 H2: Rotation Angles Explained - 90°, 180°, 270°, and Custom.
 Understanding which rotation to choose depends on what is wrong with the image's current orientation:
@@ -195,7 +195,7 @@ PrintPilot - RepetiGo's print shop software - can fold orientation correction in
 
 [ Learn About PrintPilot → /products/printpilot/ ]
 [ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Rotate an Image Now → repetigo.com/tools/image/rotate-image/ ]
+[ Or Rotate an Image Now → repetigo.com/image-tools/rotate-image ]
 
 H2: How to Rotate an Image in Every Major Tool.
 These are the most searched tool-specific rotation methods. Each section below covers the exact steps - and explains when a browser-based tool like RepetiGo is the simpler option.
@@ -245,8 +245,8 @@ All Image Tools
 Complete image tools suite
 → /image-tools
 
-[ Rotate Image Free - No Sign-Up → repetigo.com/tools/image/rotate-image/ ]
-[ Explore All Image Tools → repetigo.com/tools/image/ ]`;
+[ Rotate Image Free - No Sign-Up → repetigo.com/image-tools/rotate-image ]
+[ Explore All Image Tools → repetigo.com/image-tools ]`;
 
 export default function RotateImagePage() {
   return (
@@ -353,13 +353,13 @@ function renderInlineMappedLinks(text: string) {
 function mapSeoRoute(route: string) {
   const cleanRoute = route.trim().replace(/^(https?:\/\/)?(www\.)?repetigo\.com/i, "").replace(/\/$/, "");
   const routeMap: Record<string, string> = {
-    "/tools/image": "/image-tools",
-    "/tools/image/rotate-image": "/image-tools/rotate-image",
-    "/tools/image/compress-image": "/image-tools/compress-image",
-    "/tools/image/resize-image": "/image-tools/resize-image",
-    "/tools/image/crop-image": "/image-tools/crop-image",
-    "/tools/image/background-remover": "/image-tools/background-remover",
-    "/tools/image/photo-editor": "/image-tools/photo-editor",
+    "/image-tools": "/image-tools",
+    "/image-tools/rotate-image": "/image-tools/rotate-image",
+    "/image-tools/compress-image": "/image-tools/compress-image",
+    "/image-tools/resize-image": "/image-tools/resize-image",
+    "/image-tools/crop-image": "/image-tools/crop-image",
+    "/image-tools/background-remover": "/image-tools/background-remover",
+    "/image-tools/photo-editor": "/image-tools/photo-editor",
     "/products/printpilot": "/print-automation",
     "/privacy-policy": "/privacy-policy",
     "/pricing": "/pricing",
@@ -386,7 +386,7 @@ function getRouteLabel(href: string) {
 function JsonLd() {
   const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Rotate Image", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online image rotator - rotate to any angle, flip horizontal or vertical, and batch rotate multiple images. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl };
   const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Rotate an Image Online Free", step: [{ "@type": "HowToStep", name: "Upload Image", text: "Upload Your Image" }, { "@type": "HowToStep", name: "Choose Rotation", text: "Choose Your Rotation" }, { "@type": "HowToStep", name: "Download", text: "Download Your Rotated Image" }] };
-  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://www.repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://www.repetigo.com/tools/image/" }, { "@type": "ListItem", position: 3, name: "Rotate Image", item: pageUrl }] };
+  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "Rotate Image", item: pageUrl }] };
 
   return <>{[softwareApplication, howTo, breadcrumb].map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>;
 }

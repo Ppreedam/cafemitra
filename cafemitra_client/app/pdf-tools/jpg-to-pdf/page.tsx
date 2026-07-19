@@ -3,7 +3,7 @@ import { DashboardShell } from "../../DashboardShell";
 import ConversionTool from "../ConversionTool";
 import { StructuredSeoCopy } from "../pdf-to-jpg/page";
 
-const pageUrl = "https://www.repetigo.com/tools/pdf/jpg-to-pdf/";
+const pageUrl = "https://repetigo.com/pdf-tools/jpg-to-pdf";
 
 export const metadata: Metadata = {
   title: "JPG to PDF Converter Online Free India | RepetiGo",
@@ -18,7 +18,7 @@ const content = String.raw`H1: JPG to PDF Converter Online Free. Convert Any Ima
 RepetiGo's free JPG to PDF converter turns your image files into PDF documents instantly - without any software to install, any account to create, or any fee to pay. Upload your JPG, PNG, HEIC, WEBP, or other image files, arrange them in the order you want, and download a PDF. Done.
 The JPG to PDF converter online free tool supports every common image format - including HEIC (the default format on iPhones) and WEBP (from modern browsers). It works on any device with a browser, including Android phones, iPhones, Windows laptops, and Macs. Your images are automatically deleted from our servers 60 minutes after you download the PDF.
 ✓ Supports JPG, PNG, HEIC, WEBP, BMP, GIF   ✓ Multiple Images → One PDF   ✓ No Sign-Up   ✓ Auto-Deleted in 60 Minutes
-[ Convert JPG to PDF Free - No Sign-Up → repetigo.com/tools/pdf/jpg-to-pdf/ ]
+[ Convert JPG to PDF Free - No Sign-Up → repetigo.com/pdf-tools/jpg-to-pdf ]
 
 H2: What Is a JPG to PDF Converter?
 A JPG to PDF converter is a tool that takes one or more image files - photographs, scans, screenshots, or graphics - and converts them into a PDF document. Each image becomes a page in the resulting PDF, in the order you specify.
@@ -80,7 +80,7 @@ For government portal uploads (Aadhaar, PAN, scholarship forms): use A4 + Portra
 H3: Step 3 - Convert and Download Your PDF
 Click Convert. Processing takes a few seconds for most images - HEIC files from high-resolution iPhone cameras may take up to 30 seconds per image. When complete, a download button appears. Click it to save your PDF. Your uploaded images and the converted PDF are automatically deleted from our servers within 60 minutes. The original images on your device are not affected.
 📱 The JPG to PDF converter works on mobile browsers - Safari on iPhone, Chrome on Android. On iPhone: go to Photos → share → select 'Save to Files' to get a shareable file, then upload here. Or simply tap the upload area in your browser - you will be prompted to choose from Photos directly.
-[ Convert JPG to PDF Free Now → repetigo.com/tools/pdf/jpg-to-pdf/ ]
+[ Convert JPG to PDF Free Now → repetigo.com/pdf-tools/jpg-to-pdf ]
 
 H2: Why Indians Use This Converter Most.
 The JPG to PDF converter is one of the most-used tools by Indian students and professionals - not because of general document work, but because of specific Indian government and institutional requirements.
@@ -111,7 +111,7 @@ H2: How to Convert Multiple JPG Images into One PDF.
 The most common advanced use case: a student needs to submit their Aadhaar card, PAN card, marksheet, and a certificate - all as one combined PDF. Each document is a separate phone photo. The converter handles this in one session.
 To combine multiple JPG images into one PDF: upload all your image files at once (or one by one), arrange them in the correct order using drag-and-drop (Aadhaar first, PAN second, marksheet third, certificate last), and click Convert. The resulting PDF contains all images as separate pages in the order you specified.
 There is no limit on the number of images per conversion session within the total file size limit of [SIZE LIMIT]. For a typical set of 4–6 phone photos of Indian identity documents, this is well within the limit.
-✅ After converting multiple images to one PDF, if the resulting file is too large for a portal's upload limit, use the Compress PDF tool at /tools/pdf/compress-pdf/ to reduce the file size. The compress tool works perfectly on PDFs created by the image converter.
+✅ After converting multiple images to one PDF, if the resulting file is too large for a portal's upload limit, use the Compress PDF tool at /pdf-tools/compress-pdf to reduce the file size. The compress tool works perfectly on PDFs created by the image converter.
 
 H2: Does Converting JPG to PDF Reduce Image Quality?
 No - the conversion is lossless by default. When an image is converted to PDF using the standard settings, the image data is embedded in the PDF container without re-compression. What you see in the original image is exactly what appears in the PDF.
@@ -205,11 +205,11 @@ PrintPilot - RepetiGo's print shop software - eliminates this manual workflow. W
 🖨️ A customer scans the QR code at your counter, uploads their iPhone HEIC photo of their Aadhaar card. PrintPilot automatically converts it from HEIC to a print-ready PDF, enhances the image quality, and sends it to the print queue - in under 30 seconds, without you doing anything.
 Learn about PrintPilot → /products/printpilot/ | QR Document Upload → /features/qr-upload/
 [ Try PrintPilot Free - Print Shop Automation → repetigo.com/pricing/ ]
-[ Or Convert a JPG Now → repetigo.com/tools/pdf/jpg-to-pdf/ ]
+[ Or Convert a JPG Now → repetigo.com/pdf-tools/jpg-to-pdf ]
 
 H2: Common Questions About Converting JPG to PDF Online Free.
 H3: Q1: How do I convert a JPG to PDF online for free in India?
-Go to repetigo.com/tools/pdf/jpg-to-pdf/, click Upload and select your image file (JPG, PNG, HEIC, WEBP, or other supported format), arrange the pages if you have multiple images, and click Convert. Your PDF downloads automatically. No account is required, no software is needed, and there is no daily limit. The JPG to PDF converter online free tool works from any browser in India - on phone or laptop.
+Go to repetigo.com/pdf-tools/jpg-to-pdf, click Upload and select your image file (JPG, PNG, HEIC, WEBP, or other supported format), arrange the pages if you have multiple images, and click Convert. Your PDF downloads automatically. No account is required, no software is needed, and there is no daily limit. The JPG to PDF converter online free tool works from any browser in India - on phone or laptop.
 H3: Q2: How do I convert my Aadhaar or PAN card photo to PDF?
 This is the most common use case in India. If you took a phone photo of your Aadhaar or PAN card, upload it directly to the converter - JPG (Android), HEIC (iPhone), or PNG (screenshot) are all accepted. Select A4 page size, Portrait orientation, and Standard conversion. Download the PDF. The output PDF is accepted by government portals, educational institutions, bank applications, and most document submission systems in India.
 H3: Q3: How do I convert multiple photos to one PDF?
@@ -237,27 +237,27 @@ What It Does
 Link
 PDF to JPG
 Extract PDF pages as JPG images - the reverse of this tool
-→ /tools/pdf/pdf-to-jpg/
+→ /pdf-tools/pdf-to-jpg
 Compress PDF
 Reduce PDF file size after conversion if output is too large for portal
-→ /tools/pdf/compress-pdf/
+→ /pdf-tools/compress-pdf
 Merge PDF
 Combine your converted PDF with other PDFs into one file
-→ /tools/pdf/merge-pdf/
+→ /pdf-tools/merge-pdf
 Split PDF
 Extract specific pages from a PDF
-→ /tools/pdf/split-pdf/
+→ /pdf-tools/split-pdf
 Word to PDF
 Convert Word documents to PDF
-→ /tools/pdf/word-to-pdf/
+→ /pdf-tools/word-to-pdf
 Rotate PDF
 Fix pages with wrong orientation after conversion
-→ /tools/pdf/rotate-pdf/
+→ /pdf-tools/rotate-pdf
 All PDF Tools
 Complete PDF tools suite
-→ /tools/pdf/
-[ Convert JPG to PDF Free - No Sign-Up → repetigo.com/tools/pdf/jpg-to-pdf/ ]
-[ Explore All PDF Tools → repetigo.com/tools/pdf/ ]`;
+→ /pdf-tools
+[ Convert JPG to PDF Free - No Sign-Up → repetigo.com/pdf-tools/jpg-to-pdf ]
+[ Explore All PDF Tools → repetigo.com/pdf-tools ]`;
 
 const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
@@ -265,4 +265,4 @@ export default function JpgToPdfPage() {
   return <DashboardShell activePath="/pdf-tools"><div className="dashboard generic-pdf-tool-page"><ConversionTool slug="jpg-to-pdf"><JsonLd /><article className="tool-seo-content" id="jpg-to-pdf-guide"><StructuredSeoCopy content={content} /></article></ConversionTool></div></DashboardShell>;
 }
 
-function JsonLd() { const schemas = [{ "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo JPG to PDF Converter", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online JPG to PDF converter supporting JPG, JPEG, PNG, HEIC, WEBP, BMP, and GIF. No sign-up required." }, { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert JPG to PDF Online Free", step: [{ "@type": "HowToStep", name: "Upload Images" }, { "@type": "HowToStep", name: "Arrange and Configure" }, { "@type": "HowToStep", name: "Convert and Download" }] }, { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Tools", item: "https://repetigo.com/tools/" }, { "@type": "ListItem", position: 3, name: "PDF Tools", item: "https://repetigo.com/tools/pdf/" }, { "@type": "ListItem", position: 4, name: "JPG to PDF", item: pageUrl }] }]; return <>{schemas.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>; }
+function JsonLd() { const schemas = [{ "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo JPG to PDF Converter", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online JPG to PDF converter supporting JPG, JPEG, PNG, HEIC, WEBP, BMP, and GIF. No sign-up required." }, { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert JPG to PDF Online Free", step: [{ "@type": "HowToStep", name: "Upload Images" }, { "@type": "HowToStep", name: "Arrange and Configure" }, { "@type": "HowToStep", name: "Convert and Download" }] }, { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "PDF Tools", item: "https://repetigo.com/pdf-tools" }, { "@type": "ListItem", position: 3, name: "JPG to PDF", item: pageUrl }] }]; return <>{schemas.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>; }

@@ -3,7 +3,7 @@ import { DashboardShell } from "../../DashboardShell";
 import PdfEditTool from "../PdfEditTool";
 import { StructuredSeoCopy } from "../pdf-to-jpg/page";
 
-const pageUrl = "https://repetigo.com/tools/pdf/rotate-pdf/";
+const pageUrl = "https://repetigo.com/pdf-tools/rotate-pdf";
 
 export const metadata: Metadata = {
   title: "Rotate PDF Online Free - Fix Sideways Pages Permanently | RepetiGo",
@@ -21,7 +21,7 @@ The rotate PDF online free tool works in any browser, on any device. No software
 
 ✓ Rotation Saved Permanently to File   ✓ Left 90°, Right 90°, or 180°   ✓ Rotate All or Selected Pages   ✓ No Sign-Up   ✓ 100% Browser-Based - Nothing Uploaded
 
-[ Rotate PDF Free - No Sign-Up → repetigo.com/tools/pdf/rotate-pdf/ ]
+[ Rotate PDF Free - No Sign-Up → repetigo.com/pdf-tools/rotate-pdf ]
 
 H2: What Is PDF Rotation?
 PDF rotation is the process of changing the orientation of one or more pages in a PDF document - turning a page that is displaying sideways or upside down to its correct reading orientation. The rotated orientation is saved permanently to the PDF file, so every time the document is opened - on any device, in any PDF viewer - the pages appear correctly oriented.
@@ -51,7 +51,7 @@ Click Rotate PDF. Processing happens on your own device and finishes in a few se
 
 📱  The rotate PDF free tool works on mobile browsers - Chrome on Android, Safari on iPhone. Upload your PDF directly from the Files app, choose your rotation, and download the permanently corrected file. Useful for fixing scanned documents photographed on a phone before sending or printing.
 
-[ Rotate Your PDF Free Now → repetigo.com/tools/pdf/rotate-pdf/ ]
+[ Rotate Your PDF Free Now → repetigo.com/pdf-tools/rotate-pdf ]
 
 H2: ★ Rotate vs Save - Why Your PDF Keeps Going Back to the Wrong Orientation.
 This is the most common and frustrating PDF rotation problem - and the most searched question in this category. You rotate the page in your PDF viewer. It looks correct. You save the document. You email it to someone. They open it - and the page is sideways again.
@@ -228,15 +228,15 @@ PrintPilot - RepetiGo's print shop software - handles PDF rotation automatically
 Learn about PrintPilot → /products/printpilot/  |  QR Document Upload → /features/qr-upload/
 
 [ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Rotate a PDF Now → repetigo.com/tools/pdf/rotate-pdf/ ]
+[ Or Rotate a PDF Now → repetigo.com/pdf-tools/rotate-pdf ]
 
 H2: Common Questions About Rotating PDFs Online Free.
 
 H3: Q1: How do I rotate a PDF online for free?
-Go to repetigo.com/tools/pdf/rotate-pdf/, click Upload and select your PDF, click the page thumbnails to choose which pages to rotate (all pages, a few specific ones, or a consecutive run), pick a rotation direction (Right 90°, Left 90°, or Flip 180°), and click Rotate PDF. Your rotated PDF downloads automatically, with the rotation permanently saved to the file. No account is required, no software is needed, and there is no daily limit.
+Go to repetigo.com/pdf-tools/rotate-pdf, click Upload and select your PDF, click the page thumbnails to choose which pages to rotate (all pages, a few specific ones, or a consecutive run), pick a rotation direction (Right 90°, Left 90°, or Flip 180°), and click Rotate PDF. Your rotated PDF downloads automatically, with the rotation permanently saved to the file. No account is required, no software is needed, and there is no daily limit.
 
 H3: Q2: How do I permanently rotate a PDF so it stays rotated?
-Use RepetiGo's rotate PDF tool at repetigo.com/tools/pdf/rotate-pdf/. The key difference: when you rotate a PDF in Adobe Reader or Chrome's PDF viewer, you are only changing the view on your screen - the underlying file is not changed, so when you share it or reopen it, the page is sideways again. RepetiGo's tool modifies the actual PDF file and downloads a new version with the rotation permanently written to it. Upload your PDF, choose the direction, click Rotate, and download - the downloaded file is permanently corrected.
+Use RepetiGo's rotate PDF tool at repetigo.com/pdf-tools/rotate-pdf. The key difference: when you rotate a PDF in Adobe Reader or Chrome's PDF viewer, you are only changing the view on your screen - the underlying file is not changed, so when you share it or reopen it, the page is sideways again. RepetiGo's tool modifies the actual PDF file and downloads a new version with the rotation permanently written to it. Upload your PDF, choose the direction, click Rotate, and download - the downloaded file is permanently corrected.
 
 H3: Q3: Why does my PDF go back to the wrong orientation after I rotate it?
 Because you rotated the VIEW, not the FILE. Most PDF viewers (Adobe Reader, Chrome, Edge, Preview on Mac) have a 'Rotate' or 'Rotate View' button that changes how the page looks on your screen - but does not save the change to the PDF file itself. Close the viewer and reopen the file: the page is back to its original orientation because the file was never changed. To fix this permanently, you need a tool that writes the new orientation to the PDF file - which is what RepetiGo's rotate PDF tool does. Download the output file from RepetiGo, and every time anyone opens it - in any viewer, on any device - the pages will be at the correct orientation.
@@ -269,28 +269,28 @@ What It Does
 Link
 Compress PDF
 Reduce PDF file size - useful after rotating if output is larger than expected
-→ /tools/pdf/compress-pdf/
+→ /pdf-tools/compress-pdf
 Split PDF
 Extract specific pages before rotating them separately
-→ /tools/pdf/split-pdf/
+→ /pdf-tools/split-pdf
 Merge PDF
 Combine multiple PDFs after rotating individual sections
-→ /tools/pdf/merge-pdf/
+→ /pdf-tools/merge-pdf
 JPG to PDF
 Convert phone photos to PDF - often need rotation after conversion
-→ /tools/pdf/jpg-to-pdf/
+→ /pdf-tools/jpg-to-pdf
 PDF to JPG
 Extract PDF pages as images
-→ /tools/pdf/pdf-to-jpg/
+→ /pdf-tools/pdf-to-jpg
 Word to PDF
 Convert Word documents to PDF
-→ /tools/pdf/word-to-pdf/
+→ /pdf-tools/word-to-pdf
 All PDF Tools
 Complete PDF tools suite
-→ /tools/pdf/
+→ /pdf-tools
 
-[ Rotate PDF Free - No Sign-Up → repetigo.com/tools/pdf/rotate-pdf/ ]
-[ Explore All PDF Tools → repetigo.com/tools/pdf/ ]
+[ Rotate PDF Free - No Sign-Up → repetigo.com/pdf-tools/rotate-pdf ]
+[ Explore All PDF Tools → repetigo.com/pdf-tools ]
 `;
 
 const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
@@ -304,7 +304,7 @@ function JsonLd() {
     { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Rotate PDF", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free PDF rotator - rotate pages 90°, 180°, or counter-clockwise. Changes saved permanently to the PDF file." },
     { "@context": "https://schema.org", "@type": "HowTo", name: "How to Rotate a PDF Online Free", step: [{ "@type": "HowToStep", name: "Upload PDF" }, { "@type": "HowToStep", name: "Select Pages + Direction" }, { "@type": "HowToStep", name: "Download Permanently Rotated PDF" }] },
     { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) },
-    { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Tools", item: "https://repetigo.com/tools/" }, { "@type": "ListItem", position: 3, name: "PDF Tools", item: "https://repetigo.com/tools/pdf/" }, { "@type": "ListItem", position: 4, name: "Rotate PDF", item: pageUrl }] },
+    { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "PDF Tools", item: "https://repetigo.com/pdf-tools" }, { "@type": "ListItem", position: 3, name: "Rotate PDF", item: pageUrl }] },
   ];
   return <>{schemas.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>;
 }
