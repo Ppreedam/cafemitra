@@ -279,6 +279,8 @@ const tableDefinitions = [
   ["Method", "How It Works", "Best For", "Works On"],
   ["Type", "What It Is", "Legal Status", "When to Use"],
   ["Who", "What They Watermark", "Typical Text Used"],
+  ["Method", "What It Does", "Does It Save to File?", "Does It Fix the Problem?"],
+  ["Feature", "RepetiGo", "Adobe Reader (free)", "Smallpdf", "ilovepdf"],
 ];
 
 export function StructuredSeoCopy({ content: source }: { content: string }) {
@@ -378,7 +380,7 @@ function SeoCtaLine({ text }: { text: string }) {
 function getTableData(lines: string[]): { table: SeoTable; rest: string[] } | null {
   const headers = tableDefinitions.find((definition) => definition.every((item, index) => lines[index] === item));
   if (!headers) return null;
-  const rowCounts: Record<string, number> = { "Resolution|Best For": 3, "Format|Common Source": 6, "Conversion Setting|Image Quality in PDF": 2, "Method|How It Works": 5, "Method|How It Works|Best For|Works On": 3, "Problem|What It Looks Like": 4, "Situation|Why the PDF Is Sideways": 6, "Type|What It Is|Legal Status|When to Use": 2, "Who|What They Watermark|Typical Text Used": 7, "Use Case|Why JPG Instead of PDF?": 6, "Use Case|The Problem": 6, "Feature|RepetiGo": 9, "Protection Layer|What It Means in Practice": 5, "Tool|What It Does": 7 };
+  const rowCounts: Record<string, number> = { "Resolution|Best For": 3, "Format|Common Source": 6, "Conversion Setting|Image Quality in PDF": 2, "Method|How It Works": 5, "Method|How It Works|Best For|Works On": 3, "Method|What It Does": 5, "Problem|What It Looks Like": 4, "Situation|Why the PDF Is Sideways": 6, "Type|What It Is|Legal Status|When to Use": 2, "Who|What They Watermark|Typical Text Used": 7, "Use Case|Why JPG Instead of PDF?": 6, "Use Case|The Problem": 6, "Feature|RepetiGo": 9, "Protection Layer|What It Means in Practice": 5, "Tool|What It Does": 7 };
   const key = `${headers[0]}${headers[1] ? `|${headers[1]}` : ""}`;
   const fallbackCounts: Record<string, number> = { Resolution: 3, Format: 6, "Conversion Setting": 2, Method: 3, Type: 2, Who: 7, "Feature": 9, "Protection Layer": 5, Tool: 7 };
   const count = rowCounts[key] || fallbackCounts[headers[0]] || 0;

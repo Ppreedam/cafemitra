@@ -1,86 +1,381 @@
-"use client";
+import type { Metadata } from "next";
+import UpscaleImageClient from "./UpscaleImageClient";
 
-import { ChangeEvent, DragEvent, useRef, useState } from "react";
-import { Download, ImagePlus, LoaderCircle, Plus, ShieldCheck, Sparkles, Trash2, WandSparkles } from "lucide-react";
-import { DashboardShell } from "../../DashboardShell";
-import { PdfToolUpload } from "../../pdf-tools/PdfToolUpload";
-import { apiUrl } from "../../../lib/api";
+const pageUrl = "https://www.repetigo.com/tools/image/upscale-image/";
 
-type ImageItem = { id: string; file: File; sourceUrl: string; width: number; height: number; result?: { blob: Blob; url: string; width: number; height: number; name: string } };
-type OutputFormat = "image/webp" | "image/png" | "image/jpeg";
+export const metadata: Metadata = {
+  title: "Upscale Image Online Free India - Enlarge Photos 2x/4x | RepetiGo",
+  description:
+    "Upscale image online free - enlarge JPG, PNG, or WebP photos 2x or 4x instantly. 100% browser-based, nothing uploaded. Need sharper detail on old scans? Try our AI Image Upscaler too.",
+  alternates: { canonical: pageUrl },
+  openGraph: {
+    title: "Upscale Image Online Free India - Enlarge Photos 2x/4x | RepetiGo",
+    description: "Free instant image upscaler - enlarge photos 2x or 4x entirely in your browser. No sign-up, nothing uploaded. Plus a separate AI Image Upscaler for tougher scans.",
+    type: "website",
+    url: pageUrl,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Upscale Image Free Online - RepetiGo",
+    description: "Enlarge JPG, PNG, or WebP images 2x/4x free. 100% browser-based, no sign-up.",
+  },
+  robots: { index: true, follow: true },
+};
+
+const content = String.raw`H1: Upscale Image Online Free. Enlarge JPG, PNG, and WebP Images Instantly.
+RepetiGo's free image upscaler makes a small image larger - 2x or 4x its original size - entirely inside your browser. Upload your photo, pick a scale, and download a larger version in seconds. No software, no account, and nothing is ever uploaded to a server.
+This is RepetiGo's fast, free, always-available upscaler, built for instant enlargement with no upload wait. If you're working with a very blurry old scan or a badly compressed photo and want genuine AI-generated detail rather than smooth enlargement, RepetiGo also has a dedicated AI Image Upscaler at /image-tools/ai-upscale-image that sends the image to an AI provider for a sharper result.
+
+✓ Instant 2x and 4x Enlargement   ✓ JPG, PNG, WebP   ✓ No Sign-Up   ✓ 100% Browser-Based - Nothing Uploaded
+
+[ Upscale Image Free - No Sign-Up → repetigo.com/tools/image/upscale-image/ ]
+
+H2: What Is Image Upscaling - and What Does This Tool Actually Do?
+Upscaling means making an image larger in pixel dimensions. A basic resize just duplicates or interpolates existing pixels to fill the bigger canvas - the result is blurry and blocky because no new detail is added.
+RepetiGo's standard upscaler (this tool) does better than a basic resize: it enlarges your image in staged steps with high-quality smoothing, which gives a cleaner result than a single naive stretch. It runs entirely on your device using the Canvas API - nothing is uploaded, and the result appears in seconds. It does not use an AI model to invent new detail; it makes the most of the pixels you already have.
+For images that need genuinely new detail added - very blurry scans, heavily compressed WhatsApp photos, old family photographs - RepetiGo's separate AI Image Upscaler sends your photo to a trained AI upscaling service that predicts realistic detail based on the image content. That tool takes longer and requires an upload, but produces a noticeably sharper result on difficult source images.
+
+Method
+What It Does
+Speed & Privacy
+Best For
+Basic Resize (most editors)
+Duplicates or interpolates pixels - no new detail
+Instant, but usually local software
+Quick resizing when quality isn't critical
+RepetiGo Upscale Image (this tool)
+Staged high-quality resampling in your browser
+Instant, 100% browser-based, nothing uploaded
+Fast enlargement for reasonably clear images
+RepetiGo AI Image Upscaler
+AI model predicts and adds new detail
+10-60 seconds, image is sent to our AI provider
+Blurry scans, old photos, badly compressed images
+Photo Editor (brightness/contrast)
+Sharpens contrast and clarity - no size change
+Instant, 100% browser-based
+When the image is already large enough, just unclear
+
+💡 Not sure which to use? If your image just needs to be bigger and is reasonably clear, use this tool - it's instant and nothing leaves your device. If it's small AND blurry (an old scanned marksheet, a heavily compressed photo), the AI Image Upscaler at /image-tools/ai-upscale-image will recover more usable detail. If the image is already the right size but just looks unclear, try the Filter & Light tools in Photo Editor at /image-tools/photo-editor instead.
+
+H2: How to Upscale an Image Online Free in 3 Steps.
+H3: Step 1 - Upload Your Image
+Click Select Images or drag and drop your file. Supported formats: JPG, PNG, and WebP. You can upload several images in one session and switch between them, though each image is upscaled and downloaded individually rather than as a batch. As soon as you upload, RepetiGo automatically generates a quick 2x preview so you have an instant result to look at.
+H3: Step 2 - Choose Your Upscale Factor and Output Format
+Pick 2x (doubles width and height - a 400×600 image becomes 800×1200) or 4x (quadruples both - a 400×600 image becomes 1600×2400). Choose your output format: WebP, PNG, or JPG. For a government portal that specifies a minimum pixel size, upscaling is a legitimate way to meet that minimum if your original photo is too small.
+H3: Step 3 - Download Your Upscaled Image
+Click Upscale, then Download. Processing happens on your own device and finishes in under a second for most images - there's no server round-trip. Repeat for each image you uploaded; there is no single "download all" for a batch in this tool.
+
+[ Upscale Your Image Now - Free → repetigo.com/tools/image/upscale-image/ ]
+
+H2: Indian Use Cases - When You Need to Upscale an Image.
+Scenario
+The Problem
+How This Tool Helps
+Low-Resolution ID Photo for a Portal
+An old ID photo is smaller than a portal's stated minimum pixel size.
+2x or 4x upscaling meets the minimum dimension requirement in seconds, without leaving your device.
+Small Reference Images for a Student Project
+Small images downloaded for a presentation or report pixelate when placed on a slide or printed at A4.
+2x upscaling is usually enough to make them look clean in a presentation or A5/A4 printout.
+Print Shop - Slightly Small Customer Photo
+A customer's photo is somewhat smaller than the requested print size, but not blurry.
+Instant 4x upscaling on the shop counter, with no upload wait, before sending to print.
+Reasonably Clear Old Scan That's Just Small
+An old scanned document or certificate is small in pixel size but not badly blurred.
+Upscale here first for an instant result. If it's still not sharp enough after enlarging, try the AI Image Upscaler for a second pass with real added detail.
+
+For genuinely blurry scans, badly compressed WhatsApp photos, or old family photographs where you need real recovered detail rather than smooth enlargement, use the AI Image Upscaler at /image-tools/ai-upscale-image instead of this tool.
+
+H2: Upscale vs Resize vs Compress vs Photo Editor - Which Tool Do You Need?
+Operation
+What It Does
+Changes Dimensions?
+Improves Clarity?
+RepetiGo Tool
+Upscale (standard)
+Enlarges with high-quality resampling, browser-only
+✓ Yes - larger
+~ Cleaner than a basic stretch, no new detail added
+Upscale Image ← THIS TOOL
+AI Upscale
+AI model adds new, predicted detail
+✓ Yes - larger
+✓ Yes - genuinely sharper on blurry sources
+AI Image Upscaler → /image-tools/ai-upscale-image
+Resize
+Scales an image up or down
+✓ Yes - either direction
+✗ No - enlarging without AI looks soft
+Resize Image → /image-tools/resize-image
+Compress
+Reduces file size at the same dimensions
+✗ No
+✗ Slight trade-off, not an improvement
+Compress Image → /image-tools/compress-image
+Photo Editor
+Adjust brightness, contrast, and blur at the same size
+✗ No - same size
+✓ Yes - clearer at the size you already have
+Photo Editor → /image-tools/photo-editor
+
+★ Use Upscale when you need a LARGER image and want an instant, private result. Use the AI Image Upscaler when the source is small AND blurry and quality genuinely matters. Use Photo Editor when the image is already the right size but looks flat or unclear.
+
+H2: Why Use RepetiGo's Standard Upscaler?
+Feature
+RepetiGo Upscale (this tool)
+Topaz Gigapixel
+Canva AI Upscaler
+Adobe Express
+Free to use
+✓ Always free
+✗ Paid subscription
+✓ Free tier (limited)
+✓ Free tier (limited)
+Sign-up required
+✓ Never
+✗ Account required
+✗ Account required
+✗ Account required
+Files ever leave your device?
+✗ Never - fully local
+N/A - desktop software
+✓ Yes - uploaded
+✓ Yes - uploaded
+Speed
+✓ Instant - no upload wait
+Depends on your PC
+Seconds to minutes
+Seconds to minutes
+Works without installing software
+✓ Yes - browser only
+✗ Requires a desktop app
+✓ Yes
+✓ Yes
+Genuine AI-added detail
+✗ Not on this tool - see AI Image Upscaler
+✓ Yes
+✓ Yes
+✓ Yes
+
+This standard tool trades genuine AI-added detail for speed and privacy - nothing you upload here ever leaves your device. When you specifically need AI-recovered detail on a difficult source image, RepetiGo's own AI Image Upscaler and tools like Topaz Gigapixel or Canva's AI upscaler are the right category of tool.
+
+H2: Your Images Are Safe. Always.
+Protection Layer
+What It Means in Practice
+🖥️ 100% Browser-Based Processing
+Your image is enlarged using your own device's processing power via the browser's Canvas API. It is never uploaded to any server.
+🚫 Nothing Ever Leaves Your Device
+Because upscaling happens locally, there is no upload, no transfer, and nothing on any server for us to store or delete.
+👁️ No Image Content Is Read
+RepetiGo's code cannot see, analyse, or extract what's in your photo - it only resamples pixel data on your own device.
+🚫 No Account = No Data Profile
+No sign-up means no personal data, no file history, and no usage profile is ever created.
+🔒 Well Suited to ID Photos and Personal Documents
+Because nothing is transmitted anywhere, this instant upscaler is one of the safer ways to enlarge a personal photo online.
+
+[ Read Our Privacy Policy → /privacy-policy ]
+
+H2: Image Upscaling for Print Shops - The Automated Way.
+Print shop owners regularly get customer photos that are slightly too small for the requested print size. This standalone tool gives an instant, on-the-counter fix with no upload wait - useful when the source photo is reasonably clear and just needs to be bigger.
+For photos that are both small and genuinely blurry (an old passport photo photocopy, a badly compressed WhatsApp image), PrintPilot - RepetiGo's print shop software - can route the job to AI upscaling automatically as part of the same QR-code upload workflow customers already use, instead of a shop owner manually deciding between tools for every job.
+
+🖨️ Quick fix for a slightly-small, reasonably clear photo: this instant tool. Genuinely blurry or heavily compressed source: the AI Image Upscaler, or PrintPilot's automated workflow for shops handling this repeatedly.
+
+[ Learn About PrintPilot → /products/printpilot/ ]
+[ Try PrintPilot Free → repetigo.com/pricing/ ]
+[ Or Upscale an Image Now → repetigo.com/tools/image/upscale-image/ ]
+
+H2: Common Questions About Upscaling Images Online Free.
+H3: Q1: How do I upscale an image online for free in India?
+Go to repetigo.com/tools/image/upscale-image/, upload your JPG, PNG, or WebP image, choose 2x or 4x, pick an output format, and click Upscale. The result appears in under a second since everything runs in your browser - no upload, no account, no daily limit. Click Download to save it.
+H3: Q2: Can I upscale a blurry scanned marksheet or old certificate for printing?
+You can try this tool first - it's instant and free. But because this tool doesn't add new AI-generated detail, a genuinely blurry old scan will look bigger, not necessarily sharper. For a real improvement in clarity on a blurry scan, use the AI Image Upscaler at /image-tools/ai-upscale-image, which sends the image to an AI model trained to add plausible detail. If the scan is already a usable size but just looks flat, try adjusting Contrast and reducing Blur in Photo Editor at /image-tools/photo-editor instead.
+H3: Q3: How many pixels do I need for A4 printing, and can upscaling get me there?
+Clean A4 printing at 300 DPI needs roughly 2480×3508 pixels. A 4x upscale of a 620×877 px image reaches almost exactly that. A 2x upscale of a 1240×1754 px image also gets you there. Keep in mind: this tool enlarges pixel dimensions using high-quality resampling, not AI-added detail, so very small or blurry originals will look larger but not necessarily print-sharp - for those, the AI Image Upscaler at /image-tools/ai-upscale-image generally gives a better print result.
+H3: Q4: What is the difference between this tool and the AI Image Upscaler?
+This tool (Upscale Image) enlarges your photo using high-quality resampling entirely in your browser - instant, private, and it never uploads your file. It does not add new detail; it makes the most of the pixels already in your image. The AI Image Upscaler is a separate RepetiGo tool that sends your image to a trained AI model, which predicts and adds realistic new detail - slower and it does involve an upload, but it produces a noticeably sharper result on blurry or low-quality source images.
+H3: Q5: Can I reach 4K resolution with this tool?
+Yes, in terms of pixel count: a 960×540 image at 4x becomes 3840×2160 (4K). A 1920×1080 image at 2x reaches the same. Whether it looks genuinely sharp at that size depends on your source - a clean, well-lit photo will hold up well; a blurry or heavily compressed one will just look like a bigger blurry image. For a sharper 4K result from a weak source, use the AI Image Upscaler instead.
+H3: Q6: Can I upscale multiple images at once?
+You can upload several images in one session and switch between them using the thumbnail strip, but each image needs its own Upscale click and its own Download - there is no single action that processes or downloads all of them together on this tool.
+H3: Q7: Is there a maximum image size I can upscale?
+The tool enforces a practical limit on the final output: if width × height at your chosen scale would exceed roughly 48 megapixels, upscaling stops with an "image too large" message. In practice this only affects very large source photos at 4x - most phone camera photos upscale without any issue.
+H3: Q8: Is it safe to upload my ID photo or a personal document to this tool?
+Yes - this standard upscaler processes your image entirely inside your browser using your device's own processing power. The file is never uploaded to any RepetiGo server or third party. There's nothing to intercept and nothing for us to store, because we never receive the image in the first place.
+H3: Q9: Can I upscale an image on my phone?
+Yes. This tool works on mobile browsers - Chrome on Android, Safari on iPhone. Open repetigo.com/tools/image/upscale-image/, upload a photo from your Gallery or Files app, choose 2x or 4x, and download the result directly to your phone.
+H3: Q10: When should I use the AI Image Upscaler instead of this tool?
+Use this tool when you want an instant result and your source image is reasonably clear - it's faster and nothing is uploaded. Switch to the AI Image Upscaler at /image-tools/ai-upscale-image when the source is genuinely blurry, heavily compressed, or very old, and you need real recovered detail rather than a smooth enlargement. That tool takes longer because it sends your image to an AI provider for processing.
+
+H2: More Free Image Tools from RepetiGo.
+Tool
+What It Does
+Link
+AI Image Upscaler
+Real AI-added detail for blurry scans and old photos
+→ /image-tools/ai-upscale-image
+Photo Editor
+Adjust brightness, contrast, and blur without changing size
+→ /image-tools/photo-editor
+Resize Image
+Change image dimensions up or down by pixels or percentage
+→ /image-tools/resize-image
+Compress Image
+Reduce file size after upscaling if the output is too large
+→ /image-tools/compress-image
+Remove Background
+Remove the background from an upscaled ID photo
+→ /image-tools/background-remover
+All Image Tools
+Complete free image tools suite
+→ /image-tools
+
+[ Upscale Image Free - No Sign-Up → repetigo.com/tools/image/upscale-image/ ]
+[ Explore All Image Tools → repetigo.com/tools/image/ ]`;
+
+const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
 export default function UpscaleImagePage() {
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [items, setItems] = useState<ImageItem[]>([]);
-  const [activeId, setActiveId] = useState("");
-  const [scale, setScale] = useState<2 | 4>(2);
-  const [format, setFormat] = useState<OutputFormat>("image/webp");
-  const [aiMode, setAiMode] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [dragging, setDragging] = useState(false);
-  const [error, setError] = useState("");
-  const active = items.find((item) => item.id === activeId) || items[0];
-
-  async function addFiles(files: FileList | File[]) {
-    const selected = Array.from(files); const invalid = selected.find((file) => !file.type.startsWith("image/"));
-    if (invalid) return setError(`${invalid.name} is not an image file.`); setError("");
-    setBusy(true);
-    const additions = (await Promise.all(selected.map(async (file) => { const sourceUrl = URL.createObjectURL(file); try { const dimensions = await readDimensions(sourceUrl); const item: ImageItem = { id: crypto.randomUUID(), file, sourceUrl, ...dimensions }; const generated = await upscaleImage(item, 2, "image/webp"); return { ...item, result: { ...generated, url: URL.createObjectURL(generated.blob) } }; } catch { URL.revokeObjectURL(sourceUrl); return null; } }))).filter((item) => item !== null) as ImageItem[];
-    setItems((current) => [...current, ...additions]); if (!activeId && additions[0]) setActiveId(additions[0].id);
-    setBusy(false); if (!additions.length) setError("The selected image could not be upscaled.");
-  }
-
-  function removeItem(item: ImageItem) { revokeItem(item); setItems((current) => current.filter((entry) => entry.id !== item.id)); if (activeId === item.id) setActiveId(items.find((entry) => entry.id !== item.id)?.id || ""); }
-  async function upscale() {
-    if (!active || busy) return; setBusy(true); setError("");
-    try {
-      if (active.result) URL.revokeObjectURL(active.result.url);
-      const result = aiMode ? await aiUpscaleImage(active, scale, format) : await upscaleImage(active, scale, format); const url = URL.createObjectURL(result.blob);
-      setItems((current) => current.map((item) => item.id === active.id ? { ...item, result: { ...result, url } } : item));
-    } catch (reason) { setError(reason instanceof Error ? reason.message : "This image could not be upscaled. Try a smaller image or 2× mode."); }
-    finally { setBusy(false); }
-  }
-  function drop(event: DragEvent<HTMLElement>) { event.preventDefault(); setDragging(false); void addFiles(event.dataTransfer.files); }
-
-  return <DashboardShell activePath="/image-tools"><div className="dashboard upscale-page">
-    <input ref={inputRef} hidden multiple type="file" accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" onChange={(event: ChangeEvent<HTMLInputElement>) => { if (event.target.files) void addFiles(event.target.files); event.target.value = ""; }} />
-    {items.length ? <div className="compress-heading upscale-heading"><div><span className="auto-print-kicker">Free Image Tool</span><h1>Upscale Image</h1><p>Enhance and enlarge JPG, PNG, and WebP images.</p></div><span><ShieldCheck size={16} /> Files stay in your browser</span></div> : null}
-    {!items.length ? <PdfToolUpload title="Upscale Image" description="Enhance and enlarge JPG, PNG, and WebP images in your browser." icon={ImagePlus} inputRef={inputRef} onFiles={(files) => void addFiles(files)} accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp" buttonLabel="Select images" dropLabel="or drop JPG, PNG, and WebP images here" /> : <section className={`upscale-studio ${dragging ? "dragging" : ""}`} onDragOver={(event) => { event.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={drop}>
-      <button className={`upscale-ai-suggestion ${aiMode ? "active" : ""}`} type="button" aria-pressed={aiMode} onClick={() => setAiMode((current) => !current)}><Sparkles size={15} /><div><strong>{aiMode ? "AI enhancement enabled" : "Need smarter enhancement?"}</strong><span>{aiMode ? "Switch to standard upscaler" : "Use My AI Image Upscaler"}</span></div></button>
-      <div className="upscale-thumbs">{items.map((item) => <button className={item.id === active?.id ? "active" : ""} type="button" onClick={() => setActiveId(item.id)} key={item.id}><img src={item.sourceUrl} alt={item.file.name} /></button>)}<button className="upscale-upload-tile" type="button" onClick={() => inputRef.current?.click()}><Plus size={22} /><small>Upload image</small></button></div>
-      <div className="upscale-controls"><div><span>Upscale size</span><button className={scale === 2 ? "active" : ""} type="button" onClick={() => setScale(2)}>2×</button><button className={scale === 4 ? "active" : ""} type="button" onClick={() => setScale(4)}>4×</button></div><label><span>Output</span><select value={format} onChange={(event) => setFormat(event.target.value as OutputFormat)}><option value="image/webp">WebP</option><option value="image/png">PNG</option><option value="image/jpeg">JPG</option></select></label><button className="upscale-run" type="button" disabled={busy} onClick={upscale}>{busy ? <LoaderCircle className="spin" size={18} /> : <WandSparkles size={18} />} {busy ? "Enhancing…" : `${aiMode ? "AI Upscale" : "Upscale"} ${scale}×`}</button></div>
-      {active ? <div className="upscale-comparison"><ImagePane label="Original" src={active.sourceUrl} name={active.file.name} size={active.file.size} dimensions={`${active.width} × ${active.height}`} /><ImagePane label="Transformed" src={active.result?.url} name={active.result?.name || `Ready for ${scale}× enhancement`} size={active.result?.blob.size} dimensions={active.result ? `${active.result.width} × ${active.result.height}` : `${active.width * scale} × ${active.height * scale}`} empty={!active.result} /></div> : null}
-      {active ? <div className="upscale-bottom"><button type="button" onClick={() => removeItem(active)}><Trash2 size={16} /> Remove image</button>{active.result ? <a href={active.result.url} download={active.result.name}><Download size={18} /> Download upscaled image</a> : <span><Sparkles size={16} /> Choose settings and upscale</span>}</div> : null}
-    </section>}
-    {error ? <p className="upscale-error" role="alert">{error}</p> : null}
-  </div></DashboardShell>;
+  return (
+    <UpscaleImageClient>
+      <JsonLd />
+      <article className="tool-seo-content compress-pdf-seo" id="upscale-image-guide">
+        <StructuredSeoCopy content={content} />
+      </article>
+    </UpscaleImageClient>
+  );
 }
 
-function ImagePane({ label, src, name, size, dimensions, empty }: { label: string; src?: string; name: string; size?: number; dimensions: string; empty?: boolean }) {
-  return <article><h2>{label}</h2><div aria-label={src ? `${label} image preview` : undefined} className={empty ? "empty" : "has-image"} style={src ? { backgroundImage: `url(${JSON.stringify(src)})` } : undefined}>{src ? null : <><WandSparkles size={42} /><strong>Your enhanced image will appear here</strong></>}</div><footer><strong title={name}>{name}</strong><span>{dimensions}{size !== undefined ? ` · ${formatBytes(size)}` : ""}</span></footer></article>;
+type SeoTableData = { headers: string[]; rows: string[][] };
+const CALLOUT_EMOJI = ["💡", "🇮🇳", "🔒", "🖨️", "📱", "✅", "⚠️", "🖥️", "★"];
+
+function StructuredSeoCopy({ content: source }: { content: string }) {
+  const blocks = source.replace(/(^|\n)(H[123]: [^\n]+)\n/g, "$1\n$2\n\n").split(/\n{2,}/).map((block) => block.trim()).filter(Boolean);
+  return (
+    <>
+      {blocks.map((block, index) => {
+        const lines = block.split("\n").map((line) => line.trim()).filter(Boolean);
+        const first = lines[0];
+        if (first.startsWith("H1: ")) return <h1 key={index}>{first.slice(4)}</h1>;
+        if (first.startsWith("H2: ")) return <h2 key={index}>{first.slice(4)}</h2>;
+        if (first.startsWith("H3: ")) {
+          const heading = first.slice(4);
+          const body = lines.slice(1);
+          return (
+            <section className="tool-seo-copy-block" key={index}>
+              <h3>{heading}</h3>
+              {body.map((line) => <p key={line}>{renderInlineMappedLinks(line)}</p>)}
+            </section>
+          );
+        }
+        const table = getKnownTable(lines);
+        if (table) return <SeoTable key={index} {...table} />;
+        if (first.startsWith("✓ ")) {
+          return <div className="tool-seo-badges" key={index}>{first.split(/\s{2,}/).map((item) => <span key={item}>{item}</span>)}</div>;
+        }
+        if (lines.length && lines.every((line) => line.startsWith("[ ") && line.endsWith(" ]"))) {
+          return <div className="tool-seo-cta-stack" key={index}>{lines.map((line) => <CtaLine key={line} text={line} />)}</div>;
+        }
+        if (CALLOUT_EMOJI.some((emoji) => first.startsWith(emoji))) {
+          return <aside className="tool-seo-callout" key={index}>{lines.map((line) => <p key={line}>{renderInlineMappedLinks(line)}</p>)}</aside>;
+        }
+        return <div className="tool-seo-copy-paragraph" key={index}>{lines.map((line) => <p key={line}>{renderInlineMappedLinks(line)}</p>)}</div>;
+      })}
+    </>
+  );
 }
 
-async function aiUpscaleImage(item: ImageItem, scale: 2 | 4, format: OutputFormat) {
-  const payload = new FormData(); payload.append("image", item.file, item.file.name); payload.append("scale", String(scale)); payload.append("output_format", format.replace("image/", ""));
-  const response = await fetch(apiUrl("/api/tools/ai-upscale-image/"), { method: "POST", body: payload });
-  if (!response.ok) { let message = "AI upscaling could not be completed."; try { const data = await response.json(); message = data.message || data.error || message; } catch { /* binary or empty error response */ } throw new Error(message); }
-  const blob = await response.blob(); if (!blob.type.startsWith("image/")) throw new Error("The AI service returned an invalid image.");
-  const dimensions = await readBlobDimensions(blob); const extension = blob.type === "image/png" ? "png" : blob.type === "image/jpeg" ? "jpg" : "webp";
-  return { blob, ...dimensions, name: `${item.file.name.replace(/\.[^.]+$/, "")}-${scale}x-ai-upscaled.${extension}` };
+function getKnownTable(lines: string[]): SeoTableData | null {
+  if (lines[0] === "Method" && lines[1] === "What It Does" && lines[2] === "Speed & Privacy") return { headers: ["Method", "What It Does", "Speed & Privacy", "Best For"], rows: chunkRows(lines.slice(4), 4) };
+  if (lines[0] === "Scenario" && lines[1] === "The Problem") return { headers: ["Scenario", "The Problem", "How This Tool Helps"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "Operation" && lines[1] === "What It Does" && lines[2] === "Changes Dimensions?") return { headers: ["Operation", "What It Does", "Changes Dimensions?", "Improves Clarity?", "RepetiGo Tool"], rows: chunkRows(lines.slice(5), 5) };
+  if (lines[0] === "Feature" && lines[1] === "RepetiGo Upscale (this tool)") return { headers: ["Feature", "RepetiGo Upscale (this tool)", "Topaz Gigapixel", "Canva AI Upscaler", "Adobe Express"], rows: chunkRows(lines.slice(5), 5) };
+  if (lines[0] === "Protection Layer" && lines[1] === "What It Means in Practice") return { headers: ["Protection Layer", "What It Means in Practice"], rows: chunkRows(lines.slice(2), 2) };
+  if (lines[0] === "Tool" && lines[1] === "What It Does" && lines[2] === "Link") return { headers: ["Tool", "What It Does", "Link"], rows: chunkRows(lines.slice(3), 3) };
+  return null;
 }
-async function upscaleImage(item: ImageItem, scale: 2 | 4, format: OutputFormat) {
-  const image = await loadImage(item.sourceUrl); const width = item.width * scale; const height = item.height * scale;
-  if (width * height > 48_000_000) throw new Error("Image too large");
-  let stage = document.createElement("canvas"); stage.width = item.width; stage.height = item.height; const initialContext = stage.getContext("2d"); if (!initialContext) throw new Error("Canvas unavailable"); initialContext.drawImage(image, 0, 0);
-  for (let factor = 2; factor <= scale; factor *= 2) { const next = document.createElement("canvas"); next.width = item.width * factor; next.height = item.height * factor; const nextContext = next.getContext("2d"); if (!nextContext) throw new Error("Canvas unavailable"); nextContext.imageSmoothingEnabled = true; nextContext.imageSmoothingQuality = "high"; nextContext.drawImage(stage, 0, 0, next.width, next.height); stage = next; }
-  const canvas = document.createElement("canvas"); canvas.width = width; canvas.height = height; const context = canvas.getContext("2d", { alpha: format !== "image/jpeg" }); if (!context) throw new Error("Canvas unavailable");
-  if (format === "image/jpeg") { context.fillStyle = "#fff"; context.fillRect(0, 0, width, height); }
-  context.imageSmoothingEnabled = true; context.imageSmoothingQuality = "high"; context.drawImage(stage, 0, 0, width, height);
-  const blob = await new Promise<Blob>((resolve, reject) => canvas.toBlob((value) => value ? resolve(value) : reject(new Error("Export failed")), format, .92)); const extension = format === "image/png" ? "png" : format === "image/jpeg" ? "jpg" : "webp";
-  return { blob, width, height, name: `${item.file.name.replace(/\.[^.]+$/, "")}-${scale}x-upscaled.${extension}` };
+
+function chunkRows(values: string[], size: number) {
+  const rows: string[][] = [];
+  for (let index = 0; index < values.length; index += size) rows.push(values.slice(index, index + size));
+  return rows;
 }
-async function readBlobDimensions(blob: Blob) { const url = URL.createObjectURL(blob); try { return await readDimensions(url); } finally { URL.revokeObjectURL(url); } }
-function readDimensions(url: string) { return loadImage(url).then((image) => ({ width: image.naturalWidth, height: image.naturalHeight })); }
-function loadImage(url: string) { return new Promise<HTMLImageElement>((resolve, reject) => { const image = new Image(); image.onload = () => resolve(image); image.onerror = reject; image.src = url; }); }
-function revokeItem(item: ImageItem) { URL.revokeObjectURL(item.sourceUrl); if (item.result) URL.revokeObjectURL(item.result.url); }
-function formatBytes(bytes: number) { return bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / (1024 * 1024)).toFixed(2)} MB`; }
+
+function SeoTable({ headers, rows }: SeoTableData) {
+  return (
+    <div className="tool-seo-table-wrap">
+      <table>
+        <thead><tr>{headers.map((header) => <th key={header}>{header}</th>)}</tr></thead>
+        <tbody>
+          {rows.map((row) => <tr key={row.join("|")}>{row.map((cell, index) => <td key={cell + "-" + index}>{renderTableCell(cell)}</td>)}</tr>)}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function CtaLine({ text }: { text: string }) {
+  const inner = text.slice(2, -2);
+  const [, label = inner, href = ""] = inner.match(/^(.*?)\s*(?:→)\s*(.+)$/) || [];
+  const mappedHref = mapSeoRoute(href || "");
+  return <a className="tool-seo-inline-cta" href={mappedHref || "#upscale-image-guide"}>{label}{mappedHref ? <span>{"→"}</span> : null}</a>;
+}
+
+function renderTableCell(cell: string) {
+  const cleaned = cell.replace(/^→\s*/, "").trim();
+  const href = mapSeoRoute(cleaned);
+  if (!href) return renderInlineMappedLinks(cell);
+  return <a className="tool-seo-table-link" href={href}>{getRouteLabel(href)}</a>;
+}
+
+function renderInlineMappedLinks(text: string) {
+  const parts = text.split(/(repetigo\.com\/(?:tools\/image\/[a-z-]*|pricing)\/?|\/image-tools\/[a-z-]*\/?|\/image-tools\/?|\/products\/printpilot\/?|\/privacy-policy\/?|\/pricing\/?)/g);
+  return parts.map((part, index) => {
+    const href = mapSeoRoute(part.startsWith("repetigo.com") ? "https://" + part : part);
+    if (!href) return part;
+    return <a href={href} key={part + "-" + index}>{getRouteLabel(href)}</a>;
+  });
+}
+
+function mapSeoRoute(route: string) {
+  const cleanRoute = route.trim().replace(/^(https?:\/\/)?(www\.)?repetigo\.com/i, "").replace(/\/$/, "");
+  const routeMap: Record<string, string> = {
+    "/tools/image": "/image-tools",
+    "/tools/image/upscale-image": "/image-tools/upscale-image",
+    "/tools/image/ai-upscale-image": "/image-tools/ai-upscale-image",
+    "/tools/image/resize-image": "/image-tools/resize-image",
+    "/tools/image/compress-image": "/image-tools/compress-image",
+    "/tools/image/background-remover": "/image-tools/background-remover",
+    "/tools/image/photo-editor": "/image-tools/photo-editor",
+    "/products/printpilot": "/print-automation",
+    "/privacy-policy": "/privacy-policy",
+    "/pricing": "/pricing",
+  };
+  return routeMap[cleanRoute] || (cleanRoute.startsWith("/image-tools") ? cleanRoute : "");
+}
+
+function getRouteLabel(href: string) {
+  const labels: Record<string, string> = {
+    "/image-tools": "Explore All Image Tools",
+    "/image-tools/upscale-image": "Open Upscale Image",
+    "/image-tools/ai-upscale-image": "Open AI Image Upscaler",
+    "/image-tools/resize-image": "Open Resize Image",
+    "/image-tools/compress-image": "Open Compress Image",
+    "/image-tools/background-remover": "Open Remove Background",
+    "/image-tools/photo-editor": "Open Photo Editor",
+    "/print-automation": "Learn About PrintPilot",
+    "/privacy-policy": "Read Privacy Policy",
+    "/pricing": "Start Free Trial",
+  };
+  return labels[href] || "Open Tool";
+}
+
+function JsonLd() {
+  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Upscale Image", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online image upscaler - enlarge JPG, PNG, and WebP images 2x or 4x. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl };
+  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Upscale an Image Online Free", step: [{ "@type": "HowToStep", name: "Upload Image", text: "Upload Your Image" }, { "@type": "HowToStep", name: "Choose Factor", text: "Choose Your Upscale Factor and Output Format" }, { "@type": "HowToStep", name: "Download", text: "Download Your Upscaled Image" }] };
+  const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
+  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://www.repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://www.repetigo.com/tools/image/" }, { "@type": "ListItem", position: 3, name: "Upscale Image", item: pageUrl }] };
+
+  return <>{[softwareApplication, howTo, faqPage, breadcrumb].map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>;
+}
