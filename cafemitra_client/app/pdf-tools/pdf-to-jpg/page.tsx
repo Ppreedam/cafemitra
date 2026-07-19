@@ -266,15 +266,26 @@ export default function PdfToJpgPage() {
 type SeoTable = { headers: string[]; rows: string[][] };
 const tableDefinitions = [
   ["Resolution", "Best For", "File Size", "Print at Full A4?", "Screen Sharpness"],
+  ["Lock Type", "What Happens", "Can It Be Removed Without the Password?", "How RepetiGo Handles It"],
+  ["Protection Type", "What It Does", "Who Needs It", "Can the Recipient Override It?"],
   ["Format", "Common Source", "Accepted by RepetiGo", "Notes"],
   ["Conversion Setting", "Image Quality in PDF", "File Size", "When to Use"],
   ["Method", "How It Works", "When to Use", "Limitation"],
+  ["Method", "What It Does", "Does It Save to File?", "Does It Fix the Problem?"],
   ["Problem", "What It Looks Like", "Fix"],
   ["Situation", "Why the PDF Is Sideways", "Solution"],
+  ["Feature", "RepetiGo", "Adobe Reader (free)", "Smallpdf", "ilovepdf"],
+  ["Input Method", "When to Use", "What RepetiGo Accepts"],
+  ["Setting", "Options", "Recommended For"],
+  ["Upload HTML File", "Convert from URL"],
+  ["Element", "Preservation", "Notes"],
+  ["Use Case", "Why Convert HTML to PDF?", "Best Input Method"],
+  ["Method", "Cost", "Requires Coding?", "Quality", "Best For"],
   ["Use Case", "Why JPG Instead of PDF?", "India-Specific Context"],
   ["Use Case", "The Problem", "How This Tool Solves It"],
   ["Feature", "RepetiGo", "ilovepdf", "Smallpdf", "Adobe Acrobat Free"],
   ["Protection Layer", "What It Means in Practice"],
+  ["Tool", "URL", "Best For"],
   ["Tool", "What It Does", "Link"],
   ["Method", "How It Works", "Best For", "Works On"],
   ["Type", "What It Is", "Legal Status", "When to Use"],
@@ -319,8 +330,8 @@ export function StructuredSeoCopy({ content: source }: { content: string }) {
 type SeoLineKind = "paragraph" | "badges" | "list" | "callout" | "cta";
 
 function isMixedSeoLine(line: string) {
-  if (line.startsWith("\u2713") || isCta(line) || isStandaloneRouteCta(line) || isSeoCallout(line) || line.startsWith("\u2022")) return true;
-  return line.startsWith("✓") || line.startsWith("âœ“") || isCta(line) || isStandaloneRouteCta(line) || /^(?:💡|📱|📊|⭐|🔒|🖨️|✅|⚠️|ðŸ)/.test(line) || line.startsWith("•") || line.startsWith("â€¢") || line.startsWith("Ã¢â‚¬Â¢") || /^(All pages|Specific pages|Page range|96 DPI -|150 DPI -|300 DPI -)/.test(line);
+  if (line.startsWith("\u2713") || isCta(line) || isStandaloneRouteCta(line) || isSeoCallout(line) || line.startsWith("\u2022") || /^\d+\.\s/.test(line)) return true;
+  return line.startsWith("✓") || line.startsWith("âœ“") || isCta(line) || isStandaloneRouteCta(line) || /^(?:💡|📱|📊|⭐|🔒|🖨️|✅|⚠️|ðŸ)/.test(line) || line.startsWith("•") || line.startsWith("â€¢") || line.startsWith("Ã¢â‚¬Â¢") || /^\d+\.\s/.test(line) || /^(All pages|Specific pages|Page range|96 DPI -|150 DPI -|300 DPI -)/.test(line);
 }
 
 function isSeoCallout(line: string) {
@@ -332,7 +343,7 @@ function getStructuredSeoLineKind(line: string): SeoLineKind | null {
   if (line.startsWith("\u2713")) return "badges";
   if (isCta(line) || isStandaloneRouteCta(line)) return "cta";
   if (isSeoCallout(line)) return "callout";
-  if (line.startsWith("\u2022") || /^(All pages|Specific pages|Page range|96 DPI -|150 DPI -|300 DPI -)/.test(line)) return "list";
+  if (line.startsWith("\u2022") || /^\d+\.\s/.test(line) || /^(All pages|Specific pages|Page range|96 DPI -|150 DPI -|300 DPI -)/.test(line)) return "list";
   return null;
 }
 
@@ -346,13 +357,14 @@ function renderMixedLines(lines: string[], keyPrefix: string) {
       else groups.push({ kind: structuredKind, lines: [line] });
       continue;
     }
-    const kind = line.startsWith("✓") || line.startsWith("âœ?") ? "badges" : isCta(line) || isStandaloneRouteCta(line) ? "cta" : /^(?:💡|📱|📊|⭐|🔒|🖨️|✅|⚠️|ðŸ)/.test(line) ? "callout" : line.startsWith("•") || line.startsWith("â€¢") || line.startsWith("Ã¢â‚¬Â¢") || /^(All pages|Specific pages|Page range|96 DPI -|150 DPI -|300 DPI -)/.test(line) ? "list" : "paragraph";
+    const kind = line.startsWith("✓") || line.startsWith("âœ?") ? "badges" : isCta(line) || isStandaloneRouteCta(line) ? "cta" : /^(?:💡|📱|📊|⭐|🔒|🖨️|✅|⚠️|ðŸ)/.test(line) ? "callout" : line.startsWith("•") || line.startsWith("â€¢") || line.startsWith("Ã¢â‚¬Â¢") || /^\d+\.\s/.test(line) || /^(All pages|Specific pages|Page range|96 DPI -|150 DPI -|300 DPI -)/.test(line) ? "list" : "paragraph";
     const current = groups[groups.length - 1];
     if (current?.kind === kind) current.lines.push(line);
     else groups.push({ kind, lines: [line] });
   }
   return groups.map((group, groupIndex) => {
     const key = `${keyPrefix}-${group.kind}-${groupIndex}`;
+    if (group.kind === "list" && group.lines.some((line) => /^\d+\.\s/.test(line))) return <ol className="tool-seo-list" key={key}>{group.lines.map((line) => <li key={line}>{renderLinks(line.replace(/^\d+\.\s*/, ""))}</li>)}</ol>;
     if (group.kind === "list" && group.lines.some((line) => line.startsWith("\u2022"))) return <ul className="tool-seo-list" key={key}>{group.lines.map((line) => <li key={line}>{renderLinks(line.slice(1).trim())}</li>)}</ul>;
     if (group.kind === "badges") return <div className="tool-seo-badges" key={key}>{group.lines.flatMap((line) => line.split(/\s{2,}/)).map((item) => <span key={item}>{item}</span>)}</div>;
     if (group.kind === "list") return <ul className="tool-seo-list" key={key}>{group.lines.map((line) => <li key={line}>{renderLinks(line.replace(/^(•|â€¢|Ã¢â‚¬Â¢)\s*/, ""))}</li>)}</ul>;
@@ -380,10 +392,10 @@ function SeoCtaLine({ text }: { text: string }) {
 function getTableData(lines: string[]): { table: SeoTable; rest: string[] } | null {
   const headers = tableDefinitions.find((definition) => definition.every((item, index) => lines[index] === item));
   if (!headers) return null;
-  const rowCounts: Record<string, number> = { "Resolution|Best For": 3, "Format|Common Source": 6, "Conversion Setting|Image Quality in PDF": 2, "Method|How It Works": 5, "Method|How It Works|Best For|Works On": 3, "Method|What It Does": 5, "Problem|What It Looks Like": 4, "Situation|Why the PDF Is Sideways": 6, "Type|What It Is|Legal Status|When to Use": 2, "Who|What They Watermark|Typical Text Used": 7, "Use Case|Why JPG Instead of PDF?": 6, "Use Case|The Problem": 6, "Feature|RepetiGo": 9, "Protection Layer|What It Means in Practice": 5, "Tool|What It Does": 7 };
+  const rowCounts: Record<string, number> = { "Resolution|Best For": 3, "Format|Common Source": 6, "Conversion Setting|Image Quality in PDF": 2, "Method|How It Works": 5, "Method|What It Does": 5, "Method|How It Works|Best For|Works On": 3, "Input Method|When to Use": 2, "Setting|Options": 4, "Upload HTML File|Convert from URL": 6, "Element|Preservation": 11, "Use Case|Why Convert HTML to PDF?": 6, "Method|Cost": 6, "Problem|What It Looks Like": 4, "Situation|Why the PDF Is Sideways": 6, "Type|What It Is|Legal Status|When to Use": 2, "Who|What They Watermark|Typical Text Used": 7, "Use Case|Why JPG Instead of PDF?": 6, "Use Case|The Problem": 6, "Feature|RepetiGo": 9, "Protection Layer|What It Means in Practice": 5, "Tool|What It Does": 7, "Tool|URL": 6 };
   const key = `${headers[0]}${headers[1] ? `|${headers[1]}` : ""}`;
   const fallbackCounts: Record<string, number> = { Resolution: 3, Format: 6, "Conversion Setting": 2, Method: 3, Type: 2, Who: 7, "Feature": 9, "Protection Layer": 5, Tool: 7 };
-  const count = rowCounts[key] || fallbackCounts[headers[0]] || 0;
+  const count = key === "Lock Type|What Happens" || key === "Protection Type|What It Does" ? 2 : rowCounts[key] || fallbackCounts[headers[0]] || 0;
   const valuesEnd = headers.length + count * headers.length;
   return { table: { headers, rows: chunkRows(lines.slice(headers.length, valuesEnd), headers.length) }, rest: lines.slice(valuesEnd) };
 }
@@ -391,9 +403,9 @@ function findTableStart(lines: string[]) { return lines.findIndex((line, index) 
 function chunkRows(values: string[], size: number) { const rows: string[][] = []; for (let i = 0; i < values.length; i += size) rows.push(values.slice(i, i + size)); return rows; }
 function SeoTable({ headers, rows }: SeoTable) { return <div className="tool-seo-table-wrap"><table><thead><tr>{headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{rows.map((row) => <tr key={row.join("|")}>{row.map((cell, i) => <td key={`${cell}-${i}`}>{renderLinks(cell.replace(/^→\s*/, ""))}</td>)}</tr>)}</tbody></table></div>; }
 function isCta(line: string) { const normalized = stripCtaPrefix(line); return normalized.startsWith("[") && normalized.endsWith("]"); }
-function isStandaloneRouteCta(line: string) { return /^(?:Read our Privacy Policy|Learn about PrintPilot|QR Document Upload|Try PrintPilot Free|Or Extract a PDF Page as JPG Now)/.test(line); }
+function isStandaloneRouteCta(line: string) { return /^(?:Read our Privacy Policy|Privacy Policy|Auto-Delete|Learn about PrintPilot|QR Document Upload|Try PrintPilot Free|Or Extract a PDF Page as JPG Now)/.test(line); }
 function CtaLine({ text }: { text: string }) { const inner = isCta(text) ? text.slice(1, -1) : text; const arrow = inner.indexOf("→"); const routeMatch = inner.match(/(?:https?:\/\/)?(?:www\.)?repetigo\.com\/[^\s|]+|\/(?:security|features|products|tools)\/[^\s|]*/); const route = mapRoute(arrow >= 0 ? inner.slice(arrow + 1) : routeMatch?.[0] || ""); const label = arrow >= 0 ? inner.slice(0, arrow) : routeMatch ? inner.slice(0, routeMatch.index).replace(/\|\s*$/, "") : inner; return <a className="tool-seo-inline-cta" href={route || "#pdf-to-jpg-guide"}>{label.trim()} <span>→</span></a>; }
-function renderLinks(text: string) { return text.split(/((?:https?:\/\/)?(?:www\.)?repetigo\.com\/[^\s|]+|\/(?:tools|features|products|security|pricing|use-cases)\/[^\s|]+)/gi).map((part, index) => { const route = mapRoute(part); if (route) return <a key={`${part}-${index}`} href={route}>{labelFor(route)}</a>; return /^(?:https?:\/\/)?(?:www\.)?repetigo\.com\//i.test(part) || /^\/(?:tools|features|products|security|pricing|use-cases)\//i.test(part) ? <a key={`${part}-${index}`} href="/pdf-tools">Explore PDF Tools</a> : part; }); }
-function mapRoute(route: string) { const clean = route.trim().replace(/^https?:\/\/(www\.)?repetigo\.com/i, "").replace(/[.,)]+$/, "").replace(/\/$/, ""); const routes: Record<string, string> = { "/tools/pdf": "/pdf-tools", "/tools/pdf/pdf-to-jpg": "/pdf-tools/pdf-to-jpg", "/tools/pdf/jpg-to-pdf": "/pdf-tools/jpg-to-pdf", "/tools/pdf/compress-pdf": "/pdf-tools/compress-pdf", "/tools/pdf/split-pdf": "/pdf-tools/split-pdf", "/tools/pdf/merge-pdf": "/pdf-tools/merge-pdf", "/tools/pdf/word-to-pdf": "/pdf-tools/word-to-pdf", "/tools/pdf/rotate-pdf": "/pdf-tools/rotate-pdf", "/tools/pdf/sign-pdf": "/pdf-tools/sign-pdf", "/tools/pdf/pdf-form": "/pdf-tools/pdf-form", "/tools/pdf/protect-pdf": "/pdf-tools/protect-pdf", "/tools/pdf/edit-pdf": "/pdf-tools/edit-pdf", "/tools/pdf/unlock-pdf": "/pdf-tools/unlock-pdf", "/tools/pdf/ocr-pdf": "/pdf-tools/ocr-pdf", "/tools/pdf/compare-pdf": "/pdf-tools/compare-pdf", "/tools/pdf/redact-pdf": "/pdf-tools/redact-pdf", "/tools/pdf/add-watermark": "/pdf-tools/watermark-pdf", "/tools/pdf/add-page-numbers": "/pdf-tools/page-numbers", "/tools/pdf/crop-pdf": "/pdf-tools/crop-pdf", "/products/printpilot": "/print-automation", "/features/qr-upload": "/print-automation", "/features/auto-delete": "/privacy-policy", "/security": "/privacy-policy", "/use-cases/secure-printing": "/print-automation", "/features/audit-trail": "/print-automation", "/pricing": "/pricing" }; return routes[clean] || (/^\/tools\/pdf\//.test(clean) ? `/pdf-tools/${clean.split("/")[3]}` : /^\/features\//.test(clean) || /^\/security/.test(clean) ? "/privacy-policy" : /^\/products\//.test(clean) || /^\/use-cases\//.test(clean) ? "/print-automation" : /^\/pricing/.test(clean) ? "/pricing" : clean === "/tools/pdf" ? "/pdf-tools" : ""); }
-function labelFor(route: string) { const labels: Record<string, string> = { "/pdf-tools": "Explore All PDF Tools", "/pdf-tools/pdf-to-jpg": "Open PDF to JPG", "/pdf-tools/jpg-to-pdf": "Open JPG to PDF", "/pdf-tools/compress-pdf": "Open Compress PDF", "/pdf-tools/split-pdf": "Open Split PDF", "/pdf-tools/merge-pdf": "Open Merge PDF", "/pdf-tools/word-to-pdf": "Open Word to PDF", "/pdf-tools/rotate-pdf": "Open Rotate PDF", "/print-automation": "Learn About PrintPilot", "/privacy-policy": "Read Privacy Policy", "/pricing": "Start Free Trial" }; return labels[route] || "Open PDF Tool"; }
+function renderLinks(text: string) { return text.split(/((?:https?:\/\/)?(?:www\.)?repetigo\.com\/[^\s|]+|(?:https?:\/\/)?docs\.repetigo\.com(?:\/[^\s|]+)?|\/(?:tools|features|products|security|pricing|use-cases)\/[^\s|]+)/gi).map((part, index) => { const route = mapRoute(part); if (route) return <a key={`${part}-${index}`} href={route}>{labelFor(route)}</a>; return /^(?:https?:\/\/)?(?:www\.)?repetigo\.com\//i.test(part) || /^(?:https?:\/\/)?docs\.repetigo\.com/i.test(part) || /^\/(?:tools|features|products|security|pricing|use-cases)\//i.test(part) ? <a key={`${part}-${index}`} href="/pdf-tools">Explore PDF Tools</a> : part; }); }
+function mapRoute(route: string) { const raw = route.trim().replace(/[.,)]+$/, ""); if (/^(?:https?:\/\/)?docs\.repetigo\.com/i.test(raw)) return "https://docs.repetigo.com"; const clean = raw.replace(/^(?:https?:\/\/)?(?:www\.)?repetigo\.com/i, "").replace(/\/$/, ""); const routes: Record<string, string> = { "/tools/pdf": "/pdf-tools", "/tools/pdf/pdf-to-jpg": "/pdf-tools/pdf-to-jpg", "/tools/pdf/jpg-to-pdf": "/pdf-tools/jpg-to-pdf", "/tools/pdf/compress-pdf": "/pdf-tools/compress-pdf", "/tools/pdf/split-pdf": "/pdf-tools/split-pdf", "/tools/pdf/merge-pdf": "/pdf-tools/merge-pdf", "/tools/pdf/word-to-pdf": "/pdf-tools/word-to-pdf", "/tools/pdf/rotate-pdf": "/pdf-tools/rotate-pdf", "/tools/pdf/sign-pdf": "/pdf-tools/sign-pdf", "/tools/pdf/pdf-form": "/pdf-tools/pdf-form", "/tools/pdf/protect-pdf": "/pdf-tools/protect-pdf", "/tools/pdf/edit-pdf": "/pdf-tools/edit-pdf", "/tools/pdf/unlock-pdf": "/pdf-tools/unlock-pdf", "/tools/pdf/ocr-pdf": "/pdf-tools/ocr-pdf", "/tools/pdf/compare-pdf": "/pdf-tools/compare-pdf", "/tools/pdf/redact-pdf": "/pdf-tools/redact-pdf", "/tools/pdf/add-watermark": "/pdf-tools/watermark-pdf", "/tools/pdf/add-page-numbers": "/pdf-tools/page-numbers", "/tools/pdf/crop-pdf": "/pdf-tools/crop-pdf", "/products/printpilot": "/print-automation", "/features/qr-upload": "/print-automation", "/features/auto-delete": "/privacy-policy", "/security": "/privacy-policy", "/use-cases/secure-printing": "/print-automation", "/features/audit-trail": "/print-automation", "/pricing": "/pricing" }; return routes[clean] || (/^\/tools\/pdf\//.test(clean) ? `/pdf-tools/${clean.split("/")[3]}` : /^\/features\//.test(clean) || /^\/security/.test(clean) ? "/privacy-policy" : /^\/products\//.test(clean) || /^\/use-cases\//.test(clean) ? "/print-automation" : /^\/pricing/.test(clean) ? "/pricing" : clean === "/tools/pdf" ? "/pdf-tools" : ""); }
+function labelFor(route: string) { const labels: Record<string, string> = { "/pdf-tools": "Explore All PDF Tools", "/pdf-tools/pdf-to-jpg": "Open PDF to JPG", "/pdf-tools/jpg-to-pdf": "Open JPG to PDF", "/pdf-tools/compress-pdf": "Open Compress PDF", "/pdf-tools/split-pdf": "Open Split PDF", "/pdf-tools/merge-pdf": "Open Merge PDF", "/pdf-tools/word-to-pdf": "Open Word to PDF", "/pdf-tools/rotate-pdf": "Open Rotate PDF", "/print-automation": "Learn About PrintPilot", "/privacy-policy": "Read Privacy Policy", "/pricing": "Start Free Trial", "https://docs.repetigo.com": "Open API Documentation" }; return labels[route] || "Open PDF Tool"; }
 function JsonLd() { const schemas = [{ "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo PDF to JPG Converter", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free PDF to JPG converter - extract pages as high-quality images at 96, 150, or 300 DPI." }, { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert PDF to JPG Online Free", step: [{ "@type": "HowToStep", name: "Upload PDF" }, { "@type": "HowToStep", name: "Select Pages and DPI" }, { "@type": "HowToStep", name: "Download JPG Images" }] }, { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Tools", item: "https://repetigo.com/tools/" }, { "@type": "ListItem", position: 3, name: "PDF Tools", item: "https://repetigo.com/tools/pdf/" }, { "@type": "ListItem", position: 4, name: "PDF to JPG", item: pageUrl }] }]; return <>{schemas.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>; }

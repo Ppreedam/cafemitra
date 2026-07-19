@@ -7,6 +7,7 @@ import { degrees, PDFDocument } from "pdf-lib";
 import { DashboardShell } from "../../DashboardShell";
 import { PdfToolUpload } from "../PdfToolUpload";
 import { RelatedToolSuggestions, ToolPromotionRail } from "../ToolDiscovery";
+import OrganizeSeoContent from "./OrganizeSeoContent";
 
 type SourceFile = { id: string; file: File };
 type OrganizePage = { id: string; sourceId?: string; sourceIndex?: number; image: string; rotation: number; blank: boolean; width: number; height: number };
@@ -65,13 +66,13 @@ export default function OrganizePdfPage() {
     finally { setProcessing(false); }
   }
 
-  if (!sources.length) return <DashboardShell activePath="/pdf-tools"><div className="dashboard organize-pdf-page"><PdfToolUpload title="Organize PDF" description="Reorder, rotate, duplicate, delete or add blank pages to your PDF." icon={GripVertical} inputRef={inputRef} onFiles={(files) => void addFiles(files)} buttonLabel="Select PDF files" /></div></DashboardShell>;
+  if (!sources.length) return <DashboardShell activePath="/pdf-tools"><div className="dashboard organize-pdf-page"><PdfToolUpload title="Organize PDF" description="Reorder, rotate, duplicate, delete or add blank pages to your PDF." icon={GripVertical} inputRef={inputRef} onFiles={(files) => void addFiles(files)} buttonLabel="Select PDF files" headingLevel="h2" /><OrganizeSeoContent /></div></DashboardShell>;
 
   return <DashboardShell activePath="/pdf-tools"><div className="dashboard organize-pdf-page">
     <input ref={inputRef} hidden multiple type="file" accept="application/pdf,.pdf" onChange={(event) => { if (event.target.files?.length) void addFiles(event.target.files); event.target.value = ""; }} />
     <div className="organize-topline"><Link href="/pdf-tools"><ArrowLeft size={16} /> PDF Tools</Link><span><ShieldCheck size={16} /> Free · Private browser processing</span></div>
     <div className="organize-studio">
-      <section className="organize-canvas"><header><div><h1>Organize PDF</h1><p>Drag pages to rearrange. Use page actions to rotate, duplicate or delete.</p></div><button type="button" disabled={processing} onClick={() => inputRef.current?.click()}><FilePlus2 size={17} /> Add PDF</button></header>
+      <section className="organize-canvas"><header><div><h2>Organize PDF</h2><p>Drag pages to rearrange. Use page actions to rotate, duplicate or delete.</p></div><button type="button" disabled={processing} onClick={() => inputRef.current?.click()}><FilePlus2 size={17} /> Add PDF</button></header>
         {loading ? <div className="organize-loading"><LoaderCircle className="spin" size={29} /> Reading PDF pages…</div> : result ? <OrganizeSuccess result={result} pageCount={pages.length} onBack={clearResult} onReset={resetAll} /> : <div className="organize-page-grid">{pages.map((page, index) => <article className={`${dragId === page.id ? "dragging" : ""} ${page.blank ? "blank" : ""}`} draggable={!processing} key={page.id} onDragStart={() => setDragId(page.id)} onDragOver={(event: DragEvent<HTMLElement>) => event.preventDefault()} onDrop={() => dropOn(page.id)}>
           <div className="organize-card-head"><span><GripVertical size={15} /> {index + 1}</span><button type="button" onClick={() => remove(page.id)} aria-label={`Delete page ${index + 1}`}><X size={15} /></button></div>
           <div className="organize-page-preview" style={{ transform: `rotate(${page.rotation}deg)` }}>{page.blank ? <span>Blank page</span> : <img src={page.image} alt={`Page ${index + 1}`} />}</div>
@@ -85,7 +86,7 @@ export default function OrganizePdfPage() {
         <div className="organize-hint"><Sparkles size={18} /><span><strong>Tip</strong> Drag any page card and drop it at the desired position.</span></div>
         <div className="organize-side-actions">{processing ? <div><span>Creating PDF… {progress}%</span><progress value={progress} max="100" /></div> : null}<button className="organize-submit" type="button" disabled={processing || loading || !pages.length} onClick={organize}>{processing ? <LoaderCircle className="spin" size={19} /> : <GripVertical size={19} />} {processing ? "Organizing…" : "Organize PDF"}</button></div>
       </aside> : <ToolPromotionRail context="organize-result" />}
-    </div>{error ? <div className="profile-alert error organize-error">{error}</div> : null}
+    </div>{error ? <div className="profile-alert error organize-error">{error}</div> : null}<OrganizeSeoContent />
   </div></DashboardShell>;
 }
 
