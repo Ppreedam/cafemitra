@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import QRCode from "qrcode";
 import { Clock3, Crop, Eye, FileText, IdCard, Image as ImageIcon, Printer, Trash2, Upload, Wallet, X } from "lucide-react";
 import { apiUrl } from "@/lib/api";
 import { calculatePriceItemRate, formatPriceItem, mergePricingDefaults, type PriceItem, type PricingService } from "@/lib/pricing";
@@ -233,11 +232,12 @@ export default function CustomerScanPage() {
       return;
     }
 
-    QRCode.toDataURL(upiLink, {
-      errorCorrectionLevel: "M",
-      margin: 1,
-      width: 220,
-    })
+    import("qrcode")
+      .then(({ default: QRCode }) => QRCode.toDataURL(upiLink, {
+        errorCorrectionLevel: "M",
+        margin: 1,
+        width: 220,
+      }))
       .then((url) => {
         if (isActive) setUpiQrDataUrl(url);
       })

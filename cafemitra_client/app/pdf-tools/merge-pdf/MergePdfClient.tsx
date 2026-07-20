@@ -4,7 +4,6 @@ import { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { Archive, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, Download, Eye, FilePlus2, GripVertical, ListOrdered, LoaderCircle, LockKeyhole, Merge, Plus, RotateCcw, Scissors, ShieldCheck, Stamp, Trash2, X } from "lucide-react";
 import Link from "next/link";
-import { PDFDocument } from "pdf-lib";
 import { DashboardShell } from "../../DashboardShell";
 import { PdfToolUpload } from "../PdfToolUpload";
 
@@ -53,6 +52,7 @@ export default function MergePdfClient({ children }: { children?: ReactNode }) {
     if (!canMerge || merging) return;
     setMerging(true); setError(""); clearResult();
     try {
+      const { PDFDocument } = await import("pdf-lib");
       const merged = await PDFDocument.create();
       for (const item of items) {
         const source = await PDFDocument.load(await item.file.arrayBuffer());

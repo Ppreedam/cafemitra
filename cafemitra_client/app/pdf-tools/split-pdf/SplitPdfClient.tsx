@@ -3,8 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { ArrowRight, Check, Download, FileArchive, FileText, Grid2X2, Layers3, LoaderCircle, Plus, RotateCcw, Scissors, ShieldCheck, Sparkles, Trash2, X } from "lucide-react";
-import JSZip from "jszip";
-import { PDFDocument } from "pdf-lib";
 import { DashboardShell } from "../../DashboardShell";
 import { PdfToolUpload } from "../PdfToolUpload";
 
@@ -58,6 +56,7 @@ export function SplitPdfTool({ initialMode = "range", toolTitle = "Split PDF", u
   async function splitPdf() {
     if (!file || processing) return; setProcessing(true); setProgress(2); setError(""); resetResults();
     try {
+      const { PDFDocument } = await import("pdf-lib");
       const source = await PDFDocument.load(await file.arrayBuffer()); const groups = getGroups(source.getPageCount());
       if (!groups.length || groups.some((group) => !group.length)) throw new Error("Select at least one valid page or range.");
       const outputGroups = toolTitle === "Extract pages" && mode === "pages" ? [Array.from(new Set(groups.flat()))] : mode === "range" && mergeRanges ? [Array.from(new Set(groups.flat()))] : groups;
@@ -81,7 +80,7 @@ export function SplitPdfTool({ initialMode = "range", toolTitle = "Split PDF", u
   }
 
   async function downloadZip() {
-    const zip = new JSZip(); results.forEach((result) => zip.file(result.name, result.blob)); const blob = await zip.generateAsync({ type: "blob" }); const url = URL.createObjectURL(blob); triggerDownload(url, `${baseName(file?.name || "split")}-split.zip`); setTimeout(() => URL.revokeObjectURL(url), 1000);
+    const { default: JSZip } = await import("jszip"); const zip = new JSZip(); results.forEach((result) => zip.file(result.name, result.blob)); const blob = await zip.generateAsync({ type: "blob" }); const url = URL.createObjectURL(blob); triggerDownload(url, `${baseName(file?.name || "split")}-split.zip`); setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   if (!file) return <DashboardShell activePath="/pdf-tools"><div className="dashboard split-pdf-page"><PdfToolUpload title={uploadTitle} description={uploadDescription} icon={Scissors} inputRef={inputRef} onFiles={(files) => void chooseFile(files)} multiple={false} buttonLabel="Select PDF file" headingLevel={uploadHeadingLevel || (children ? "h2" : "h1")} />{children}</div></DashboardShell>;

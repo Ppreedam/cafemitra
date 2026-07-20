@@ -3,7 +3,6 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Check, Download, FileText, LoaderCircle, RotateCcw, ShieldCheck, Trash2, Undo2, X } from "lucide-react";
-import { PDFDocument } from "pdf-lib";
 import { DashboardShell } from "../../DashboardShell";
 import { PdfToolUpload } from "../PdfToolUpload";
 import { RelatedToolSuggestions, ToolPromotionRail } from "../ToolDiscovery";
@@ -57,6 +56,7 @@ export default function RemovePagesClient({
     if (!file || !removed.size || processing || removed.size >= pages.length) return;
     setProcessing(true); setProgress(5); setError(""); clearResult();
     try {
+      const { PDFDocument } = await import("pdf-lib");
       const source = await PDFDocument.load(await file.arrayBuffer()); const kept = source.getPageIndices().filter((index) => !removed.has(index + 1));
       const output = await PDFDocument.create(); const copied = await output.copyPages(source, kept); copied.forEach((page, index) => { output.addPage(page); setProgress(Math.round(((index + 1) / copied.length) * 90)); });
       const bytes = await output.save({ useObjectStreams: true }); const blob = new Blob([bytes], { type: "application/pdf" }); setResult({ blob, url: URL.createObjectURL(blob), size: blob.size }); setProgress(100);

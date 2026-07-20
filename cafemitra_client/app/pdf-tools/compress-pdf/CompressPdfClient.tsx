@@ -3,8 +3,6 @@
 import { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Archive, Check, Download, Eye, FilePlus2, Gauge, Info, LoaderCircle, Plus, RotateCcw, ShieldCheck, Trash2, X } from "lucide-react";
-import JSZip from "jszip";
-import { PDFDocument } from "pdf-lib";
 import { DashboardShell } from "../../DashboardShell";
 import { PdfToolUpload } from "../PdfToolUpload";
 
@@ -85,6 +83,7 @@ export default function CompressPdfClient({ children }: { children?: ReactNode }
     if (!completed.length || zipBusy) return;
     setZipBusy(true);
     try {
+      const { default: JSZip } = await import("jszip");
       const zip = new JSZip();
       completed.forEach((item) => zip.file(compressedName(item.file.name), item.result!.blob));
       const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 6 } });
@@ -198,6 +197,7 @@ async function renderAllPdfPages(source: Blob) {
 }
 
 async function compressPdf(file: File, level: number, onProgress: (progress: number) => void) {
+  const { PDFDocument } = await import("pdf-lib");
   const source = await loadPdf(file); const output = await PDFDocument.create();
   const quality = Math.max(.34, .92 - level * .0065); const targetDpi = Math.max(78, 180 - level * 1.05);
   for (let pageNumber = 1; pageNumber <= source.numPages; pageNumber += 1) {

@@ -4,7 +4,6 @@ import Link from "next/link";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import QRCode from "qrcode";
 import {
   BarChart3,
   Bell,
@@ -962,7 +961,8 @@ function readJson<T>(key: string): Partial<T> {
   }
 }
 
-function createQrImage(value: string) {
+async function createQrImage(value: string) {
+  const { default: QRCode } = await import("qrcode");
   return QRCode.toDataURL(value, {
     width: 512,
     margin: 2,

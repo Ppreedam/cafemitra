@@ -3,7 +3,6 @@
 import { ChangeEvent, DragEvent, useEffect, useRef, useState } from "react";
 import type { ReactNode } from "react";
 import { Archive, Check, Download, Eye, Gauge, Image as ImageIcon, Info, LoaderCircle, Plus, RotateCcw, ShieldCheck, Trash2, X } from "lucide-react";
-import JSZip from "jszip";
 import { DashboardShell } from "../../DashboardShell";
 import { PdfToolUpload } from "../../pdf-tools/PdfToolUpload";
 
@@ -70,7 +69,7 @@ export default function CompressImageClient({ children }: { children?: ReactNode
 
   async function downloadZip() {
     const completed = items.filter((item) => item.result); if (!completed.length || zipBusy) return; setZipBusy(true);
-    try { const zip = new JSZip(); completed.forEach((item) => zip.file(item.result!.name, item.result!.blob)); const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 6 } }); triggerDownload(URL.createObjectURL(blob), "repetigo-compressed-images.zip", true); }
+    try { const { default: JSZip } = await import("jszip"); const zip = new JSZip(); completed.forEach((item) => zip.file(item.result!.name, item.result!.blob)); const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 6 } }); triggerDownload(URL.createObjectURL(blob), "repetigo-compressed-images.zip", true); }
     finally { setZipBusy(false); }
   }
 

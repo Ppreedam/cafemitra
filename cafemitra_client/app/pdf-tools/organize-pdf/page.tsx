@@ -3,7 +3,6 @@
 import { DragEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowDown, ArrowLeft, ArrowUp, Check, Copy, Download, FilePlus2, FileText, GripVertical, LoaderCircle, Plus, RotateCw, ShieldCheck, Sparkles, Trash2, Undo2, X } from "lucide-react";
-import { degrees, PDFDocument } from "pdf-lib";
 import { DashboardShell } from "../../DashboardShell";
 import { PdfToolUpload } from "../PdfToolUpload";
 import { RelatedToolSuggestions, ToolPromotionRail } from "../ToolDiscovery";
@@ -53,7 +52,8 @@ export default function OrganizePdfPage() {
   async function organize() {
     if (!pages.length || processing) return; setProcessing(true); setProgress(3); setError(""); clearResult();
     try {
-      const loaded = new Map<string, PDFDocument>(); for (const source of sources) loaded.set(source.id, await PDFDocument.load(await source.file.arrayBuffer()));
+      const { degrees, PDFDocument } = await import("pdf-lib");
+      const loaded = new Map<string, Awaited<ReturnType<typeof PDFDocument.load>>>(); for (const source of sources) loaded.set(source.id, await PDFDocument.load(await source.file.arrayBuffer()));
       const output = await PDFDocument.create();
       for (let index = 0; index < pages.length; index += 1) {
         const page = pages[index];

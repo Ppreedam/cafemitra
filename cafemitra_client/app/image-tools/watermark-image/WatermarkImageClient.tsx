@@ -2,7 +2,6 @@
 
 import { useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
 import { AlignCenter, Bold, Download, ImagePlus, Italic, LoaderCircle, Plus, ShieldCheck, Trash2, Type, Underline, X } from "lucide-react";
-import JSZip from "jszip";
 import { DashboardShell } from "../../DashboardShell";
 import { PdfToolUpload } from "../../pdf-tools/PdfToolUpload";
 import "./watermark.css";
@@ -31,7 +30,7 @@ export default function WatermarkImageClient({ children }: { children?: ReactNod
   function addBatchFiles(files:FileList){const additions:BatchItem[]=Array.from(files).map(file=>({id:crypto.randomUUID(),file,preview:URL.createObjectURL(file)}));setBatch(current=>[...current,...additions]);}
   function removeBatchItem(id:string){setBatch(current=>{const item=current.find(entry=>entry.id===id);if(item){URL.revokeObjectURL(item.preview);if(item.result)URL.revokeObjectURL(item.result.url);}return current.filter(entry=>entry.id!==id);});}
   async function applyToBatch(){if(!photo||!layers.length||!batch.length||batchBusy)return;setBatchBusy(true);setError("");try{for(const item of batch){if(item.result)URL.revokeObjectURL(item.result.url);const image=await load(item.preview);const blob=await renderWatermarked({file:item.file,url:item.preview,width:image.naturalWidth,height:image.naturalHeight},layers,format);const url=URL.createObjectURL(blob);setBatch(current=>current.map(entry=>entry.id===item.id?{...entry,result:{blob,url,name:watermarkedName(item.file.name,format)}}:entry));}}catch{setError("Batch watermarking could not be completed for one or more images.");}finally{setBatchBusy(false);}}
-  async function downloadBatchZip(){const completed=batch.filter(item=>item.result);if(!completed.length||zipBusy)return;setZipBusy(true);try{const zip=new JSZip();completed.forEach(item=>zip.file(item.result!.name,item.result!.blob));const blob=await zip.generateAsync({type:"blob",compression:"DEFLATE",compressionOptions:{level:6}});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="repetigo-watermarked-images.zip";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}finally{setZipBusy(false);}}
+  async function downloadBatchZip(){const completed=batch.filter(item=>item.result);if(!completed.length||zipBusy)return;setZipBusy(true);try{const {default:JSZip}=await import("jszip");const zip=new JSZip();completed.forEach(item=>zip.file(item.result!.name,item.result!.blob));const blob=await zip.generateAsync({type:"blob",compression:"DEFLATE",compressionOptions:{level:6}});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="repetigo-watermarked-images.zip";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}finally{setZipBusy(false);}}
 
   if(!photo)return <DashboardShell activePath="/image-tools"><div className="dashboard image-transform-shell"><PdfToolUpload title="Watermark Image" description="Add custom text or logo watermarks to JPG, PNG, and WebP images." icon={ImagePlus} inputRef={baseInput} onFiles={upload} accept="image/jpeg,image/png,image/webp" multiple={false} buttonLabel="Select image" dropLabel="or drop an image here" headingLevel={children?"h2":"h1"}/>{error?<p className="image-transform-error">{error}</p>:null}{children}</div></DashboardShell>;
   const HeadingTag = children ? "h2" : "h1";
