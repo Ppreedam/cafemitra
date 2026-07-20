@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   ArrowRight,
@@ -34,6 +34,7 @@ import {
   X,
 } from "lucide-react";
 import { HomeHeaderActions } from "./HomeHeaderActions";
+import { hasStoredSession } from "@/lib/api";
 import { releaseFlags } from "./release-flags";
 
 const serviceMenu = [
@@ -46,19 +47,19 @@ const serviceMenu = [
     description: "Manage queues, shop terminals, uploads, billing, and print status from one calm dashboard.",
     metric: "Live queue",
   },
-  {
-    name: "Document AI",
-    href: "/#services",
-    icon: Bot,
-    color: "#e11d48",
-    summary: "Auto-enhance, clean, and prepare customer documents before printing.",
-    description: "Reduce manual edits with document cleanup, smart suggestions, and ready-to-print outputs.",
-    metric: "Smart cleanup",
-    comingSoon: true,
-  },
+  // {
+  //   name: "Document AI",
+  //   href: "/#services",
+  //   icon: Bot,
+  //   color: "#e11d48",
+  //   summary: "Auto-enhance, clean, and prepare customer documents before printing.",
+  //   description: "Reduce manual edits with document cleanup, smart suggestions, and ready-to-print outputs.",
+  //   metric: "Smart cleanup",
+  //   comingSoon: true,
+  // },
   {
     name: "Passport Photo",
-    href: "/#services",
+    href: "/dashboard",
     icon: Users,
     color: "#5740ed",
     summary: "Government-size photo sheets with cropping and background assistance.",
@@ -66,29 +67,29 @@ const serviceMenu = [
     metric: "Photo sheet",
     comingSoon: true,
   },
-  {
-    name: "Agreement Maker",
-    href: "/#services",
-    icon: ReceiptText,
-    color: "#f13d7d",
-    summary: "Generate neat agreements and shop documents from guided inputs.",
-    description: "Turn repeated typing into reusable flows for agreements, declarations, and customer paperwork.",
-    metric: "Guided forms",
-    comingSoon: true,
-  },
-  {
-    name: "Photo Resize",
-    href: "/#free-tools",
-    icon: Crop,
-    color: "#0d9488",
-    summary: "Resize and prepare photos for forms, cards, uploads, and print sheets.",
-    description: "Quick image tools for everyday counter jobs, built into the same RepetiGo workflow.",
-    metric: "Image tools",
-    comingSoon: true,
-  },
+  // {
+  //   name: "Agreement Maker",
+  //   href: "/#services",
+  //   icon: ReceiptText,
+  //   color: "#f13d7d",
+  //   summary: "Generate neat agreements and shop documents from guided inputs.",
+  //   description: "Turn repeated typing into reusable flows for agreements, declarations, and customer paperwork.",
+  //   metric: "Guided forms",
+  //   comingSoon: true,
+  // },
+  // {
+  //   name: "Photo Resize",
+  //   href: "/#free-tools",
+  //   icon: Crop,
+  //   color: "#0d9488",
+  //   summary: "Resize and prepare photos for forms, cards, uploads, and print sheets.",
+  //   description: "Quick image tools for everyday counter jobs, built into the same RepetiGo workflow.",
+  //   metric: "Image tools",
+  //   comingSoon: true,
+  // },
   {
     name: "ID Card Print",
-    href: "/#services",
+    href: "/dashboard",
     icon: IdCard,
     color: "#f97316",
     summary: "Batch-ready ID card layouts for schools, offices, and local businesses.",
@@ -153,12 +154,17 @@ export function Brand() {
 export function LandingNavbar() {
   const pathname = usePathname();
   const [showNotice, setShowNotice] = useState(true);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
   const isHomeActive = pathname === "/";
   const isServicesActive = pathname === "/print-automation";
   const isPdfToolsActive = pathname.startsWith("/pdf-tools");
   const isPricingActive = pathname === "/pricing";
   const isImageToolsActive = pathname.startsWith("/image-tools");
   const isContactActive = pathname === "/contact-us";
+
+  useEffect(() => {
+    setIsLoggedIn(hasStoredSession());
+  }, []);
 
   return (
     <header className="site-header">
@@ -178,14 +184,11 @@ export function LandingNavbar() {
       <div className="section-inner header-inner">
         <Brand />
         <nav className="main-nav" aria-label="Primary navigation">
-          <Link className={isHomeActive ? "nav-link-active" : undefined} href="/">
-            Home
-          </Link>
           <div className="nav-dropdown nav-services">
             <button className={isServicesActive ? "nav-dropdown-trigger nav-link-active" : "nav-dropdown-trigger"} type="button">
               Automation Tools <ChevronDown size={14} aria-hidden />
             </button>
-            <ProductMegaMenu items={serviceMenu} />
+            <ProductMegaMenu items={serviceMenu} isLoggedIn={isLoggedIn} />
           </div>
           <div className="nav-dropdown nav-pdf-tools">
             <button className={isPdfToolsActive ? "nav-dropdown-trigger nav-link-active" : "nav-dropdown-trigger"} type="button">
@@ -250,14 +253,15 @@ type MegaMenuItem = {
   comingSoon?: boolean;
 };
 
-function ProductMegaMenu({ items }: { items: MegaMenuItem[] }) {
+function ProductMegaMenu({ items, isLoggedIn }: { items: MegaMenuItem[]; isLoggedIn: boolean }) {
   return (
     <div className="nav-mega-menu services-simple-menu" aria-label="Services menu">
       {items.map((item) => {
         const Icon = item.icon;
+        const href = isLoggedIn ? item.href : `/login?next=${encodeURIComponent(item.href)}`;
 
         return (
-          <Link href={item.href} key={item.name}>
+          <Link href={href} key={item.name}>
             <span style={{ "--service-menu-color": item.color } as React.CSSProperties}>
               <Icon size={16} aria-hidden />
             </span>

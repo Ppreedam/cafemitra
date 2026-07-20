@@ -3,6 +3,7 @@
 import Link from "next/link";
 import type React from "react";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import QRCode from "qrcode";
 import {
   BarChart3,
@@ -40,7 +41,7 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
-import { clearSession } from "@/lib/api";
+import { clearSession, hasStoredSession } from "@/lib/api";
 import { fetchPricingServices, formatPriceItem, savePricingService, saveServicePrinter, type PriceItem, type PriceRange } from "@/lib/pricing";
 import {
   deleteAgentPrinterPreset,
@@ -176,6 +177,7 @@ const paymentModes = ["Online Payment", "Cash Counter"];
 const PRINTPILOT_AGENT_DOWNLOAD_URL = "https://drive.google.com/";
 
 export default function AutoPrintPage() {
+  const router = useRouter();
   const [activeStep, setActiveStep] = useState(0);
   const [agentDownloaded, setAgentDownloaded] = useState(false);
   const [agentConnected, setAgentConnected] = useState(false);
@@ -248,6 +250,11 @@ export default function AutoPrintPage() {
   const currentGuide = setupStepGuides[currentStep.key];
 
   useEffect(() => {
+    if (!hasStoredSession()) {
+      router.push(`/login?next=${encodeURIComponent("/auto-print")}`);
+      return;
+    }
+
     const storedUser = readJson<{ id?: string }>("cafemitra_user");
     const storedShop = readJson<{ shopName?: string }>("cafemitra_shop");
     const code = `CM${String(storedUser.id || "0").padStart(4, "0")}`;
@@ -273,7 +280,7 @@ export default function AutoPrintPage() {
       .catch(() => undefined);
 
     verifyAgent({ silent: true });
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     if (currentStep.key !== "qr" || !qrUrl || qrImage) return;

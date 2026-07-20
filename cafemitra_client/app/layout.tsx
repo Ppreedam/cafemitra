@@ -15,7 +15,7 @@ const siteStructuredData = {
         url: "https://repetigo.com/hero-print-queue.png",
       },
       description:
-        "AI-powered print shop and cyber cafe software to automate document printing, passport photos, PDF tools, online forms, customer management, and repetitive daily tasks.",
+        "AI-powered print shop and cyber cafe software to automate document printing, passport photos, PDF tools and repetitive daily tasks.",
     },
     {
       "@type": "WebSite",
@@ -29,12 +29,13 @@ const siteStructuredData = {
     },
   ],
 };
+const shouldLoadAnalytics = process.env.NODE_ENV === "production";
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: "RepetiGo - AI-Powered Print Shop & Cyber Cafe Automation",
   description:
-    "AI-powered print shop and cyber cafe software to automate document printing, passport photos, PDF tools, online forms, customer management, and repetitive daily tasks.",
+    "AI-powered print shop and cyber cafe software to automate document printing, passport photos, PDF tools and repetitive daily tasks.",
   keywords: [
     "print shop software",
     "cyber cafe software",
@@ -57,7 +58,7 @@ export const metadata: Metadata = {
     siteName: "RepetiGo",
     title: "RepetiGo - AI-Powered Print Shop & Cyber Cafe Automation",
     description:
-      "AI-powered print shop and cyber cafe software to automate document printing, passport photos, PDF tools, online forms, customer management, and repetitive daily tasks.",
+      "AI-powered print shop and cyber cafe software to automate document printing, passport photos, PDF tools and repetitive daily tasks.",
   },
 };
 
@@ -69,26 +70,30 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html:
-              "(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-K3BV3MCP');",
-          }}
-        />
+        {shouldLoadAnalytics ? (
+          <script
+            dangerouslySetInnerHTML={{
+              __html:
+                "(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src='https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);})(window,document,'script','dataLayer','GTM-K3BV3MCP');",
+            }}
+          />
+        ) : null}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(siteStructuredData) }}
         />
       </head>
       <body>
-        <noscript>
-          <iframe
-            src="https://www.googletagmanager.com/ns.html?id=GTM-K3BV3MCP"
-            height="0"
-            width="0"
-            style={{ display: "none", visibility: "hidden" }}
-          />
-        </noscript>
+        {shouldLoadAnalytics ? (
+          <noscript>
+            <iframe
+              src="https://www.googletagmanager.com/ns.html?id=GTM-K3BV3MCP"
+              height="0"
+              width="0"
+              style={{ display: "none", visibility: "hidden" }}
+            />
+          </noscript>
+        ) : null}
         {children}
       </body>
     </html>

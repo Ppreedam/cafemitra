@@ -140,7 +140,7 @@ export function AuthPanel({ mode }: AuthPanelProps) {
 
       if (data.token) {
         storeSession(data);
-        router.push("/dashboard");
+        router.push(getPostAuthRedirectPath());
       } else {
         setApiNotice(data.message || "Please check your email to continue.");
       }
@@ -406,6 +406,13 @@ function Field({
       ) : null}
     </label>
   );
+}
+
+function getPostAuthRedirectPath() {
+  if (typeof window === "undefined") return "/dashboard";
+
+  const nextPath = new URLSearchParams(window.location.search).get("next") || "";
+  return nextPath.startsWith("/") && !nextPath.startsWith("//") ? nextPath : "/dashboard";
 }
 
 function AuthIllustration() {

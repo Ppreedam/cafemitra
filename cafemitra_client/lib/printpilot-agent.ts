@@ -51,12 +51,13 @@ export const fallbackPrinters = ["Microsoft Print to PDF", "Fax"];
 export const fallbackPaperSizes = ["A4", "A5", "Letter"];
 export const fallbackColorModes = ["Color", "Grayscale"];
 
-const agentStatusEndpoints = ["http://127.0.0.1:8765/status", "http://localhost:8765/status"];
-const agentSettingsEndpoints = ["http://127.0.0.1:8765/settings", "http://localhost:8765/settings"];
-const agentTestPrintEndpoints = ["http://127.0.0.1:8765/test-print", "http://localhost:8765/test-print"];
-const agentPosterPrintEndpoints = ["http://127.0.0.1:8765/poster-print", "http://localhost:8765/poster-print"];
-const agentPrinterPresetsEndpoints = ["http://127.0.0.1:8765/printer-presets", "http://localhost:8765/printer-presets"];
-const agentDeletePrinterPresetEndpoints = ["http://127.0.0.1:8765/printer-presets/delete", "http://localhost:8765/printer-presets/delete"];
+const agentStatusEndpoints = ["http://127.0.0.1:8765/status"];
+const agentSettingsEndpoints = ["http://127.0.0.1:8765/settings"];
+const agentTestPrintEndpoints = ["http://127.0.0.1:8765/test-print"];
+const agentPosterPrintEndpoints = ["http://127.0.0.1:8765/poster-print"];
+const agentPrinterPresetsEndpoints = ["http://127.0.0.1:8765/printer-presets"];
+const agentDeletePrinterPresetEndpoints = ["http://127.0.0.1:8765/printer-presets/delete"];
+const agentRequestTimeoutMs = 700;
 
 export async function fetchAgentHealth() {
   try {
@@ -121,7 +122,7 @@ async function fetchAgentEndpoint<T>(endpoints: string[], init?: RequestInit) {
     const controller = new AbortController();
     let timeout = 0;
     try {
-      timeout = window.setTimeout(() => controller.abort(), 2000);
+      timeout = window.setTimeout(() => controller.abort(), agentRequestTimeoutMs);
       const response = await fetch(endpoint, {
         ...init,
         cache: "no-store",

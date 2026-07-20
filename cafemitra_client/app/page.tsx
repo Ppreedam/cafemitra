@@ -118,6 +118,7 @@ const comparisonRows = [
 const products = [
   { name: "PrintPilot", desc: "QR upload, AI processing, print queue, auto-delete, full dashboard.", href: "/print-automation", status: "Available" },
   { name: "PDF Tools", desc: "Create, merge, split, compress, and convert - all in one place.", href: "/pdf-tools", status: "Available" },
+  { name: "Website to JPG", desc: "Capture any public webpage as a full-page JPG for portfolios, printing, and OG preview checks.", href: "/image-tools/website-to-image", status: "Available" },
   { name: "OCR", desc: "Extract text from any scanned doc. Hindi plus Indian languages.", href: "#", status: "Available" },
   { name: "Passport Photo Tool", desc: "Government-standard photos generated automatically.", href: "#", status: "Available" },
   { name: "Cloud Printing", desc: "Print from anywhere, to any connected RepetiGo shop.", href: "#", status: "Coming Soon" },
@@ -389,7 +390,7 @@ function InlineCTA() {
         </div>
         <div className="ai-actions">
           <Link className="ai-btn ai-btn-white" href="/register">Start Free Trial <ArrowRight size={17} /></Link>
-          <a className="ai-btn ai-btn-glass" href="#features">View All Features</a>
+          <a className="ai-btn ai-btn-glass" href="/print-automation">View All Features</a>
         </div>
       </div>
     </section>

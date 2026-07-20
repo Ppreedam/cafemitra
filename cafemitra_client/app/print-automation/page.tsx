@@ -157,6 +157,15 @@ const features = [
     link: "Open PDF Tools",
     href: "/pdf-tools",
   },
+  {
+    id: "website-capture",
+    title: "Website to JPG - Capture Webpages for Printing",
+    icon: FileText,
+    text:
+      "When a customer brings a URL instead of a file - a government notice, news article, property listing, court order, or web page proof - RepetiGo can capture the public webpage as a full-page JPG. It is useful for print shops, portfolio screenshots, and OG preview checks before sharing a link on WhatsApp or LinkedIn.",
+    link: "Open Website to JPG",
+    href: "/image-tools/website-to-image",
+  },
 ];
 
 const comparisonRows = [

@@ -1,21 +1,12 @@
 import Link from "next/link";
-import type React from "react";
 import {
   BarChart3,
-  Bell,
-  Bookmark,
-  Building2,
-  ChevronDown,
-  CircleHelp,
   ClipboardList,
   FileText,
   Home,
   IdCard,
   Image,
-  Landmark,
   LayoutGrid,
-  LogOut,
-  Menu,
   MessageCircle,
   Printer,
   Settings,
