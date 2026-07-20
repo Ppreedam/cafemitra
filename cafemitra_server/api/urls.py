@@ -6,6 +6,8 @@ urlpatterns = [
     re_path(r"^check/server/status/?$", views.check_server_status),
     re_path(r"^contact-us/?$", views.contact_message),
     re_path(r"^tools/ai-upscale-image/?$", views.ai_upscale_image),
+    re_path(r"^tools/extract-pdf-text/?$", views.extract_pdf_text),
+    re_path(r"^tools/remove-image-background/?$", views.remove_image_background),
     re_path(r"^tools/website-to-image/?$", views.website_to_image),
     re_path(r"^tools/detect-faces/?$", views.detect_faces),
     re_path(r"^auth/register/?$", views.register_user),

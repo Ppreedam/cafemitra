@@ -129,6 +129,78 @@ def _multipart_body(boundary, image_bytes, filename, content_type, scale, output
 
 
 @csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def extract_pdf_text(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    upload = request.FILES.get("pdf")
+    if not upload:
+        return JsonResponse({"message": "Select a PDF file."}, status=400)
+    if upload.size > 30 * 1024 * 1024:
+        return JsonResponse({"message": "PDF must be 30 MB or smaller."}, status=413)
+    if (upload.content_type or "").lower() not in {"application/pdf", "application/x-pdf", ""} and not upload.name.lower().endswith(".pdf"):
+        return JsonResponse({"message": "Only PDF files are supported."}, status=400)
+
+    try:
+        import fitz
+    except ImportError:
+        return JsonResponse({"message": "PDF text extraction is not available on this server."}, status=503)
+
+    selected_pages = None
+    raw_pages = request.POST.get("pages", "")
+    if raw_pages:
+        try:
+            parsed = json.loads(raw_pages)
+            selected_pages = {int(page) for page in parsed if int(page) > 0}
+        except (TypeError, ValueError, json.JSONDecodeError):
+            return JsonResponse({"message": "Page selection is invalid."}, status=400)
+
+    try:
+        document = fitz.open(stream=upload.read(), filetype="pdf")
+    except Exception:
+        return JsonResponse({"message": "This PDF could not be opened. It may be protected or damaged."}, status=400)
+
+    try:
+        page_texts = []
+        for page_index in range(document.page_count):
+            page_number = page_index + 1
+            if selected_pages and page_number not in selected_pages:
+                continue
+            text = document.load_page(page_index).get_text("text").strip()
+            page_texts.append({"page": page_number, "text": text})
+    finally:
+        document.close()
+
+    combined = "\n\n".join(f"--- Page {item['page']} ---\n{item['text']}" for item in page_texts).strip()
+    return JsonResponse({"text": combined, "pages": page_texts, "pageCount": len(page_texts)})
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def remove_image_background(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    upload = request.FILES.get("image")
+    if not upload:
+        return JsonResponse({"message": "Select an image."}, status=400)
+    if upload.size > 15 * 1024 * 1024:
+        return JsonResponse({"message": "Images must be 15 MB or smaller."}, status=413)
+    content_type = (upload.content_type or "").lower()
+    if content_type not in {"image/jpeg", "image/png", "image/webp"}:
+        return JsonResponse({"message": "Only JPG, PNG, and WebP images are supported."}, status=400)
+
+    image_bytes = upload.read()
+    base_name = re.sub(r"[^A-Za-z0-9._-]+", "-", upload.name.rsplit(".", 1)[0])[:80] or "image"
+    extension = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}.get(content_type, "png")
+    response = HttpResponse(image_bytes, content_type=content_type)
+    response["Content-Disposition"] = f'attachment; filename="{base_name}-background-placeholder.{extension}"'
+    response["Cache-Control"] = "no-store"
+    return response
+
+
+@csrf_exempt
 @require_http_methods(["POST"])
 def website_to_image(request):
     data = parse_body(request)
