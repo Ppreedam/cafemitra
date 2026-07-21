@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { Clock3, Crop, Eye, FileText, IdCard, Image as ImageIcon, Printer, Trash2, Upload, Wallet, X } from "lucide-react";
 import { apiUrl } from "@/lib/api";
-import { calculatePriceItemRate, formatPriceItem, mergePricingDefaults, type PriceItem, type PricingService } from "@/lib/pricing";
+import { calculatePriceItemRate, formatPriceItem, getAllowedPaymentModes, mergePricingDefaults, type PriceItem, type PricingService } from "@/lib/pricing";
 
 type PublicShop = {
   code: string;
@@ -126,7 +126,7 @@ export default function CustomerScanPage() {
         setSelectedService(services[0]?.serviceKey || "auto_document_print");
         const firstItem = getPriceItems(services[0])[0];
         setSelectedItemId(firstItem?.id || "");
-        setPaymentMode(String(services[0]?.settings.paymentMode || "Online Payment"));
+        setPaymentMode(getAllowedPaymentModes(services[0])[0] || "Online Payment");
       })
       .catch((shopError) =>
         setError(shopError instanceof Error ? shopError.message : "Cafe QR not found or temporarily unavailable."),
@@ -134,6 +134,7 @@ export default function CustomerScanPage() {
   }, [params.code]);
 
   const activeService = useMemo(() => data?.services.find((service) => service.serviceKey === selectedService), [data, selectedService]);
+  const allowedPaymentModes = useMemo(() => getAllowedPaymentModes(activeService), [activeService]);
   const priceItems = activeService ? getPriceItems(activeService) : [];
   const selectedItem = priceItems.find((item) => item.id === selectedItemId) || priceItems[0];
   const isPassportPhoto = selectedService === "passport_photo";
@@ -195,6 +196,12 @@ export default function CustomerScanPage() {
   const isRazorpayOrder = isOnlinePaymentOrder && order?.paymentGateway === "razorpay";
   const upiLink = useMemo(() => (order && data ? buildUpiLink(order, data.shop.shopName) : ""), [data, order]);
   const isCafeOpen = data?.status.open !== false;
+
+  useEffect(() => {
+    if (allowedPaymentModes.length && !allowedPaymentModes.includes(paymentMode)) {
+      setPaymentMode(allowedPaymentModes[0]);
+    }
+  }, [allowedPaymentModes, paymentMode]);
 
   useEffect(() => {
     if (!isPassportPhoto || !fileUrl || !hasImageFile) {
@@ -283,7 +290,7 @@ export default function CustomerScanPage() {
 
   function selectService(service: PricingService) {
     setSelectedService(service.serviceKey);
-    setPaymentMode(String(service.settings.paymentMode || "Online Payment"));
+    setPaymentMode(getAllowedPaymentModes(service)[0] || "Online Payment");
     setSelectedItemId(getPriceItems(service)[0]?.id || "");
     setCopies(1);
     setOptionsTouched(false);
@@ -876,14 +883,18 @@ export default function CustomerScanPage() {
             <span>Payment Mode</span>
             <select
               value={paymentMode}
+              disabled={allowedPaymentModes.length <= 1}
               onChange={(event) => {
                 setPaymentMode(event.target.value);
                 setOptionsTouched(true);
                 resetOrderDraft();
               }}
             >
-              <option>Online Payment</option>
-              <option>Cash Counter</option>
+              {allowedPaymentModes.map((mode) => (
+                <option value={mode} key={mode}>
+                  {mode}
+                </option>
+              ))}
             </select>
           </label>
         </article>

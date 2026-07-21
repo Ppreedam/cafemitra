@@ -27,7 +27,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { DashboardShell } from "@/app/DashboardShell";
-import { fetchPricingServices, formatPriceItem, savePricingService, type PriceItem, type PriceRange, type PricingService } from "@/lib/pricing";
+import { fetchPricingServices, formatPriceItem, normalizePaymentMode, savePricingService, type PriceItem, type PriceRange, type PricingService } from "@/lib/pricing";
 
 type NavItem = {
   name: string;
@@ -70,7 +70,10 @@ const navGroups: NavGroup[] = [
   },
 ];
 
-const paymentModes = ["Online Payment", "Cash Counter"];
+const paymentModeOptions = [
+  { value: "Online Payment", label: "Online Payment" },
+  { value: "Both", label: "Online Payment + Cash Counter" },
+];
 
 export default function PricingSettingsPage() {
   const [services, setServices] = useState<PricingService[]>([]);
@@ -303,13 +306,14 @@ export default function PricingSettingsPage() {
                   <div className="service-pricing-form single">
                     <label className="auto-field">
                       <span>Payment Mode</span>
-                      <select value={String(activeService.settings.paymentMode || "Online Payment")} onChange={(event) => updatePaymentMode(activeService.serviceKey, event.target.value)}>
-                        {paymentModes.map((mode) => (
-                          <option value={mode} key={mode}>
-                            {mode}
+                      <select value={normalizePaymentMode(String(activeService.settings.paymentMode || "Online Payment"))} onChange={(event) => updatePaymentMode(activeService.serviceKey, event.target.value)}>
+                        {paymentModeOptions.map((option) => (
+                          <option value={option.value} key={option.value}>
+                            {option.label}
                           </option>
                         ))}
                       </select>
+                      <small className="payment-mode-note">Online Payment is always available to customers. Choose "Both" to also accept Cash Counter.</small>
                     </label>
                   </div>
 

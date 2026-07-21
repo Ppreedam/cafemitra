@@ -41,7 +41,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { clearSession, hasStoredSession } from "@/lib/api";
-import { fetchPricingServices, formatPriceItem, savePricingService, saveServicePrinter, type PriceItem, type PriceRange } from "@/lib/pricing";
+import { fetchPricingServices, formatPriceItem, normalizePaymentMode, savePricingService, saveServicePrinter, type PriceItem, type PriceRange } from "@/lib/pricing";
 import {
   deleteAgentPrinterPreset,
   fallbackColorModes,
@@ -172,7 +172,10 @@ const queue = [
   { file: "Passport-photo.pdf", pages: 1, amount: "Rs. 10", status: "Failed", tone: "#e9546a" },
 ];
 
-const paymentModes = ["Online Payment", "Cash Counter"];
+const paymentModeOptions = [
+  { value: "Online Payment", label: "Online Payment" },
+  { value: "Both", label: "Online Payment + Cash Counter" },
+];
 const PRINTPILOT_AGENT_DOWNLOAD_URL = "https://drive.google.com/";
 
 export default function AutoPrintPage() {
@@ -267,7 +270,7 @@ export default function AutoPrintPage() {
         const autoPrint = services.find((service) => service.serviceKey === "auto_document_print");
         if (!autoPrint) return;
         setPriceItems(Array.isArray(autoPrint.settings.priceItems) ? autoPrint.settings.priceItems : priceItems);
-        setPaymentMode(String(autoPrint.settings.paymentMode ?? "Online Payment"));
+        setPaymentMode(normalizePaymentMode(String(autoPrint.settings.paymentMode ?? "Online Payment")));
         setPricingSaved(Boolean(autoPrint.settings.pricingSaved));
         setIsShopOpen(autoPrint.settings.isOpen !== false);
         const savedPrinter = String(autoPrint.settings.selectedPrinter || "").trim();
@@ -799,20 +802,21 @@ export default function AutoPrintPage() {
                     ))}
                   </div>
                   <div className="payment-mode-list">
-                    {paymentModes.map((mode) => (
+                    {paymentModeOptions.map((option) => (
                       <button
-                        className={paymentMode === mode ? "active" : ""}
-                        key={mode}
+                        className={paymentMode === option.value ? "active" : ""}
+                        key={option.value}
                         type="button"
                         onClick={() => {
-                          setPaymentMode(mode);
+                          setPaymentMode(option.value);
                           setPricingSaved(false);
                         }}
                       >
-                        {mode}
+                        {option.label}
                       </button>
                     ))}
                   </div>
+                  <p className="payment-mode-note">Online Payment is always available to customers. Turn on "Online Payment + Cash Counter" to also let customers pay at your counter.</p>
                   {pricingMessage ? <div className="profile-alert success">{pricingMessage}</div> : null}
                   {pricingError ? <div className="profile-alert error">{pricingError}</div> : null}
                   <button className="btn btn-primary" type="button" onClick={saveAutoPrintPricing} disabled={isSavingPricing}>

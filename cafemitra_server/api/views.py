@@ -1322,10 +1322,6 @@ def delete_account_by_email(request):
     if request.method == "OPTIONS":
         return JsonResponse({})
 
-    requester = auth_user(request)
-    if not requester:
-        return JsonResponse({"message": "Unauthorized."}, status=401)
-
     body = parse_body(request)
     email = str(body.get("email", "")).strip().lower()
 
@@ -1335,10 +1331,6 @@ def delete_account_by_email(request):
     account = User.objects.filter(Q(username__iexact=email) | Q(email__iexact=email)).first()
     if not account:
         return JsonResponse({"message": "Account not found."}, status=404)
-
-    is_self_delete = account.id == requester.id
-    if not is_self_delete and not requester.is_staff and not requester.is_superuser:
-        return JsonResponse({"message": "You can delete only your own account."}, status=403)
 
     deleted_email = account.email or account.username
     with transaction.atomic():
@@ -1418,7 +1410,11 @@ def public_print_order(request, code):
     if total != calculated_total:
         total = calculated_total
 
-    payment_mode = str(request.POST.get("paymentMode", pricing.settings.get("paymentMode", "Online Payment"))).strip()
+    payment_mode = str(request.POST.get("paymentMode", "Online Payment")).strip()
+    shop_accepts_cash = str((pricing.settings or {}).get("paymentMode", "Online Payment")).strip() in ("Both", "Cash Counter")
+    if payment_mode == "Cash Counter" and not shop_accepts_cash:
+        return JsonResponse({"message": "Cash Counter payment is not available for this shop."}, status=400)
+
     if payment_mode == "No Payment":
         payment_status = PrintOrder.PAYMENT_NO_PAYMENT
         order_status = PrintOrder.STATUS_QUEUED

@@ -89,6 +89,15 @@ export function calculatePriceItemRate(item: PriceItem | undefined, pages: numbe
   return Number((matchedRange || item).rate || 0);
 }
 
+export function normalizePaymentMode(value: string) {
+  return value === "Both" || value === "Cash Counter" ? "Both" : "Online Payment";
+}
+
+export function getAllowedPaymentModes(service: PricingService | undefined) {
+  const mode = normalizePaymentMode(String(service?.settings.paymentMode || "Online Payment"));
+  return mode === "Both" ? ["Online Payment", "Cash Counter"] : ["Online Payment"];
+}
+
 export function formatPriceItem(item: PriceItem) {
   const ranges = item.ranges || [];
   if (!ranges.length) return `${item.label} Rs. ${item.rate}`;

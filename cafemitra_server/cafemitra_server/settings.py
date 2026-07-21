@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from urllib.parse import unquote, urlparse
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -67,12 +68,28 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "cafemitra_server.wsgi.application"
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "db.sqlite3",
+DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
+
+if DATABASE_URL:
+    parsed_db_url = urlparse(DATABASE_URL)
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": parsed_db_url.path.lstrip("/"),
+            "USER": unquote(parsed_db_url.username or ""),
+            "PASSWORD": unquote(parsed_db_url.password or ""),
+            "HOST": parsed_db_url.hostname,
+            "PORT": parsed_db_url.port or 5432,
+            "OPTIONS": {"sslmode": "require"},
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": BASE_DIR / "db.sqlite3",
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = []
 
