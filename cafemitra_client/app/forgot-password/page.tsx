@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import type React from "react";
 import { apiUrl } from "@/lib/api";
+import { LandingNavbar } from "../LandingNavbar";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -44,7 +45,9 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="auth-page">
+    <div className="auth-shell">
+      <LandingNavbar />
+      <main className="auth-page">
       <section className="auth-card auth-simple-card" aria-label="Forgot password">
         <div className="auth-form-side">
           <h1>Reset password</h1>
@@ -84,6 +87,7 @@ export default function ForgotPasswordPage() {
           <p className="auth-switch"><Link href="/login">Back to login</Link></p>
         </div>
       </section>
-    </main>
+      </main>
+    </div>
   );
 }

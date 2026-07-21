@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Eye, EyeOff, LockKeyhole } from "lucide-react";
 import { apiUrl } from "@/lib/api";
 import { getPasswordStrengthError, passwordRequirementHint } from "@/lib/password";
+import { LandingNavbar } from "../LandingNavbar";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -66,7 +67,9 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="auth-page">
+    <div className="auth-shell">
+      <LandingNavbar />
+      <main className="auth-page">
       <section className="auth-card auth-simple-card" aria-label="Reset password">
         <div className="auth-form-side">
           <div className="auth-avatar">
@@ -156,6 +159,7 @@ export default function ResetPasswordPage() {
           <p className="auth-switch"><Link href="/login">Back to login</Link></p>
         </div>
       </section>
-    </main>
+      </main>
+    </div>
   );
 }

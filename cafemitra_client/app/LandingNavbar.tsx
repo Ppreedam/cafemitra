@@ -158,7 +158,6 @@ export function LandingNavbar() {
   const isHomeActive = pathname === "/";
   const isServicesActive = pathname === "/print-automation";
   const isPdfToolsActive = pathname.startsWith("/pdf-tools");
-  const isPricingActive = pathname === "/pricing";
   const isImageToolsActive = pathname.startsWith("/image-tools");
   const isContactActive = pathname === "/contact-us";
 
@@ -197,9 +196,6 @@ export function LandingNavbar() {
             <PdfToolsMegaMenu />
           </div>
           {releaseFlags.showLatestJobs ? <Link href="/#workflow">Latest Jobs</Link> : null}
-          <Link className={isPricingActive ? "nav-link-active" : undefined} href="/pricing">
-            Pricing
-          </Link>
           <div className="nav-dropdown nav-image-tools">
             <button className={isImageToolsActive ? "nav-dropdown-trigger nav-link-active" : "nav-dropdown-trigger"} type="button">
               Image Tools <ChevronDown size={14} aria-hidden />
