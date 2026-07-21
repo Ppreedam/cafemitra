@@ -1,0 +1,6 @@
+.meme-stage{overflow:visible}
+.meme-stage canvas{position:absolute!important;inset:0;width:100%!important;height:100%!important}
+.meme-caption-hit{display:grid;min-width:130px;min-height:42px;place-items:center;border:1px dashed rgba(77,140,255,.7);border-radius:5px}
+.meme-caption-hit span{overflow:hidden;max-width:220px;color:rgba(37,99,235,.22);font-size:12px;font-weight:800;text-overflow:ellipsis;white-space:nowrap}
+.meme-caption-hit.selected{border:2px solid #4d8cff;box-shadow:0 0 0 2px rgba(255,255,255,.85);background:rgba(77,140,255,.14)}
+.meme-caption-hit.selected:after{content:"Drag text";position:absolute;top:-22px;left:50%;transform:translateX(-50%);border-radius:4px;padding:2px 6px;color:#fff;background:#4d8cff;font-size:9px;white-space:nowrap}

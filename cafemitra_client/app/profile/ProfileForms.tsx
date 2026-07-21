@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Building2, LockKeyhole, UserRound } from "lucide-react";
+import { Building2, Eye, EyeOff, LockKeyhole, UserRound } from "lucide-react";
 import { apiFetch, hasStoredSession, storeSession } from "@/lib/api";
+import { getPasswordStrengthError, passwordRequirementHint } from "@/lib/password";
 
 type ProfileData = {
   user: {
@@ -193,8 +194,9 @@ export function ProfileForms() {
       return;
     }
 
-    if (passwords.newPassword.length < 8) {
-      setError("New password must be at least 8 characters.");
+    const passwordError = getPasswordStrengthError(passwords.newPassword);
+    if (passwordError) {
+      setError(passwordError);
       return;
     }
 
@@ -251,6 +253,7 @@ export function ProfileForms() {
             <ProfileInput
               label="New Password"
               type="password"
+              placeholder={passwordRequirementHint}
               value={passwords.newPassword}
               onChange={(value) => setPasswords((current) => ({ ...current, newPassword: value }))}
             />
@@ -301,25 +304,45 @@ export function ProfileForms() {
 function ProfileInput({
   label,
   type = "text",
+  placeholder,
   value,
   readOnly,
   onChange,
 }: {
   label: string;
   type?: string;
+  placeholder?: string;
   value: string;
   readOnly?: boolean;
   onChange?: (value: string) => void;
 }) {
+  const isPasswordField = type === "password";
+  const [showPassword, setShowPassword] = useState(false);
+  const inputType = isPasswordField ? (showPassword ? "text" : "password") : type;
+
   return (
     <label className="profile-input">
       <span>{label}</span>
-      <input
-        type={type}
-        value={type === "file" ? undefined : value}
-        readOnly={readOnly}
-        onChange={(event) => onChange?.(event.target.value)}
-      />
+      <span className={isPasswordField ? "profile-input-wrap profile-input-wrap-password" : "profile-input-wrap"}>
+        <input
+          type={inputType}
+          placeholder={placeholder}
+          value={type === "file" ? undefined : value}
+          readOnly={readOnly}
+          onChange={(event) => onChange?.(event.target.value)}
+        />
+        {isPasswordField ? (
+          <button
+            type="button"
+            className="auth-toggle-visibility profile-toggle-visibility"
+            tabIndex={-1}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            onClick={() => setShowPassword((current) => !current)}
+          >
+            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+          </button>
+        ) : null}
+      </span>
     </label>
   );
 }

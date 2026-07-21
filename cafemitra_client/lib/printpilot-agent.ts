@@ -51,15 +51,24 @@ export const fallbackPrinters = ["Microsoft Print to PDF", "Fax"];
 export const fallbackPaperSizes = ["A4", "A5", "Letter"];
 export const fallbackColorModes = ["Color", "Grayscale"];
 
-const agentStatusEndpoints = ["http://127.0.0.1:8765/status", "http://localhost:8765/status"];
-const agentSettingsEndpoints = ["http://127.0.0.1:8765/settings", "http://localhost:8765/settings"];
-const agentTestPrintEndpoints = ["http://127.0.0.1:8765/test-print", "http://localhost:8765/test-print"];
-const agentPosterPrintEndpoints = ["http://127.0.0.1:8765/poster-print", "http://localhost:8765/poster-print"];
-const agentPrinterPresetsEndpoints = ["http://127.0.0.1:8765/printer-presets", "http://localhost:8765/printer-presets"];
-const agentDeletePrinterPresetEndpoints = ["http://127.0.0.1:8765/printer-presets/delete", "http://localhost:8765/printer-presets/delete"];
+const agentStatusEndpoints = ["http://127.0.0.1:8765/status"];
+const agentSettingsEndpoints = ["http://127.0.0.1:8765/settings"];
+const agentTestPrintEndpoints = ["http://127.0.0.1:8765/test-print"];
+const agentPosterPrintEndpoints = ["http://127.0.0.1:8765/poster-print"];
+const agentPrinterPresetsEndpoints = ["http://127.0.0.1:8765/printer-presets"];
+const agentDeletePrinterPresetEndpoints = ["http://127.0.0.1:8765/printer-presets/delete"];
+const agentRequestTimeoutMs = 700;
 
 export async function fetchAgentHealth() {
-  return fetchAgentEndpoint<AgentHealth>(agentStatusEndpoints);
+  try {
+    return await fetchAgentEndpoint<AgentHealth>(agentStatusEndpoints);
+  } catch {
+    return {
+      status: "stopped",
+      printers: fallbackPrinters,
+      lastCheckAt: new Date().toISOString(),
+    } satisfies AgentHealth;
+  }
 }
 
 export async function saveAgentPrinter(printerName: string) {
@@ -110,14 +119,8 @@ async function fetchAgentEndpoint<T>(endpoints: string[], init?: RequestInit) {
   let lastError: unknown;
 
   for (const endpoint of endpoints) {
-    const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 2000);
     try {
-      const response = await fetch(endpoint, {
-        cache: "no-store",
-        ...init,
-        signal: controller.signal,
-      });
+      const response = await withAgentTimeout(fetch(endpoint, { ...init, cache: "no-store" }));
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(getAgentErrorMessage(result, getAgentFallbackMessage(init, endpoint)));
@@ -125,12 +128,26 @@ async function fetchAgentEndpoint<T>(endpoints: string[], init?: RequestInit) {
       return result as T;
     } catch (error) {
       lastError = error;
-    } finally {
-      window.clearTimeout(timeout);
     }
   }
 
   throw lastError instanceof Error ? lastError : new Error("PrintPilot Agent request failed.");
+}
+
+function withAgentTimeout(request: Promise<Response>) {
+  return new Promise<Response>((resolve, reject) => {
+    const timeout = window.setTimeout(() => reject(new Error("PrintPilot Agent request timed out.")), agentRequestTimeoutMs);
+    request.then(
+      (response) => {
+        window.clearTimeout(timeout);
+        resolve(response);
+      },
+      (error) => {
+        window.clearTimeout(timeout);
+        reject(error);
+      },
+    );
+  });
 }
 
 function getAgentFallbackMessage(init: RequestInit | undefined, endpoint: string) {

@@ -4,8 +4,9 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import type React from "react";
 import { useRouter } from "next/navigation";
-import { LockKeyhole } from "lucide-react";
+import { Eye, EyeOff, LockKeyhole } from "lucide-react";
 import { apiUrl } from "@/lib/api";
+import { getPasswordStrengthError, passwordRequirementHint } from "@/lib/password";
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -16,9 +17,12 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState("");
   const [touched, setTouched] = useState({ password: false, confirmPassword: false });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
-  const isValid = password.length >= 8 && password === confirmPassword && Boolean(token) && !isComplete;
-  const passwordError = touched.password && password.length > 0 && password.length < 8 ? "Password must be at least 8 characters." : "";
+  const passwordStrengthError = getPasswordStrengthError(password);
+  const isValid = !passwordStrengthError && password === confirmPassword && Boolean(token) && !isComplete;
+  const passwordError = touched.password && password.length > 0 ? passwordStrengthError : "";
   const confirmError = touched.confirmPassword && confirmPassword.length > 0 && password !== confirmPassword ? "Passwords must match." : "";
 
   useEffect(() => {
@@ -37,7 +41,7 @@ export default function ResetPasswordPage() {
     setMessage("");
     setError("");
     if (!isValid) {
-      setError("Password must be at least 8 characters and match confirmation.");
+      setError(passwordStrengthError || "Passwords must match.");
       return;
     }
 
@@ -73,10 +77,10 @@ export default function ResetPasswordPage() {
           <form className="auth-form" onSubmit={submit} noValidate>
             <label className="auth-field">
               <span>New Password</span>
-              <span className="auth-input-wrap">
+              <span className="auth-input-wrap auth-input-wrap-password">
                 <input
-                  type="password"
-                  placeholder="Minimum 8 characters"
+                  type={showPassword ? "text" : "password"}
+                  placeholder={passwordRequirementHint}
                   value={password}
                   disabled={isComplete}
                   aria-invalid={Boolean(passwordError)}
@@ -87,14 +91,25 @@ export default function ResetPasswordPage() {
                     setMessage("");
                   }}
                 />
+                <span className="auth-input-icons">
+                  <button
+                    type="button"
+                    className="auth-toggle-visibility"
+                    tabIndex={-1}
+                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    onClick={() => setShowPassword((current) => !current)}
+                  >
+                    {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+                  </button>
+                </span>
               </span>
               {passwordError ? <span className="auth-error">{passwordError}</span> : null}
             </label>
             <label className="auth-field">
               <span>Confirm Password</span>
-              <span className="auth-input-wrap">
+              <span className="auth-input-wrap auth-input-wrap-password">
                 <input
-                  type="password"
+                  type={showConfirmPassword ? "text" : "password"}
                   placeholder="Confirm password"
                   value={confirmPassword}
                   disabled={isComplete}
@@ -106,6 +121,17 @@ export default function ResetPasswordPage() {
                     setMessage("");
                   }}
                 />
+                <span className="auth-input-icons">
+                  <button
+                    type="button"
+                    className="auth-toggle-visibility"
+                    tabIndex={-1}
+                    aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                    onClick={() => setShowConfirmPassword((current) => !current)}
+                  >
+                    {showConfirmPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+                  </button>
+                </span>
               </span>
               {confirmError ? <span className="auth-error">{confirmError}</span> : null}
             </label>

@@ -7,40 +7,29 @@ const footerColumns = [
     links: [
       ["PrintPilot", "/print-automation"],
       ["PDF Tools", "/pdf-tools"],
-      ["OCR", "#"],
-      ["Passport Photo", "#"],
-      ["Image Tools", "#"],
+      ["Image Tools", "/image-tools"],
+      ["Background Remover", "/image-tools/background-remover"],
     ],
   },
   {
-    title: "Solutions",
+    title: "Support",
     links: [
-      ["Cyber Cafes", "#"],
-      ["Print Shops", "#"],
-      ["CSC Centres", "#"],
-      ["Schools & Colleges", "#"],
-      ["Businesses", "#"],
-    ],
-  },
-  {
-    title: "Resources",
-    links: [
-      ["Academy", "#"],
-      ["Blog", "#"],
-      ["Help Centre", "/help-support"],
-      ["API Docs", "#"],
-      ["Compare vs WhatsApp", "#"],
+      ["Help & Support", "/help-support"],
+      ["Contact Us", "/contact-us"],
+      ["Pricing", "/pricing"],
     ],
   },
   {
     title: "Company",
     links: [
-      ["About", "/about-us"],
-      ["Pricing", "/pricing"],
-      ["Contact", "/contact-us"],
-      ["Security", "/privacy-policy"],
+      ["About Us", "/about-us"],
+    ],
+  },
+  {
+    title: "Legal",
+    links: [
       ["Privacy Policy", "/privacy-policy"],
-      ["Terms", "/terms-conditions"],
+      ["Terms & Conditions", "/terms-conditions"],
       ["Disclaimer", "/disclaimer"],
     ],
   },
