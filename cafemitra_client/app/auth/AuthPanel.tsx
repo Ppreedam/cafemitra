@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { apiUrl, storeSession } from "@/lib/api";
 import { getPasswordStrengthError, passwordRequirementHint } from "@/lib/password";
+import { LandingNavbar } from "../LandingNavbar";
 
 type AuthPanelProps = {
   mode: "login" | "register";
@@ -187,7 +188,9 @@ export function AuthPanel({ mode }: AuthPanelProps) {
   }
 
   return (
-    <main className="auth-page">
+    <div className="auth-shell">
+      <LandingNavbar />
+      <main className="auth-page">
       <section
         className={`auth-card ${isRegister ? "register-auth" : "login-auth"}`}
         aria-label={isRegister ? "Create account" : "Login"}
@@ -352,7 +355,8 @@ export function AuthPanel({ mode }: AuthPanelProps) {
           <p className="auth-copy">Copyright 2026 RepetiGo. All rights reserved.</p>
         </div>
       </section>
-    </main>
+      </main>
+    </div>
   );
 }
 

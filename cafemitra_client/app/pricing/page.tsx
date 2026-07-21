@@ -12,56 +12,54 @@ import {
 import { LandingNavbar } from "../LandingNavbar";
 import { PublicFooter } from "../PublicFooter";
 
-const coreFeatures = [
-  "Secure QR Upload",
-  "AI Print Automation",
-  "Auto Crop",
-  "Auto Rotation",
-  "Auto Deskew",
-  "AI Image Enhancement",
-  "Print Queue Management",
-  "Shop Dashboard",
-  "Automatic File Deletion",
-  "Cloud Updates",
-  "Standard Support",
-];
-
 const feeExamples = [
-  ["Rs. 20", "Rs. 0.60"],
-  ["Rs. 50", "Rs. 1.50"],
-  ["Rs. 100", "Rs. 3.00"],
-  ["Rs. 200", "Rs. 6.00"],
+  ["Black & White Print", "Rs. 0.50 / page"],
+  ["Color Print", "Rs. 1.00 / page"],
+  ["Passport Size Photo", "Rs. 5.00 / request"],
 ];
 
-const modelSteps = [
-  ["1", "Customer pays your shop", "You set your own document service prices and collect payment through the RepetiGo workflow."],
-  ["2", "RepetiGo charges 3%", "A small platform fee is applied only after the customer transaction succeeds."],
-  ["3", "You keep the rest", "No fixed software bill, no monthly pressure, and no payment when your shop does not earn."],
+const walletSteps = [
+  ["1", "Your 14-day trial starts free", "The moment you sign up, RepetiGo credits Rs. 10 to your wallet for 14 days so you can try PrintPilot on real customer orders, risk free."],
+  ["2", "Recharge when you need more", "Once your 14-day trial ends or your Rs. 10 credit runs out, simply top up your wallet to keep PrintPilot billing your print and photo jobs automatically."],
+  ["3", "Apply for settlement every EOD", "At the end of each day, apply to settle that day's earnings. No waiting for a weekly or monthly payout cycle - your daily income is yours to withdraw the same day."],
 ];
 
-const modelHighlights = [
+const walletHighlights = [
+  ["Free trial", "14 days"],
+  ["Trial wallet credit", "Rs. 10"],
+  ["Settlement cycle", "Every EOD"],
   ["Monthly software fee", "Rs. 0"],
-  ["Setup fee", "Rs. 0"],
-  ["Trial", "30 days free"],
-  ["Platform fee", "3% per successful transaction"],
+];
+
+const freeTools = [
+  "PDF Tools - completely free",
+  "Image Tools - completely free",
+  "Background Remover - free",
+  "Merge, Split & Compress PDF - free",
+  "Meme Generator & Photo Editor - free",
+  "PrintPilot dashboard & queue - free to use",
 ];
 
 const faqs = [
   [
-    "Is there any fixed monthly plan?",
-    "No. RepetiGo is currently keeping pricing simple with one usage-based model: pay only when your shop earns from a successful customer transaction.",
+    "What does \"Pay Only When You Earn\" actually mean?",
+    "It means RepetiGo never charges you a fixed monthly software bill. You only pay a small commission from your wallet when PrintPilot completes a real customer job - a printed page or a passport photo request. If you have no orders, you pay nothing.",
   ],
   [
-    "How does the 3% platform fee work?",
-    "Instead of paying monthly, RepetiGo deducts a 3% platform fee from each successful customer transaction. If a customer pays Rs. 100, the platform fee is Rs. 3 and you receive Rs. 97.",
+    "How much commission does RepetiGo charge per job?",
+    "Every black & white page printed through PrintPilot costs Rs. 0.50, every color page costs Rs. 1.00, and every passport size photo request costs Rs. 5.00. These small amounts are deducted automatically from your wallet - you are always free to charge your own customers whatever counter price you prefer.",
   ],
   [
-    "Do I pay when there are no customer orders?",
-    "No. If your shop has no successful customer transaction through RepetiGo, there is no platform fee for that period.",
+    "What happens after my 14-day trial ends?",
+    "RepetiGo gives every new shop Rs. 10 of free wallet credit that stays valid for 14 days, so you can put PrintPilot to work on real orders before spending anything. Once the 14 days are over or the Rs. 10 credit is used up, just recharge your wallet to keep PrintPilot billing your jobs without any interruption.",
   ],
   [
-    "Are all core features included?",
-    "Yes. The core RepetiGo workflow is included: QR upload, AI print automation, queue management, shop dashboard, automatic file deletion, cloud updates, and standard support.",
+    "How and when do I get my money?",
+    "Your daily earnings are always yours. At the end of each day (EOD) you can apply for settlement, and that day's income is processed for withdrawal - you are never asked to wait for a weekly or monthly cycle to access what you have earned.",
+  ],
+  [
+    "Are the PDF tools and Image tools also charged from my wallet?",
+    "No. PDF Tools, Image Tools, the background remover, meme generator, photo editor, and every everyday utility on RepetiGo are completely free to use. Only automated PrintPilot print jobs and passport photo requests use your wallet balance.",
   ],
 ];
 
@@ -75,14 +73,15 @@ export default function PricingPage() {
           <span className="pricing-kicker">
             <Sparkles size={14} /> Pricing
           </span>
-          <h1>Pricing That Starts Only When Your Shop Earns</h1>
+          <h1>Pay Only When You Earn</h1>
           <p>
-            Start with zero monthly software cost. RepetiGo earns only when your shop earns from a successful customer transaction.
+            No monthly software bill, no hidden charges. Keep a small prepaid wallet, and RepetiGo deducts a tiny
+            commission only when PrintPilot completes a real customer print or photo job for your shop.
           </p>
           <div className="pricing-hero-meta">
-            <span>Rs. 0 monthly fee</span>
-            <span>30-day free trial</span>
-            <span>3% only on successful transactions</span>
+            <span>14-day free trial</span>
+            <span>Rs. 10 trial wallet credit</span>
+            <span>Settlement every EOD</span>
           </div>
         </div>
       </section>
@@ -93,7 +92,7 @@ export default function PricingPage() {
           <h2>Pay Only When You Earn</h2>
         </div>
         <div className="pricing-tabs pricing-single-pill" aria-label="Current pricing model">
-          <span className="active">Usage-Based Pricing</span>
+          <span className="active">Wallet-Based Commission</span>
         </div>
       </section>
 
@@ -106,7 +105,7 @@ export default function PricingPage() {
             </h2>
           </div>
           <div className="pricing-offer-grid">
-            {["30-Day Free Trial", "No Monthly Bill", "Free Setup", "Free Onboarding", "3% Only After Successful Orders"].map((item) => (
+            {["14-Day Free Trial", "Rs. 10 Free Wallet Credit", "No Setup Fee", "Free PDF & Image Tools", "Daily Settlement"].map((item) => (
               <span key={item}>
                 <BadgeCheck size={17} /> {item}
               </span>
@@ -117,41 +116,35 @@ export default function PricingPage() {
 
       <section className="pricing-container pricing-earn-grid">
         <article className="pricing-usage-card">
-          <span className="pricing-section-label">Usage-Based Pricing</span>
+          <span className="pricing-section-label">How PrintPilot Billing Works</span>
           <h2>Pay Only When You Earn</h2>
           <p>
-            Perfect for cyber cafes and print shops that want powerful automation without a fixed monthly commitment.
-            You start with RepetiGo, process customer orders, and pay only after money comes into your shop.
+            When a customer's job runs through PrintPilot, RepetiGo deducts a small, fixed commission straight from
+            your shop wallet - nothing more. You are always free to set and collect your own counter price from the
+            customer; the amount below is only what RepetiGo keeps for automating the job.
           </p>
 
           <div className="pricing-fee-panel">
             <CreditCard size={24} />
             <div>
-              <strong>3% Platform Fee</strong>
-              <span>charged only on every successful customer transaction.</span>
+              <strong>Simple Per-Page Commission</strong>
+              <span>deducted automatically from your wallet for every completed job.</span>
             </div>
           </div>
 
           <div className="pricing-example-table">
             <div className="pricing-example-head">
-              <span>Customer Pays</span>
-              <span>RepetiGo Fee</span>
+              <span>Service</span>
+              <span>RepetiGo Commission</span>
             </div>
-            {feeExamples.map(([pay, fee]) => (
-              <div className="pricing-example-row" key={pay}>
-                <span>{pay}</span>
+            {feeExamples.map(([label, fee]) => (
+              <div className="pricing-example-row" key={label}>
+                <span>{label}</span>
                 <strong>{fee}</strong>
               </div>
             ))}
           </div>
-          <p className="pricing-small-note">You keep the remaining amount.</p>
-
-          <div className="pricing-best-for">
-            <strong>Best For</strong>
-            <span>New Cyber Cafes</span>
-            <span>Low-volume Shops</span>
-            <span>Businesses that want zero monthly commitment</span>
-          </div>
+          <p className="pricing-small-note">You keep everything you charge your customer beyond this small commission.</p>
 
           <Link className="pricing-primary-link" href="/register">
             Start Free Trial <Zap size={17} />
@@ -159,15 +152,15 @@ export default function PricingPage() {
         </article>
 
         <aside className="pricing-model-card">
-          <span className="pricing-section-label">How it works</span>
-          <h2>No monthly bill. No inactive-shop penalty.</h2>
+          <span className="pricing-section-label">Wallet & Settlement</span>
+          <h2>Prepaid wallet. Same-day settlement.</h2>
           <p>
-            RepetiGo grows with your transaction volume. If you process more jobs, the platform earns a small share.
-            If business is quiet, your fixed software cost stays at zero.
+            Add credits to your wallet in advance, and RepetiGo draws from it as PrintPilot completes jobs. When it's
+            time to get paid, you don't wait - apply for settlement of your day's earnings every single EOD.
           </p>
 
           <div className="pricing-model-highlights">
-            {modelHighlights.map(([label, value]) => (
+            {walletHighlights.map(([label, value]) => (
               <span key={label}>
                 <small>{label}</small>
                 <strong>{value}</strong>
@@ -176,7 +169,7 @@ export default function PricingPage() {
           </div>
 
           <div className="pricing-step-list">
-            {modelSteps.map(([step, title, text]) => (
+            {walletSteps.map(([step, title, text]) => (
               <div className="pricing-step" key={step}>
                 <span>{step}</span>
                 <div>
@@ -191,11 +184,11 @@ export default function PricingPage() {
 
       <section className="pricing-included pricing-container">
         <div className="pricing-heading">
-          <span className="pricing-section-label">Included from day one</span>
-          <h2>One model includes the core RepetiGo workflow</h2>
+          <span className="pricing-section-label">Always free</span>
+          <h2>Everyday tools stay free - your wallet is only for PrintPilot jobs</h2>
         </div>
         <div className="pricing-included-grid">
-          {coreFeatures.map((feature) => (
+          {freeTools.map((feature) => (
             <span key={feature}>
               <Check size={16} /> {feature}
             </span>
@@ -222,12 +215,12 @@ export default function PricingPage() {
       <section className="pricing-why">
         <div className="pricing-container">
           <span className="pricing-section-label">Why this model is stronger</span>
-          <h2>Simple, fair pricing for shops that want to grow without fixed software pressure.</h2>
+          <h2>Simple, fair pricing built around a shop that wants to grow without fixed software pressure.</h2>
           <div className="pricing-why-grid">
             {[
-              "New shops can start with zero fixed cost and only pay when they earn.",
-              "Seasonal or low-volume shops are not punished during quiet days.",
-              "Every successful order contributes a small platform fee that keeps RepetiGo improving.",
+              "You always know exactly what a job costs you - Rs. 0.50 a black & white page, Rs. 1 a color page, Rs. 5 a passport photo request.",
+              "Your 14-day trial and Rs. 10 wallet credit let you try PrintPilot on real orders before you ever recharge.",
+              "Every day's earnings settle at EOD, so cash keeps moving into your hands instead of sitting in a monthly queue.",
             ].map((item) => (
               <div key={item}>
                 <ShieldCheck size={20} />
