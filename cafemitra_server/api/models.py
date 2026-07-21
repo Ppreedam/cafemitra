@@ -198,3 +198,30 @@ class WithdrawalRequest(models.Model):
 
     def __str__(self) -> str:
         return f"Withdrawal {self.amount} for {self.user_id}"
+
+
+class PassportPhotoJob(models.Model):
+    STATUS_PENDING = "pending"
+    STATUS_CLAIMED = "claimed"
+    STATUS_DONE = "done"
+    STATUS_FAILED = "failed"
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="passport_photo_jobs", db_column="userid")
+    username = models.CharField(max_length=255, blank=True)
+    self_agent = models.BooleanField(default=True, db_column="selfagent")
+    img_path = models.ImageField(upload_to="passportsizephoto/%Y/%m/%d/", db_column="imgpath")
+    prompt = models.CharField(max_length=255, blank=True)
+    final_img_path = models.CharField(max_length=255, blank=True, db_column="finalimgpath")
+    is_printed = models.BooleanField(default=False)
+    status = models.CharField(max_length=20, default=STATUS_PENDING)
+    error_message = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_column="createdAt")
+    updated_at = models.DateTimeField(auto_now=True, db_column="updatedAt")
+
+    class Meta:
+        db_table = "api_passportphoto_job"
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["user", "created_at"])]
+
+    def __str__(self) -> str:
+        return f"Passport photo job #{self.id} for {self.user_id}"
