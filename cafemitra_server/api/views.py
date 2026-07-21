@@ -1,3 +1,5 @@
+import base64
+import binascii
 import json
 import base64
 import hashlib
@@ -9,8 +11,10 @@ import socket
 import urllib.error
 import urllib.parse
 import urllib.request
+import uuid
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
+from pathlib import Path
 
 from django.contrib.auth import authenticate, get_user_model
 from django.conf import settings
@@ -1776,3 +1780,202 @@ def public_shop_by_code(request, code):
             "status": {"verified": True, "open": is_open},
         }
     )
+
+
+PASSPORT_PHOTO_CHECK_MAX_RETRIES = 5
+PASSPORT_PHOTO_CHECK_RETRY_DELAY_SECONDS = 5
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def save_raw_passport_photo(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    photo = request.FILES.get("photo")
+    if not photo:
+        return JsonResponse({"message": "Upload a photo to continue."}, status=400)
+
+    prompt = str(request.POST.get("prompt", "")).strip()
+    if not prompt:
+        return JsonResponse({"message": "A prompt is required."}, status=400)
+
+    job = PassportPhotoJob.objects.create(
+        user=user,
+        username=user.get_username(),
+        self_agent=True,
+        img_path=photo,
+        prompt=prompt,
+        status=PassportPhotoJob.STATUS_PENDING,
+    )
+    return JsonResponse({"id": job.id})
+
+
+def public_passport_job(job):
+    return {
+        "id": job.id,
+        "prompt": job.prompt,
+        "status": job.status,
+        "finalImageUrl": (settings.MEDIA_URL + job.final_img_path) if job.final_img_path else "",
+        "errorMessage": job.error_message,
+        "createdAt": job.created_at.isoformat(),
+        "originalImageUrl": job.img_path.url if job.img_path else "",
+    }
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def check_passport_photo(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    body = parse_body(request)
+    job = PassportPhotoJob.objects.filter(id=body.get("id"), user=user).first()
+    if not job:
+        return JsonResponse({"message": "Photo request not found."}, status=404)
+
+    for attempt in range(PASSPORT_PHOTO_CHECK_MAX_RETRIES):
+        job.refresh_from_db()
+        if job.final_img_path:
+            return JsonResponse({"found": True, "imageUrl": settings.MEDIA_URL + job.final_img_path})
+
+        if job.status == PassportPhotoJob.STATUS_FAILED:
+            return JsonResponse({"found": False, "message": job.error_message or "Photo generation failed."}, status=200)
+
+        if attempt < PASSPORT_PHOTO_CHECK_MAX_RETRIES - 1:
+            time.sleep(PASSPORT_PHOTO_CHECK_RETRY_DELAY_SECONDS)
+
+    return JsonResponse({"found": False, "message": "Image is not ready yet. Please try again later."}, status=404)
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def agent_passport_jobs(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    jobs = PassportPhotoJob.objects.filter(user=user, status=PassportPhotoJob.STATUS_PENDING).order_by("created_at")[:20]
+    return JsonResponse({"jobs": [public_passport_job(job) for job in jobs]})
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def claim_passport_job(request, job_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    with transaction.atomic():
+        job = PassportPhotoJob.objects.select_for_update().filter(id=job_id, user=user).first()
+        if not job:
+            return JsonResponse({"message": "Photo job not found."}, status=404)
+        if job.status != PassportPhotoJob.STATUS_PENDING:
+            return JsonResponse({"message": "Job already claimed."}, status=409)
+
+        job.status = PassportPhotoJob.STATUS_CLAIMED
+        job.save(update_fields=["status", "updated_at"])
+
+    return JsonResponse(public_passport_job(job))
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def complete_passport_job(request, job_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    job = PassportPhotoJob.objects.filter(id=job_id, user=user).first()
+    if not job:
+        return JsonResponse({"message": "Photo job not found."}, status=404)
+
+    if str(request.POST.get("status", "")).strip() == PassportPhotoJob.STATUS_FAILED:
+        job.status = PassportPhotoJob.STATUS_FAILED
+        job.error_message = str(request.POST.get("message", "")).strip()
+        job.save(update_fields=["status", "error_message", "updated_at"])
+        return JsonResponse(public_passport_job(job))
+
+    final_image = request.FILES.get("final_image")
+    if not final_image:
+        return JsonResponse({"message": "final_image file is required."}, status=400)
+
+    relative_dir = f"passportsizephoto/final/{timezone.now():%Y/%m/%d}"
+    absolute_dir = Path(settings.MEDIA_ROOT) / relative_dir
+    absolute_dir.mkdir(parents=True, exist_ok=True)
+    extension = Path(final_image.name).suffix or ".png"
+    filename = f"{job.id}_{uuid.uuid4().hex[:8]}{extension}"
+    relative_path = f"{relative_dir}/{filename}"
+    with open(absolute_dir / filename, "wb") as destination:
+        for chunk in final_image.chunks():
+            destination.write(chunk)
+
+    job.final_img_path = relative_path
+    job.status = PassportPhotoJob.STATUS_DONE
+    job.save(update_fields=["final_img_path", "status", "updated_at"])
+    return JsonResponse(public_passport_job(job))
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def send_ai_photo(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    body = parse_body(request)
+    job = PassportPhotoJob.objects.filter(id=body.get("id"), user=user).first()
+    if not job:
+        return JsonResponse({"message": "Photo request not found."}, status=404)
+
+    raw_base64 = str(body.get("base64image", "")).strip()
+    if not raw_base64:
+        return JsonResponse({"message": "base64image is required."}, status=400)
+
+    content_type = "image/jpeg"
+    if raw_base64.startswith("data:"):
+        header, _, raw_base64 = raw_base64.partition(",")
+        content_type = header[len("data:"):].split(";")[0] or content_type
+
+    try:
+        image_bytes = base64.b64decode(raw_base64, validate=True)
+    except (binascii.Error, ValueError):
+        return JsonResponse({"message": "Invalid base64 image data."}, status=400)
+
+    extension = mimetypes.guess_extension(content_type) or ".jpg"
+    if extension == ".jpe":
+        extension = ".jpg"
+
+    relative_dir = f"passportsizephoto/{timezone.now():%Y/%m/%d}"
+    absolute_dir = Path(settings.MEDIA_ROOT) / relative_dir
+    absolute_dir.mkdir(parents=True, exist_ok=True)
+
+    filename = f"{job.id}_{uuid.uuid4().hex[:8]}{extension}"
+    relative_path = f"{relative_dir}/{filename}"
+    (absolute_dir / filename).write_bytes(image_bytes)
+
+    job.final_img_path = relative_path
+    job.status = PassportPhotoJob.STATUS_DONE
+    job.save(update_fields=["final_img_path", "status", "updated_at"])
+
+    return JsonResponse({"id": job.id, "finalImagePath": relative_path, "imageUrl": settings.MEDIA_URL + relative_path})

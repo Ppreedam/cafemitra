@@ -1,58 +1,90 @@
 "use client";
 
+import type React from "react";
 import { useEffect, useRef, useState } from "react";
-import { CheckCircle2, IdCard, Printer, Upload, X } from "lucide-react";
+import { IdCard, Upload, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
 import { SkeletonBlock } from "../UiState";
 import { apiFetch, apiUrl } from "@/lib/api";
 
 type Gender = "male" | "female";
 
-type JobStatus = "idle" | "uploading" | "processing" | "done" | "failed";
+type JobState = "idle" | "submitting" | "processing" | "done" | "not_found" | "failed";
 
-type PassportJob = {
-  id: number;
-  status: "pending" | "processing" | "done" | "failed";
-  finalImageUrl?: string;
-  errorMessage?: string;
-};
+const MEN_ATTIRES = [
+  "White dress shirt",
+  "White shirt with navy blazer",
+  "White shirt with black blazer",
+  "Navy business suit",
+  "Charcoal grey suit",
+  "Black business suit",
+  "Formal business attire",
+  "Corporate office wear",
+  "Professional executive suit",
+];
 
-type PrintOrderSummary = {
-  orderNumber: string;
-  tokenId: string;
-};
+const WOMEN_ATTIRES = [
+  "White blouse with black blazer",
+  "White blouse with navy blazer",
+  "Navy business suit",
+  "Black business suit",
+  "Charcoal business suit",
+  "Formal corporate attire",
+  "Professional office wear",
+  "Executive business attire",
+];
 
-const POLL_INTERVAL_MS = 10_000;
+const CHECK_INTERVAL_MS = 5_000;
+const MAX_CHECK_ATTEMPTS = 7;
+
+function buildPrompt(gender: Gender, attire: string) {
+  const genderWord = gender === "male" ? "male" : "female";
+  return `Generate a professional ${genderWord} passport photo. Requirements: Plain white or very light gray background, face centered and looking straight at camera with neutral expression, both ears visible, proper even lighting with no shadows on face, shoulders and upper chest visible, wearing ${attire.toLowerCase()}, high resolution output. Aspect ratio 4:5. The photo must meet official government passport photo standards.`;
+}
 
 export default function PassportPhotoPage() {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [gender, setGender] = useState<Gender>("male");
-  const [jobId, setJobId] = useState<number | null>(null);
-  const [jobStatus, setJobStatus] = useState<JobStatus>("idle");
+  const [attire, setAttire] = useState(MEN_ATTIRES[0]);
+  const [jobState, setJobState] = useState<JobState>("idle");
   const [finalImageUrl, setFinalImageUrl] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isPrinting, setIsPrinting] = useState(false);
-  const [printOrder, setPrintOrder] = useState<PrintOrderSummary | null>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const dropRef = useRef<HTMLLabelElement | null>(null);
+  const attemptsRef = useRef(0);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    function handlePaste(event: ClipboardEvent) {
+      const items = event.clipboardData?.items;
+      if (!items) return;
+      for (let i = 0; i < items.length; i += 1) {
+        const item = items[i];
+        if (item.kind === "file" && item.type.startsWith("image/")) {
+          const pasted = item.getAsFile();
+          if (pasted) handleFileChange(pasted);
+          break;
+        }
+      }
+    }
+    window.addEventListener("paste", handlePaste);
     return () => {
+      window.removeEventListener("paste", handlePaste);
       if (previewUrl) URL.revokeObjectURL(previewUrl);
-      stopPolling();
+      stopChecking();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  function stopPolling() {
-    if (pollRef.current) {
-      clearInterval(pollRef.current);
-      pollRef.current = null;
+  function stopChecking() {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
     }
   }
 
-  function handleFileChange(selected?: File) {
+  function handleFileChange(selected?: File | null) {
     if (!selected) return;
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setFile(selected);
@@ -61,12 +93,11 @@ export default function PassportPhotoPage() {
   }
 
   function resetJob() {
-    stopPolling();
-    setJobId(null);
-    setJobStatus("idle");
+    stopChecking();
+    attemptsRef.current = 0;
+    setJobState("idle");
     setFinalImageUrl("");
     setError("");
-    setPrintOrder(null);
   }
 
   function clearUpload() {
@@ -76,74 +107,87 @@ export default function PassportPhotoPage() {
     resetJob();
   }
 
+  function handleDrop(event: React.DragEvent<HTMLLabelElement>) {
+    event.preventDefault();
+    const dropped = event.dataTransfer.files?.[0];
+    if (dropped) handleFileChange(dropped);
+  }
+
+  function selectGender(nextGender: Gender) {
+    setGender(nextGender);
+    const defaultAttire = nextGender === "male" ? MEN_ATTIRES[0] : WOMEN_ATTIRES[0];
+    setAttire(defaultAttire);
+    resetJob();
+  }
+
+  function selectAttire(nextAttire: string) {
+    setAttire(nextAttire);
+    resetJob();
+  }
+
   async function generatePreview() {
     if (!file) return;
 
     setIsSubmitting(true);
+    setJobState("submitting");
     setError("");
     try {
+      const prompt = buildPrompt(gender, attire);
       const formData = new FormData();
-      formData.append("image", file);
-      formData.append("gender", gender);
+      formData.append("photo", file);
+      formData.append("prompt", prompt);
 
-      const response = await apiFetch("/api/passport-photos/", { method: "POST", body: formData });
+      const response = await apiFetch("/api/save-raw-passport-photo/", { method: "POST", body: formData });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.message || "Could not start the photo request.");
 
-      setJobId(result.id);
-      setJobStatus("processing");
-      startPolling(result.id);
+      setJobState("processing");
+      attemptsRef.current = 0;
+      timeoutRef.current = setTimeout(() => checkStatus(result.id), CHECK_INTERVAL_MS);
     } catch (submitError) {
+      setJobState("failed");
       setError(submitError instanceof Error ? submitError.message : "Could not start the photo request.");
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  function startPolling(id: number) {
-    stopPolling();
-    pollRef.current = setInterval(() => checkStatus(id), POLL_INTERVAL_MS);
-  }
-
   async function checkStatus(id: number) {
+    attemptsRef.current += 1;
     try {
-      const response = await apiFetch(`/api/passport-photos/${id}/status/`);
-      const result: PassportJob = await response.json().catch(() => ({}) as PassportJob);
-      if (!response.ok) return;
+      const response = await apiFetch("/api/api-passport-photo-check/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+      const result = await response.json().catch(() => ({}));
 
-      if (result.status === "done" && result.finalImageUrl) {
-        stopPolling();
-        setJobStatus("done");
-        setFinalImageUrl(result.finalImageUrl);
+      if (response.ok && result.found && result.imageUrl) {
+        stopChecking();
+        setJobState("done");
+        setFinalImageUrl(result.imageUrl);
         return;
       }
 
-      if (result.status === "failed") {
-        stopPolling();
-        setJobStatus("failed");
-        setError(result.errorMessage || "Photo generation failed. Please try again.");
+      if (attemptsRef.current >= MAX_CHECK_ATTEMPTS) {
+        setJobState("not_found");
+        setError("We could not find your processed image yet. Please try again.");
+        return;
       }
+
+      timeoutRef.current = setTimeout(() => checkStatus(id), CHECK_INTERVAL_MS);
     } catch {
-      // Keep polling; a transient network error should not stop the flow.
+      if (attemptsRef.current >= MAX_CHECK_ATTEMPTS) {
+        setJobState("not_found");
+        setError("We could not find your processed image yet. Please try again.");
+        return;
+      }
+      timeoutRef.current = setTimeout(() => checkStatus(id), CHECK_INTERVAL_MS);
     }
   }
 
-  async function sendToPrint() {
-    if (!jobId) return;
-
-    setIsPrinting(true);
-    setError("");
-    try {
-      const response = await apiFetch(`/api/passport-photos/${jobId}/print/`, { method: "POST" });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.message || "Could not send the photo to print.");
-      setPrintOrder(result.order);
-    } catch (printError) {
-      setError(printError instanceof Error ? printError.message : "Could not send the photo to print.");
-    } finally {
-      setIsPrinting(false);
-    }
-  }
+  const attireOptions = gender === "male" ? MEN_ATTIRES : WOMEN_ATTIRES;
+  const isBusy = jobState === "submitting" || jobState === "processing";
 
   return (
     <DashboardShell activePath="/passport-photo">
@@ -152,7 +196,7 @@ export default function PassportPhotoPage() {
           <div>
             <span className="auto-print-kicker">PrintPilot Passport Photo Maker</span>
             <h1>Passport Size Photo Maker</h1>
-            <p>Upload a photo, pick male or female, and get an AI-touched-up passport photo ready for a 6-up A4 print sheet.</p>
+            <p>Upload a photo, choose a professional attire, and get an AI-generated passport photo that meets official standards.</p>
           </div>
           <span className="status-pill">AI Powered</span>
         </div>
@@ -171,61 +215,60 @@ export default function PassportPhotoPage() {
                 </div>
                 <div>
                   <strong>{file.name}</strong>
-                  <div className="passport-gender-control">
-                    <span>Gender</span>
-                    <div className="print-type-options">
-                      <label className={gender === "male" ? "active" : ""}>
-                        <input
-                          checked={gender === "male"}
-                          name="passport-gender"
-                          type="radio"
-                          value="male"
-                          onChange={() => {
-                            setGender("male");
-                            resetJob();
-                          }}
-                        />
-                        <span>
-                          <strong>Male</strong>
-                        </span>
-                      </label>
-                      <label className={gender === "female" ? "active" : ""}>
-                        <input
-                          checked={gender === "female"}
-                          name="passport-gender"
-                          type="radio"
-                          value="female"
-                          onChange={() => {
-                            setGender("female");
-                            resetJob();
-                          }}
-                        />
-                        <span>
-                          <strong>Female</strong>
-                        </span>
-                      </label>
-                    </div>
-                  </div>
                   <div className="document-actions">
-                    <button type="button" onClick={clearUpload} disabled={jobStatus === "processing"}>
+                    <button type="button" onClick={clearUpload} disabled={isBusy}>
                       <X size={16} /> Remove
                     </button>
                   </div>
                 </div>
               </div>
             ) : (
-              <label className="customer-upload">
+              <label
+                className="customer-upload"
+                ref={dropRef}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={handleDrop}
+              >
                 <Upload size={24} />
                 <strong>Upload Passport Photo</strong>
-                <span>Upload a JPG, PNG, or JPEG image. We will pick the pose and background for a passport-ready result.</span>
+                <span>Drag &amp; drop, paste from clipboard, or choose a JPG/PNG file.</span>
                 <em>Tap to choose a file</em>
                 <input accept=".jpg,.jpeg,.png" type="file" onChange={(event) => handleFileChange(event.target.files?.[0])} />
               </label>
             )}
 
-            {jobStatus === "idle" && file ? (
+            {file ? (
+              <div className="attire-picker">
+                <div className="attire-gender-tabs">
+                  <button type="button" className={gender === "male" ? "active" : ""} onClick={() => selectGender("male")} disabled={isBusy}>
+                    Men
+                  </button>
+                  <button type="button" className={gender === "female" ? "active" : ""} onClick={() => selectGender("female")} disabled={isBusy}>
+                    Women
+                  </button>
+                </div>
+
+                <div className="attire-options-grid">
+                  {attireOptions.map((option) => (
+                    <label key={option} className={`attire-option ${attire === option ? "active" : ""}`}>
+                      <input
+                        type="radio"
+                        name="passport-attire"
+                        value={option}
+                        checked={attire === option}
+                        onChange={() => selectAttire(option)}
+                        disabled={isBusy}
+                      />
+                      <span>{option}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
+            {jobState === "idle" && file ? (
               <button className="passport-preview-button" type="button" onClick={generatePreview} disabled={isSubmitting}>
-                <IdCard size={18} /> {isSubmitting ? "Starting..." : "Show Preview"}
+                <IdCard size={18} /> {isSubmitting ? "Starting..." : "Preview"}
               </button>
             ) : null}
 
@@ -238,41 +281,24 @@ export default function PassportPhotoPage() {
               <h2>Preview</h2>
             </div>
 
-            {jobStatus === "processing" ? (
+            {isBusy ? (
               <div className="passport-processing-state">
                 <SkeletonBlock lines={4} />
-                <p>Processing your photo. This can take a minute — we will keep checking automatically.</p>
+                <p>We are processing the AI image as per your requirement. Please wait...</p>
               </div>
             ) : null}
 
-            {jobStatus === "done" && finalImageUrl ? (
+            {jobState === "done" && finalImageUrl ? (
               <div className="passport-final-preview">
                 <img src={apiUrl(finalImageUrl)} alt="Final passport photo" />
-                {printOrder ? (
-                  <div className="order-created-box">
-                    <small>Sent to Print Queue</small>
-                    <strong>{printOrder.orderNumber}</strong>
-                    <div className="customer-token-card">
-                      <div className="customer-token-head">
-                        <small>Your Token ID</small>
-                      </div>
-                      <strong>{printOrder.tokenId}</strong>
-                    </div>
-                    <span>
-                      <CheckCircle2 size={15} /> 6 copies queued on an A4 sheet for print.
-                    </span>
-                  </div>
-                ) : (
-                  <button className="passport-preview-button" type="button" onClick={sendToPrint} disabled={isPrinting}>
-                    <Printer size={18} /> {isPrinting ? "Sending..." : "Print (6 on A4)"}
-                  </button>
-                )}
               </div>
             ) : null}
 
-            {jobStatus === "idle" || jobStatus === "failed" ? (
+            {jobState === "idle" || jobState === "not_found" || jobState === "failed" ? (
               <p className="customer-inline-help">
-                {jobStatus === "failed" ? "Something went wrong. Upload the photo again to retry." : "Upload a photo and tap Show Preview to begin."}
+                {jobState === "idle"
+                  ? "Upload a photo, choose an attire, and tap Preview to begin."
+                  : "Something went wrong. Upload the photo again to retry."}
               </p>
             ) : null}
           </article>
