@@ -7,6 +7,8 @@ import type React from "react";
 import {
   BadgeCheck,
   Check,
+  Eye,
+  EyeOff,
   FileText,
   LockKeyhole,
   Printer,
@@ -14,6 +16,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { apiUrl, storeSession } from "@/lib/api";
+import { getPasswordStrengthError, passwordRequirementHint } from "@/lib/password";
 
 type AuthPanelProps = {
   mode: "login" | "register";
@@ -59,11 +62,12 @@ export function AuthPanel({ mode }: AuthPanelProps) {
       nextErrors.email = "Enter a valid email address.";
     }
 
-    if (values.password.length < 8) {
-      nextErrors.password = "Password must be at least 8 characters.";
-    }
-
     if (isRegister) {
+      const passwordError = getPasswordStrengthError(values.password);
+      if (passwordError) {
+        nextErrors.password = passwordError;
+      }
+
       if (values.fullName.trim().length < 2) {
         nextErrors.fullName = "Enter your full name.";
       }
@@ -79,6 +83,8 @@ export function AuthPanel({ mode }: AuthPanelProps) {
       if (!values.terms) {
         nextErrors.terms = "Accept terms and conditions to continue.";
       }
+    } else if (!values.password) {
+      nextErrors.password = "Enter your password.";
     }
 
     return nextErrors;
@@ -259,7 +265,7 @@ export function AuthPanel({ mode }: AuthPanelProps) {
                   label="Password"
                   name="new-password"
                   type="password"
-                  placeholder="Minimum 8 characters"
+                  placeholder={passwordRequirementHint}
                   value={values.password}
                   error={touched.password ? errors.password : undefined}
                   verified={Boolean(values.password) && !errors.password}
@@ -378,15 +384,18 @@ function Field({
   onChange: (value: string) => void;
 }) {
   const fieldId = `repetigo-${name}`;
+  const isPasswordField = type === "password";
+  const [showPassword, setShowPassword] = useState(false);
+  const inputType = isPasswordField ? (showPassword ? "text" : "password") : type;
 
   return (
     <label className="auth-field" htmlFor={fieldId}>
       <span>{label}</span>
-      <span className="auth-input-wrap">
+      <span className={isPasswordField ? "auth-input-wrap auth-input-wrap-password" : "auth-input-wrap"}>
         <input
           id={fieldId}
           name={fieldId}
-          type={type}
+          type={inputType}
           placeholder={placeholder}
           value={value}
           autoComplete={autoComplete}
@@ -397,7 +406,20 @@ function Field({
           onBlur={onBlur}
           onChange={(event) => onChange(event.target.value)}
         />
-        {verified ? <Check className="field-check" size={24} /> : null}
+        <span className="auth-input-icons">
+          {verified ? <Check className="field-check" size={20} /> : null}
+          {isPasswordField ? (
+            <button
+              type="button"
+              className="auth-toggle-visibility"
+              tabIndex={-1}
+              aria-label={showPassword ? "Hide password" : "Show password"}
+              onClick={() => setShowPassword((current) => !current)}
+            >
+              {showPassword ? <EyeOff size={19} /> : <Eye size={19} />}
+            </button>
+          ) : null}
+        </span>
       </span>
       {error ? (
         <span className="auth-error" id={`${fieldId}-error`}>

@@ -3004,6 +3004,27 @@ img.profile-photo {
   background: #f7f8fc;
 }
 
+.profile-input-wrap {
+  position: relative;
+  display: block;
+}
+
+.profile-input-wrap-password input {
+  padding-right: 42px;
+}
+
+.profile-toggle-visibility {
+  position: absolute;
+  right: 10px;
+  top: 0;
+  bottom: 0;
+  color: #8891ab;
+}
+
+.profile-toggle-visibility:hover {
+  color: #18214d;
+}
+
 .profile-brand-control {
   display: grid;
   grid-template-columns: 112px 1fr;
@@ -7117,12 +7138,47 @@ img.profile-photo {
   transition: background-color 9999s ease-in-out 0s;
 }
 
-.field-check {
+.auth-input-wrap-password input {
+  padding-right: 78px;
+}
+
+.auth-input-icons {
   position: absolute;
-  right: 16px;
-  top: 15px;
+  right: 14px;
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.field-check {
+  position: static;
   color: var(--auth-success);
   pointer-events: none;
+}
+
+.auth-toggle-visibility {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  padding: 4px;
+  margin: 0;
+  background: none;
+  color: var(--auth-muted);
+  cursor: pointer;
+  line-height: 0;
+  border-radius: 6px;
+}
+
+.auth-toggle-visibility:hover {
+  color: var(--auth-navy);
+}
+
+.auth-toggle-visibility:focus-visible {
+  outline: 2px solid var(--auth-brand);
+  outline-offset: 2px;
 }
 
 .auth-check {
@@ -7303,7 +7359,7 @@ img.profile-photo {
 .register-auth .auth-visual-copy {
   display: block;
   max-width: 440px;
-  margin: 12px auto 0;
+  margin: 100px auto 0;
 }
 
 .register-auth .auth-illustration {
