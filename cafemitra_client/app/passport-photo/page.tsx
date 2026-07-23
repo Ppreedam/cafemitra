@@ -2,40 +2,28 @@
 
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
-import { IdCard, Upload, X } from "lucide-react";
+import { Crop, Eye, IdCard, Printer, Trash2, Upload, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
 import { SkeletonBlock } from "../UiState";
 import { apiFetch, apiUrl } from "@/lib/api";
+import { fetchPricingServiceByKey, savePricingService } from "@/lib/pricing";
+import { fallbackPrinters, fetchAgentHealth, saveAgentPrinter } from "@/lib/printpilot-agent";
+import { passportAttireOptions } from "@/lib/passport-attire";
+import { CropEditor, cropImage, DEFAULT_CROP_RECT, type CropRect } from "../CropEditor";
 
 type Gender = "male" | "female";
 
 type JobState = "idle" | "submitting" | "processing" | "done" | "not_found" | "failed";
 
-const MEN_ATTIRES = [
-  "White dress shirt",
-  "White shirt with navy blazer",
-  "White shirt with black blazer",
-  "Navy business suit",
-  "Charcoal grey suit",
-  "Black business suit",
-  "Formal business attire",
-  "Corporate office wear",
-  "Professional executive suit",
-];
-
-const WOMEN_ATTIRES = [
-  "White blouse with black blazer",
-  "White blouse with navy blazer",
-  "Navy business suit",
-  "Black business suit",
-  "Charcoal business suit",
-  "Formal corporate attire",
-  "Professional office wear",
-  "Executive business attire",
-];
-
 const CHECK_INTERVAL_MS = 5_000;
 const MAX_CHECK_ATTEMPTS = 7;
+
+const VARIATION_ATTIRE: Record<string, string> = {
+  same: "the same outfit visible in the uploaded photo",
+  men_blazer_tie: "a formal blazer with a tie",
+  women_blazer_tie: "a formal blazer with a tie",
+  burqa: "a black burqa with hijab",
+};
 
 function buildPrompt(gender: Gender, attire: string) {
   const genderWord = gender === "male" ? "male" : "female";
@@ -46,14 +34,87 @@ export default function PassportPhotoPage() {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [gender, setGender] = useState<Gender>("male");
-  const [attire, setAttire] = useState(MEN_ATTIRES[0]);
+  const [attire, setAttire] = useState(VARIATION_ATTIRE.same);
+  const [photoVariation, setPhotoVariation] = useState(passportAttireOptions[0].key);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isCropOpen, setIsCropOpen] = useState(false);
+  const [cropRect, setCropRect] = useState<CropRect>(DEFAULT_CROP_RECT);
   const [jobState, setJobState] = useState<JobState>("idle");
   const [finalImageUrl, setFinalImageUrl] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [printers, setPrinters] = useState<string[]>(fallbackPrinters);
+  const [selectedPrinter, setSelectedPrinter] = useState(fallbackPrinters[0]);
+  const [printerMessage, setPrinterMessage] = useState("");
+  const [printerError, setPrinterError] = useState("");
   const dropRef = useRef<HTMLLabelElement | null>(null);
   const attemptsRef = useRef(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    loadPrinterSetup();
+    window.addEventListener("cafemitra:printers-updated", loadPrinterSetup);
+    return () => {
+      window.removeEventListener("cafemitra:printers-updated", loadPrinterSetup);
+    };
+  }, []);
+
+  async function loadPrinterSetup() {
+    try {
+      const [health, service] = await Promise.all([fetchAgentHealth(), fetchPricingServiceByKey("passport_photo")]);
+      const scannedPrinters = Array.isArray(health.printers) && health.printers.length ? health.printers : fallbackPrinters;
+      const savedPrinter = String(service?.settings.selectedPrinter || "").trim();
+      setPrinters(scannedPrinters);
+      setSelectedPrinter(
+        savedPrinter && scannedPrinters.includes(savedPrinter)
+          ? savedPrinter
+          : health.printer && scannedPrinters.includes(health.printer)
+            ? health.printer
+            : scannedPrinters[0] || "",
+      );
+    } catch {
+      setPrinters(fallbackPrinters);
+      setSelectedPrinter(fallbackPrinters[0]);
+    }
+  }
+
+  async function choosePassportPrinter(printerName: string) {
+    setSelectedPrinter(printerName);
+    setPrinterMessage("");
+    setPrinterError("");
+    try {
+      const result = await saveAgentPrinter(printerName);
+      const savedPrinter = result.printer || printerName;
+      // Saved under its own "passport_photo" service key, kept independent
+      // from PrintPilot's "auto_document_print" printer selection.
+      await savePricingService("passport_photo", { selectedPrinter: savedPrinter });
+      setSelectedPrinter(savedPrinter);
+      setPrinterMessage(`Passport photo printer set to ${savedPrinter}.`);
+      window.dispatchEvent(new Event("cafemitra:printers-updated"));
+    } catch (err) {
+      setPrinterError(err instanceof Error ? err.message : "Could not save printer. Is the PrintPilot Agent running?");
+    }
+  }
+
+  function printFinalPhoto() {
+    if (!finalImageUrl) return;
+    const printWindow = window.open("", "_blank", "width=480,height=640");
+    if (!printWindow) return;
+    const doc = printWindow.document;
+    doc.title = "Print Passport Photo";
+    doc.body.style.margin = "0";
+    doc.body.style.display = "flex";
+    doc.body.style.alignItems = "center";
+    doc.body.style.justifyContent = "center";
+    const img = doc.createElement("img");
+    img.style.maxWidth = "100%";
+    img.onload = () => {
+      printWindow.focus();
+      printWindow.print();
+    };
+    img.src = apiUrl(finalImageUrl);
+    doc.body.appendChild(img);
+  }
 
   useEffect(() => {
     function handlePaste(event: ClipboardEvent) {
@@ -89,6 +150,9 @@ export default function PassportPhotoPage() {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setFile(selected);
     setPreviewUrl(URL.createObjectURL(selected));
+    setPhotoVariation(passportAttireOptions[0].key);
+    setAttire(VARIATION_ATTIRE.same);
+    setCropRect(DEFAULT_CROP_RECT);
     resetJob();
   }
 
@@ -104,6 +168,11 @@ export default function PassportPhotoPage() {
     if (previewUrl) URL.revokeObjectURL(previewUrl);
     setFile(null);
     setPreviewUrl("");
+    setPhotoVariation(passportAttireOptions[0].key);
+    setAttire(VARIATION_ATTIRE.same);
+    setIsPreviewOpen(false);
+    setIsCropOpen(false);
+    setCropRect(DEFAULT_CROP_RECT);
     resetJob();
   }
 
@@ -113,15 +182,28 @@ export default function PassportPhotoPage() {
     if (dropped) handleFileChange(dropped);
   }
 
-  function selectGender(nextGender: Gender) {
-    setGender(nextGender);
-    const defaultAttire = nextGender === "male" ? MEN_ATTIRES[0] : WOMEN_ATTIRES[0];
-    setAttire(defaultAttire);
-    resetJob();
+  async function applyImageCrop() {
+    if (!previewUrl) return;
+    try {
+      const croppedBlob = await cropImage(previewUrl, cropRect);
+      const croppedFile = new File([croppedBlob], (file?.name || "photo").replace(/(\.[^.]+)?$/, "-cropped.png"), { type: "image/png" });
+      URL.revokeObjectURL(previewUrl);
+      setFile(croppedFile);
+      setPreviewUrl(URL.createObjectURL(croppedFile));
+      setIsCropOpen(false);
+      setCropRect(DEFAULT_CROP_RECT);
+      resetJob();
+    } catch {
+      setError("Could not crop the photo. Please upload it again and try.");
+    }
   }
 
-  function selectAttire(nextAttire: string) {
-    setAttire(nextAttire);
+  function selectPhotoVariation(variation: string) {
+    setPhotoVariation(variation);
+    const variationAttire = VARIATION_ATTIRE[variation];
+    if (variation === "men_blazer_tie") setGender("male");
+    if (variation === "women_blazer_tie" || variation === "burqa") setGender("female");
+    if (variationAttire) setAttire(variationAttire);
     resetJob();
   }
 
@@ -186,7 +268,6 @@ export default function PassportPhotoPage() {
     }
   }
 
-  const attireOptions = gender === "male" ? MEN_ATTIRES : WOMEN_ATTIRES;
   const isBusy = jobState === "submitting" || jobState === "processing";
 
   return (
@@ -212,10 +293,16 @@ export default function PassportPhotoPage() {
               <div className="customer-document-preview">
                 <div className="document-thumb">
                   <img src={previewUrl} alt="" />
+                  <button className="document-thumb-preview" type="button" onClick={() => setIsPreviewOpen(true)} aria-label="Preview photo">
+                    <Eye size={17} />
+                  </button>
                 </div>
                 <div>
                   <strong>{file.name}</strong>
                   <div className="document-actions">
+                    <button type="button" onClick={() => setIsCropOpen(true)} disabled={isBusy}>
+                      <Crop size={16} /> Crop
+                    </button>
                     <button type="button" onClick={clearUpload} disabled={isBusy}>
                       <X size={16} /> Remove
                     </button>
@@ -239,36 +326,34 @@ export default function PassportPhotoPage() {
 
             {file ? (
               <div className="attire-picker">
-                <div className="attire-gender-tabs">
-                  <button type="button" className={gender === "male" ? "active" : ""} onClick={() => selectGender("male")} disabled={isBusy}>
-                    Men
-                  </button>
-                  <button type="button" className={gender === "female" ? "active" : ""} onClick={() => selectGender("female")} disabled={isBusy}>
-                    Women
-                  </button>
-                </div>
-
-                <div className="attire-options-grid">
-                  {attireOptions.map((option) => (
-                    <label key={option} className={`attire-option ${attire === option ? "active" : ""}`}>
-                      <input
-                        type="radio"
-                        name="passport-attire"
-                        value={option}
-                        checked={attire === option}
-                        onChange={() => selectAttire(option)}
-                        disabled={isBusy}
-                      />
-                      <span>{option}</span>
-                    </label>
-                  ))}
+                <div className="passport-attire-picker">
+                  <span>Photo Variation</span>
+                  <div className="passport-attire-options">
+                    {passportAttireOptions.map((option) => {
+                      const OptionIcon = option.icon;
+                      return (
+                        <button
+                          className={photoVariation === option.key ? "active" : ""}
+                          key={option.key}
+                          type="button"
+                          onClick={() => selectPhotoVariation(option.key)}
+                          disabled={isBusy}
+                          aria-label={option.label}
+                          title={option.label}
+                        >
+                          <OptionIcon size={18} />
+                          <span>{option.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             ) : null}
 
             {jobState === "idle" && file ? (
               <button className="passport-preview-button" type="button" onClick={generatePreview} disabled={isSubmitting}>
-                <IdCard size={18} /> {isSubmitting ? "Starting..." : "Preview"}
+                <IdCard size={18} /> {isSubmitting ? "Starting..." : "Generate Photo"}
               </button>
             ) : null}
 
@@ -294,16 +379,97 @@ export default function PassportPhotoPage() {
               </div>
             ) : null}
 
+            {jobState === "done" && finalImageUrl ? (
+              <div className="passport-print-picker">
+                <p className="customer-inline-help">
+                  Choose the printer for this passport photo. This is separate from the PrintPilot printer selected in PrintPilot setup.
+                </p>
+                <div className="printer-radio-list">
+                  {printers.map((printer) => (
+                    <label className="printer-radio" key={printer}>
+                      <input
+                        checked={selectedPrinter === printer}
+                        name="passport-printer"
+                        type="radio"
+                        onChange={() => choosePassportPrinter(printer)}
+                      />
+                      <span>{printer}</span>
+                    </label>
+                  ))}
+                </div>
+                {printerMessage ? <div className="profile-alert success">{printerMessage}</div> : null}
+                {printerError ? <div className="profile-alert error">{printerError}</div> : null}
+                <button className="passport-preview-button" type="button" onClick={printFinalPhoto} disabled={!selectedPrinter}>
+                  <Printer size={18} /> Print on {selectedPrinter || "printer"}
+                </button>
+              </div>
+            ) : null}
+
             {jobState === "idle" || jobState === "not_found" || jobState === "failed" ? (
               <p className="customer-inline-help">
                 {jobState === "idle"
-                  ? "Upload a photo, choose an attire, and tap Preview to begin."
+                  ? "Upload a photo, choose an attire, and tap Generate Photo to begin."
                   : "Something went wrong. Upload the photo again to retry."}
               </p>
             ) : null}
           </article>
         </section>
       </div>
+
+      {isPreviewOpen && file ? (
+        <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Photo preview">
+          <div className="document-preview-window">
+            <div className="document-preview-head">
+              <div>
+                <strong>{file.name}</strong>
+                <span>Preview</span>
+              </div>
+              <button type="button" onClick={() => setIsPreviewOpen(false)} aria-label="Close preview">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="document-preview-body">
+              <img src={previewUrl} alt="" />
+            </div>
+            <div className="document-preview-actions">
+              <button type="button" onClick={() => setIsPreviewOpen(false)}>
+                <X size={16} /> Close Preview
+              </button>
+              <button type="button" onClick={clearUpload}>
+                <Trash2 size={16} /> Remove File
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isCropOpen && file ? (
+        <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Crop photo">
+          <div className="crop-window">
+            <div className="document-preview-head">
+              <div>
+                <strong>Crop Photo</strong>
+                <span>{file.name}</span>
+              </div>
+              <button type="button" onClick={() => setIsCropOpen(false)} aria-label="Close crop">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="crop-body">
+              <CropEditor fileUrl={previewUrl} rect={cropRect} onRectChange={setCropRect} />
+              <div className="crop-controls">
+                <p>Drag a corner or edge to resize the crop area. Drag inside the box to move it.</p>
+                <button type="button" onClick={() => setCropRect(DEFAULT_CROP_RECT)}>
+                  Reset Crop
+                </button>
+                <button type="button" onClick={applyImageCrop}>
+                  <Crop size={17} /> Apply Crop
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </DashboardShell>
   );
 }

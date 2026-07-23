@@ -5,6 +5,8 @@ import { useParams } from "next/navigation";
 import { Clock3, Crop, Eye, FileText, IdCard, Image as ImageIcon, Printer, Trash2, Upload, Wallet, X } from "lucide-react";
 import { apiUrl } from "@/lib/api";
 import { calculatePriceItemRate, formatPriceItem, getAllowedPaymentModes, mergePricingDefaults, type PriceItem, type PricingService } from "@/lib/pricing";
+import { passportAttireOptions } from "@/lib/passport-attire";
+import { CropEditor, cropImage, loadImage, DEFAULT_CROP_RECT, type CropRect } from "../../CropEditor";
 
 type PublicShop = {
   code: string;
@@ -35,21 +37,6 @@ type PrintOrder = {
   status: string;
   totalAmount: number;
   documentDeleted?: boolean;
-};
-
-type CropRect = {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-};
-
-type CropDrag = {
-  mode: "move" | "resize";
-  handle?: string;
-  startX: number;
-  startY: number;
-  rect: CropRect;
 };
 
 const serviceIcons: Record<string, typeof FileText> = {
@@ -88,14 +75,12 @@ export default function CustomerScanPage() {
   const [fileUrl, setFileUrl] = useState("");
   const [fileType, setFileType] = useState("");
   const [passportSheetUrl, setPassportSheetUrl] = useState("");
-  const [passportBackground, setPassportBackground] = useState("white");
-  const [passportCustomBackground, setPassportCustomBackground] = useState("#ffffff");
-  const [removePassportBackground, setRemovePassportBackground] = useState(true);
+  const [attireCategory, setAttireCategory] = useState(passportAttireOptions[0].key);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isPageManagerOpen, setIsPageManagerOpen] = useState(false);
   const [isCropOpen, setIsCropOpen] = useState(false);
   const [isDeleteDocumentOpen, setIsDeleteDocumentOpen] = useState(false);
-  const [cropRect, setCropRect] = useState<CropRect>({ x: 10, y: 10, width: 80, height: 80 });
+  const [cropRect, setCropRect] = useState<CropRect>(DEFAULT_CROP_RECT);
   const [isProcessingPdf, setIsProcessingPdf] = useState(false);
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [isDeletingDocument, setIsDeletingDocument] = useState(false);
@@ -120,7 +105,7 @@ export default function CustomerScanPage() {
         return result;
       })
       .then((result: PublicShop) => {
-        const services = mergePricingDefaults(result.services).filter((service) => service.serviceKey !== "passport_photo");
+        const services = mergePricingDefaults(result.services);
         setData({ ...result, services });
         setError("");
         setSelectedService(services[0]?.serviceKey || "auto_document_print");
@@ -214,7 +199,7 @@ export default function CustomerScanPage() {
 
     let cancelled = false;
     setFinalFile(null);
-    generatePassportSheet(fileUrl, passportBackground, passportCustomBackground, removePassportBackground)
+    generatePassportSheet(fileUrl)
       .then((sheetBlob) => {
         if (cancelled) return;
         setFinalFile(sheetBlob);
@@ -229,7 +214,7 @@ export default function CustomerScanPage() {
     return () => {
       cancelled = true;
     };
-  }, [fileUrl, hasImageFile, isPassportPhoto, passportBackground, passportCustomBackground, removePassportBackground]);
+  }, [fileUrl, hasImageFile, isPassportPhoto]);
 
   useEffect(() => {
     let isActive = true;
@@ -293,6 +278,7 @@ export default function CustomerScanPage() {
     setPaymentMode(getAllowedPaymentModes(service)[0] || "Online Payment");
     setSelectedItemId(getPriceItems(service)[0]?.id || "");
     setCopies(1);
+    setAttireCategory(passportAttireOptions[0].key);
     setOptionsTouched(false);
     setOrder(null);
     setOrderError("");
@@ -300,6 +286,11 @@ export default function CustomerScanPage() {
     if (service.serviceKey === "passport_photo" && hasUploadedFile && !hasImageFile) {
       clearUpload();
     }
+  }
+
+  function selectAttireCategory(category: string) {
+    setAttireCategory(category);
+    resetOrderDraft();
   }
 
   function resetOrderDraft() {
@@ -337,7 +328,7 @@ export default function CustomerScanPage() {
     setIsPageManagerOpen(false);
     setIsPreviewOpen(false);
     setIsCropOpen(false);
-    setCropRect({ x: 10, y: 10, width: 80, height: 80 });
+    setCropRect(DEFAULT_CROP_RECT);
     setOrder(null);
     setOrderError("");
     setOptionsTouched(false);
@@ -363,12 +354,13 @@ export default function CustomerScanPage() {
     setFileType("");
     setPages(0);
     setCopies(1);
+    setAttireCategory(passportAttireOptions[0].key);
     setIsPreviewOpen(false);
     setIsPageManagerOpen(false);
     setIsCropOpen(false);
     setOrder(null);
     setOrderError("");
-    setCropRect({ x: 10, y: 10, width: 80, height: 80 });
+    setCropRect(DEFAULT_CROP_RECT);
     resetPaymentFlow();
   }
 
@@ -385,7 +377,7 @@ export default function CustomerScanPage() {
       setFileType("image/png");
       setIsCropOpen(false);
       setIsPreviewOpen(false);
-      setCropRect({ x: 10, y: 10, width: 80, height: 80 });
+      setCropRect(DEFAULT_CROP_RECT);
       setOrder(null);
       setOrderError("");
       if (passportSheetUrl) {
@@ -451,6 +443,7 @@ export default function CustomerScanPage() {
       formData.append("copies", String(copies));
       formData.append("totalAmount", String(amount));
       formData.append("paymentMode", paymentMode);
+      if (isPassportPhoto) formData.append("attireCategory", attireCategory);
 
       const response = await fetch(apiUrl(`/api/public-shop/${data?.code || params.code}/orders/`), {
         method: "POST",
@@ -663,13 +656,17 @@ export default function CustomerScanPage() {
               {data.services.map((service) => {
                 const Icon = serviceIcons[service.serviceKey] || FileText;
                 return (
-                  <button className={selectedService === service.serviceKey ? "active" : ""} type="button" key={service.serviceKey} onClick={() => selectService(service)}>
-                    <Icon size={20} />
-                    <span>
-                      <strong>{service.serviceName}</strong>
-                      <small>{getServiceSummary(service)}</small>
-                    </span>
-                  </button>
+                  <label className={selectedService === service.serviceKey ? "active" : ""} key={service.serviceKey}>
+                    <input
+                      checked={selectedService === service.serviceKey}
+                      name="customer-service"
+                      type="radio"
+                      value={service.serviceKey}
+                      onChange={() => selectService(service)}
+                    />
+                    <Icon size={18} />
+                    <strong>{service.serviceName}</strong>
+                  </label>
                 );
               })}
             </div>
@@ -700,11 +697,6 @@ export default function CustomerScanPage() {
                       : "Preview the file before continuing."}
                 </p>
                 <div className="document-actions">
-                  {!onlyCropImage ? (
-                    <button type="button" onClick={() => setIsPreviewOpen(true)}>
-                      <Eye size={16} /> Preview
-                    </button>
-                  ) : null}
                   {hasPdfFile ? (
                     <button type="button" onClick={() => setIsPageManagerOpen(true)} disabled={pages <= 1 || isProcessingPdf}>
                       <Trash2 size={16} /> Remove Page
@@ -723,51 +715,26 @@ export default function CustomerScanPage() {
                 </div>
                 {isPassportPhoto && passportSheetUrl ? (
                   <>
-                    <div className="passport-photo-tools">
-                      <label className="passport-bg-toggle">
-                        <input
-                          type="checkbox"
-                          checked={removePassportBackground}
-                          disabled={passportBackground === "original"}
-                          onChange={(event) => {
-                            setRemovePassportBackground(event.target.checked);
-                            resetOrderDraft();
-                          }}
-                        />
-                        <span>Remove background</span>
-                      </label>
-                      <label>
-                        <span>Background</span>
-                        <select
-                          value={passportBackground}
-                          onChange={(event) => {
-                            setPassportBackground(event.target.value);
-                            resetOrderDraft();
-                          }}
-                        >
-                          <option value="white">White</option>
-                          <option value="blue">Light Blue</option>
-                          <option value="custom">Custom Color</option>
-                          <option value="original">Original</option>
-                        </select>
-                      </label>
-                      {passportBackground === "custom" ? (
-                        <label>
-                          <span>Color</span>
-                          <div className="passport-color-control">
-                            <input
-                              aria-label="Choose passport photo background color"
-                              type="color"
-                              value={passportCustomBackground}
-                              onChange={(event) => {
-                                setPassportCustomBackground(event.target.value);
-                                resetOrderDraft();
-                              }}
-                            />
-                            <strong>{passportCustomBackground}</strong>
-                          </div>
-                        </label>
-                      ) : null}
+                    <div className="passport-attire-picker">
+                      <span>Dress</span>
+                      <div className="passport-attire-options">
+                        {passportAttireOptions.map((option) => {
+                          const OptionIcon = option.icon;
+                          return (
+                            <button
+                              className={attireCategory === option.key ? "active" : ""}
+                              key={option.key}
+                              type="button"
+                              onClick={() => selectAttireCategory(option.key)}
+                              aria-label={option.label}
+                              title={option.label}
+                            >
+                              <OptionIcon size={18} />
+                              <span>{option.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                     <div className="passport-sheet-mini">
                       <img src={passportSheetUrl} alt="" />
@@ -916,6 +883,12 @@ export default function CustomerScanPage() {
             <span>{isPassportPhoto ? "Package x Sets" : "Pages x Copies"}</span>
             <strong>{hasUploadedFile ? (isPassportPhoto ? `${selectedItem?.label || "6 pcs"} x ${copies}` : `${pages} x ${copies}`) : "Upload pending"}</strong>
           </div>
+          {isPassportPhoto ? (
+            <div className="customer-summary-row">
+              <span>Dress</span>
+              <strong>{passportAttireOptions.find((option) => option.key === attireCategory)?.label || passportAttireOptions[0].label}</strong>
+            </div>
+          ) : null}
           {isPassportPhoto && passportSheetUrl ? (
             <div className="passport-sheet-preview">
               <img src={passportSheetUrl} alt="" />
@@ -1079,7 +1052,7 @@ export default function CustomerScanPage() {
               <CropEditor fileUrl={fileUrl} rect={cropRect} onRectChange={setCropRect} />
               <div className="crop-controls">
                 <p>Drag a corner or edge to resize the print area. Drag inside the box to move the crop area.</p>
-                <button type="button" onClick={() => setCropRect({ x: 10, y: 10, width: 80, height: 80 })}>
+                <button type="button" onClick={() => setCropRect(DEFAULT_CROP_RECT)}>
                   Reset Crop
                 </button>
                 <button type="button" onClick={applyImageCrop}>
@@ -1096,11 +1069,6 @@ export default function CustomerScanPage() {
 
 function getPriceItems(service?: PricingService) {
   return Array.isArray(service?.settings.priceItems) ? service.settings.priceItems : [];
-}
-
-function getServiceSummary(service: PricingService) {
-  const items = getPriceItems(service);
-  return items.length ? items.map(formatPriceItem).join(" | ") : "Pricing not set";
 }
 
 function getUpiTransactionRef(order: PrintOrder) {
@@ -1143,122 +1111,7 @@ async function detectPdfPages(file: File) {
   }
 }
 
-function CropEditor({ fileUrl, rect, onRectChange }: { fileUrl: string; rect: CropRect; onRectChange: (rect: CropRect) => void }) {
-  const stageRef = useRef<HTMLDivElement | null>(null);
-  const dragRef = useRef<CropDrag | null>(null);
-
-  function updateFromPointer(event: PointerEvent | { clientX: number; clientY: number }) {
-    const stage = stageRef.current;
-    const drag = dragRef.current;
-    if (!stage || !drag) return;
-
-    const bounds = stage.getBoundingClientRect();
-    const deltaX = ((event.clientX - drag.startX) / bounds.width) * 100;
-    const deltaY = ((event.clientY - drag.startY) / bounds.height) * 100;
-    const next = drag.mode === "move" ? moveCropRect(drag.rect, deltaX, deltaY) : resizeCropRect(drag.rect, drag.handle || "", deltaX, deltaY);
-    onRectChange(next);
-  }
-
-  function startDrag(event: React.PointerEvent<HTMLElement>, mode: CropDrag["mode"], handle?: string) {
-    event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
-    dragRef.current = {
-      mode,
-      handle,
-      startX: event.clientX,
-      startY: event.clientY,
-      rect,
-    };
-  }
-
-  function stopDrag() {
-    dragRef.current = null;
-  }
-
-  return (
-    <div className="crop-stage" ref={stageRef} onPointerMove={updateFromPointer} onPointerUp={stopDrag} onPointerCancel={stopDrag}>
-      <img src={fileUrl} alt="" draggable={false} />
-      <div
-        className="crop-selection"
-        style={{ left: `${rect.x}%`, top: `${rect.y}%`, width: `${rect.width}%`, height: `${rect.height}%` }}
-        onPointerDown={(event) => startDrag(event, "move")}
-      >
-        {["nw", "n", "ne", "e", "se", "s", "sw", "w"].map((handle) => (
-          <span
-            className={`crop-handle crop-handle-${handle}`}
-            key={handle}
-            onPointerDown={(event) => {
-              event.stopPropagation();
-              startDrag(event, "resize", handle);
-            }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function moveCropRect(rect: CropRect, deltaX: number, deltaY: number) {
-  return {
-    ...rect,
-    x: clamp(rect.x + deltaX, 0, 100 - rect.width),
-    y: clamp(rect.y + deltaY, 0, 100 - rect.height),
-  };
-}
-
-function resizeCropRect(rect: CropRect, handle: string, deltaX: number, deltaY: number) {
-  const minSize = 8;
-  let { x, y, width, height } = rect;
-
-  if (handle.includes("w")) {
-    const nextX = clamp(x + deltaX, 0, x + width - minSize);
-    width += x - nextX;
-    x = nextX;
-  }
-
-  if (handle.includes("e")) {
-    width = clamp(width + deltaX, minSize, 100 - x);
-  }
-
-  if (handle.includes("n")) {
-    const nextY = clamp(y + deltaY, 0, y + height - minSize);
-    height += y - nextY;
-    y = nextY;
-  }
-
-  if (handle.includes("s")) {
-    height = clamp(height + deltaY, minSize, 100 - y);
-  }
-
-  return { x, y, width, height };
-}
-
-function clamp(value: number, min: number, max: number) {
-  return Math.min(Math.max(value, min), max);
-}
-
-async function cropImage(fileUrl: string, rect: CropRect) {
-  const image = await loadImage(fileUrl);
-  const sourceX = (rect.x / 100) * image.naturalWidth;
-  const sourceY = (rect.y / 100) * image.naturalHeight;
-  const sourceWidth = (rect.width / 100) * image.naturalWidth;
-  const sourceHeight = (rect.height / 100) * image.naturalHeight;
-  const canvas = document.createElement("canvas");
-  const context = canvas.getContext("2d");
-
-  canvas.width = Math.max(1, Math.round(sourceWidth));
-  canvas.height = Math.max(1, Math.round(sourceHeight));
-  if (!context) throw new Error("Canvas not supported");
-  context.fillStyle = "#fff";
-  context.fillRect(0, 0, canvas.width, canvas.height);
-  context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, canvas.width, canvas.height);
-
-  return new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Crop failed"))), "image/png", 0.95);
-  });
-}
-
-async function generatePassportSheet(fileUrl: string, background: string, customBackground: string, removeBackground: boolean) {
+async function generatePassportSheet(fileUrl: string) {
   const image = await loadImage(fileUrl);
   const canvas = document.createElement("canvas");
   const context = canvas.getContext("2d");
@@ -1270,7 +1123,6 @@ async function generatePassportSheet(fileUrl: string, background: string, custom
   const gapY = 80;
   const startX = (sheetWidth - photoWidth * 3 - gapX * 2) / 2;
   const startY = (sheetHeight - photoHeight * 2 - gapY) / 2;
-  const bgColor = passportBackgroundColor(background, customBackground);
 
   canvas.width = sheetWidth;
   canvas.height = sheetHeight;
@@ -1283,7 +1135,7 @@ async function generatePassportSheet(fileUrl: string, background: string, custom
     for (let col = 0; col < 3; col += 1) {
       const x = startX + col * (photoWidth + gapX);
       const y = startY + row * (photoHeight + gapY);
-      drawPassportPhoto(context, image, x, y, photoWidth, photoHeight, background === "original" ? "" : bgColor, removeBackground && background !== "original");
+      drawPassportPhoto(context, image, x, y, photoWidth, photoHeight);
     }
   }
 
@@ -1296,15 +1148,9 @@ async function generatePassportSheet(fileUrl: string, background: string, custom
   });
 }
 
-function passportBackgroundColor(background: string, customBackground: string) {
-  if (background === "blue") return "#dff3ff";
-  if (background === "custom") return customBackground || "#ffffff";
-  return "#ffffff";
-}
-
-function drawPassportPhoto(context: CanvasRenderingContext2D, image: HTMLImageElement, x: number, y: number, width: number, height: number, backgroundColor: string, removeBackground: boolean) {
+function drawPassportPhoto(context: CanvasRenderingContext2D, image: HTMLImageElement, x: number, y: number, width: number, height: number) {
   context.save();
-  context.fillStyle = backgroundColor || "#ffffff";
+  context.fillStyle = "#ffffff";
   context.fillRect(x, y, width, height);
   context.beginPath();
   context.rect(x, y, width, height);
@@ -1326,126 +1172,10 @@ function drawPassportPhoto(context: CanvasRenderingContext2D, image: HTMLImageEl
   }
 
   context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
-  if (removeBackground && backgroundColor) {
-    replaceApproxBackground(context, x, y, width, height, backgroundColor);
-  }
   context.restore();
   context.strokeStyle = "#d6dbea";
   context.lineWidth = 3;
   context.strokeRect(x, y, width, height);
-}
-
-function replaceApproxBackground(context: CanvasRenderingContext2D, x: number, y: number, width: number, height: number, backgroundColor: string) {
-  const imageData = context.getImageData(x, y, width, height);
-  const data = imageData.data;
-  const target = hexToRgb(backgroundColor);
-  const bg = dominantBorderColor(data, width, height);
-  const threshold = 118;
-  const visited = new Uint8Array(width * height);
-  const queue: number[] = [];
-
-  function enqueue(pixelIndex: number) {
-    if (pixelIndex < 0 || pixelIndex >= visited.length || visited[pixelIndex]) return;
-    const dataIndex = pixelIndex * 4;
-    const distance = colorDistance({ r: data[dataIndex], g: data[dataIndex + 1], b: data[dataIndex + 2] }, bg);
-    if (distance <= threshold) {
-      visited[pixelIndex] = 1;
-      queue.push(pixelIndex);
-    }
-  }
-
-  for (let column = 0; column < width; column += 1) {
-    enqueue(column);
-    enqueue((height - 1) * width + column);
-  }
-  for (let row = 0; row < height; row += 1) {
-    enqueue(row * width);
-    enqueue(row * width + width - 1);
-  }
-
-  while (queue.length) {
-    const pixelIndex = queue.shift() as number;
-    const row = Math.floor(pixelIndex / width);
-    const column = pixelIndex % width;
-    const dataIndex = pixelIndex * 4;
-    data[dataIndex] = target.r;
-    data[dataIndex + 1] = target.g;
-    data[dataIndex + 2] = target.b;
-
-    if (column > 0) enqueue(pixelIndex - 1);
-    if (column < width - 1) enqueue(pixelIndex + 1);
-    if (row > 0) enqueue(pixelIndex - width);
-    if (row < height - 1) enqueue(pixelIndex + width);
-  }
-
-  context.putImageData(imageData, x, y);
-}
-
-function dominantBorderColor(data: Uint8ClampedArray, width: number, height: number) {
-  const buckets = new Map<string, { color: { r: number; g: number; b: number }; count: number }>();
-  const step = 4;
-
-  function addSample(x: number, y: number) {
-    const color = getPixel(data, width, x, y);
-    if (color.r < 25 && color.g < 25 && color.b < 25) return;
-    const key = `${Math.round(color.r / 24)}-${Math.round(color.g / 24)}-${Math.round(color.b / 24)}`;
-    const existing = buckets.get(key);
-    if (existing) {
-      existing.count += 1;
-      existing.color.r += color.r;
-      existing.color.g += color.g;
-      existing.color.b += color.b;
-      return;
-    }
-    buckets.set(key, { color: { ...color }, count: 1 });
-  }
-
-  for (let column = 0; column < width; column += step) {
-    addSample(column, 2);
-    addSample(column, height - 3);
-  }
-  for (let row = 0; row < height; row += step) {
-    addSample(2, row);
-    addSample(width - 3, row);
-  }
-
-  let best = { color: { r: 255, g: 255, b: 255 }, count: 0 };
-  buckets.forEach((bucket) => {
-    if (bucket.count > best.count) best = bucket;
-  });
-  return {
-    r: best.color.r / Math.max(best.count, 1),
-    g: best.color.g / Math.max(best.count, 1),
-    b: best.color.b / Math.max(best.count, 1),
-  };
-}
-
-function getPixel(data: Uint8ClampedArray, width: number, x: number, y: number) {
-  const index = (Math.max(0, y) * width + Math.max(0, x)) * 4;
-  return { r: data[index], g: data[index + 1], b: data[index + 2] };
-}
-
-function colorDistance(first: { r: number; g: number; b: number }, second: { r: number; g: number; b: number }) {
-  return Math.sqrt((first.r - second.r) ** 2 + (first.g - second.g) ** 2 + (first.b - second.b) ** 2);
-}
-
-function hexToRgb(hex: string) {
-  const normalized = hex.replace("#", "");
-  const value = Number.parseInt(normalized.length === 3 ? normalized.split("").map((char) => char + char).join("") : normalized, 16);
-  return {
-    r: (value >> 16) & 255,
-    g: (value >> 8) & 255,
-    b: value & 255,
-  };
-}
-
-function loadImage(src: string) {
-  return new Promise<HTMLImageElement>((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => resolve(image);
-    image.onerror = reject;
-    image.src = src;
-  });
 }
 
 function PdfThumb({ fileName, fileUrl, pages, onPageCount }: { fileName: string; fileUrl: string; pages: number; onPageCount: (pages: number) => void }) {

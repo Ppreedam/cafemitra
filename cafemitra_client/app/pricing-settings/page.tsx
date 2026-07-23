@@ -272,21 +272,24 @@ export default function PricingSettingsPage() {
                 <Calculator size={18} />
               </div>
               <div className="pricing-service-buttons">
-                {services.map((service) => (
-                  <button
-                    className={activeKey === service.serviceKey ? "active" : ""}
-                    type="button"
-                    key={service.serviceKey}
-                    onClick={() => setActiveKey(service.serviceKey)}
-                  >
-                    {service.serviceKey === "auto_document_print" ? <Printer size={18} /> : <Image size={18} />}
-                    <span>
-                      <strong>{service.serviceName}</strong>
-                      <small>{getServiceSummary(service)}</small>
-                    </span>
-                    <CheckCircle2 size={17} />
-                  </button>
-                ))}
+                {services.map((service) => {
+                  const ServiceIcon = getServiceIcon(service.serviceKey);
+                  return (
+                    <button
+                      className={activeKey === service.serviceKey ? "active" : ""}
+                      type="button"
+                      key={service.serviceKey}
+                      onClick={() => setActiveKey(service.serviceKey)}
+                    >
+                      <ServiceIcon size={18} />
+                      <span>
+                        <strong>{service.serviceName}</strong>
+                        <small>{getServiceSummary(service)}</small>
+                      </span>
+                      <CheckCircle2 size={17} />
+                    </button>
+                  );
+                })}
               </div>
             </aside>
 
@@ -298,7 +301,7 @@ export default function PricingSettingsPage() {
                       <span className="setup-badge">Service Pricing</span>
                       <h2>{activeService.serviceName}</h2>
                     </div>
-                    <Link className="mini-link" href={activeService.serviceKey === "auto_document_print" ? "/auto-print" : "#"}>
+                    <Link className="mini-link" href={toolHrefByServiceKey[activeService.serviceKey] || "#"}>
                       Open Tool
                     </Link>
                   </div>
@@ -346,7 +349,7 @@ export default function PricingSettingsPage() {
                           </div>
                           <details className="price-range-panel" open={(item.ranges || []).length > 0}>
                             <summary>
-                              <span>Page ranges</span>
+                              <span>Quantity ranges</span>
                               <small>{(item.ranges || []).length ? `${(item.ranges || []).length} active` : "General price applies"}</small>
                             </summary>
                             {(item.ranges || []).map((range) => (
@@ -360,7 +363,7 @@ export default function PricingSettingsPage() {
                                   <input min="1" placeholder="Up" type="number" value={range.maxPages ?? ""} onChange={(event) => updatePriceRange(activeService.serviceKey, item.id, range.id, "maxPages", event.target.value)} />
                                 </label>
                                 <label className="auto-field">
-                                  <span>Per Page</span>
+                                  <span>Per Unit</span>
                                   <input min="0" type="number" value={range.rate} onChange={(event) => updatePriceRange(activeService.serviceKey, item.id, range.id, "rate", event.target.value)} />
                                 </label>
                                 <button className="icon-action-btn danger" type="button" onClick={() => removePriceRange(activeService.serviceKey, item.id, range.id)} aria-label="Remove page range">
@@ -400,6 +403,20 @@ export default function PricingSettingsPage() {
       </div>
     </DashboardShell>
   );
+}
+
+const toolHrefByServiceKey: Record<string, string> = {
+  auto_document_print: "/auto-print",
+  passport_photo: "/passport-photo",
+};
+
+const toolIconByServiceKey: Record<string, LucideIcon> = {
+  auto_document_print: Printer,
+  passport_photo: IdCard,
+};
+
+function getServiceIcon(serviceKey: string) {
+  return toolIconByServiceKey[serviceKey] || Image;
 }
 
 function getPriceItems(service: PricingService) {

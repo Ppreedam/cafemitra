@@ -11,7 +11,7 @@ import {
 } from "lucide-react";
 import { apiFetch, hasStoredSession, storeSession } from "@/lib/api";
 import { fallbackPrinters, fetchAgentHealth, saveAgentPrinter, type AgentHealth } from "@/lib/printpilot-agent";
-import { fetchPricingServices, saveServicePrinter } from "@/lib/pricing";
+import { fetchPricingServiceByKey, saveServicePrinter } from "@/lib/pricing";
 import { ProfileMenu } from "./ProfileMenu";
 
 type ProfileSummary = {
@@ -50,9 +50,10 @@ const fallbackProfile: ProfileSummary = {
 type ProfileTopbarProps = {
   isSidebarCollapsed?: boolean;
   onMenuClick?: () => void;
+  printerServiceKey?: string;
 };
 
-export function ProfileTopbar({ isSidebarCollapsed = false, onMenuClick }: ProfileTopbarProps) {
+export function ProfileTopbar({ isSidebarCollapsed = false, onMenuClick, printerServiceKey = "auto_document_print" }: ProfileTopbarProps) {
   const [profile, setProfile] = useState<ProfileSummary>(fallbackProfile);
   const [agentHealth, setAgentHealth] = useState<AgentHealth | null>(null);
   const [wallet, setWallet] = useState<WalletSummary | null>(null);
@@ -63,19 +64,25 @@ export function ProfileTopbar({ isSidebarCollapsed = false, onMenuClick }: Profi
     hydrateFromStorage();
     fetchProfile();
     fetchWallet();
-    refreshPrinters();
 
     window.addEventListener("cafemitra:profile-updated", hydrateFromStorage);
     window.addEventListener("cafemitra:wallet-updated", fetchWallet);
-    window.addEventListener("cafemitra:printers-updated", refreshPrinters);
     window.addEventListener("cafemitra:session-cleared", resetProfile);
     return () => {
       window.removeEventListener("cafemitra:profile-updated", hydrateFromStorage);
       window.removeEventListener("cafemitra:wallet-updated", fetchWallet);
-      window.removeEventListener("cafemitra:printers-updated", refreshPrinters);
       window.removeEventListener("cafemitra:session-cleared", resetProfile);
     };
   }, []);
+
+  useEffect(() => {
+    refreshPrinters();
+    window.addEventListener("cafemitra:printers-updated", refreshPrinters);
+    return () => {
+      window.removeEventListener("cafemitra:printers-updated", refreshPrinters);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [printerServiceKey]);
 
   function hydrateFromStorage() {
     const storedUser = readJson<ProfileSummary["user"]>("cafemitra_user");
@@ -120,10 +127,9 @@ export function ProfileTopbar({ isSidebarCollapsed = false, onMenuClick }: Profi
 
   async function refreshPrinters() {
     try {
-      const [health, services] = await Promise.all([fetchAgentHealth(), fetchPricingServices()]);
+      const [health, service] = await Promise.all([fetchAgentHealth(), fetchPricingServiceByKey(printerServiceKey)]);
       const printers = Array.isArray(health.printers) && health.printers.length ? health.printers : fallbackPrinters;
-      const autoPrint = services.find((service) => service.serviceKey === "auto_document_print");
-      const savedPrinter = String(autoPrint?.settings.selectedPrinter || "").trim();
+      const savedPrinter = String(service?.settings.selectedPrinter || "").trim();
       setAgentHealth(health);
       setTopbarPrinters(printers);
       setSelectedPrinter(
@@ -146,7 +152,7 @@ export function ProfileTopbar({ isSidebarCollapsed = false, onMenuClick }: Profi
       const result = await saveAgentPrinter(printerName);
       const printers = Array.isArray(result.printers) && result.printers.length ? result.printers : topbarPrinters;
       const savedPrinter = result.printer || printerName;
-      await saveServicePrinter("auto_document_print", savedPrinter);
+      await saveServicePrinter(printerServiceKey, savedPrinter);
       setTopbarPrinters(printers);
       setSelectedPrinter(savedPrinter);
       await refreshPrinters();

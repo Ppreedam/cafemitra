@@ -15,9 +15,11 @@ type PdfToolUploadProps = {
   dropLabel?: string;
   accept?: string;
   multiple?: boolean;
+  backHref?: string;
+  backLabel?: string;
 };
 
-export function PdfToolUpload({ title, description, icon: Icon, inputRef, onFiles, headingLevel = "h1", buttonLabel = "Select PDF files", dropLabel = "or drop PDFs here", accept = "application/pdf,.pdf", multiple = true }: PdfToolUploadProps) {
+export function PdfToolUpload({ title, description, icon: Icon, inputRef, onFiles, headingLevel = "h1", buttonLabel = "Select PDF files", dropLabel = "or drop PDFs here", accept = "application/pdf,.pdf", multiple = true, backHref = "/pdf-tools", backLabel = "PDF Tools" }: PdfToolUploadProps) {
   const [dragging, setDragging] = useState(false);
   const Heading = headingLevel;
 
@@ -27,7 +29,7 @@ export function PdfToolUpload({ title, description, icon: Icon, inputRef, onFile
   }
 
   return <section className={`pdf-upload-welcome ${dragging ? "dragging" : ""}`} onDragOver={(event) => { event.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={drop}>
-    <div className="pdf-upload-topline"><Link href="/pdf-tools"><ArrowLeft size={17} /> PDF Tools</Link><span><ShieldCheck size={16} /> Free, private browser processing</span></div>
+    <div className="pdf-upload-topline"><Link href={backHref}><ArrowLeft size={17} /> {backLabel}</Link><span><ShieldCheck size={16} /> Free, private browser processing</span></div>
     <div className="pdf-upload-content">
       <span className="pdf-upload-mark"><Icon size={32} /></span><span className="auto-print-kicker">Free PDF Tool</span>
       <Heading>{title}</Heading><p>{description}</p>

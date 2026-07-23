@@ -41,21 +41,32 @@ const navGroups: NavGroup[] = [
     label: "Services",
     items: [
       { name: "PrintPilot", icon: Printer, href: "/auto-print", match: ["/auto-print"] },
+      { name: "Passport Photo", icon: IdCard, href: "/passport-photo", match: ["/passport-photo"] },
       { name: "PDF Tools", icon: FileText, href: "/pdf-tools", match: ["/pdf-tools"] },
       { name: "Image Tools", icon: Image, href: "/image-tools", match: ["/image-tools"] },
-      { name: "Passport Photo", icon: IdCard, href: "/passport-photo", match: ["/passport-photo"] },
     ],
   },
 ];
 
+// Each page's printer selection is kept independent: PrintPilot saves under
+// "auto_document_print", Passport Photo under its own "passport_photo" key.
+const printerServiceKeyByPath: Record<string, string> = {
+  "/passport-photo": "passport_photo",
+};
+
 export function DashboardShell({ activePath, children }: { activePath: string; children: ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const printerServiceKey = printerServiceKeyByPath[activePath] || "auto_document_print";
 
   return (
     <main className={`app-frame ${isSidebarCollapsed ? "sidebar-collapsed" : ""}`}>
       <AppSidebar activePath={activePath} isCollapsed={isSidebarCollapsed} />
       <section className="app-main">
-        <ProfileTopbar isSidebarCollapsed={isSidebarCollapsed} onMenuClick={() => setIsSidebarCollapsed((current) => !current)} />
+        <ProfileTopbar
+          isSidebarCollapsed={isSidebarCollapsed}
+          onMenuClick={() => setIsSidebarCollapsed((current) => !current)}
+          printerServiceKey={printerServiceKey}
+        />
         {children}
       </section>
     </main>

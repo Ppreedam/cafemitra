@@ -23,8 +23,6 @@ export type PricingService = {
   updatedAt?: string;
 };
 
-const releaseHiddenServiceKeys = new Set(["passport_photo"]);
-
 export const defaultPricingServices: PricingService[] = [
   {
     serviceKey: "auto_document_print",
@@ -39,7 +37,6 @@ export const defaultPricingServices: PricingService[] = [
       ],
     },
   },
-  // Hidden for this release. Keep the config here so Passport Size Photo can be enabled later without rebuilding pricing rules.
   {
     serviceKey: "passport_photo",
     serviceName: "Passport Size Photo",
@@ -51,13 +48,27 @@ export const defaultPricingServices: PricingService[] = [
 ];
 
 export async function fetchPricingServices() {
-  if (!hasStoredSession()) return visiblePricingServices(defaultPricingServices);
+  if (!hasStoredSession()) return defaultPricingServices;
 
   const response = await apiFetch("/api/pricing-settings/");
 
-  if (!response.ok) return visiblePricingServices(defaultPricingServices);
+  if (!response.ok) return defaultPricingServices;
   const result = (await response.json()) as { services: PricingService[] };
   return mergePricingDefaults(result.services || []);
+}
+
+export async function fetchPricingServiceByKey(serviceKey: string) {
+  const fallback = defaultPricingServices.find((service) => service.serviceKey === serviceKey);
+  if (!hasStoredSession()) return fallback;
+
+  try {
+    const response = await apiFetch("/api/pricing-settings/");
+    if (!response.ok) return fallback;
+    const result = (await response.json()) as { services: PricingService[] };
+    return (result.services || []).find((service) => service.serviceKey === serviceKey) || fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 export async function savePricingService(serviceKey: string, settings: Record<string, PricingValue>) {
@@ -104,14 +115,14 @@ export function formatPriceItem(item: PriceItem) {
   const rangeSummary = ranges
     .map((range) => {
       const maxPages = range.maxPages === undefined || range.maxPages === null || Number(range.maxPages) <= 0 ? "up" : range.maxPages;
-      return `${range.minPages}-${maxPages}p Rs. ${range.rate}`;
+      return `${range.minPages}-${maxPages} Rs. ${range.rate}`;
     })
     .join(", ");
   return `${item.label}: ${rangeSummary}`;
 }
 
 export function mergePricingDefaults(services: PricingService[]) {
-  return defaultPricingServices.filter((defaultService) => !releaseHiddenServiceKeys.has(defaultService.serviceKey)).map((defaultService) => {
+  return defaultPricingServices.map((defaultService) => {
     const saved = services.find((service) => service.serviceKey === defaultService.serviceKey);
     const allowedFields = Object.keys(defaultService.settings);
     const normalizedSettings = normalizeLegacySettings(defaultService.serviceKey, saved?.settings || {});
@@ -125,10 +136,6 @@ export function mergePricingDefaults(services: PricingService[]) {
       settings: { ...defaultService.settings, ...savedSettings },
     };
   });
-}
-
-function visiblePricingServices(services: PricingService[]) {
-  return services.filter((service) => !releaseHiddenServiceKeys.has(service.serviceKey));
 }
 
 function normalizeLegacySettings(serviceKey: string, settings: Record<string, PricingValue>) {

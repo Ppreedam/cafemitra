@@ -26,6 +26,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { apiFetch, apiUrl, hasStoredSession } from "@/lib/api";
+import { passportAttireLabels } from "@/lib/passport-attire";
 import { DashboardShell } from "../DashboardShell";
 import { SkeletonBlock, UiState } from "../UiState";
 
@@ -43,6 +44,7 @@ type Order = {
   status: string;
   fileName: string;
   fileUrl: string;
+  attireCategory?: string;
   createdAt: string;
 };
 
@@ -258,6 +260,7 @@ export default function OrdersPage() {
                         <td>
                           <strong>{order.serviceName}</strong>
                           <small>{order.priceLabel}</small>
+                          {order.attireCategory ? <small>{passportAttireLabels[order.attireCategory] || order.attireCategory}</small> : null}
                         </td>
                         <td>
                           <a href={apiUrl(order.fileUrl)} target="_blank" rel="noreferrer">

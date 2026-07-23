@@ -5439,37 +5439,37 @@ img.profile-photo {
   gap: 10px;
 }
 
-.customer-service-grid button {
-  display: grid;
-  grid-template-columns: 36px 1fr;
-  gap: 10px;
+.customer-service-grid label {
+  display: flex;
   align-items: center;
+  gap: 10px;
+  min-height: 48px;
   border: 1px solid var(--soft-line);
   border-radius: 8px;
-  padding: 12px;
+  padding: 0 14px;
   color: #18214d;
   background: #fff;
-  text-align: left;
   cursor: pointer;
 }
 
-.customer-service-grid button.active {
+.customer-service-grid label.active {
   border-color: #dcd8ff;
   background: rgba(87, 64, 237, 0.06);
 }
 
+.customer-service-grid input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+  accent-color: #5740ed;
+}
+
 .customer-service-grid svg {
   color: #5740ed;
+  flex-shrink: 0;
 }
 
-.customer-service-grid strong,
-.customer-service-grid small {
-  display: block;
-}
-
-.customer-service-grid small {
-  margin-top: 3px;
-  color: #78809b;
+.customer-service-grid strong {
   font-weight: 720;
 }
 
@@ -5639,6 +5639,50 @@ img.profile-photo {
   cursor: not-allowed;
 }
 
+.passport-attire-picker {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  color: #606a87;
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.passport-attire-options {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.passport-attire-options button {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  border: 1px solid #d9deeb;
+  border-radius: 8px;
+  padding: 10px 6px;
+  color: #111a44;
+  background: #fff;
+  cursor: pointer;
+  text-align: center;
+}
+
+.passport-attire-options button svg {
+  color: #5740ed;
+}
+
+.passport-attire-options button span {
+  font-size: 0.72rem;
+  font-weight: 720;
+  line-height: 1.25;
+}
+
+.passport-attire-options button.active {
+  border-color: #5740ed;
+  background: rgba(87, 64, 237, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(87, 64, 237, 0.16);
+}
+
 .passport-sheet-mini {
   display: inline-grid;
   gap: 6px;
@@ -5656,47 +5700,6 @@ img.profile-photo {
   object-fit: cover;
   background: #fff;
   box-shadow: 0 8px 18px rgba(25, 35, 82, 0.08);
-}
-
-.passport-photo-tools {
-  display: grid;
-  grid-template-columns: minmax(120px, 1fr) minmax(132px, 1fr);
-  gap: 10px;
-  margin-top: 12px;
-  max-width: 360px;
-}
-
-.passport-photo-tools label {
-  display: grid;
-  gap: 6px;
-  color: #59658c;
-  font-size: 0.76rem;
-  font-weight: 850;
-}
-
-.passport-photo-tools select {
-  height: 36px;
-  border: 1px solid #d9deeb;
-  border-radius: 8px;
-  padding: 0 10px;
-  color: #111a44;
-  background: #fff;
-  font-weight: 800;
-}
-
-.passport-photo-tools .passport-bg-toggle {
-  display: flex;
-  align-items: center;
-  min-height: 36px;
-  border: 1px solid #d9deeb;
-  border-radius: 8px;
-  padding: 0 10px;
-  color: #111a44;
-  background: #fff;
-}
-
-.passport-photo-tools .passport-color-control {
-  min-height: 36px;
 }
 
 .customer-options-panel {
@@ -5825,61 +5828,6 @@ img.profile-photo {
   gap: 12px;
 }
 
-.attire-gender-tabs {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-
-.attire-gender-tabs button {
-  border: 1px solid #d9deeb;
-  border-radius: 8px;
-  padding: 10px;
-  background: #fff;
-  color: #111a44;
-  font-weight: 640;
-  cursor: pointer;
-}
-
-.attire-gender-tabs button.active {
-  border-color: #5740ed;
-  background: rgba(87, 64, 237, 0.06);
-  color: #5740ed;
-}
-
-.attire-options-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 8px;
-}
-
-.attire-option {
-  display: grid;
-  grid-template-columns: 18px 1fr;
-  align-items: center;
-  gap: 8px;
-  border: 1px solid #d9deeb;
-  border-radius: 8px;
-  padding: 10px;
-  color: #111a44;
-  background: #fff;
-  cursor: pointer;
-  font-size: 0.85rem;
-  min-width: 0;
-}
-
-.attire-option.active {
-  border-color: #5740ed;
-  background: rgba(87, 64, 237, 0.06);
-  box-shadow: inset 0 0 0 1px rgba(87, 64, 237, 0.16);
-}
-
-.attire-option input {
-  width: 16px;
-  height: 16px;
-  accent-color: #5740ed;
-}
-
 .passport-preview-button {
   margin-top: 16px;
   display: inline-flex;
@@ -5910,6 +5858,12 @@ img.profile-photo {
   max-width: 320px;
   border-radius: 8px;
   border: 1px solid #d9deeb;
+}
+
+.passport-print-picker {
+  margin-top: 18px;
+  display: grid;
+  gap: 12px;
 }
 
 @media (max-width: 860px) {
@@ -5946,43 +5900,6 @@ img.profile-photo {
 
 .copies-stepper input {
   text-align: center;
-}
-
-.passport-color-control {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 42px;
-  border: 1px solid #d9deeb;
-  border-radius: 8px;
-  padding: 0 10px;
-  background: #fff;
-}
-
-.passport-color-control input {
-  width: 36px;
-  height: 30px;
-  border: 0;
-  padding: 0;
-  background: transparent;
-}
-
-.passport-color-control strong {
-  color: #111a44;
-  font-size: 0.84rem;
-}
-
-.customer-options-panel .passport-bg-toggle {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  min-height: 38px;
-  color: #111a44;
-}
-
-.passport-bg-toggle input {
-  width: 17px;
-  height: 17px;
 }
 
 .customer-summary-row,
@@ -6205,7 +6122,7 @@ img.profile-photo {
   color: #2563eb;
 }
 
-.customer-portal .customer-service-grid button.active,
+.customer-portal .customer-service-grid label.active,
 .customer-portal .print-type-options label.active {
   border-color: #2563eb;
   background: #eef4ff;
@@ -8261,10 +8178,6 @@ img.profile-photo {
     padding: 14px;
   }
 
-  .customer-service-grid button {
-    min-height: 70px;
-  }
-
   .customer-upload {
     min-height: 210px;
     padding: 18px 12px;
@@ -8290,9 +8203,8 @@ img.profile-photo {
     padding: 0 8px;
   }
 
-  .passport-photo-tools {
-    grid-template-columns: 1fr;
-    max-width: none;
+  .passport-attire-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .customer-options-panel input,
@@ -14087,6 +13999,7 @@ img.profile-photo {
 .compress-file-meta strong { overflow: hidden; color: #26304d; font-size: .74rem; text-overflow: ellipsis; white-space: nowrap; }
 .compress-file-meta span { color: #6e7b96; font-size: .68rem; }
 .compress-thumbnail { position: relative; display: grid; place-items: center; height: 245px; overflow: hidden; border-radius: 8px; padding: 12px; color: #2563eb; background: #f0f3f8; }
+.compress-thumbnail-transparent { background-image: linear-gradient(45deg, #e2e8f2 25%, transparent 25%), linear-gradient(-45deg, #e2e8f2 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e2e8f2 75%), linear-gradient(-45deg, transparent 75%, #e2e8f2 75%); background-position: 0 0, 0 8px, 8px -8px, -8px 0; background-size: 16px 16px; background-color: #fff; }
 .compress-thumbnail > img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 4px 5px rgba(0,0,0,.13)); }
 .compress-thumbnail > div { position: absolute; inset: 0; display: flex; align-items: center; flex-direction: column; justify-content: center; gap: 7px; color: #fff; background: rgba(13,23,72,.68); }
 .compress-file-card > small { display: block; margin-top: 7px; color: #7c88a2; font-size: .65rem; }
@@ -14122,7 +14035,7 @@ img.profile-photo {
 .compress-studio .compress-file-grid { grid-template-columns: repeat(auto-fill,minmax(190px,230px)); }
 .compress-studio .compress-thumbnail { height: 210px; }
 .compress-studio .compress-add-card { min-height: 344px; }
-.compress-side-panel { position: sticky; top: 18px; display: flex; flex-direction: column; height: calc(100vh - 190px); min-height: 560px; border: 1px solid #dce5f2; border-radius: 14px; padding: 22px; background: #fff; box-shadow: 0 10px 28px rgba(25,35,82,.06); }
+.compress-side-panel { position: sticky; top: 18px; display: flex; flex-direction: column; max-height: calc(100vh - 36px); min-height: 560px; overflow-y: auto; border: 1px solid #dce5f2; border-radius: 14px; padding: 22px; background: #fff; box-shadow: 0 10px 28px rgba(25,35,82,.06); }
 .compress-side-panel h2 { margin: 8px 0 5px; color: #0d1748; font-size: 1.65rem; }
 .compress-side-panel > div:first-child > p { margin: 0; color: #74809b; font-size: .72rem; font-weight: 750; }
 .compress-side-config { margin-top: 23px; border: 1px solid #dce5f2; border-radius: 11px; padding: 13px; background: #f8faff; }
@@ -14180,6 +14093,10 @@ img.profile-photo {
 .image-compress-compare article + article { border-left: 1px solid #cfd8e7; }
 .image-compress-compare article > div { display: flex; justify-content: space-between; gap: 12px; padding: 0 0 12px; color: #52617d; font-size: .72rem; }
 .image-compress-compare img { width: 100%; height: 100%; min-height: 0; border-radius: 10px; object-fit: contain; background: #fff; box-shadow: 0 8px 24px rgba(25,35,82,.08); }
+.image-compress-compare img.compress-thumbnail-transparent { background-image: linear-gradient(45deg, #e2e8f2 25%, transparent 25%), linear-gradient(-45deg, #e2e8f2 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e2e8f2 75%), linear-gradient(-45deg, transparent 75%, #e2e8f2 75%); background-position: 0 0, 0 8px, 8px -8px, -8px 0; background-size: 16px 16px; background-color: #fff; }
+.heic-preview-unavailable { display: grid; place-items: center; gap: 10px; height: 100%; min-height: 0; border: 1px dashed #cfd8e7; border-radius: 10px; padding: 24px; color: #7f8bab; background: #fff; text-align: center; }
+.heic-preview-unavailable svg { color: #a9b4cf; }
+.heic-preview-unavailable small { max-width: 220px; font-size: .72rem; font-weight: 700; line-height: 1.4; }
 @media(max-width:720px){.image-compress-compare{grid-template-columns:1fr;overflow-y:auto}.image-compress-compare article{min-height:360px}.image-compress-compare article+article{border-top:1px solid #cfd8e7;border-left:0}}
 
 /* Image upscale studio - RepetiGo dashboard styling */
@@ -15064,6 +14981,8 @@ img.profile-photo {
 /* SEO content for public tool pages and blog guides */
 .tool-seo-content{display:grid;gap:34px;width:100%;max-width:100%;min-width:0;margin-top:24px;border:1px solid #dce5f2;border-radius:18px;padding:34px;overflow-x:clip;background:#fff;box-shadow:0 12px 32px rgba(25,35,82,.06);color:#23304f}.tool-seo-content section,.tool-seo-content footer{display:grid;gap:14px;min-width:0}.tool-seo-content h2{margin:0;color:#071747;font-size:clamp(1.55rem,2.5vw,2.35rem);line-height:1.12}.tool-seo-content h3{margin:0;color:#102451;font-size:1rem}.tool-seo-content p{margin:0;color:#5f6c88;font-size:.96rem;line-height:1.72}.tool-seo-content a{color:#2563eb;font-weight:850}.tool-seo-hero{display:grid;gap:16px;padding-bottom:28px;border-bottom:1px solid #e4ebf6}.tool-seo-kicker{width:max-content;max-width:100%;border-radius:999px;padding:7px 12px;color:#2563eb!important;background:#eaf1ff;font-size:.72rem!important;font-weight:900!important;letter-spacing:.06em;text-transform:uppercase}.tool-seo-badges{display:flex;flex-wrap:wrap;gap:9px;min-width:0}.tool-seo-badges span{border:1px solid #cfe0ff;border-radius:999px;padding:8px 11px;color:#174ea6;background:#f4f8ff;font-size:.76rem;font-weight:850}.tool-seo-step-grid,.tool-seo-use-grid,.tool-seo-related-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;min-width:0}.tool-seo-step-grid>div,.tool-seo-use-grid>div,.tool-seo-related-grid>a{min-width:0;border:1px solid #e0e8f5;border-radius:12px;padding:16px;background:#f8fbff}.tool-seo-table-wrap{max-width:100%;overflow-x:auto;border:1px solid #e0e8f5;border-radius:12px}.tool-seo-table-wrap table{width:100%;min-width:720px;border-collapse:collapse}.tool-seo-table-wrap th,.tool-seo-table-wrap td{border-top:1px solid #e0e8f5;padding:13px;text-align:left;vertical-align:top}.tool-seo-table-wrap th{border-top:0;color:#102451;background:#f2f6fc;font-size:.82rem}.tool-seo-table-wrap td{color:#53627f;font-size:.85rem;line-height:1.5}.tool-seo-faq-list{display:grid;gap:10px}.tool-seo-faq-list details{border:1px solid #e0e8f5;border-radius:12px;padding:16px;background:#fbfdff}.tool-seo-faq-list summary{color:#102451;cursor:pointer;font-weight:900}.tool-seo-faq-list p{margin-top:10px}.tool-seo-related-grid>a{display:grid;gap:6px;color:#102451}.tool-seo-related-grid>a span{color:#64708f;font-size:.86rem;line-height:1.45}.tool-seo-cta{border-radius:16px;padding:24px;color:#fff;background:#2563eb}.tool-seo-cta h2,.tool-seo-cta p{color:#fff}.tool-seo-cta a{justify-self:start;border-radius:10px;padding:12px 16px;color:#102451;background:#fff}
 .tool-seo-raw-copy{margin:0;white-space:pre-wrap;word-break:break-word;color:#34415e;font:inherit;font-size:.98rem;line-height:1.78}
+.tool-seo-code-block{margin:0;max-width:100%;overflow-x:auto;border:1px solid #1c2b52;border-radius:12px;padding:18px 20px;background:#0b1330;box-shadow:0 10px 26px rgba(11,19,48,.18)}
+.tool-seo-code-block code{display:block;width:max-content;min-width:100%;color:#d7e2ff;font-family:"SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;font-size:.82rem;line-height:1.65;white-space:pre}
 .tool-seo-content>h1{margin:0 0 4px;color:#071747;font-size:clamp(2rem,4vw,3.45rem);line-height:1.05}.tool-seo-copy-block{display:grid;gap:10px}.tool-seo-copy-paragraph{white-space:pre-wrap;word-break:break-word}
 .tool-seo-steps{display:grid;gap:10px;margin:0;padding-left:28px;color:#5f6c88}.tool-seo-steps li{padding-left:5px;font-size:.96rem;line-height:1.72}
 .tool-seo-list{display:grid;gap:8px;margin:0;padding-left:24px;color:#5f6c88}.tool-seo-list li{padding-left:5px;font-size:.96rem;line-height:1.72}.tool-seo-callout{margin:4px 0;padding:14px 16px;border-left:4px solid #2563eb;border-radius:8px;color:#30466e;background:#f2f6ff;font-size:.96rem;line-height:1.65}
