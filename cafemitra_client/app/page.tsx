@@ -259,7 +259,7 @@ function HeroVisual() {
     <div className="ai-hero-visual">
       <img
         className="ai-dashboard-image"
-        src="/hero-print-queue.png"
+        src="/hero-print-queue.jpeg"
         alt="RepetiGo live print queue dashboard"
       />
       <div className="ai-qr-card">

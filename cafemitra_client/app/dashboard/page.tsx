@@ -7,6 +7,7 @@ import {
   ClipboardList,
   FileText,
   IdCard,
+  Image as ImageIcon,
   MessageCircle,
   Printer,
   Shield,
@@ -16,6 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { apiFetch, hasStoredSession, storeSession } from "@/lib/api";
+import { readRecentServiceKeys, recordServiceVisit } from "@/lib/recentServices";
 import { DashboardShell } from "../DashboardShell";
 import { SkeletonBlock } from "../UiState";
 
@@ -55,21 +57,27 @@ type Metric = {
 };
 
 const serviceCatalog = [
-  { key: "auto_document_print", aliases: ["cafemitra printpilot", "printpilot"], name: "PrintPilot", icon: Printer, color: "#2563eb", href: "/auto-print" },
-  { key: "whatsapp_print", aliases: ["whatsapp print"], name: "WhatsApp Print", icon: MessageCircle, color: "#0d9488", href: "#" },
-  { key: "passport_photo", aliases: ["passport size photo", "passport photo"], name: "Passport Photo", icon: UserRound, color: "#5740ed", href: "#" },
-  { key: "id_card_print", aliases: ["id card print"], name: "ID Card Print", icon: IdCard, color: "#16a1bd", href: "#" },
-  { key: "admit_card_hub", aliases: ["admit card hub"], name: "Admit Card Hub", icon: ClipboardList, color: "#f97316", href: "#" },
-  { key: "document_services", aliases: ["document services"], name: "Document Services", icon: FileText, color: "#1688f5", href: "#" },
+  { key: "auto_document_print", aliases: ["cafemitra printpilot", "printpilot"], name: "PrintPilot", icon: Printer, color: "#2563eb", href: "/auto-print", available: true },
+  { key: "passport_photo", aliases: ["passport size photo", "passport photo"], name: "Passport Photo", icon: UserRound, color: "#5740ed", href: "/passport-photo", available: true },
+  { key: "pdf_tools", aliases: ["pdf tools"], name: "PDF Tools", icon: FileText, color: "#1688f5", href: "/pdf-tools", available: true },
+  { key: "image_tools", aliases: ["image tools"], name: "Image Tools", icon: ImageIcon, color: "#16a1bd", href: "/image-tools", available: true },
+  { key: "whatsapp_print", aliases: ["whatsapp print"], name: "WhatsApp Print", icon: MessageCircle, color: "#0d9488", href: "#", available: false },
+  { key: "id_card_print", aliases: ["id card print"], name: "ID Card Print", icon: IdCard, color: "#16a1bd", href: "#", available: false },
+  { key: "admit_card_hub", aliases: ["admit card hub"], name: "Admit Card Hub", icon: ClipboardList, color: "#f97316", href: "#", available: false },
+  { key: "document_services", aliases: ["document services"], name: "Document Services", icon: FileText, color: "#1688f5", href: "#", available: false },
 ];
+
+const MAX_QUICK_SERVICES = 6;
 
 export default function Dashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [profile, setProfile] = useState<ProfileSummary | null>(null);
   const [wallet, setWallet] = useState<WalletSummary | null>(null);
   const [message, setMessage] = useState("Loading dashboard...");
+  const [recentKeys, setRecentKeys] = useState<string[]>([]);
 
   useEffect(() => {
+    setRecentKeys(readRecentServiceKeys());
     hydrateProfileFromStorage();
 
     if (!hasStoredSession()) {
@@ -115,7 +123,7 @@ export default function Dashboard() {
     }
   }
 
-  const analytics = useMemo(() => buildDashboardAnalytics(orders, profile, wallet), [orders, profile, wallet]);
+  const analytics = useMemo(() => buildDashboardAnalytics(orders, profile, wallet, recentKeys), [orders, profile, wallet, recentKeys]);
   const ownerName = profile?.user.fullName?.trim().split(" ")[0] || "Owner";
 
   return (
@@ -164,17 +172,31 @@ export default function Dashboard() {
             <div className="quick-grid">
               {analytics.quickServices.map((service) => {
                 const Icon = service.icon;
-                return (
-                  <Link className="quick-card" href={service.href} key={service.name}>
+                const cardBody = (
+                  <>
                     <span className="icon-tile" style={{ "--tile-color": service.color } as React.CSSProperties}>
                       <Icon size={23} />
                     </span>
                     <div>
                       <h3>{service.name}</h3>
                       <span className="order-count" style={{ "--tile-color": service.color } as React.CSSProperties}>
-                        {service.orders} {service.orders === 1 ? "order" : "orders"}
+                        {service.available ? `${service.orders} ${service.orders === 1 ? "order" : "orders"}` : "Coming soon"}
                       </span>
                     </div>
+                  </>
+                );
+
+                if (!service.available) {
+                  return (
+                    <div className="quick-card disabled" key={service.name} aria-disabled="true">
+                      {cardBody}
+                    </div>
+                  );
+                }
+
+                return (
+                  <Link className="quick-card" href={service.href} key={service.name} onClick={() => recordServiceVisit(service.key)}>
+                    {cardBody}
                   </Link>
                 );
               })}
@@ -186,7 +208,7 @@ export default function Dashboard() {
   );
 }
 
-function buildDashboardAnalytics(orders: Order[], profile: ProfileSummary | null, wallet: WalletSummary | null) {
+function buildDashboardAnalytics(orders: Order[], profile: ProfileSummary | null, wallet: WalletSummary | null, recentKeys: string[]) {
   const todayOrders = orders.filter((order) => isSameLocalDay(order.createdAt, 0));
   const yesterdayOrders = orders.filter((order) => isSameLocalDay(order.createdAt, -1));
   const todayRevenue = sumRevenue(todayOrders);
@@ -212,12 +234,24 @@ function buildDashboardAnalytics(orders: Order[], profile: ProfileSummary | null
     { label: "Total Customers", value: String(customerIds.size), meta: formatDelta(customerIds.size, yesterdayCustomerIds.size, "total growth"), icon: Users, color: "#5740ed" },
   ];
 
-  const quickServices = serviceCatalog.map((service) => ({
+  const quickServices = orderServicesByRecency(serviceCatalog, recentKeys).map((service) => ({
     ...service,
     orders: orders.filter((order) => matchesService(order, service.key, service.aliases)).length,
   }));
 
   return { metrics, quickServices };
+}
+
+function orderServicesByRecency<T extends { key: string; available: boolean }>(catalog: T[], recentKeys: string[]) {
+  const available = catalog.filter((service) => service.available);
+  const unavailable = catalog.filter((service) => !service.available);
+
+  const recentAvailable = recentKeys
+    .map((key) => available.find((service) => service.key === key))
+    .filter((service): service is T => Boolean(service));
+  const neverUsed = available.filter((service) => !recentKeys.includes(service.key));
+
+  return [...recentAvailable, ...neverUsed, ...unavailable].slice(0, MAX_QUICK_SERVICES);
 }
 
 function sumRevenue(orders: Order[]) {

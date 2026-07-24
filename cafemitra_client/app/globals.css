@@ -2535,6 +2535,17 @@ img.profile-photo {
   transform: translateY(-2px);
 }
 
+.app-frame .quick-card.disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.app-frame .quick-card.disabled:hover {
+  border-color: var(--dash-border);
+  box-shadow: var(--dash-shadow);
+  transform: none;
+}
+
 .app-frame .icon-tile {
   border-radius: 10px;
   background: color-mix(in srgb, var(--tile-color, var(--dash-brand)) 11%, white);

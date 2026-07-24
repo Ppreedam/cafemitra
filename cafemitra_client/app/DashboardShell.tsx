@@ -15,12 +15,14 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { ProfileTopbar } from "./profile/ProfileTopbar";
+import { recordServiceVisit } from "@/lib/recentServices";
 
 type NavItem = {
   name: string;
   icon: LucideIcon;
   href: string;
   match?: string[];
+  serviceKey?: string;
 };
 
 type NavGroup = {
@@ -40,10 +42,10 @@ const navGroups: NavGroup[] = [
   {
     label: "Services",
     items: [
-      { name: "PrintPilot", icon: Printer, href: "/auto-print", match: ["/auto-print"] },
-      { name: "Passport Photo", icon: IdCard, href: "/passport-photo", match: ["/passport-photo"] },
-      { name: "PDF Tools", icon: FileText, href: "/pdf-tools", match: ["/pdf-tools"] },
-      { name: "Image Tools", icon: Image, href: "/image-tools", match: ["/image-tools"] },
+      { name: "PrintPilot", icon: Printer, href: "/auto-print", match: ["/auto-print"], serviceKey: "auto_document_print" },
+      { name: "Passport Photo", icon: IdCard, href: "/passport-photo", match: ["/passport-photo"], serviceKey: "passport_photo" },
+      { name: "PDF Tools", icon: FileText, href: "/pdf-tools", match: ["/pdf-tools"], serviceKey: "pdf_tools" },
+      { name: "Image Tools", icon: Image, href: "/image-tools", match: ["/image-tools"], serviceKey: "image_tools" },
     ],
   },
 ];
@@ -90,7 +92,13 @@ function AppSidebar({ activePath, isCollapsed }: { activePath: string; isCollaps
               const Icon = item.icon;
               const isActive = item.match?.includes(activePath);
               return (
-                <Link className={`side-link ${isActive ? "active" : ""}`} href={item.href} key={item.name} title={isCollapsed ? item.name : undefined}>
+                <Link
+                  className={`side-link ${isActive ? "active" : ""}`}
+                  href={item.href}
+                  key={item.name}
+                  title={isCollapsed ? item.name : undefined}
+                  onClick={item.serviceKey ? () => recordServiceVisit(item.serviceKey!) : undefined}
+                >
                   <Icon size={17} />
                   <span>{item.name}</span>
                 </Link>

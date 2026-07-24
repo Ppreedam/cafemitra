@@ -920,7 +920,7 @@ def check_server_status(request):
     if request.method == "OPTIONS":
         return JsonResponse({})
 
-    return JsonResponse({"status": "ok", "message": "Server is running version4."})
+    return JsonResponse({"status": "ok", "message": "Server is running version5."})
 
 
 @csrf_exempt
