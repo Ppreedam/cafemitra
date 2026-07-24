@@ -45,7 +45,9 @@ export function PublicFooter() {
               <span>
                 <Printer size={16} />
               </span>
-              Repeti<em>Go</em>
+              <b className="ai-footer-wordmark">
+                Repeti<em>Go</em>
+              </b>
             </Link>
             <p>
               AI-Powered Print Shop Software. Secure Document Infrastructure for Cyber Cafes, Print Shops, and CSC

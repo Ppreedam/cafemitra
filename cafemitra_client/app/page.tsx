@@ -229,7 +229,7 @@ function Hero() {
             RepetiGo is an AI-powered automation platform for cyber cafés and print shops that automates document printing, passport photos, AI form filling, PDF tools, agreements, and customer workflows.
           </p>
           <div className="ai-actions">
-            <Link className="ai-btn ai-btn-brand" href="/register">
+            <Link className="ai-btn ai-btn-gradient" href="/register">
               Start Free Trial - No Credit Card <ArrowRight size={17} />
             </Link>
             <a className="ai-btn ai-btn-light" href="#demo">
@@ -315,7 +315,7 @@ function Problem() {
         <InfoCard icon={Smartphone} title="Customer Documents on Your Personal WhatsApp. Every Day." body="Aadhaar, PAN, marksheets, medical reports - sitting on your phone. Under the DPDP Act 2023, storing personal data without consent creates serious legal risk." danger />
         <InfoCard icon={Clock} title="3-5 Minutes of Manual Work. Per Document." body="Skewed phone photos. Wrong sizes. Manual cropping, rotating, adjusting margins. 50 documents a day equals 150+ minutes of pure labour software should handle." danger />
       </div>
-      <p className="ai-center-note">It does not have to work this way. -&gt;</p>
+      <p className="ai-center-note">It does not have to work this way. →</p>
     </section>
   );
 }

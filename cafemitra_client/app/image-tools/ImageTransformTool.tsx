@@ -3,8 +3,9 @@
 import { useRef, useState, type PointerEvent, type ReactNode } from "react";
 import { Crop, Download, FileCode2, LoaderCircle, Scaling, ShieldCheck, WandSparkles } from "lucide-react";
 import { PdfToolUpload } from "../pdf-tools/PdfToolUpload";
+import type { ImageTransformSlug } from "./imageTransformSlugs";
 
-export type ImageTransformSlug = "image-converter" | "resize-image" | "crop-image" | "convert-from-jpg" | "html-to-image";
+export type { ImageTransformSlug };
 const configs = {
   "image-converter": { title: "Image Converter", description: "Convert images into JPG, PNG, WebP, SVG, BMP, ICO, or PDF.", icon: WandSparkles, accept: "image/*,.svg", button: "Select images" },
   "resize-image": { title: "Resize Image", description: "Resize images by percentage or exact pixel dimensions.", icon: Scaling, accept: "image/jpeg,image/png,image/webp", button: "Select images" },
@@ -18,8 +19,6 @@ type Result = { blob: Blob; url: string; name: string; width: number; height: nu
 type ResizeMode = "size" | "percentage" | "social";
 type CropRect = { x: number; y: number; width: number; height: number };
 type ReactPointerEvent<T = HTMLElement> = PointerEvent<HTMLElement>;
-
-export function isImageTransformSlug(value: string): value is ImageTransformSlug { return value in configs; }
 
 export default function ImageTransformTool({ slug, children }: { slug: ImageTransformSlug; children?: ReactNode }) {
   const config = configs[slug]; const inputRef = useRef<HTMLInputElement>(null); const [item, setItem] = useState<Item | null>(null); const [result, setResult] = useState<Result | null>(null); const [busy, setBusy] = useState(false); const [error, setError] = useState("");

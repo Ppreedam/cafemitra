@@ -268,7 +268,8 @@ export function AuthPanel({ mode }: AuthPanelProps) {
                   label="Password"
                   name="new-password"
                   type="password"
-                  placeholder={passwordRequirementHint}
+                  placeholder="Enter password"
+                  hint={passwordRequirementHint}
                   value={values.password}
                   error={touched.password ? errors.password : undefined}
                   verified={Boolean(values.password) && !errors.password}
@@ -365,6 +366,7 @@ function Field({
   name,
   type,
   placeholder,
+  hint,
   value,
   error,
   verified,
@@ -378,6 +380,7 @@ function Field({
   name: string;
   type: string;
   placeholder: string;
+  hint?: string;
   value: string;
   error?: string;
   verified?: boolean;
@@ -429,6 +432,8 @@ function Field({
         <span className="auth-error" id={`${fieldId}-error`}>
           {error}
         </span>
+      ) : hint ? (
+        <span className="auth-hint">{hint}</span>
       ) : null}
     </label>
   );
