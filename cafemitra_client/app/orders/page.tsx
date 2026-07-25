@@ -45,6 +45,7 @@ type Order = {
   fileName: string;
   fileUrl: string;
   attireCategory?: string;
+  geminiPhoto?: string;
   createdAt: string;
 };
 
@@ -263,9 +264,18 @@ export default function OrdersPage() {
                           {order.attireCategory ? <small>{passportAttireLabels[order.attireCategory] || order.attireCategory}</small> : null}
                         </td>
                         <td>
-                          <a href={apiUrl(order.fileUrl)} target="_blank" rel="noreferrer">
-                            {order.fileName || "Document"}
-                          </a>
+                          {order.fileUrl ? (
+                            <a href={apiUrl(order.fileUrl)} target="_blank" rel="noreferrer">
+                              {order.fileName || "Document"}
+                            </a>
+                          ) : null}
+                          {order.geminiPhoto ? (
+                            <a href={apiUrl(order.geminiPhoto)} target="_blank" rel="noreferrer">
+                              Passport Photo
+                            </a>
+                          ) : order.attireCategory ? (
+                            <small>Passport photo processing...</small>
+                          ) : null}
                         </td>
                         <td>{order.pages} x {order.copies}</td>
                         <td>Rs. {order.totalAmount}</td>

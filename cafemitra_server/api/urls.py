@@ -29,6 +29,7 @@ urlpatterns = [
     re_path(r"^orders/(?P<order_id>[0-9]+)/file/?$", views.order_document),
     re_path(r"^public-shop/(?P<code>[^/]+)/?$", views.public_shop_by_code),
     re_path(r"^public-shop/(?P<code>[^/]+)/orders/?$", views.public_print_order),
+    re_path(r"^public-shop/(?P<code>[^/]+)/passport-photo-job/?$", views.public_save_raw_passport_photo),
     re_path(r"^public-orders/(?P<order_id>[0-9]+)/?$", views.public_order_status),
     re_path(r"^public-orders/(?P<order_id>[0-9]+)/check-upi-payment/?$", views.public_check_upi_payment),
     re_path(r"^public-orders/(?P<order_id>[0-9]+)/razorpay/order/?$", views.public_create_razorpay_order),

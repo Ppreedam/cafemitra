@@ -209,10 +209,14 @@ class PassportPhotoJob(models.Model):
     STATUS_FAILED = "failed"
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="passport_photo_jobs", db_column="userid")
+    order = models.ForeignKey(PrintOrder, null=True, blank=True, on_delete=models.SET_NULL, related_name="passport_photo_jobs")
     username = models.CharField(max_length=255, blank=True)
     self_agent = models.BooleanField(default=True, db_column="selfagent")
     img_path = models.ImageField(upload_to="passportsizephoto/%Y/%m/%d/", db_column="imgpath")
     prompt = models.TextField(blank=True)
+    price_item_id = models.CharField(max_length=120, blank=True)
+    price_label = models.CharField(max_length=160, blank=True)
+    rate = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     final_img_path = models.CharField(max_length=255, blank=True, db_column="finalimgpath")
     is_printed = models.BooleanField(default=False)
     status = models.CharField(max_length=20, default=STATUS_PENDING)

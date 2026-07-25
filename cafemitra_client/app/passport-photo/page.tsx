@@ -6,36 +6,22 @@ import { Crop, Eye, IdCard, Printer, RefreshCw, Trash2, Upload, X } from "lucide
 import { DashboardShell } from "../DashboardShell";
 import { SkeletonBlock } from "../UiState";
 import { apiFetch, apiUrl } from "@/lib/api";
-import { fetchPricingServiceByKey, savePricingService } from "@/lib/pricing";
+import { fetchPricingServiceByKey, savePricingService, type PriceItem } from "@/lib/pricing";
 import { fallbackPrinters, fetchAgentHealth, saveAgentPrinter } from "@/lib/printpilot-agent";
-import { passportAttireOptions } from "@/lib/passport-attire";
+import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
 import { CropEditor, cropImage, DEFAULT_CROP_RECT, type CropRect } from "../CropEditor";
-
-type Gender = "male" | "female";
 
 type JobState = "idle" | "submitting" | "processing" | "done" | "not_found" | "failed";
 
 const CHECK_INTERVAL_MS = 5_000;
 const MAX_CHECK_ATTEMPTS = 7;
 
-const VARIATION_ATTIRE: Record<string, string> = {
-  same: "the same outfit visible in the uploaded photo",
-  men_blazer_tie: "a formal blazer with a tie",
-  women_blazer_tie: "a formal blazer with a tie",
-  burqa: "a black burqa with hijab",
-};
-
-function buildPrompt(gender: Gender, attire: string) {
-  const genderWord = gender === "male" ? "male" : "female";
-  return `Generate a professional ${genderWord} passport photo. Requirements: Plain white or very light gray background, face centered and looking straight at camera with neutral expression, both ears visible, proper even lighting with no shadows on face, shoulders and upper chest visible, wearing ${attire.toLowerCase()}, high resolution output. Aspect ratio 4:5. The photo must meet official government passport photo standards.`;
-}
-
 export default function PassportPhotoPage() {
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
-  const [gender, setGender] = useState<Gender>("male");
-  const [attire, setAttire] = useState(VARIATION_ATTIRE.same);
   const [photoVariation, setPhotoVariation] = useState(passportAttireOptions[0].key);
+  const [priceItems, setPriceItems] = useState<PriceItem[]>([]);
+  const [selectedPriceItemId, setSelectedPriceItemId] = useState("");
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isCropOpen, setIsCropOpen] = useState(false);
   const [cropRect, setCropRect] = useState<CropRect>(DEFAULT_CROP_RECT);
@@ -73,6 +59,10 @@ export default function PassportPhotoPage() {
             ? health.printer
             : scannedPrinters[0] || "",
       );
+
+      const items = Array.isArray(service?.settings.priceItems) ? (service.settings.priceItems as PriceItem[]) : [];
+      setPriceItems(items);
+      setSelectedPriceItemId((current) => (items.some((item) => item.id === current) ? current : items[0]?.id || ""));
     } catch {
       setPrinters(fallbackPrinters);
       setSelectedPrinter(fallbackPrinters[0]);
@@ -152,7 +142,6 @@ export default function PassportPhotoPage() {
     setFile(selected);
     setPreviewUrl(URL.createObjectURL(selected));
     setPhotoVariation(passportAttireOptions[0].key);
-    setAttire(VARIATION_ATTIRE.same);
     setCropRect(DEFAULT_CROP_RECT);
     resetJob();
   }
@@ -171,7 +160,6 @@ export default function PassportPhotoPage() {
     setFile(null);
     setPreviewUrl("");
     setPhotoVariation(passportAttireOptions[0].key);
-    setAttire(VARIATION_ATTIRE.same);
     setIsPreviewOpen(false);
     setIsCropOpen(false);
     setCropRect(DEFAULT_CROP_RECT);
@@ -202,10 +190,6 @@ export default function PassportPhotoPage() {
 
   function selectPhotoVariation(variation: string) {
     setPhotoVariation(variation);
-    const variationAttire = VARIATION_ATTIRE[variation];
-    if (variation === "men_blazer_tie") setGender("male");
-    if (variation === "women_blazer_tie" || variation === "burqa") setGender("female");
-    if (variationAttire) setAttire(variationAttire);
     resetJob();
   }
 
@@ -216,10 +200,15 @@ export default function PassportPhotoPage() {
     setJobState("submitting");
     setError("");
     try {
-      const prompt = buildPrompt(gender, attire);
+      const prompt = buildPassportPrompt(photoVariation);
       const formData = new FormData();
       formData.append("photo", file);
       formData.append("prompt", prompt);
+      if (selectedPackage) {
+        formData.append("priceItemId", selectedPackage.id);
+        formData.append("priceLabel", selectedPackage.label);
+        formData.append("rate", String(selectedPackage.rate));
+      }
 
       const response = await apiFetch("/api/save-raw-passport-photo/", { method: "POST", body: formData });
       const result = await response.json().catch(() => ({}));
@@ -263,6 +252,13 @@ export default function PassportPhotoPage() {
         return;
       }
 
+      if (response.ok && !result.found) {
+        stopChecking();
+        setJobState("failed");
+        setError(result.message || "Photo generation failed. Please try again.");
+        return;
+      }
+
       if (attemptsRef.current >= MAX_CHECK_ATTEMPTS) {
         setJobState("not_found");
         setError("We could not find your processed image yet. Please try again.");
@@ -281,6 +277,7 @@ export default function PassportPhotoPage() {
   }
 
   const isBusy = jobState === "submitting" || jobState === "processing";
+  const selectedPackage = priceItems.find((item) => item.id === selectedPriceItemId) || priceItems[0];
 
   return (
     <DashboardShell activePath="/passport-photo">
@@ -360,6 +357,25 @@ export default function PassportPhotoPage() {
                     })}
                   </div>
                 </div>
+                {priceItems.length ? (
+                  <div className="passport-attire-picker">
+                    <span>Package</span>
+                    <div className="passport-package-options">
+                      {priceItems.map((item) => (
+                        <button
+                          className={selectedPriceItemId === item.id ? "active" : ""}
+                          key={item.id}
+                          type="button"
+                          onClick={() => setSelectedPriceItemId(item.id)}
+                          disabled={isBusy}
+                        >
+                          <strong>{item.label}</strong>
+                          <span>Rs. {item.rate}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
               </div>
             ) : null}
 

@@ -2,10 +2,10 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { Clock3, Crop, Eye, FileText, IdCard, Image as ImageIcon, Printer, Trash2, Upload, Wallet, X } from "lucide-react";
+import { Clock3, Crop, Eye, EyeOff, FileText, IdCard, Image as ImageIcon, LoaderCircle, LockKeyhole, Printer, Trash2, Upload, Wallet, X } from "lucide-react";
 import { apiUrl } from "@/lib/api";
 import { calculatePriceItemRate, formatPriceItem, getAllowedPaymentModes, mergePricingDefaults, type PriceItem, type PricingService } from "@/lib/pricing";
-import { passportAttireOptions } from "@/lib/passport-attire";
+import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
 import { CropEditor, cropImage, loadImage, DEFAULT_CROP_RECT, type CropRect } from "../../CropEditor";
 
 type PublicShop = {
@@ -81,6 +81,12 @@ export default function CustomerScanPage() {
   const [isPageManagerOpen, setIsPageManagerOpen] = useState(false);
   const [isCropOpen, setIsCropOpen] = useState(false);
   const [isDeleteDocumentOpen, setIsDeleteDocumentOpen] = useState(false);
+  const [isPasswordPromptOpen, setIsPasswordPromptOpen] = useState(false);
+  const [pendingPdfFile, setPendingPdfFile] = useState<File | null>(null);
+  const [pdfPasswordInput, setPdfPasswordInput] = useState("");
+  const [pdfPasswordError, setPdfPasswordError] = useState("");
+  const [isUnlockingPdf, setIsUnlockingPdf] = useState(false);
+  const [showPdfPassword, setShowPdfPassword] = useState(false);
   const [cropRect, setCropRect] = useState<CropRect>(DEFAULT_CROP_RECT);
   const [isProcessingPdf, setIsProcessingPdf] = useState(false);
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
@@ -93,8 +99,10 @@ export default function CustomerScanPage() {
   const [isCheckingPayment, setIsCheckingPayment] = useState(false);
   const [paymentMessage, setPaymentMessage] = useState("");
   const [optionsTouched, setOptionsTouched] = useState(false);
+  const [printProgress, setPrintProgress] = useState(0);
   const paymentPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const paymentCheckInFlightRef = useRef(false);
+  const deletePromptShownForOrderRef = useRef<number | null>(null);
 
   useEffect(() => {
     fetch(apiUrl(`/api/public-shop/${params.code}/`))
@@ -200,17 +208,18 @@ export default function CustomerScanPage() {
 
     let cancelled = false;
     setFinalFile(null);
-    generatePassportSheet(fileUrl)
-      .then((sheetBlob) => {
+    Promise.all([fetch(fileUrl).then((response) => response.blob()), generatePassportSheet(fileUrl)])
+      .then(([rawBlob, sheetBlob]) => {
         if (cancelled) return;
-        setFinalFile(sheetBlob);
+        // The tiled sheet is preview-only; the raw photo is what gets sent to the backend.
+        setFinalFile(rawBlob);
         setPages(1);
         setPassportSheetUrl((current) => {
           if (current) URL.revokeObjectURL(current);
           return URL.createObjectURL(sheetBlob);
         });
       })
-      .catch(() => setOrderError("Could not create the passport photo sheet."));
+      .catch(() => setOrderError("Could not prepare the passport photo."));
 
     return () => {
       cancelled = true;
@@ -274,6 +283,37 @@ export default function CustomerScanPage() {
     return () => window.clearInterval(intervalId);
   }, [order]);
 
+  useEffect(() => {
+    if (!order || order.status !== "printed" || order.documentDeleted) return;
+    if (deletePromptShownForOrderRef.current === order.id) return;
+
+    deletePromptShownForOrderRef.current = order.id;
+    setIsDeleteDocumentOpen(true);
+  }, [order]);
+
+  useEffect(() => {
+    setPrintProgress(0);
+  }, [order?.id]);
+
+  useEffect(() => {
+    if (!order) return;
+    if (order.status === "printed") {
+      setPrintProgress(100);
+      return;
+    }
+    if (order.status !== "queued" && order.status !== "printing") return;
+
+    const intervalId = window.setInterval(() => {
+      setPrintProgress((current) => {
+        if (current >= 92) return current;
+        const step = current < 45 ? 7 : current < 75 ? 3 : 1;
+        return Math.min(92, current + step);
+      });
+    }, 650);
+
+    return () => window.clearInterval(intervalId);
+  }, [order?.status, order?.id]);
+
   function selectService(service: PricingService) {
     setSelectedService(service.serviceKey);
     setPaymentMode(getAllowedPaymentModes(service)[0] || "Online Payment");
@@ -319,6 +359,27 @@ export default function CustomerScanPage() {
       return;
     }
 
+    const isPdfUpload = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    if (isPdfUpload) {
+      try {
+        const { isEncrypted } = await import("@pdfsmaller/pdf-decrypt");
+        const status = await isEncrypted(new Uint8Array(await file.arrayBuffer()));
+        if (status.encrypted) {
+          setPendingPdfFile(file);
+          setPdfPasswordInput("");
+          setPdfPasswordError("");
+          setIsPasswordPromptOpen(true);
+          return;
+        }
+      } catch {
+        // Encryption check failed to run; fall through and let the normal PDF flow surface any issue.
+      }
+    }
+
+    await applyUploadedFile(file);
+  }
+
+  async function applyUploadedFile(file: File) {
     if (fileUrl) URL.revokeObjectURL(fileUrl);
     if (passportSheetUrl) URL.revokeObjectURL(passportSheetUrl);
     const nextUrl = URL.createObjectURL(file);
@@ -345,7 +406,36 @@ export default function CustomerScanPage() {
     setPages(1);
   }
 
-  function clearUpload() {
+  async function unlockPendingPdf() {
+    if (!pendingPdfFile || !pdfPasswordInput) return;
+
+    setIsUnlockingPdf(true);
+    setPdfPasswordError("");
+    try {
+      const { decryptPDF } = await import("@pdfsmaller/pdf-decrypt");
+      const bytes = new Uint8Array(await pendingPdfFile.arrayBuffer());
+      const decryptedBytes = await decryptPDF(bytes, pdfPasswordInput);
+      const unlockedFile = new File([decryptedBytes], pendingPdfFile.name, { type: "application/pdf" });
+      setIsPasswordPromptOpen(false);
+      setPendingPdfFile(null);
+      setPdfPasswordInput("");
+      await applyUploadedFile(unlockedFile);
+    } catch {
+      setPdfPasswordError("Incorrect password. Please try again.");
+    } finally {
+      setIsUnlockingPdf(false);
+    }
+  }
+
+  function cancelPdfPasswordPrompt() {
+    if (isUnlockingPdf) return;
+    setIsPasswordPromptOpen(false);
+    setPendingPdfFile(null);
+    setPdfPasswordInput("");
+    setPdfPasswordError("");
+  }
+
+  function clearUploadedFileState() {
     if (fileUrl) URL.revokeObjectURL(fileUrl);
     if (passportSheetUrl) URL.revokeObjectURL(passportSheetUrl);
     setFinalFile(null);
@@ -354,14 +444,18 @@ export default function CustomerScanPage() {
     setFileName("");
     setFileType("");
     setPages(0);
-    setCopies(1);
-    setAttireCategory(passportAttireOptions[0].key);
     setIsPreviewOpen(false);
     setIsPageManagerOpen(false);
     setIsCropOpen(false);
+    setCropRect(DEFAULT_CROP_RECT);
+  }
+
+  function clearUpload() {
+    clearUploadedFileState();
+    setCopies(1);
+    setAttireCategory(passportAttireOptions[0].key);
     setOrder(null);
     setOrderError("");
-    setCropRect(DEFAULT_CROP_RECT);
     resetPaymentFlow();
   }
 
@@ -422,6 +516,27 @@ export default function CustomerScanPage() {
     }
   }
 
+  async function submitPassportPhotoJob(orderId: number) {
+    if (!finalFile) return;
+    try {
+      const jobFormData = new FormData();
+      jobFormData.append("photo", finalFile, fileName || "passport-photo.jpg");
+      jobFormData.append("prompt", buildPassportPrompt(attireCategory));
+      jobFormData.append("orderId", String(orderId));
+      if (selectedItem) {
+        jobFormData.append("priceItemId", selectedItem.id);
+        jobFormData.append("priceLabel", selectedItem.label);
+        jobFormData.append("rate", String(selectedRate));
+      }
+      await fetch(apiUrl(`/api/public-shop/${data?.code || params.code}/passport-photo-job/`), {
+        method: "POST",
+        body: jobFormData,
+      });
+    } catch {
+      // Best-effort: the AI photo job queue is a convenience for the cafe owner and should not block the print order.
+    }
+  }
+
   async function createPrintOrder() {
     if (!finalFile || !selectedItem || !activeService) return;
     if (!isCafeOpen) {
@@ -434,7 +549,7 @@ export default function CustomerScanPage() {
     setOrderError("");
     try {
       const formData = new FormData();
-      const uploadName = isPassportPhoto ? `${data?.code || params.code}-passport-6pcs.png` : fileName || "document";
+      const uploadName = fileName || (isPassportPhoto ? "passport-photo.jpg" : "document");
       formData.append("document", finalFile, uploadName);
       formData.append("serviceKey", activeService.serviceKey);
       formData.append("priceItemId", selectedItem.id);
@@ -453,6 +568,7 @@ export default function CustomerScanPage() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.message || "Could not create the order.");
       setOrder(result.order);
+      if (isPassportPhoto && result.order?.id) void submitPassportPhotoJob(result.order.id);
       if (result.order?.paymentStatus === "pending" && paymentMode === "Online Payment") {
         if (result.order.paymentGateway === "razorpay") {
           await openRazorpay(result.order);
@@ -576,8 +692,8 @@ export default function CustomerScanPage() {
       const response = await fetch(apiUrl(`/api/public-orders/${order.id}/delete-document/`), { method: "POST" });
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.message || "Could not delete the document.");
-      setOrder(result.order);
       setIsDeleteDocumentOpen(false);
+      clearUpload();
     } catch (deleteError) {
       setOrderError(deleteError instanceof Error ? deleteError.message : "Could not delete the document.");
     } finally {
@@ -596,7 +712,17 @@ export default function CustomerScanPage() {
   if (!data) {
     return (
       <main className="customer-portal">
-        <section className="customer-error">Loading cafe...</section>
+        <section className="customer-loading">
+          <div className="customer-loading-mark">
+            <Printer size={26} />
+          </div>
+          <span className="customer-loading-text">Loading your print shop…</span>
+          <div className="customer-loading-dots">
+            <i></i>
+            <i></i>
+            <i></i>
+          </div>
+        </section>
       </main>
     );
   }
@@ -905,7 +1031,7 @@ export default function CustomerScanPage() {
             <div className="order-created-box">
               <small>Order Created</small>
               <strong>{order.orderNumber}</strong>
-              {order.paymentStatus === "paid" || order.paymentStatus === "cash_counter" || order.status === "queued" || order.status === "printed" ? (
+              {order.paymentStatus === "paid" || order.paymentStatus === "cash_counter" || order.status === "queued" || order.status === "printing" || order.status === "printed" ? (
                 <div className="customer-token-card">
                   <div className="customer-token-head">
                     <small>Your Token ID</small>
@@ -928,17 +1054,29 @@ export default function CustomerScanPage() {
                   )}
                 </div>
               ) : null}
-              <span>
-                {order.status === "awaiting_approval"
-                  ? "Cash counter approval is pending. The cafe owner will approve the print after receiving cash."
-                  : order.documentDeleted
-                    ? "The document has been deleted. The token record is saved."
-                    : order.status === "printed"
-                      ? "Print is complete. You can delete the uploaded document if you want."
-                  : order.paymentStatus === "paid" || order.status === "queued"
-                    ? "The order has been sent to the print queue."
-                    : "Payment is pending."}
-              </span>
+              {order.status === "queued" || order.status === "printing" ? (
+                <div className="print-progress-box">
+                  <div className="print-progress-head">
+                    <LoaderCircle className="spin" size={16} />
+                    <span>{order.status === "printing" ? "Printing your document…" : "Waiting in the print queue…"}</span>
+                    <strong>{printProgress}%</strong>
+                  </div>
+                  <progress value={printProgress} max={100} />
+                  <p>Please stay on this page — you&apos;ll be able to delete your document here once printing is complete.</p>
+                </div>
+              ) : (
+                <span>
+                  {order.status === "awaiting_approval"
+                    ? "Cash counter approval is pending. The cafe owner will approve the print after receiving cash."
+                    : order.documentDeleted
+                      ? "The document has been deleted. The token record is saved."
+                      : order.status === "printed"
+                        ? "Print is complete. You can delete the uploaded document if you want."
+                        : order.status === "failed"
+                          ? "Printing failed. Please contact the cafe for help."
+                          : "Payment is pending."}
+                </span>
+              )}
             </div>
           ) : null}
           {orderError ? <div className="profile-alert error">{orderError}</div> : null}
@@ -974,17 +1112,18 @@ export default function CustomerScanPage() {
       {isDeleteDocumentOpen ? (
         <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Delete printed document">
           <div className="confirm-dialog">
+            <span className="confirm-dialog-kicker">RepetiGo Privacy</span>
             <div className="confirm-dialog-icon">
               <Trash2 size={22} />
             </div>
-            <h2>Are you sure want to delete?</h2>
-            <p>The printed document will be permanently deleted. The token ID and order record will stay saved.</p>
+            <h2>Delete your document?</h2>
+            <p>RepetiGo does not store your documents. Please delete it now to keep your data private. If you choose &quot;No&quot;, RepetiGo will not be responsible for anything that happens to your document — though it will be auto-deleted from our servers within 7 days regardless.</p>
             <div className="confirm-dialog-actions">
               <button type="button" onClick={() => setIsDeleteDocumentOpen(false)} disabled={isDeletingDocument}>
-                Cancel
+                No, Keep It
               </button>
               <button type="button" onClick={deletePrintedDocument} disabled={isDeletingDocument}>
-                {isDeletingDocument ? "Deleting..." : "OK, Delete"}
+                {isDeletingDocument ? "Deleting..." : "Yes, Delete"}
               </button>
             </div>
           </div>
@@ -1070,6 +1209,42 @@ export default function CustomerScanPage() {
                   <Crop size={17} /> Apply Crop
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isPasswordPromptOpen ? (
+        <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Enter PDF password">
+          <div className="pdf-password-window">
+            <div className="pdf-password-icon">
+              <LockKeyhole size={22} />
+            </div>
+            <h2>Password Protected PDF</h2>
+            <p>{pendingPdfFile?.name || "This PDF"} is locked. Enter the password to unlock it and continue.</p>
+            <div className="password-input">
+              <input
+                type={showPdfPassword ? "text" : "password"}
+                value={pdfPasswordInput}
+                onChange={(event) => setPdfPasswordInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") unlockPendingPdf();
+                }}
+                placeholder="Enter PDF password"
+                autoFocus
+              />
+              <button type="button" onClick={() => setShowPdfPassword((value) => !value)} aria-label={showPdfPassword ? "Hide password" : "Show password"}>
+                {showPdfPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            {pdfPasswordError ? <span className="pdf-password-error">{pdfPasswordError}</span> : null}
+            <div className="pdf-password-actions">
+              <button type="button" onClick={cancelPdfPasswordPrompt} disabled={isUnlockingPdf}>
+                Cancel
+              </button>
+              <button type="button" onClick={unlockPendingPdf} disabled={isUnlockingPdf || !pdfPasswordInput}>
+                {isUnlockingPdf ? "Unlocking..." : "Unlock PDF"}
+              </button>
             </div>
           </div>
         </div>
