@@ -37,6 +37,7 @@ type PrintOrder = {
   status: string;
   totalAmount: number;
   documentDeleted?: boolean;
+  geminiPhoto?: string;
 };
 
 const serviceIcons: Record<string, typeof FileText> = {
@@ -915,6 +916,16 @@ export default function CustomerScanPage() {
                     ) : null}
                   </div>
                   <strong>{order.tokenId}</strong>
+                </div>
+              ) : null}
+              {isPassportPhoto ? (
+                <div className="customer-token-card">
+                  <small>Passport Photo Preview</small>
+                  {order.geminiPhoto ? (
+                    <img src={apiUrl(order.geminiPhoto)} alt="Generated passport photo" className="gemini-photo-preview" />
+                  ) : (
+                    <span>Generating your passport photo... this page checks every few seconds.</span>
+                  )}
                 </div>
               ) : null}
               <span>

@@ -143,6 +143,8 @@ class PrintOrder(models.Model):
     paid_at = models.DateTimeField(null=True, blank=True)
     printed_at = models.DateTimeField(null=True, blank=True)
     agent_message = models.TextField(blank=True)
+    attire_category = models.CharField(max_length=40, blank=True, default="")
+    gemini_photo = models.CharField(max_length=255, blank=True, default="")
 
     class Meta:
         ordering = ["-created_at"]
@@ -210,7 +212,7 @@ class PassportPhotoJob(models.Model):
     username = models.CharField(max_length=255, blank=True)
     self_agent = models.BooleanField(default=True, db_column="selfagent")
     img_path = models.ImageField(upload_to="passportsizephoto/%Y/%m/%d/", db_column="imgpath")
-    prompt = models.CharField(max_length=255, blank=True)
+    prompt = models.TextField(blank=True)
     final_img_path = models.CharField(max_length=255, blank=True, db_column="finalimgpath")
     is_printed = models.BooleanField(default=False)
     status = models.CharField(max_length=20, default=STATUS_PENDING)
