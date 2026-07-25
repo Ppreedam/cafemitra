@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
-import { Crop, Eye, IdCard, Printer, Trash2, Upload, X } from "lucide-react";
+import { Crop, Eye, IdCard, Printer, RefreshCw, Trash2, Upload, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
 import { SkeletonBlock } from "../UiState";
 import { apiFetch, apiUrl } from "@/lib/api";
@@ -40,6 +40,7 @@ export default function PassportPhotoPage() {
   const [isCropOpen, setIsCropOpen] = useState(false);
   const [cropRect, setCropRect] = useState<CropRect>(DEFAULT_CROP_RECT);
   const [jobState, setJobState] = useState<JobState>("idle");
+  const [jobId, setJobId] = useState<number | null>(null);
   const [finalImageUrl, setFinalImageUrl] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -160,6 +161,7 @@ export default function PassportPhotoPage() {
     stopChecking();
     attemptsRef.current = 0;
     setJobState("idle");
+    setJobId(null);
     setFinalImageUrl("");
     setError("");
   }
@@ -224,6 +226,7 @@ export default function PassportPhotoPage() {
       if (!response.ok) throw new Error(result.message || "Could not start the photo request.");
 
       setJobState("processing");
+      setJobId(result.id);
       attemptsRef.current = 0;
       timeoutRef.current = setTimeout(() => checkStatus(result.id), CHECK_INTERVAL_MS);
     } catch (submitError) {
@@ -232,6 +235,15 @@ export default function PassportPhotoPage() {
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function retryCheck() {
+    if (jobId === null) return;
+    stopChecking();
+    attemptsRef.current = 0;
+    setError("");
+    setJobState("processing");
+    checkStatus(jobId);
   }
 
   async function checkStatus(id: number) {
@@ -411,6 +423,12 @@ export default function PassportPhotoPage() {
                   ? "Upload a photo, choose an attire, and tap Generate Photo to begin."
                   : "Something went wrong. Upload the photo again to retry."}
               </p>
+            ) : null}
+
+            {jobState === "not_found" && jobId !== null ? (
+              <button className="passport-preview-button" type="button" onClick={retryCheck}>
+                <RefreshCw size={18} /> Retry
+              </button>
             ) : null}
           </article>
         </section>

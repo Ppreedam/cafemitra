@@ -42,6 +42,7 @@ urlpatterns = [
     re_path(r"^agent/passport-jobs/(?P<job_id>[0-9]+)/complete/?$", views.complete_passport_job),
     re_path(r"^agent/jobs/?$", views.agent_jobs),
     re_path(r"^agent/jobs/(?P<order_id>[0-9]+)/status/?$", views.agent_job_status),
+    re_path(r"^agent/jobs/(?P<order_id>[0-9]+)/gemini-photo/?$", views.agent_upload_gemini_photo),
     re_path(r"^agent/version-check/?$", views.agent_version_check),
     re_path(r"^agent/update/?$", views.agent_update_download),
 ]

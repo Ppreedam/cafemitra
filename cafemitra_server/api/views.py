@@ -28,7 +28,7 @@ from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
-from .models import AuthToken, ContactMessage, EmailVerificationToken, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, UserProfile, WalletTransaction, WithdrawalRequest
+from .models import AuthToken, ContactMessage, EmailVerificationToken, PassportPhotoJob, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, UserProfile, WalletTransaction, WithdrawalRequest
 from cafemitra_server.product_setting import active_payment_gateway
 
 User = get_user_model()
@@ -683,6 +683,8 @@ def public_order(order):
         "createdAt": order.created_at.isoformat(),
         "paidAt": order.paid_at.isoformat() if order.paid_at else "",
         "printedAt": order.printed_at.isoformat() if order.printed_at else "",
+        "attireCategory": order.attire_category,
+        "geminiPhoto": (settings.MEDIA_URL + order.gemini_photo) if order.gemini_photo else "",
     }
 
 
@@ -1446,6 +1448,7 @@ def public_print_order(request, code):
         original_filename=document.name,
         customer_phone=str(request.POST.get("customerPhone", "")).strip(),
         payment_gateway=active_payment_gateway()[0] or "" if payment_status == PrintOrder.PAYMENT_PENDING else "",
+        attire_category=str(request.POST.get("attireCategory", "")).strip(),
     )
 
     return JsonResponse({"order": public_order(order)}, status=201)
@@ -1718,6 +1721,39 @@ def agent_job_status(request, order_id):
     else:
         order.save(update_fields=["status", "agent_message"])
 
+    return JsonResponse({"order": public_order(order)})
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def agent_upload_gemini_photo(request, order_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    order = PrintOrder.objects.filter(id=order_id, user=user).first()
+    if not order:
+        return JsonResponse({"message": "Order not found."}, status=404)
+
+    photo = request.FILES.get("photo")
+    if not photo:
+        return JsonResponse({"message": "Upload the generated photo as 'photo'."}, status=400)
+
+    relative_dir = f"gemini_photos/{timezone.now():%Y/%m/%d}"
+    absolute_dir = Path(settings.MEDIA_ROOT) / relative_dir
+    absolute_dir.mkdir(parents=True, exist_ok=True)
+    extension = Path(photo.name).suffix or ".png"
+    filename = f"{order.id}_{uuid.uuid4().hex[:8]}{extension}"
+    relative_path = f"{relative_dir}/{filename}"
+    with open(absolute_dir / filename, "wb") as destination:
+        for chunk in photo.chunks():
+            destination.write(chunk)
+
+    order.gemini_photo = relative_path
+    order.save(update_fields=["gemini_photo"])
     return JsonResponse({"order": public_order(order)})
 
 

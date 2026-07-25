@@ -6005,6 +6005,15 @@ img.profile-photo {
   cursor: pointer;
 }
 
+.gemini-photo-preview {
+  width: 100%;
+  max-width: 200px;
+  margin: 4px auto 0;
+  border-radius: 8px;
+  border: 1px solid rgba(87, 64, 237, 0.24);
+  display: block;
+}
+
 .customer-token-card strong {
   color: #5740ed;
   font-size: 1.45rem;
