@@ -435,16 +435,24 @@ function Products() {
           <h2>A Growing Platform. Starting With What You Need Today.</h2>
         </div>
         <div className="ai-card-grid">
-          {products.map((product) => (
-            <Link className="ai-product-card" href={product.href} key={product.name}>
-              <div>
-                <span className={product.status === "Available" ? "ai-pill success" : "ai-pill"}>{product.status}</span>
-                <ChevronRight size={17} />
-              </div>
-              <h3>{product.name}</h3>
-              <p>{product.desc}</p>
-            </Link>
-          ))}
+          {products.map((product) => {
+            const isFlagship = product.name === "PrintPilot";
+            return (
+              <Link
+                className={isFlagship ? "ai-product-card ai-product-card-flagship" : "ai-product-card"}
+                href={product.href}
+                key={product.name}
+              >
+                {isFlagship ? <Sparkles className="ai-product-flagship-icon" size={16} aria-hidden /> : null}
+                <div>
+                  <span className={product.status === "Available" ? "ai-pill success" : "ai-pill"}>{product.status}</span>
+                  <ChevronRight size={17} />
+                </div>
+                <h3>{product.name}</h3>
+                <p>{product.desc}</p>
+              </Link>
+            );
+          })}
         </div>
       </div>
     </section>

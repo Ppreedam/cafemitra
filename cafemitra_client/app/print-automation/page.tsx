@@ -391,6 +391,8 @@ export default function PrintAutomationPage() {
       <LandingNavbar />
       <main className="printpilot-page">
         <section className="printpilot-hero">
+          <div className="ai-dot-pattern ai-dot-pattern-left" aria-hidden />
+          <div className="ai-dot-pattern ai-dot-pattern-right" aria-hidden />
           <div className="printpilot-shell printpilot-hero-grid">
             <div className="printpilot-hero-copy">
               <span className="printpilot-kicker">
