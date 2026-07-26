@@ -23,6 +23,7 @@ import {
   UserRound,
   Users,
   Wallet,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { apiFetch, apiUrl, hasStoredSession } from "@/lib/api";
@@ -34,6 +35,7 @@ type Order = {
   id: number;
   orderNumber: string;
   tokenId: string;
+  serviceKey: string;
   serviceName: string;
   priceLabel: string;
   pages: number;
@@ -46,10 +48,13 @@ type Order = {
   fileUrl: string;
   attireCategory?: string;
   geminiPhoto?: string;
+  photoStatus?: string;
+  photoErrorMessage?: string;
+  passportPrompt?: string;
   createdAt: string;
 };
 
-type PrintFilter = "all" | "pass" | "fail";
+type PrintFilter = "all" | "pass" | "fail" | "passport_queue";
 
 type NavItem = {
   name: string;
@@ -107,14 +112,19 @@ export default function OrdersPage() {
   const [printFilter, setPrintFilter] = useState<PrintFilter>("all");
   const [dateFilter, setDateFilter] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [markingPaidId, setMarkingPaidId] = useState<number | null>(null);
+  const [actionError, setActionError] = useState("");
+  const [compareOrder, setCompareOrder] = useState<Order | null>(null);
   const cashApprovalOrders = orders.filter((order) => order.paymentStatus === "cash_counter" && order.status === "awaiting_approval");
+  const passportQueuedCount = orders.filter((order) => order.serviceKey === "passport_photo" && order.status === "queued").length;
   const filteredOrders = useMemo(
     () =>
       orders.filter((order) => {
         const matchesPrint =
           printFilter === "all" ||
           (printFilter === "pass" && order.status === "printed") ||
-          (printFilter === "fail" && order.status === "failed");
+          (printFilter === "fail" && order.status === "failed") ||
+          (printFilter === "passport_queue" && order.serviceKey === "passport_photo" && order.status === "queued");
         const matchesDate = !dateFilter || getLocalDateInputValue(order.createdAt) === dateFilter;
         return matchesPrint && matchesDate;
       }),
@@ -156,6 +166,21 @@ export default function OrdersPage() {
 
     loadOrders();
   }, []);
+
+  async function markOrderPaid(orderId: number) {
+    setMarkingPaidId(orderId);
+    setActionError("");
+    try {
+      const response = await apiFetch(`/api/orders/${orderId}/mark-paid/`, { method: "POST" });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.message || "Could not mark this order as paid.");
+      setOrders((current) => current.map((order) => (order.id === orderId ? result.order : order)));
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Could not mark this order as paid.");
+    } finally {
+      setMarkingPaidId(null);
+    }
+  }
 
   return (
     <DashboardShell activePath="/orders">
@@ -214,6 +239,15 @@ export default function OrdersPage() {
                   <input aria-label="Filter orders by date" type="date" value={dateFilter} onChange={(event) => setDateFilter(event.target.value)} />
                 </label>
 
+                <button
+                  className={`orders-passport-queue-filter${printFilter === "passport_queue" ? " active" : ""}`}
+                  type="button"
+                  onClick={() => setPrintFilter(printFilter === "passport_queue" ? "all" : "passport_queue")}
+                >
+                  <IdCard size={16} /> Passport Queue
+                  {passportQueuedCount > 0 ? <span className="orders-filter-badge">{passportQueuedCount}</span> : null}
+                </button>
+
                 {(printFilter !== "all" || dateFilter) && (
                   <button className="orders-clear-filter" type="button" onClick={() => {
                     setPrintFilter("all");
@@ -224,6 +258,7 @@ export default function OrdersPage() {
                 )}
               </div>
             ) : null}
+            {actionError ? <div className="profile-alert error orders-action-error">{actionError}</div> : null}
             {message ? (
               message === "Loading orders..." ? (
                 <div className="orders-state-wrap">
@@ -265,15 +300,19 @@ export default function OrdersPage() {
                         </td>
                         <td>
                           {order.fileUrl ? (
-                            <a href={apiUrl(order.fileUrl)} target="_blank" rel="noreferrer">
-                              {order.fileName || "Document"}
-                            </a>
+                            order.serviceKey === "passport_photo" ? (
+                              <button type="button" className="orders-file-link" onClick={() => setCompareOrder(order)}>
+                                {order.fileName || "Document"}
+                              </button>
+                            ) : (
+                              <a href={apiUrl(order.fileUrl)} target="_blank" rel="noreferrer">
+                                {order.fileName || "Document"}
+                              </a>
+                            )
                           ) : null}
-                          {order.geminiPhoto ? (
-                            <a href={apiUrl(order.geminiPhoto)} target="_blank" rel="noreferrer">
-                              Passport Photo
-                            </a>
-                          ) : order.attireCategory ? (
+                          {order.serviceKey === "passport_photo" && order.photoStatus === "failed" ? (
+                            <small className="order-status failed">{order.photoErrorMessage || "Passport photo failed"}</small>
+                          ) : order.serviceKey === "passport_photo" && !order.geminiPhoto ? (
                             <small>Passport photo processing...</small>
                           ) : null}
                         </td>
@@ -281,9 +320,24 @@ export default function OrdersPage() {
                         <td>Rs. {order.totalAmount}</td>
                         <td>
                           <span className={`order-status ${order.paymentStatus}`}>{formatStatus(order.paymentStatus)}</span>
+                          {order.serviceKey === "passport_photo" && order.paymentStatus === "no_payment" ? (
+                            <button
+                              type="button"
+                              className="orders-mark-paid-link"
+                              disabled={markingPaidId === order.id}
+                              onClick={() => markOrderPaid(order.id)}
+                            >
+                              {markingPaidId === order.id ? "Marking..." : "Mark as Paid"}
+                            </button>
+                          ) : null}
                         </td>
                         <td>
                           <span className={`order-status ${order.status}`}>{formatStatus(order.status)}</span>
+                          {order.serviceKey === "passport_photo" && order.status === "queued" && order.paymentStatus === "paid" ? (
+                            <Link href={`/passport-photo?orderId=${order.id}`} className="orders-print-link">
+                              <Printer size={14} /> Print
+                            </Link>
+                          ) : null}
                         </td>
                         <td>{formatDate(order.createdAt)}</td>
                       </tr>
@@ -312,6 +366,38 @@ export default function OrdersPage() {
             ) : null}
           </section>
       </div>
+
+      {compareOrder ? (
+        <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Compare passport photos" onClick={() => setCompareOrder(null)}>
+          <div className="document-preview-window passport-compare-window" onClick={(event) => event.stopPropagation()}>
+            <div className="document-preview-head">
+              <div>
+                <strong>{compareOrder.fileName || "Passport Photo"}</strong>
+                <span>{compareOrder.tokenId}</span>
+              </div>
+              <button type="button" onClick={() => setCompareOrder(null)} aria-label="Close preview">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="passport-compare-body">
+              <div className="passport-compare-pane">
+                <span>Raw Photo</span>
+                {compareOrder.fileUrl ? <img src={apiUrl(compareOrder.fileUrl)} alt="Raw upload" /> : <p>Not available</p>}
+              </div>
+              <div className="passport-compare-pane">
+                <span>Gemini Photo</span>
+                {compareOrder.geminiPhoto ? (
+                  <img src={apiUrl(compareOrder.geminiPhoto)} alt="AI generated passport photo" />
+                ) : compareOrder.photoStatus === "failed" ? (
+                  <p className="order-status failed">{compareOrder.photoErrorMessage || "Passport photo failed"}</p>
+                ) : (
+                  <p>Passport photo processing...</p>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </DashboardShell>
   );
 }

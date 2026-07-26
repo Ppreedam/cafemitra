@@ -3,7 +3,7 @@ from django.db import models
 
 
 class AuthToken(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="api_token")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="api_tokens")
     key = models.CharField(max_length=128, unique=True)
     access_expires_at = models.DateTimeField(null=True, blank=True)
     refresh_key = models.CharField(max_length=128, unique=True, null=True, blank=True)
@@ -146,6 +146,16 @@ class PrintOrder(models.Model):
     attire_category = models.CharField(max_length=40, blank=True, default="")
     gemini_photo = models.CharField(max_length=255, blank=True, default="")
 
+    PHOTO_STATUS_PENDING = "pending"
+    PHOTO_STATUS_CLAIMED = "claimed"
+    PHOTO_STATUS_DONE = "done"
+    PHOTO_STATUS_FAILED = "failed"
+
+    passport_prompt = models.TextField(blank=True, default="")
+    photo_status = models.CharField(max_length=20, blank=True, default="")
+    photo_error_message = models.TextField(blank=True, default="")
+    photo_updated_at = models.DateTimeField(null=True, blank=True)
+
     class Meta:
         ordering = ["-created_at"]
         indexes = [models.Index(fields=["user", "token_number"])]
@@ -200,34 +210,3 @@ class WithdrawalRequest(models.Model):
 
     def __str__(self) -> str:
         return f"Withdrawal {self.amount} for {self.user_id}"
-
-
-class PassportPhotoJob(models.Model):
-    STATUS_PENDING = "pending"
-    STATUS_CLAIMED = "claimed"
-    STATUS_DONE = "done"
-    STATUS_FAILED = "failed"
-
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="passport_photo_jobs", db_column="userid")
-    order = models.ForeignKey(PrintOrder, null=True, blank=True, on_delete=models.SET_NULL, related_name="passport_photo_jobs")
-    username = models.CharField(max_length=255, blank=True)
-    self_agent = models.BooleanField(default=True, db_column="selfagent")
-    img_path = models.ImageField(upload_to="passportsizephoto/%Y/%m/%d/", db_column="imgpath")
-    prompt = models.TextField(blank=True)
-    price_item_id = models.CharField(max_length=120, blank=True)
-    price_label = models.CharField(max_length=160, blank=True)
-    rate = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    final_img_path = models.CharField(max_length=255, blank=True, db_column="finalimgpath")
-    is_printed = models.BooleanField(default=False)
-    status = models.CharField(max_length=20, default=STATUS_PENDING)
-    error_message = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True, db_column="createdAt")
-    updated_at = models.DateTimeField(auto_now=True, db_column="updatedAt")
-
-    class Meta:
-        db_table = "api_passportphoto_job"
-        ordering = ["-created_at"]
-        indexes = [models.Index(fields=["user", "created_at"])]
-
-    def __str__(self) -> str:
-        return f"Passport photo job #{self.id} for {self.user_id}"

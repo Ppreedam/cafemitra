@@ -2,16 +2,29 @@
 
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
-import { Crop, Eye, IdCard, Printer, RefreshCw, Trash2, Upload, X } from "lucide-react";
+import { Crop, Eye, IdCard, RefreshCw, Trash2, Upload, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
 import { SkeletonBlock } from "../UiState";
 import { apiFetch, apiUrl } from "@/lib/api";
-import { fetchPricingServiceByKey, savePricingService, type PriceItem } from "@/lib/pricing";
-import { fallbackPrinters, fetchAgentHealth, saveAgentPrinter } from "@/lib/printpilot-agent";
+import { fetchPricingServiceByKey, type PriceItem } from "@/lib/pricing";
 import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
 import { CropEditor, cropImage, DEFAULT_CROP_RECT, type CropRect } from "../CropEditor";
 
 type JobState = "idle" | "submitting" | "processing" | "done" | "not_found" | "failed";
+type PaperSize = "a4" | "4x6";
+
+type ExistingPassportOrder = {
+  id: number;
+  fileUrl: string;
+  fileName: string;
+  attireCategory: string;
+  geminiPhoto: string;
+  photoStatus: string;
+  photoErrorMessage: string;
+  passportPrompt: string;
+  priceLabel: string;
+  rate: number;
+};
 
 const CHECK_INTERVAL_MS = 5_000;
 const MAX_CHECK_ATTEMPTS = 7;
@@ -30,81 +43,141 @@ export default function PassportPhotoPage() {
   const [finalImageUrl, setFinalImageUrl] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [printers, setPrinters] = useState<string[]>(fallbackPrinters);
-  const [selectedPrinter, setSelectedPrinter] = useState(fallbackPrinters[0]);
-  const [printerMessage, setPrinterMessage] = useState("");
-  const [printerError, setPrinterError] = useState("");
+  const [viewOrder, setViewOrder] = useState<ExistingPassportOrder | null>(null);
+  const [paperSize, setPaperSize] = useState<PaperSize>("4x6");
   const dropRef = useRef<HTMLLabelElement | null>(null);
   const attemptsRef = useRef(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    loadPrinterSetup();
-    window.addEventListener("cafemitra:printers-updated", loadPrinterSetup);
-    return () => {
-      window.removeEventListener("cafemitra:printers-updated", loadPrinterSetup);
-    };
+    loadPricingSetup();
   }, []);
 
-  async function loadPrinterSetup() {
-    try {
-      const [health, service] = await Promise.all([fetchAgentHealth(), fetchPricingServiceByKey("passport_photo")]);
-      const scannedPrinters = Array.isArray(health.printers) && health.printers.length ? health.printers : fallbackPrinters;
-      const savedPrinter = String(service?.settings.selectedPrinter || "").trim();
-      setPrinters(scannedPrinters);
-      setSelectedPrinter(
-        savedPrinter && scannedPrinters.includes(savedPrinter)
-          ? savedPrinter
-          : health.printer && scannedPrinters.includes(health.printer)
-            ? health.printer
-            : scannedPrinters[0] || "",
-      );
+  useEffect(() => {
+    const orderId = new URLSearchParams(window.location.search).get("orderId");
+    if (orderId) loadExistingOrder(Number(orderId));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
+  async function loadExistingOrder(orderId: number) {
+    try {
+      const response = await apiFetch(`/api/orders/${orderId}/`);
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || !result.order) throw new Error(result.message || "Could not load this order.");
+
+      const order: ExistingPassportOrder = result.order;
+      setViewOrder(order);
+      setJobId(order.id);
+      if (order.attireCategory) setPhotoVariation(order.attireCategory);
+
+      if (order.fileUrl) {
+        const blob = await fetch(apiUrl(order.fileUrl)).then((res) => res.blob());
+        setFile(new File([blob], order.fileName || "passport-photo.jpg", { type: blob.type || "image/jpeg" }));
+        setPreviewUrl(URL.createObjectURL(blob));
+      }
+
+      if (order.geminiPhoto) {
+        setFinalImageUrl(order.geminiPhoto);
+        setJobState("done");
+      } else if (order.photoStatus === "failed") {
+        setJobState("failed");
+        setError(order.photoErrorMessage || "Photo generation failed.");
+      } else if (order.photoStatus === "pending" || order.photoStatus === "claimed") {
+        setJobState("processing");
+        attemptsRef.current = 0;
+        timeoutRef.current = setTimeout(() => checkStatus(order.id), CHECK_INTERVAL_MS);
+      }
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : "Could not load this order.");
+    }
+  }
+
+  async function loadPricingSetup() {
+    try {
+      const service = await fetchPricingServiceByKey("passport_photo");
       const items = Array.isArray(service?.settings.priceItems) ? (service.settings.priceItems as PriceItem[]) : [];
       setPriceItems(items);
       setSelectedPriceItemId((current) => (items.some((item) => item.id === current) ? current : items[0]?.id || ""));
     } catch {
-      setPrinters(fallbackPrinters);
-      setSelectedPrinter(fallbackPrinters[0]);
+      // Package list is a convenience; leave whatever was already loaded.
     }
   }
 
-  async function choosePassportPrinter(printerName: string) {
-    setSelectedPrinter(printerName);
-    setPrinterMessage("");
-    setPrinterError("");
-    try {
-      const result = await saveAgentPrinter(printerName);
-      const savedPrinter = result.printer || printerName;
-      // Saved under its own "passport_photo" service key, kept independent
-      // from PrintPilot's "auto_document_print" printer selection.
-      await savePricingService("passport_photo", { selectedPrinter: savedPrinter });
-      setSelectedPrinter(savedPrinter);
-      setPrinterMessage(`Passport photo printer set to ${savedPrinter}.`);
-      window.dispatchEvent(new Event("cafemitra:printers-updated"));
-    } catch (err) {
-      setPrinterError(err instanceof Error ? err.message : "Could not save printer. Is the PrintPilot Agent running?");
-    }
+  function parsePhotoCount(label?: string) {
+    const match = /(\d+)/.exec(label || "");
+    const value = match ? parseInt(match[1], 10) : NaN;
+    return Number.isFinite(value) && value > 0 ? value : 6;
   }
 
-  function printFinalPhoto() {
-    if (!finalImageUrl) return;
-    const printWindow = window.open("", "_blank", "width=480,height=640");
+  function buildPrintSheetHtml(size: PaperSize, imageUrl: string, count: number) {
+    const itemsPerRow = size === "a4" ? 6 : 3;
+    const pageSizeCss = size === "a4" ? "width:210mm;height:297mm;" : "width:4in;height:6in;";
+    const pageRuleCss = size === "a4" ? "size:A4;" : "size:4in 6in;";
+    const pagePaddingCss = size === "a4" ? "4mm 12mm 12mm 6mm" : "2mm 3mm 3mm 3mm";
+
+    const rowCounts: number[] = [];
+    for (let remaining = count; remaining > 0; remaining -= itemsPerRow) {
+      rowCounts.push(Math.min(itemsPerRow, remaining));
+    }
+
+    const rowsHtml = rowCounts
+      .map((rowCount) => {
+        const photosHtml = Array.from({ length: rowCount })
+          .map(() => `<div class="photo"><img src="${imageUrl}" /></div>`)
+          .join("");
+        return `<div class="photo-row">${photosHtml}</div>`;
+      })
+      .join("");
+
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Passport Photo Sheet</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#f2f2f2;font-family:Arial, Helvetica, sans-serif;}
+.page{${pageSizeCss}background:#fff;margin:20px auto;padding:${pagePaddingCss};}
+.photo-row{display:flex;justify-content:flex-start;gap:2mm;margin-bottom:2mm;}
+.photo-row:last-child{margin-bottom:0;}
+.photo{width:1.2in;height:1.6in;border:1px solid #999;overflow:hidden;background:#fff;flex:0 0 auto;}
+.photo img{width:100%;height:100%;object-fit:cover;object-position:center;}
+@media print{
+  body{background:white;}
+  .page{margin:0;${pageSizeCss}padding:${pagePaddingCss};box-shadow:none;}
+  @page{${pageRuleCss}margin:0;}
+}
+</style>
+</head>
+<body>
+<div class="page">
+${rowsHtml}
+</div>
+<script>
+  window.onload = function () {
+    window.focus();
+    window.print();
+  };
+</script>
+</body>
+</html>`;
+  }
+
+  function openPrintSheet(size: PaperSize) {
+    setPaperSize(size);
+    if (!finalImageUrl) {
+      setError("Generate the photo first, then choose a paper size to print.");
+      return;
+    }
+
+    setError("");
+    const printWindow = window.open("", "_blank");
     if (!printWindow) return;
-    const doc = printWindow.document;
-    doc.title = "Print Passport Photo";
-    doc.body.style.margin = "0";
-    doc.body.style.display = "flex";
-    doc.body.style.alignItems = "center";
-    doc.body.style.justifyContent = "center";
-    const img = doc.createElement("img");
-    img.style.maxWidth = "100%";
-    img.onload = () => {
-      printWindow.focus();
-      printWindow.print();
-    };
-    img.src = apiUrl(finalImageUrl);
-    doc.body.appendChild(img);
+    const count = parsePhotoCount(viewOrder?.priceLabel || selectedPackage?.label);
+    const html = buildPrintSheetHtml(size, apiUrl(finalImageUrl), count);
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
   }
 
   useEffect(() => {
@@ -143,6 +216,7 @@ export default function PassportPhotoPage() {
     setPreviewUrl(URL.createObjectURL(selected));
     setPhotoVariation(passportAttireOptions[0].key);
     setCropRect(DEFAULT_CROP_RECT);
+    setViewOrder(null);
     resetJob();
   }
 
@@ -163,6 +237,7 @@ export default function PassportPhotoPage() {
     setIsPreviewOpen(false);
     setIsCropOpen(false);
     setCropRect(DEFAULT_CROP_RECT);
+    setViewOrder(null);
     resetJob();
   }
 
@@ -204,6 +279,7 @@ export default function PassportPhotoPage() {
       const formData = new FormData();
       formData.append("photo", file);
       formData.append("prompt", prompt);
+      formData.append("attireCategory", photoVariation);
       if (selectedPackage) {
         formData.append("priceItemId", selectedPackage.id);
         formData.append("priceLabel", selectedPackage.label);
@@ -357,7 +433,17 @@ export default function PassportPhotoPage() {
                     })}
                   </div>
                 </div>
-                {priceItems.length ? (
+                {viewOrder ? (
+                  <div className="passport-attire-picker">
+                    <span>Package</span>
+                    <div className="passport-package-options">
+                      <button className="active" type="button" disabled>
+                        <strong>{viewOrder.priceLabel}</strong>
+                        <span>Rs. {viewOrder.rate}</span>
+                      </button>
+                    </div>
+                  </div>
+                ) : priceItems.length ? (
                   <div className="passport-attire-picker">
                     <span>Package</span>
                     <div className="passport-package-options">
@@ -373,6 +459,33 @@ export default function PassportPhotoPage() {
                           <span>Rs. {item.rate}</span>
                         </button>
                       ))}
+                    </div>
+                  </div>
+                ) : null}
+                {jobState === "done" && finalImageUrl ? (
+                  <div className="passport-attire-picker">
+                    <span>Paper Size</span>
+                    <div className="passport-papersize-options">
+                      <label className={`passport-papersize-radio${paperSize === "4x6" ? " active" : ""}`}>
+                        <input
+                          type="radio"
+                          name="passport-paper-size"
+                          checked={paperSize === "4x6"}
+                          onChange={() => setPaperSize("4x6")}
+                          onClick={() => openPrintSheet("4x6")}
+                        />
+                        <span>4x6 Photo Paper</span>
+                      </label>
+                      <label className={`passport-papersize-radio${paperSize === "a4" ? " active" : ""}`}>
+                        <input
+                          type="radio"
+                          name="passport-paper-size"
+                          checked={paperSize === "a4"}
+                          onChange={() => setPaperSize("a4")}
+                          onClick={() => openPrintSheet("a4")}
+                        />
+                        <span>A4 Sheet</span>
+                      </label>
                     </div>
                   </div>
                 ) : null}
@@ -404,32 +517,6 @@ export default function PassportPhotoPage() {
             {jobState === "done" && finalImageUrl ? (
               <div className="passport-final-preview">
                 <img src={apiUrl(finalImageUrl)} alt="Final passport photo" />
-              </div>
-            ) : null}
-
-            {jobState === "done" && finalImageUrl ? (
-              <div className="passport-print-picker">
-                <p className="customer-inline-help">
-                  Choose the printer for this passport photo. This is separate from the PrintPilot printer selected in PrintPilot setup.
-                </p>
-                <div className="printer-radio-list">
-                  {printers.map((printer) => (
-                    <label className="printer-radio" key={printer}>
-                      <input
-                        checked={selectedPrinter === printer}
-                        name="passport-printer"
-                        type="radio"
-                        onChange={() => choosePassportPrinter(printer)}
-                      />
-                      <span>{printer}</span>
-                    </label>
-                  ))}
-                </div>
-                {printerMessage ? <div className="profile-alert success">{printerMessage}</div> : null}
-                {printerError ? <div className="profile-alert error">{printerError}</div> : null}
-                <button className="passport-preview-button" type="button" onClick={printFinalPhoto} disabled={!selectedPrinter}>
-                  <Printer size={18} /> Print on {selectedPrinter || "printer"}
-                </button>
               </div>
             ) : null}
 

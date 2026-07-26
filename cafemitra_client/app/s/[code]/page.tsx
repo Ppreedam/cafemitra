@@ -516,27 +516,6 @@ export default function CustomerScanPage() {
     }
   }
 
-  async function submitPassportPhotoJob(orderId: number) {
-    if (!finalFile) return;
-    try {
-      const jobFormData = new FormData();
-      jobFormData.append("photo", finalFile, fileName || "passport-photo.jpg");
-      jobFormData.append("prompt", buildPassportPrompt(attireCategory));
-      jobFormData.append("orderId", String(orderId));
-      if (selectedItem) {
-        jobFormData.append("priceItemId", selectedItem.id);
-        jobFormData.append("priceLabel", selectedItem.label);
-        jobFormData.append("rate", String(selectedRate));
-      }
-      await fetch(apiUrl(`/api/public-shop/${data?.code || params.code}/passport-photo-job/`), {
-        method: "POST",
-        body: jobFormData,
-      });
-    } catch {
-      // Best-effort: the AI photo job queue is a convenience for the cafe owner and should not block the print order.
-    }
-  }
-
   async function createPrintOrder() {
     if (!finalFile || !selectedItem || !activeService) return;
     if (!isCafeOpen) {
@@ -559,7 +538,10 @@ export default function CustomerScanPage() {
       formData.append("copies", String(copies));
       formData.append("totalAmount", String(amount));
       formData.append("paymentMode", paymentMode);
-      if (isPassportPhoto) formData.append("attireCategory", attireCategory);
+      if (isPassportPhoto) {
+        formData.append("attireCategory", attireCategory);
+        formData.append("prompt", buildPassportPrompt(attireCategory));
+      }
 
       const response = await fetch(apiUrl(`/api/public-shop/${data?.code || params.code}/orders/`), {
         method: "POST",
@@ -568,7 +550,6 @@ export default function CustomerScanPage() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.message || "Could not create the order.");
       setOrder(result.order);
-      if (isPassportPhoto && result.order?.id) void submitPassportPhotoJob(result.order.id);
       if (result.order?.paymentStatus === "pending" && paymentMode === "Online Payment") {
         if (result.order.paymentGateway === "razorpay") {
           await openRazorpay(result.order);

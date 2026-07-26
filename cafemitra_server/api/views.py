@@ -1,11 +1,8 @@
 import base64
-import binascii
 import json
-import base64
 import hashlib
 import hmac
 import ipaddress
-import mimetypes
 import re
 import secrets
 import socket
@@ -30,7 +27,7 @@ from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
-from .models import AuthToken, ContactMessage, EmailVerificationToken, PassportPhotoJob, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, UserProfile, WalletTransaction, WithdrawalRequest
+from .models import AuthToken, ContactMessage, EmailVerificationToken, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, UserProfile, WalletTransaction, WithdrawalRequest
 from cafemitra_server.product_setting import active_payment_gateway
 
 User = get_user_model()
@@ -661,10 +658,6 @@ def public_order(order):
     token_id = order.token_id or f"{order.shop_code}-T{order.token_number:03d}"
     has_document = bool(order.document)
     gemini_photo_url = (settings.MEDIA_URL + order.gemini_photo) if order.gemini_photo else ""
-    if order.service_key == "passport_photo" and not gemini_photo_url:
-        passport_job = order.passport_photo_jobs.exclude(final_img_path="").order_by("-created_at").first()
-        if passport_job:
-            gemini_photo_url = settings.MEDIA_URL + passport_job.final_img_path
     return {
         "id": order.id,
         "orderNumber": f"{order.shop_code}-{order.id:05d}",
@@ -692,6 +685,9 @@ def public_order(order):
         "printedAt": order.printed_at.isoformat() if order.printed_at else "",
         "attireCategory": order.attire_category,
         "geminiPhoto": gemini_photo_url,
+        "photoStatus": order.photo_status,
+        "photoErrorMessage": order.photo_error_message,
+        "passportPrompt": order.passport_prompt,
     }
 
 
@@ -870,29 +866,31 @@ def user_from_cafe_code(code):
     return User.objects.filter(id=int(match.group(1))).first()
 
 
-def issue_tokens(user, rotate_refresh=False):
+def issue_tokens(user):
+    # Each login/verification creates its OWN AuthToken row rather than reusing one
+    # shared row per user - a browser tab and the desktop Print Agent (or any other
+    # concurrent client) can otherwise stomp on each other's access key every time
+    # either one refreshes, causing intermittent 401s ("Could not start the photo
+    # request.") even though both sessions are individually valid.
     now = timezone.now()
-    token, _ = AuthToken.objects.get_or_create(user=user, defaults={"key": secrets.token_hex(32)})
-    token.key = secrets.token_hex(32)
-    token.access_expires_at = now + ACCESS_TOKEN_TTL
-    update_fields = ["key", "access_expires_at"]
-    if rotate_refresh or not token.refresh_key or not token.refresh_expires_at or token.refresh_expires_at <= now:
-        token.refresh_key = secrets.token_hex(48)
-        token.refresh_expires_at = now + REFRESH_TOKEN_TTL
-        update_fields.extend(["refresh_key", "refresh_expires_at"])
-    token.save(update_fields=update_fields)
-    return token
+    return AuthToken.objects.create(
+        user=user,
+        key=secrets.token_hex(32),
+        access_expires_at=now + ACCESS_TOKEN_TTL,
+        refresh_key=secrets.token_hex(48),
+        refresh_expires_at=now + REFRESH_TOKEN_TTL,
+    )
 
 
-def token_response(user, status=200, rotate_refresh=False):
-    token = issue_tokens(user, rotate_refresh=rotate_refresh)
+def token_response(user, status=200):
+    token = issue_tokens(user)
     shop, _ = ShopProfile.objects.get_or_create(user=user)
     return JsonResponse(
         {
             "token": token.key,
             "refreshToken": token.refresh_key,
             "accessTokenExpiresAt": token.access_expires_at.isoformat(),
-            "refreshTokenExpiresAt": token.refresh_expires_at.isoformat() if token.refresh_expires_at else "",
+            "refreshTokenExpiresAt": token.refresh_expires_at.isoformat(),
             "user": public_user(user),
             "shop": public_shop(shop),
         },
@@ -1036,7 +1034,7 @@ def login_user(request):
     if not user:
         return JsonResponse({"message": "Invalid email or password."}, status=401)
 
-    return token_response(user, rotate_refresh=False)
+    return token_response(user)
 
 
 @csrf_exempt
@@ -1056,7 +1054,7 @@ def verify_email(request):
     token.user.save(update_fields=["is_active"])
     token.save(update_fields=["used_at"])
     ensure_signup_wallet_bonus(token.user)
-    return token_response(token.user, rotate_refresh=True)
+    return token_response(token.user)
 
 
 @csrf_exempt
@@ -1434,6 +1432,8 @@ def public_print_order(request, code):
         payment_status = PrintOrder.PAYMENT_PENDING
         order_status = PrintOrder.STATUS_AWAITING_PAYMENT
 
+    passport_prompt = str(request.POST.get("prompt", "")).strip() if service_key == "passport_photo" else ""
+
     token_number, token_id = next_order_token(user)
     order = PrintOrder.objects.create(
         user=user,
@@ -1456,6 +1456,9 @@ def public_print_order(request, code):
         customer_phone=str(request.POST.get("customerPhone", "")).strip(),
         payment_gateway=active_payment_gateway()[0] or "" if payment_status == PrintOrder.PAYMENT_PENDING else "",
         attire_category=str(request.POST.get("attireCategory", "")).strip(),
+        passport_prompt=passport_prompt,
+        photo_status=PrintOrder.PHOTO_STATUS_PENDING if passport_prompt else "",
+        photo_updated_at=timezone.now() if passport_prompt else None,
     )
 
     return JsonResponse({"order": public_order(order)}, status=201)
@@ -1529,6 +1532,44 @@ def order_history(request):
 
     orders = PrintOrder.objects.filter(user=user).order_by("-created_at")[:100]
     return JsonResponse({"orders": [public_order(order) for order in orders]})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def order_detail(request, order_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    order = PrintOrder.objects.filter(id=order_id, user=user).first()
+    if not order:
+        return JsonResponse({"message": "Order not found."}, status=404)
+    return JsonResponse({"order": public_order(order)})
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def mark_passport_order_paid(request, order_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    order = PrintOrder.objects.filter(id=order_id, user=user, service_key="passport_photo").first()
+    if not order:
+        return JsonResponse({"message": "Order not found."}, status=404)
+    if order.payment_status != PrintOrder.PAYMENT_NO_PAYMENT:
+        return JsonResponse({"message": "Only unpaid passport photo orders can be marked as paid."}, status=400)
+
+    order.payment_status = PrintOrder.PAYMENT_PAID
+    order.paid_at = timezone.now()
+    order.save(update_fields=["payment_status", "paid_at"])
+    return JsonResponse({"order": public_order(order)})
 
 
 @csrf_exempt
@@ -1826,30 +1867,6 @@ PASSPORT_PHOTO_CHECK_RETRY_DELAY_SECONDS = 5
 PASSPORT_PHOTO_STALE_JOB_SECONDS = 60
 
 
-def _create_passport_photo_job(request, user, self_agent, order=None):
-    photo = request.FILES.get("photo")
-    if not photo:
-        return None, JsonResponse({"message": "Upload a photo to continue."}, status=400)
-
-    prompt = str(request.POST.get("prompt", "")).strip()
-    if not prompt:
-        return None, JsonResponse({"message": "A prompt is required."}, status=400)
-
-    job = PassportPhotoJob.objects.create(
-        user=user,
-        order=order,
-        username=user.get_username(),
-        self_agent=self_agent,
-        img_path=photo,
-        prompt=prompt,
-        price_item_id=str(request.POST.get("priceItemId", "")).strip(),
-        price_label=str(request.POST.get("priceLabel", "")).strip(),
-        rate=money(request.POST.get("rate")),
-        status=PassportPhotoJob.STATUS_PENDING,
-    )
-    return job, None
-
-
 @csrf_exempt
 @require_http_methods(["POST", "OPTIONS"])
 def save_raw_passport_photo(request):
@@ -1860,45 +1877,58 @@ def save_raw_passport_photo(request):
     if not user:
         return JsonResponse({"message": "Unauthorized."}, status=401)
 
-    job, error_response = _create_passport_photo_job(request, user, self_agent=True)
-    if error_response:
-        return error_response
-    return JsonResponse({"id": job.id})
+    photo = request.FILES.get("photo")
+    if not photo:
+        return JsonResponse({"message": "Upload a photo to continue."}, status=400)
+
+    prompt = str(request.POST.get("prompt", "")).strip()
+    if not prompt:
+        return JsonResponse({"message": "A prompt is required."}, status=400)
+
+    ensure_service_pricing(user)
+    pricing = ServicePricing.objects.filter(user=user, service_key="passport_photo").first()
+    service_name = pricing.service_name if pricing else "Passport Size Photo"
+    rate = money(request.POST.get("rate"))
+    token_number, token_id = next_order_token(user)
+
+    order = PrintOrder.objects.create(
+        user=user,
+        shop_code=cafe_code_for_user(user),
+        token_number=token_number,
+        token_id=token_id,
+        service_key="passport_photo",
+        service_name=service_name,
+        price_item_id=str(request.POST.get("priceItemId", "")).strip(),
+        price_label=str(request.POST.get("priceLabel", "")).strip(),
+        rate=rate,
+        pages=1,
+        copies=1,
+        total_amount=rate,
+        payment_mode="No Payment",
+        payment_status=PrintOrder.PAYMENT_NO_PAYMENT,
+        status=PrintOrder.STATUS_QUEUED,
+        document=photo,
+        original_filename=photo.name,
+        attire_category=str(request.POST.get("attireCategory", "")).strip(),
+        passport_prompt=prompt,
+        photo_status=PrintOrder.PHOTO_STATUS_PENDING,
+        photo_updated_at=timezone.now(),
+    )
+    return JsonResponse({"id": order.id})
 
 
-@csrf_exempt
-@require_http_methods(["POST", "OPTIONS"])
-def public_save_raw_passport_photo(request, code):
-    if request.method == "OPTIONS":
-        return JsonResponse({})
-
-    user = user_from_cafe_code(code)
-    if not user:
-        return JsonResponse({"message": "Cafe not found."}, status=404)
-
-    order = None
-    order_id = str(request.POST.get("orderId", "")).strip()
-    if order_id:
-        order = PrintOrder.objects.filter(id=order_id, user=user, service_key="passport_photo").first()
-
-    job, error_response = _create_passport_photo_job(request, user, self_agent=False, order=order)
-    if error_response:
-        return error_response
-    return JsonResponse({"id": job.id})
-
-
-def public_passport_job(job):
+def public_passport_job(order):
     return {
-        "id": job.id,
-        "prompt": job.prompt,
-        "status": job.status,
-        "priceItemId": job.price_item_id,
-        "priceLabel": job.price_label,
-        "rate": float(job.rate),
-        "finalImageUrl": (settings.MEDIA_URL + job.final_img_path) if job.final_img_path else "",
-        "errorMessage": job.error_message,
-        "createdAt": job.created_at.isoformat(),
-        "originalImageUrl": job.img_path.url if job.img_path else "",
+        "id": order.id,
+        "prompt": order.passport_prompt,
+        "status": order.photo_status,
+        "priceItemId": order.price_item_id,
+        "priceLabel": order.price_label,
+        "rate": float(order.rate),
+        "finalImageUrl": (settings.MEDIA_URL + order.gemini_photo) if order.gemini_photo else "",
+        "errorMessage": order.photo_error_message,
+        "createdAt": order.created_at.isoformat(),
+        "originalImageUrl": order.document.url if order.document else "",
     }
 
 
@@ -1913,24 +1943,25 @@ def check_passport_photo(request):
         return JsonResponse({"message": "Unauthorized."}, status=401)
 
     body = parse_body(request)
-    job = PassportPhotoJob.objects.filter(id=body.get("id"), user=user).first()
-    if not job:
+    order = PrintOrder.objects.filter(id=body.get("id"), user=user, service_key="passport_photo").first()
+    if not order:
         return JsonResponse({"message": "Photo request not found."}, status=404)
 
     for attempt in range(PASSPORT_PHOTO_CHECK_MAX_RETRIES):
-        job.refresh_from_db()
-        if job.final_img_path:
-            return JsonResponse({"found": True, "imageUrl": settings.MEDIA_URL + job.final_img_path})
+        order.refresh_from_db()
+        if order.gemini_photo:
+            return JsonResponse({"found": True, "imageUrl": settings.MEDIA_URL + order.gemini_photo})
 
-        if job.status in (PassportPhotoJob.STATUS_PENDING, PassportPhotoJob.STATUS_CLAIMED):
-            stale_seconds = (timezone.now() - job.updated_at).total_seconds()
+        if order.photo_status in (PrintOrder.PHOTO_STATUS_PENDING, PrintOrder.PHOTO_STATUS_CLAIMED):
+            stale_seconds = (timezone.now() - order.photo_updated_at).total_seconds() if order.photo_updated_at else 0
             if stale_seconds > PASSPORT_PHOTO_STALE_JOB_SECONDS:
-                job.status = PassportPhotoJob.STATUS_FAILED
-                job.error_message = "The PrintPilot Agent did not respond in time. Please check that it is running and connected, then try again."
-                job.save(update_fields=["status", "error_message", "updated_at"])
+                order.photo_status = PrintOrder.PHOTO_STATUS_FAILED
+                order.photo_error_message = "The PrintPilot Agent did not respond in time. Please check that it is running and connected, then try again."
+                order.photo_updated_at = timezone.now()
+                order.save(update_fields=["photo_status", "photo_error_message", "photo_updated_at"])
 
-        if job.status == PassportPhotoJob.STATUS_FAILED:
-            return JsonResponse({"found": False, "message": job.error_message or "Photo generation failed."}, status=200)
+        if order.photo_status == PrintOrder.PHOTO_STATUS_FAILED:
+            return JsonResponse({"found": False, "message": order.photo_error_message or "Photo generation failed."}, status=200)
 
         if attempt < PASSPORT_PHOTO_CHECK_MAX_RETRIES - 1:
             time.sleep(PASSPORT_PHOTO_CHECK_RETRY_DELAY_SECONDS)
@@ -1948,7 +1979,9 @@ def agent_passport_jobs(request):
     if not user:
         return JsonResponse({"message": "Unauthorized."}, status=401)
 
-    jobs = PassportPhotoJob.objects.filter(user=user, status=PassportPhotoJob.STATUS_PENDING).order_by("created_at")[:20]
+    jobs = PrintOrder.objects.filter(
+        user=user, service_key="passport_photo", photo_status=PrintOrder.PHOTO_STATUS_PENDING,
+    ).order_by("created_at")[:20]
     return JsonResponse({"jobs": [public_passport_job(job) for job in jobs]})
 
 
@@ -1963,16 +1996,17 @@ def claim_passport_job(request, job_id):
         return JsonResponse({"message": "Unauthorized."}, status=401)
 
     with transaction.atomic():
-        job = PassportPhotoJob.objects.select_for_update().filter(id=job_id, user=user).first()
-        if not job:
+        order = PrintOrder.objects.select_for_update().filter(id=job_id, user=user, service_key="passport_photo").first()
+        if not order:
             return JsonResponse({"message": "Photo job not found."}, status=404)
-        if job.status != PassportPhotoJob.STATUS_PENDING:
+        if order.photo_status != PrintOrder.PHOTO_STATUS_PENDING:
             return JsonResponse({"message": "Job already claimed."}, status=409)
 
-        job.status = PassportPhotoJob.STATUS_CLAIMED
-        job.save(update_fields=["status", "updated_at"])
+        order.photo_status = PrintOrder.PHOTO_STATUS_CLAIMED
+        order.photo_updated_at = timezone.now()
+        order.save(update_fields=["photo_status", "photo_updated_at"])
 
-    return JsonResponse(public_passport_job(job))
+    return JsonResponse(public_passport_job(order))
 
 
 @csrf_exempt
@@ -1985,15 +2019,16 @@ def complete_passport_job(request, job_id):
     if not user:
         return JsonResponse({"message": "Unauthorized."}, status=401)
 
-    job = PassportPhotoJob.objects.filter(id=job_id, user=user).first()
-    if not job:
+    order = PrintOrder.objects.filter(id=job_id, user=user, service_key="passport_photo").first()
+    if not order:
         return JsonResponse({"message": "Photo job not found."}, status=404)
 
-    if str(request.POST.get("status", "")).strip() == PassportPhotoJob.STATUS_FAILED:
-        job.status = PassportPhotoJob.STATUS_FAILED
-        job.error_message = str(request.POST.get("message", "")).strip()
-        job.save(update_fields=["status", "error_message", "updated_at"])
-        return JsonResponse(public_passport_job(job))
+    if str(request.POST.get("status", "")).strip() == PrintOrder.PHOTO_STATUS_FAILED:
+        order.photo_status = PrintOrder.PHOTO_STATUS_FAILED
+        order.photo_error_message = str(request.POST.get("message", "")).strip()
+        order.photo_updated_at = timezone.now()
+        order.save(update_fields=["photo_status", "photo_error_message", "photo_updated_at"])
+        return JsonResponse(public_passport_job(order))
 
     final_image = request.FILES.get("final_image")
     if not final_image:
@@ -2003,61 +2038,14 @@ def complete_passport_job(request, job_id):
     absolute_dir = Path(settings.MEDIA_ROOT) / relative_dir
     absolute_dir.mkdir(parents=True, exist_ok=True)
     extension = Path(final_image.name).suffix or ".png"
-    filename = f"{job.id}_{uuid.uuid4().hex[:8]}{extension}"
+    filename = f"{order.id}_{uuid.uuid4().hex[:8]}{extension}"
     relative_path = f"{relative_dir}/{filename}"
     with open(absolute_dir / filename, "wb") as destination:
         for chunk in final_image.chunks():
             destination.write(chunk)
 
-    job.final_img_path = relative_path
-    job.status = PassportPhotoJob.STATUS_DONE
-    job.save(update_fields=["final_img_path", "status", "updated_at"])
-    return JsonResponse(public_passport_job(job))
-
-
-@csrf_exempt
-@require_http_methods(["POST", "OPTIONS"])
-def send_ai_photo(request):
-    if request.method == "OPTIONS":
-        return JsonResponse({})
-
-    user = auth_user(request)
-    if not user:
-        return JsonResponse({"message": "Unauthorized."}, status=401)
-
-    body = parse_body(request)
-    job = PassportPhotoJob.objects.filter(id=body.get("id"), user=user).first()
-    if not job:
-        return JsonResponse({"message": "Photo request not found."}, status=404)
-
-    raw_base64 = str(body.get("base64image", "")).strip()
-    if not raw_base64:
-        return JsonResponse({"message": "base64image is required."}, status=400)
-
-    content_type = "image/jpeg"
-    if raw_base64.startswith("data:"):
-        header, _, raw_base64 = raw_base64.partition(",")
-        content_type = header[len("data:"):].split(";")[0] or content_type
-
-    try:
-        image_bytes = base64.b64decode(raw_base64, validate=True)
-    except (binascii.Error, ValueError):
-        return JsonResponse({"message": "Invalid base64 image data."}, status=400)
-
-    extension = mimetypes.guess_extension(content_type) or ".jpg"
-    if extension == ".jpe":
-        extension = ".jpg"
-
-    relative_dir = f"passportsizephoto/{timezone.now():%Y/%m/%d}"
-    absolute_dir = Path(settings.MEDIA_ROOT) / relative_dir
-    absolute_dir.mkdir(parents=True, exist_ok=True)
-
-    filename = f"{job.id}_{uuid.uuid4().hex[:8]}{extension}"
-    relative_path = f"{relative_dir}/{filename}"
-    (absolute_dir / filename).write_bytes(image_bytes)
-
-    job.final_img_path = relative_path
-    job.status = PassportPhotoJob.STATUS_DONE
-    job.save(update_fields=["final_img_path", "status", "updated_at"])
-
-    return JsonResponse({"id": job.id, "finalImagePath": relative_path, "imageUrl": settings.MEDIA_URL + relative_path})
+    order.gemini_photo = relative_path
+    order.photo_status = PrintOrder.PHOTO_STATUS_DONE
+    order.photo_updated_at = timezone.now()
+    order.save(update_fields=["gemini_photo", "photo_status", "photo_updated_at"])
+    return JsonResponse(public_passport_job(order))
