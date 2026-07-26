@@ -1,6 +1,7 @@
 ﻿node_modules/
 .next/
 .env.local
+Print Agent/
 
 # Frontend build/cache
 cafemitra_client/.next/

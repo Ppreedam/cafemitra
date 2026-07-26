@@ -1943,7 +1943,12 @@ def check_passport_photo(request):
         return JsonResponse({"message": "Unauthorized."}, status=401)
 
     body = parse_body(request)
-    order = PrintOrder.objects.filter(id=body.get("id"), user=user, service_key="passport_photo").first()
+    try:
+        order_id = int(body.get("id"))
+    except (TypeError, ValueError):
+        return JsonResponse({"message": "A valid order id is required."}, status=400)
+
+    order = PrintOrder.objects.filter(id=order_id, user=user, service_key="passport_photo").first()
     if not order:
         return JsonResponse({"message": "Photo request not found."}, status=404)
 

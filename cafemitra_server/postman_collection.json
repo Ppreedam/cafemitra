@@ -62,8 +62,18 @@
       "type": "string"
     },
     {
+      "key": "job_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
       "key": "document_path",
       "value": "C:\\\\path\\\\to\\\\document.pdf",
+      "type": "string"
+    },
+    {
+      "key": "image_path",
+      "value": "C:\\\\path\\\\to\\\\image.jpg",
       "type": "string"
     }
   ],
@@ -89,6 +99,212 @@
               ]
             },
             "description": "GET /api/check/server/status/ | src: api.views.check_server_status"
+          },
+          "response": []
+        },
+        {
+          "name": "Contact Us",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Cafe Owner\",\n  \"email\": \"{{email}}\",\n  \"phone\": \"{{phone}}\",\n  \"subject\": \"General query\",\n  \"message\": \"Need help setting up my print shop.\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/contact-us/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "contact-us"
+              ]
+            },
+            "description": "POST /api/contact-us/ | src: api.views.contact_message"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tools",
+      "item": [
+        {
+          "name": "AI Upscale Image",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "{{image_path}}"
+                },
+                {
+                  "key": "scale",
+                  "value": "2",
+                  "type": "text",
+                  "description": "2 | 4"
+                },
+                {
+                  "key": "output_format",
+                  "value": "webp",
+                  "type": "text",
+                  "description": "webp | png | jpeg"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/tools/ai-upscale-image/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "tools",
+                "ai-upscale-image"
+              ]
+            },
+            "description": "POST /api/tools/ai-upscale-image/ | src: api.views.ai_upscale_image | Returns the upscaled image binary. Requires AI_UPSCALE_API_URL configured on the server."
+          },
+          "response": []
+        },
+        {
+          "name": "Extract PDF Text",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "pdf",
+                  "type": "file",
+                  "src": "{{document_path}}"
+                },
+                {
+                  "key": "pages",
+                  "value": "[1,2]",
+                  "type": "text",
+                  "description": "Optional JSON array of 1-based page numbers to extract"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/tools/extract-pdf-text/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "tools",
+                "extract-pdf-text"
+              ]
+            },
+            "description": "POST /api/tools/extract-pdf-text/ | src: api.views.extract_pdf_text | Requires PyMuPDF (fitz) installed on the server."
+          },
+          "response": []
+        },
+        {
+          "name": "Remove Image Background",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "{{image_path}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/tools/remove-image-background/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "tools",
+                "remove-image-background"
+              ]
+            },
+            "description": "POST /api/tools/remove-image-background/ | src: api.views.remove_image_background"
+          },
+          "response": []
+        },
+        {
+          "name": "Website To Image",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://example.com\",\n  \"width\": 1440,\n  \"format\": \"png\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/tools/website-to-image/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "tools",
+                "website-to-image"
+              ]
+            },
+            "description": "POST /api/tools/website-to-image/ | src: api.views.website_to_image | width: 390 | 768 | 1280 | 1440 | 1920. format: png | jpeg. Requires WEBSITE_SCREENSHOT_API_URL configured on the server."
+          },
+          "response": []
+        },
+        {
+          "name": "Detect Faces",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "{{image_path}}"
+                },
+                {
+                  "key": "sensitivity",
+                  "value": "recommended",
+                  "type": "text",
+                  "description": "low | recommended | high"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/tools/detect-faces/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "tools",
+                "detect-faces"
+              ]
+            },
+            "description": "POST /api/tools/detect-faces/ | src: api.views.detect_faces | Requires opencv-python (cv2) installed on the server."
           },
           "response": []
         }
@@ -254,7 +470,7 @@
                 "login"
               ]
             },
-            "description": "POST /api/auth/login/ | src: api.views.login_user | Saves token, refresh_token, and shop_code on success."
+            "description": "POST /api/auth/login/ | src: api.views.login_user | Saves token, refresh_token, and shop_code on success. Each login/refresh gets its own AuthToken row, so a browser session and the desktop Print Agent no longer invalidate each other's token."
           },
           "response": []
         },
@@ -390,6 +606,35 @@
               ]
             },
             "description": "POST /api/auth/change-password/ | src: api.views.change_password"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Account",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/auth/delete-account/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "delete-account"
+              ]
+            },
+            "description": "POST /api/auth/delete-account/ | src: api.views.delete_account_by_email | Also accepts DELETE. Permanently deletes the account and its uploaded documents."
           },
           "response": []
         }
@@ -598,7 +843,7 @@
                 "pricing-settings"
               ]
             },
-            "description": "PUT /api/pricing-settings/ | src: api.views.pricing_settings"
+            "description": "PUT /api/pricing-settings/ | src: api.views.pricing_settings | serviceKey: auto_document_print | passport_photo"
           },
           "response": []
         }
@@ -627,7 +872,58 @@
                 "orders"
               ]
             },
-            "description": "GET /api/orders/ | src: api.views.order_history"
+            "description": "GET /api/orders/ | src: api.views.order_history | Latest 100 orders across all services, including passport photo orders with photoStatus/geminiPhoto/passportPrompt fields for the raw/gemini photo compare modal."
+          },
+          "response": []
+        },
+        {
+          "name": "Order Detail",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/orders/{{order_id}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "{{order_id}}"
+              ]
+            },
+            "description": "GET /api/orders/<order_id>/ | src: api.views.order_detail"
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Passport Order Paid",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/orders/{{order_id}}/mark-paid/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "{{order_id}}",
+                "mark-paid"
+              ]
+            },
+            "description": "POST /api/orders/<order_id>/mark-paid/ | src: api.views.mark_passport_order_paid | Order History 'Mark as Paid' action for cash passport-photo orders (service_key=passport_photo, paymentStatus=No Payment only)."
           },
           "response": []
         },
@@ -680,6 +976,32 @@
               ]
             },
             "description": "POST /api/orders/<order_id>/reject-cash/ | src: api.views.reject_cash_order"
+          },
+          "response": []
+        },
+        {
+          "name": "Download Order Document",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/orders/{{order_id}}/file/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "orders",
+                "{{order_id}}",
+                "file"
+              ]
+            },
+            "description": "GET /api/orders/<order_id>/file/ | src: api.views.order_document | Owner Order History 'Print' action - downloads the original uploaded document as an attachment."
           },
           "response": []
         }
@@ -780,6 +1102,18 @@
                   "key": "customerPhone",
                   "value": "{{phone}}",
                   "type": "text"
+                },
+                {
+                  "key": "attireCategory",
+                  "value": "",
+                  "type": "text",
+                  "description": "Passport photo maker only"
+                },
+                {
+                  "key": "prompt",
+                  "value": "",
+                  "type": "text",
+                  "description": "Passport photo AI prompt, only used when serviceKey=passport_photo"
                 }
               ]
             },
@@ -862,6 +1196,59 @@
           "response": []
         },
         {
+          "name": "Public Create Razorpay Order",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/public-orders/{{order_id}}/razorpay/order/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "public-orders",
+                "{{order_id}}",
+                "razorpay",
+                "order"
+              ]
+            },
+            "description": "POST /api/public-orders/<order_id>/razorpay/order/ | src: api.views.public_create_razorpay_order | Only works when Razorpay is the active payment gateway and the order is awaiting online payment."
+          },
+          "response": []
+        },
+        {
+          "name": "Public Verify Razorpay Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpay_payment_id\": \"\",\n  \"razorpay_order_id\": \"\",\n  \"razorpay_signature\": \"\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/public-orders/{{order_id}}/razorpay/verify/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "public-orders",
+                "{{order_id}}",
+                "razorpay",
+                "verify"
+              ]
+            },
+            "description": "POST /api/public-orders/<order_id>/razorpay/verify/ | src: api.views.public_verify_razorpay_payment | Fill in values returned by Razorpay Checkout after payment."
+          },
+          "response": []
+        },
+        {
           "name": "Public Delete Order Document",
           "request": {
             "method": "POST",
@@ -879,6 +1266,116 @@
               ]
             },
             "description": "POST /api/public-orders/<order_id>/delete-document/ | src: api.views.public_delete_order_document | Works after order status is printed."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Passport Photo",
+      "item": [
+        {
+          "name": "Save Raw Passport Photo",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.id) pm.collectionVariables.set('order_id', json.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "src": "{{image_path}}"
+                },
+                {
+                  "key": "prompt",
+                  "value": "Generate a passport size photo with a plain white background.",
+                  "type": "text"
+                },
+                {
+                  "key": "priceItemId",
+                  "value": "six_pcs",
+                  "type": "text"
+                },
+                {
+                  "key": "priceLabel",
+                  "value": "6 pcs",
+                  "type": "text"
+                },
+                {
+                  "key": "rate",
+                  "value": "30",
+                  "type": "text"
+                },
+                {
+                  "key": "attireCategory",
+                  "value": "",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/save-raw-passport-photo/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "save-raw-passport-photo"
+              ]
+            },
+            "description": "POST /api/save-raw-passport-photo/ | src: api.views.save_raw_passport_photo | Creates a PrintOrder (service_key=passport_photo) for the wizard flow; saves order_id on success."
+          },
+          "response": []
+        },
+        {
+          "name": "Check Passport Photo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"{{order_id}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/api-passport-photo-check/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "api-passport-photo-check"
+              ]
+            },
+            "description": "POST /api/api-passport-photo-check/ | src: api.views.check_passport_photo | Polls (up to 5x, 5s apart) for the Agent-generated final photo on the order created via Save Raw Passport Photo."
           },
           "response": []
         }
@@ -908,7 +1405,7 @@
                 "jobs"
               ]
             },
-            "description": "GET /api/agent/jobs/ | src: api.views.agent_jobs"
+            "description": "GET /api/agent/jobs/ | src: api.views.agent_jobs | Print-queue jobs only (excludes passport_photo service, see Agent Passport Jobs folder)."
           },
           "response": []
         },
@@ -978,7 +1475,7 @@
                 "status"
               ]
             },
-            "description": "POST /api/agent/jobs/<order_id>/status/ | src: api.views.agent_job_status | status: printing | printed | failed"
+            "description": "POST /api/agent/jobs/<order_id>/status/ | src: api.views.agent_job_status | status: printing | printed | failed. Marking as printed settles the wallet (credits online-paid orders, tracks cash-counter collections)."
           },
           "response": []
         },
@@ -1014,6 +1511,208 @@
               ]
             },
             "description": "POST /api/agent/jobs/<order_id>/status/ | src: api.views.agent_job_status | status: printing | printed | failed"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Gemini Photo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "src": "{{image_path}}"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/agent/jobs/{{order_id}}/gemini-photo/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "jobs",
+                "{{order_id}}",
+                "gemini-photo"
+              ]
+            },
+            "description": "POST /api/agent/jobs/<order_id>/gemini-photo/ | src: api.views.agent_upload_gemini_photo | Stores the AI-generated photo on any order (not limited to passport_photo) for the Order History raw/gemini compare modal."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Agent Passport Jobs",
+      "item": [
+        {
+          "name": "Agent Passport Jobs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/agent/passport-jobs/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "passport-jobs"
+              ]
+            },
+            "description": "GET /api/agent/passport-jobs/ | src: api.views.agent_passport_jobs | Lists pending passport-photo AI jobs (photoStatus=pending) waiting to be claimed by the desktop Print Agent."
+          },
+          "response": []
+        },
+        {
+          "name": "Claim Passport Job",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.id) pm.collectionVariables.set('job_id', json.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/agent/passport-jobs/{{job_id}}/claim/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "passport-jobs",
+                "{{job_id}}",
+                "claim"
+              ]
+            },
+            "description": "POST /api/agent/passport-jobs/<job_id>/claim/ | src: api.views.claim_passport_job | Atomically moves the job from pending to claimed; 409 if another agent already claimed it."
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Passport Job",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "final_image",
+                  "type": "file",
+                  "src": "{{image_path}}"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "type": "text",
+                  "description": "Leave empty to complete successfully, or set to 'failed' with a 'message' field and omit final_image"
+                },
+                {
+                  "key": "message",
+                  "value": "",
+                  "type": "text",
+                  "description": "Required only when status=failed"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/agent/passport-jobs/{{job_id}}/complete/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "passport-jobs",
+                "{{job_id}}",
+                "complete"
+              ]
+            },
+            "description": "POST /api/agent/passport-jobs/<job_id>/complete/ | src: api.views.complete_passport_job | On success uploads final_image and sets photoStatus=done; on failure send status=failed and message instead."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Agent Update",
+      "item": [
+        {
+          "name": "Agent Version Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/agent/version-check/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "version-check"
+              ]
+            },
+            "description": "GET /api/agent/version-check/ | src: api.views.agent_version_check | Anonymous. Returns plain-text version from media/agent/version.txt."
+          },
+          "response": []
+        },
+        {
+          "name": "Agent Update Download",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/agent/update/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "update"
+              ]
+            },
+            "description": "GET /api/agent/update/ | src: api.views.agent_update_download | Anonymous. Downloads media/agent/PrintPilot-latest.zip."
           },
           "response": []
         }
