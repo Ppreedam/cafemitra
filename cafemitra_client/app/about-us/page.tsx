@@ -47,16 +47,16 @@ const workflow = [
   },
   {
     icon: Trash2,
-    title: "Auto-deleted in 15 minutes",
-    detail: "Zero retention. Zero liability.",
+    title: "Scheduled for deletion, typically 15 minutes",
+    detail: "Document files deleted after printing. Only operational metadata is retained.",
   },
 ];
 
 const stats = [
-  ["500+", "Partner Shops"],
-  ["50K+", "Documents Processed"],
   ["15 min", "Auto-Delete Default"],
   ["AES-256", "Encryption Standard"],
+  ["TLS 1.3", "Encrypted Upload"],
+  ["< 2 min", "Avg. Print Time"],
 ];
 
 const values = [
@@ -101,7 +101,7 @@ const roadmap = [
   {
     phase: "Phase 2",
     title: "CSC Centres & Government",
-    body: "DPDP-compliant workflows, audit logs, DigiLocker integration.",
+    body: "DPDP-aligned workflows, audit logs, DigiLocker integration.",
   },
   {
     phase: "Phase 3",

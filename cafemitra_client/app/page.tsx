@@ -43,9 +43,9 @@ const trust = [
 ];
 
 const socialStats = [
-  { icon: Store, value: "2,500+", label: "Print Shops" },
-  { icon: FileText, value: "8M+", label: "Documents Processed" },
-  { icon: Landmark, value: "180+", label: "Cities Covered" },
+  { icon: Store, value: "Built for", label: "Print Shops Across India" },
+  { icon: FileText, value: "AES-256", label: "Encryption Standard" },
+  { icon: Landmark, value: "15 min", label: "Auto-Delete Default" },
   { icon: Clock, value: "< 2 min", label: "Avg. Print Time" },
 ];
 
@@ -101,7 +101,7 @@ const features = [
   {
     icon: Trash2,
     title: "Auto-Delete After Printing",
-    body: "Documents permanently deleted within 15 minutes of printing. Not a setting - built into the architecture.",
+    body: "Documents are scheduled for permanent deletion shortly after printing, typically within 15 minutes.",
   },
 ];
 
@@ -120,15 +120,15 @@ const products = [
   { name: "PDF Tools", desc: "Create, merge, split, compress, and convert - all in one place.", href: "/pdf-tools", status: "Available" },
   { name: "Website to JPG", desc: "Capture any public webpage as a full-page JPG for portfolios, printing, and OG preview checks.", href: "/image-tools/website-to-image", status: "Available" },
   { name: "OCR", desc: "Extract text from any scanned doc. Hindi plus Indian languages.", href: "#", status: "Available" },
-  { name: "Passport Photo Tool", desc: "Government-standard photos generated automatically.", href: "#", status: "Available" },
+  { name: "Passport Photo Tool", desc: "Crops and resizes your own photo to official passport/ID photo specifications.", href: "#", status: "Available" },
   { name: "Cloud Printing", desc: "Print from anywhere, to any connected RepetiGo shop.", href: "#", status: "Coming Soon" },
-  { name: "Digital Locker + eSign", desc: "Secure document storage and Aadhaar-based eSign.", href: "#", status: "Coming Soon" },
+  { name: "Digital Locker + eSign", desc: "Secure document storage and electronic signature, via licensed partners for regulated eSign needs.", href: "#", status: "Coming Soon" },
 ];
 
 const industries = [
   { icon: Coffee, title: "Cyber Cafes", desc: "Handle high document volume without WhatsApp chaos.", benefit: "Serve 40% more customers per day", href: "#" },
   { icon: Printer, title: "Print Shops & Xerox", desc: "Complete printing business software. Automate every job.", benefit: "Save 150+ min manual work daily", href: "#" },
-  { icon: Landmark, title: "CSC Centres", desc: "Government document printing with DPDP compliance and audit logs.", benefit: "DPDP Act compliant", href: "#" },
+  { icon: Landmark, title: "CSC Centres", desc: "Printing customer-provided government documents, with audit logs and privacy-first architecture aligned with DPDP Act 2023 principles.", benefit: "Built for DPDP-aligned workflows", href: "#" },
   { icon: GraduationCap, title: "Schools & Colleges", desc: "Marksheets, ID cards, application forms - handled securely at scale.", benefit: "Zero staff training required", href: "#" },
   { icon: Building2, title: "Offices & Businesses", desc: "Automate repetitive document tasks across your team.", benefit: "Integrate with existing workflow", href: "#" },
 ];
@@ -136,8 +136,8 @@ const industries = [
 const securityLayers = [
   { icon: Lock, title: "End-to-End Encryption", body: "AES-256 at rest. TLS in transit. Encrypted from upload until deletion." },
   { icon: Smartphone, title: "Direct Customer Upload", body: "Customers upload from their own phone. Never touches your WhatsApp or device." },
-  { icon: Trash2, title: "Auto-Delete Within 15 Minutes", body: "Permanent deletion after printing. Built into the system, not optional." },
-  { icon: ShieldCheck, title: "DPDP Act Compliance", body: "Aligned with India's Digital Personal Data Protection Act 2023. Zero retention." },
+  { icon: Trash2, title: "Auto-Delete After Printing", body: "Documents are scheduled for secure deletion shortly after successful printing, typically within 15 minutes." },
+  { icon: ShieldCheck, title: "Built for DPDP-Aligned Privacy", body: "Designed to support privacy practices aligned with India's Digital Personal Data Protection Act 2023. Document files are deleted after printing; only operational metadata needed for audit purposes is retained." },
   { icon: ClipboardList, title: "Audit Logs", body: "Every job logged with timestamp and metadata. Content never stored." },
   { icon: KeyRound, title: "Role-Based Access Control", body: "Owners, staff, and admins have different access levels. Nothing more than needed." },
 ];
@@ -226,7 +226,7 @@ function Hero() {
             Stop Repetitive Work. Run Your Print Shop on <span>Autopilot.</span>
           </h1>
           <p>
-            RepetiGo is an AI-powered automation platform for cyber cafés and print shops that automates document printing, passport photos, AI form filling, PDF tools, agreements, and customer workflows.
+            RepetiGo is an AI-powered software platform for cyber cafés and print shops that streamlines document printing, passport photo formatting, PDF form filling assistance, PDF tools, agreement preparation, and customer workflows.
           </p>
           <div className="ai-actions">
             <Link className="ai-btn ai-btn-gradient" href="/register">
@@ -323,7 +323,7 @@ function Problem() {
 function Solution() {
   const rows = [
     ["Customer sends Aadhaar on WhatsApp", "Customer scans QR - nothing on WhatsApp"],
-    ["Document sits on your phone forever", "Auto-deleted within 15 minutes of printing"],
+    ["Document sits on your phone forever", "Scheduled for auto-deletion shortly after printing"],
     ["3-5 minutes manual editing per document", "AI processes everything in under 30 seconds"],
     ["Print settings guessed manually each time", "Optimal settings applied automatically"],
     ["No record of what was printed or when", "Full print log in your dashboard"],
@@ -523,7 +523,7 @@ function Testimonials() {
         ))}
       </div>
       <div className="ai-join-band">
-        <p><Users size={24} /> Join 2,500+ Print Shops Using RepetiGo</p>
+        <p><Users size={24} /> Join Print Shops Across India Using RepetiGo</p>
         <Link className="ai-btn ai-btn-navy" href="/register">Start Free Trial <ArrowRight size={17} /></Link>
       </div>
     </section>

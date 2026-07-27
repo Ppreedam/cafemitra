@@ -866,7 +866,7 @@ export default function AutoPrintPage() {
                             <ShieldCheck size={34} />
                           </span>
                           <div>
-                            <strong>100% Secure Document Upload</strong>
+                            <strong>Secure Document Upload</strong>
                             <p>Your documents are encrypted, private, and automatically deleted after printing.</p>
                           </div>
                         </div>
@@ -1015,7 +1015,7 @@ function buildQrPosterSvg(shopName: string, shopCode: string, qrUrl: string, qrI
   <path d="M154 876l32 14v25c0 28-20 42-32 47-12-5-32-19-32-47v-25z" fill="#1f63f2"/>
   <rect x="142" y="909" width="24" height="22" rx="4" fill="#ffffff"/>
   <path d="M147 909v-9a7 7 0 0114 0v9" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
-  <text x="214" y="900" font-family="Arial, sans-serif" font-size="27" font-weight="900" fill="#16a34a">100% Secure Document Upload</text>
+  <text x="214" y="900" font-family="Arial, sans-serif" font-size="27" font-weight="900" fill="#16a34a">Secure Document Upload</text>
   <text x="214" y="936" font-family="Arial, sans-serif" font-size="21" font-weight="700" fill="#08164a">Encrypted, private, and automatically</text>
   <text x="214" y="964" font-family="Arial, sans-serif" font-size="21" font-weight="700" fill="#08164a">deleted after printing.</text>
   <rect x="24" y="1018" width="672" height="78" rx="34" fill="#0b6cff"/>

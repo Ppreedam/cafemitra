@@ -3,6 +3,7 @@ import Link from "next/link";
 import { AlertTriangle, FileWarning, ShieldCheck, Sparkles } from "lucide-react";
 import { LandingNavbar } from "../LandingNavbar";
 import { PublicFooter } from "../PublicFooter";
+import { BUSINESS, formattedAddress, legalEntityStatement } from "../../lib/businessInfo";
 
 export const metadata: Metadata = {
   title: "Disclaimer - RepetiGo Print Shop Software",
@@ -14,14 +15,15 @@ export const metadata: Metadata = {
   },
 };
 
-const lastUpdated = "1 July 2025";
+const lastUpdated = BUSINESS.effectiveDate;
 
 const sections = [
   {
     id: "introduction",
     title: "1. Introduction",
     body: [
-      'This Disclaimer governs your use of the RepetiGo platform, including the website at repetigo.com, the PrintPilot application, and all related software, APIs, tools, and services operated by RepetiGo Technologies Pvt. Ltd. ("RepetiGo", "we", "us", or "our").',
+      'This Disclaimer governs your use of the RepetiGo platform, including the website at repetigo.com, the PrintPilot application, and all related software, APIs, tools, and services operated under the RepetiGo brand ("RepetiGo", "we", "us", or "our").',
+      legalEntityStatement(),
       "This Disclaimer is incorporated into, and forms part of, our Terms of Service. By using the Platform, you agree to be bound by both this Disclaimer and our Terms of Service.",
     ],
   },
@@ -65,8 +67,17 @@ const sections = [
     ],
   },
   {
+    id: "government-affiliation",
+    title: "6. No Government or UIDAI Affiliation",
+    body: [
+      "RepetiGo is not affiliated with, endorsed by, or connected to UIDAI, the Government of India, or any government agency, ministry, or department, whether at the central, state, or local level.",
+      "References to Aadhaar, PAN, passports, or other government-issued documents on this Platform, our website, or our marketing materials are used only as examples of the type of customer-provided documents that may be printed through the Platform. RepetiGo does not issue, verify, authenticate, or process applications for any government document or identity credential.",
+      "Any government-related terminology used on this Platform (for example, \"passport photo\" or \"government-standard photo size\") refers only to matching publicly published photo specifications for printing purposes, and does not imply any official status, certification, or approval by the relevant issuing authority.",
+    ],
+  },
+  {
     id: "ai-processing",
-    title: "6. AI Processing Disclaimer",
+    title: "7. AI Processing Disclaimer",
     body: [
       "Certain Platform features use artificial intelligence to process and enhance uploaded documents. AI functions may include image enhancement, auto-cropping, de-skewing, contrast optimisation, OCR, and print-setting optimisation.",
       "AI processing is not infallible. AI-generated results may be imperfect or unexpected, AI enhancements do not guarantee perfect print quality, OCR may contain errors, and passport photo generation may not meet every issuing authority's requirements.",
@@ -75,7 +86,7 @@ const sections = [
   },
   {
     id: "print-quality",
-    title: "7. Print Quality Disclaimer",
+    title: "8. Print Quality Disclaimer",
     body: [
       "Print output quality depends on factors outside RepetiGo's control, including printer make, model, age, condition, maintenance, paper, ink, toner, source document quality, printer drivers, firmware, USB or network stability, and environmental conditions.",
       "RepetiGo is not liable for print quality differences between printers, shops, or locations. We are not responsible for re-print costs, wasted paper, ink, or toner resulting from factors outside Platform software control.",
@@ -83,7 +94,7 @@ const sections = [
   },
   {
     id: "third-party-services",
-    title: "8. Third-Party Services",
+    title: "9. Third-Party Services",
     body: [
       "The Platform integrates with and relies on third-party services including cloud infrastructure providers, payment gateways, AI processing services, email delivery services, and SMS providers.",
       "RepetiGo does not control the availability, performance, accuracy, or security practices of third-party services. We are not responsible for downtime, errors, data loss, third-party changes, third-party privacy practices beyond our Privacy Policy, or harm resulting from linked third-party websites or services.",
@@ -92,7 +103,7 @@ const sections = [
   },
   {
     id: "accuracy",
-    title: "9. Accuracy of Information",
+    title: "10. Accuracy of Information",
     body: [
       "RepetiGo makes reasonable efforts to ensure that information published on repetigo.com is accurate and current. However, we do not warrant that website information is complete, accurate, up to date, free from errors, or that pricing, features, or product capabilities will not change without notice.",
       "Website information is provided for general informational purposes only and does not constitute professional, legal, financial, or technical advice.",
@@ -100,7 +111,7 @@ const sections = [
   },
   {
     id: "professional-advice",
-    title: "10. Professional Advice Disclaimer",
+    title: "11. Professional Advice Disclaimer",
     body: [
       "Nothing on the RepetiGo platform or website constitutes legal advice, financial advice, accounting advice, technical security certification, medical advice, government certification, or regulatory compliance certification.",
       "For specific legal, financial, or regulatory questions relevant to your business, consult a qualified professional admitted to practice in your jurisdiction.",
@@ -109,7 +120,7 @@ const sections = [
   },
   {
     id: "availability",
-    title: "11. Availability and Uptime",
+    title: "12. Availability and Uptime",
     body: [
       "RepetiGo makes commercially reasonable efforts to maintain Platform availability and reliability. However, we do not guarantee 100% uptime, uninterrupted access, availability at any particular time or location, or that maintenance will not temporarily affect access.",
       "The Platform may be temporarily unavailable due to maintenance, upgrades, infrastructure failures, third-party disruptions, security incidents, or circumstances beyond reasonable control.",
@@ -118,7 +129,7 @@ const sections = [
   },
   {
     id: "security",
-    title: "12. Security Disclaimer",
+    title: "13. Security Disclaimer",
     body: [
       "RepetiGo implements industry-standard security measures to protect user data and uploaded documents, including encryption, automatic file deletion, access controls, and monitoring.",
       "However, no system connected to the internet is completely secure. We cannot guarantee absolute security against all threats.",
@@ -128,16 +139,16 @@ const sections = [
   },
   {
     id: "governing-law",
-    title: "13. Governing Law",
+    title: "14. Governing Law",
     body: [
       "This Disclaimer is governed by and construed in accordance with the laws of India, without regard to conflict-of-law principles.",
-      "Any dispute arising from or relating to this Disclaimer shall be subject to the exclusive jurisdiction of courts located in Bengaluru, Karnataka, India.",
+      `Any dispute arising from or relating to this Disclaimer shall be subject to the exclusive jurisdiction of courts located in ${BUSINESS.jurisdictionCity}, India.`,
       "Applicable laws may include the Information Technology Act 2000, Digital Personal Data Protection Act 2023, Indian Contract Act 1872, and Consumer Protection Act 2019.",
     ],
   },
   {
     id: "changes",
-    title: "14. Changes to This Disclaimer",
+    title: "15. Changes to This Disclaimer",
     body: [
       "RepetiGo reserves the right to update or modify this Disclaimer at any time.",
       'Material changes may be communicated by updating the "Last Updated" date, notifying active business account holders via email at least 14 days before material changes take effect, and posting a notice on the Platform dashboard.',
@@ -147,11 +158,12 @@ const sections = [
 ];
 
 const contactRows = [
-  ["Company Name", "RepetiGo Technologies Pvt. Ltd."],
-  ["Registered Address", "[Full address, city, state, PIN code, India]"],
-  ["Legal Email", "legal@repetigo.com"],
-  ["General Email", "support@repetigo.com"],
-  ["Website", "https://repetigo.com"],
+  ["Business Name", BUSINESS.brandName],
+  ["Owner / Proprietor", BUSINESS.ownerName],
+  ["Registered Address", formattedAddress()],
+  ["Legal Email", BUSINESS.legalEmail],
+  ["General Email", BUSINESS.supportEmail],
+  ["Website", BUSINESS.website],
 ];
 
 export default function DisclaimerPage() {
@@ -185,7 +197,7 @@ export default function DisclaimerPage() {
                 {section.title}
               </a>
             ))}
-            <a href="#contact">15. Contact</a>
+            <a href="#contact">16. Contact</a>
           </nav>
         </aside>
 
@@ -215,8 +227,8 @@ export default function DisclaimerPage() {
           ))}
 
           <section className="disclaimer-section" id="contact">
-            <span className="disclaimer-section-label">Section 15</span>
-            <h2>15. Contact</h2>
+            <span className="disclaimer-section-label">Section 16</span>
+            <h2>16. Contact</h2>
             <p>If you have questions about this Disclaimer, please contact us at:</p>
             <div className="disclaimer-table-wrap">
               <table>

@@ -17,7 +17,7 @@ export const infoPages: Record<InfoPageKey, InfoPageData> = {
     eyebrow: "About RepetiGo",
     title: "Automation built for cyber cafes and document service counters.",
     summary:
-      "RepetiGo helps shops reduce repetitive manual work across printing, PDF handling, passport photos, AI form filling, image editing, and agreement generation.",
+      "RepetiGo helps shops reduce repetitive manual work across printing, PDF handling, passport photos, PDF form filling assistance, image editing, and agreement preparation.",
     updated: "Updated June 2026",
     highlights: ["Cyber cafe focused", "Document workflow automation", "Simple for staff"],
     sections: [
@@ -27,7 +27,7 @@ export const infoPages: Record<InfoPageKey, InfoPageData> = {
       },
       {
         title: "What we automate",
-        body: "The platform brings common jobs like document printing, PDF conversion, image resize, passport photo creation, form filling, and agreement preparation into one workflow.",
+        body: "The platform brings common jobs like document printing, PDF conversion, image resize, passport photo creation, PDF form filling assistance, and agreement preparation into one workflow.",
       },
       {
         title: "Our goal",

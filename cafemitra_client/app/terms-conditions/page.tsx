@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, Check, FileText, Lock, Scale, ShieldCheck, Sparkles } from "lucide-react";
+import { ArrowRight, Check, FileText, Lock, Scale, ShieldCheck, Sparkles } from "lucide-react";
 import { LandingNavbar } from "../LandingNavbar";
 import { PublicFooter } from "../PublicFooter";
+import { BUSINESS, formattedAddress, legalEntityStatement } from "../../lib/businessInfo";
 
 export const metadata: Metadata = {
   title: "Terms & Conditions - RepetiGo",
@@ -10,7 +11,7 @@ export const metadata: Metadata = {
     "Read the RepetiGo Terms & Conditions governing use of our AI-powered print shop software, secure document upload, document processing, subscriptions, and related services.",
 };
 
-const effectiveDate = "1 July 2025";
+const effectiveDate = BUSINESS.effectiveDate;
 
 const definitions = [
   ["RepetiGo / we / us / our", "RepetiGo and its affiliated legal entities operating this Platform."],
@@ -32,7 +33,7 @@ const services = [
   ["AI Document Processing", "Automated image enhancement, page detection, resizing, and print optimization."],
   ["OCR", "Optical Character Recognition for extracting text from images and scanned documents."],
   ["PDF Tools", "PDF creation, merging, splitting, compression, and format conversion."],
-  ["Passport Photo Tools", "Automated generation of government-standard passport and ID photos."],
+  ["Passport Photo Tools", "Automated cropping and resizing of a user's own photo to official passport/ID photo size specifications for printing. This tool does not issue, verify, or authenticate any government document."],
   ["Image Enhancement", "Quality improvement, colour correction, and optimisation for print output."],
 ];
 
@@ -47,14 +48,16 @@ const thirdParties = [
 ];
 
 const contactRows = [
-  ["Company Name", "RepetiGo Technologies Pvt. Ltd. [confirm legal entity before publishing]"],
-  ["Registered Address", "[Full address, city, state, PIN code, India]"],
-  ["General Support", "support@repetigo.com"],
-  ["Legal & Compliance", "legal@repetigo.com"],
-  ["Billing", "billing@repetigo.com"],
-  ["Security", "security@repetigo.com"],
-  ["Phone", "+91 XXXXXXXXXX"],
-  ["Website", "https://repetigo.com"],
+  ["Business Name", BUSINESS.brandName],
+  ["Owner / Proprietor", BUSINESS.ownerName],
+  ["Business Address", formattedAddress()],
+  ["General Support", BUSINESS.supportEmail],
+  ["Legal & Compliance", BUSINESS.legalEmail],
+  ["Billing", BUSINESS.billingEmail],
+  ["Security", BUSINESS.securityEmail],
+  ["WhatsApp", `${BUSINESS.phone} (WhatsApp only, no voice calls)`],
+  ["Website", BUSINESS.website],
+  ...(BUSINESS.gstin ? [["GSTIN", BUSINESS.gstin]] : []),
 ];
 
 type TermsSectionData = {
@@ -76,6 +79,7 @@ const sections: TermsSectionData[] = [
       "RepetiGo is an AI-powered print shop software and secure document infrastructure platform. We help cyber cafes, print shops, Xerox centres, CSC centres, businesses, and individuals automate document workflows - from secure QR-based uploads through AI processing to direct printer delivery.",
       "By accessing or using RepetiGo, you confirm that you have read, understood, and agree to be bound by these Terms and our Privacy Policy. If you do not agree, you must not use the Platform.",
       "These Terms apply to all users of the RepetiGo Platform, including shop owners, business subscribers, and end customers who access the Platform through a participating print shop.",
+      legalEntityStatement(),
     ],
   },
   {
@@ -99,7 +103,7 @@ const sections: TermsSectionData[] = [
     groups: [
       ["Accurate Information", "You must provide accurate, complete, and current account information and update it promptly if it changes."],
       ["Account Security", "You are responsible for keeping credentials confidential, all activity under your account, and logging out from shared devices."],
-      ["Unauthorized Access", "Notify us immediately at security@repetigo.com if you become aware of unauthorized account use or a security breach."],
+      ["Unauthorized Access", `Notify us immediately at ${BUSINESS.securityEmail} if you become aware of unauthorized account use or a security breach.`],
       ["One Account Per User", "Unless expressly permitted by us, each person may maintain only one individual account."],
     ],
   },
@@ -249,7 +253,7 @@ const sections: TermsSectionData[] = [
     title: "20. Governing Law",
     bullets: [
       "These Terms are governed by the laws of India, without regard to conflict-of-law principles.",
-      "Courts in [insert city, e.g. New Delhi / Mumbai / Bengaluru] shall have exclusive jurisdiction, subject to the Dispute Resolution section.",
+      `Courts in ${BUSINESS.jurisdictionCity} shall have exclusive jurisdiction, subject to the Dispute Resolution section.`,
       "Applicable laws include the Information Technology Act, 2000, Digital Personal Data Protection Act, 2023, Consumer Protection Act, 2019, Indian Contract Act, 1872, and Copyright Act, 1957.",
     ],
   },
@@ -257,8 +261,8 @@ const sections: TermsSectionData[] = [
     id: "dispute-resolution",
     title: "21. Dispute Resolution",
     groups: [
-      ["Informal Resolution", "Contact legal@repetigo.com first. We will respond within 15 business days and make a good-faith effort to resolve the concern."],
-      ["Arbitration", "If included after legal review, disputes may be referred to binding arbitration under the Arbitration and Conciliation Act, 1996, with seat in [insert city]."],
+      ["Informal Resolution", `Contact ${BUSINESS.legalEmail} first. We will respond within 15 business days and make a good-faith effort to resolve the concern.`],
+      ["Arbitration", `If included after legal review, disputes may be referred to binding arbitration under the Arbitration and Conciliation Act, 1996, with seat in ${BUSINESS.jurisdictionCity}.`],
       ["Class Action Waiver", "To the extent permitted by law, disputes must be resolved individually and not through class, collective, or representative proceedings."],
     ],
   },
@@ -345,14 +349,6 @@ export default function TermsConditionsPage() {
         </aside>
 
         <div className="terms-content">
-          <div className="terms-notice">
-            <AlertTriangle size={20} />
-            <p>
-              This document includes placeholders for legal entity details, jurisdiction, payment providers, and contact
-              channels. Review those fields with counsel before publishing.
-            </p>
-          </div>
-
           {sections.map((section) => (
             <TermsSection section={section} key={section.id} />
           ))}
@@ -388,7 +384,7 @@ export default function TermsConditionsPage() {
               If you have any questions about these Terms, or if there is anything you do not understand, please reach
               out before using the Platform.
             </p>
-            <Link href="/contact-us">
+            <Link href="/contact-us" className="terms-cta-btn">
               Contact RepetiGo <ArrowRight size={17} />
             </Link>
           </section>

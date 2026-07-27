@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 const content = String.raw`H1: Redact PDF Free. Permanently Remove Sensitive Data Before Sharing. No Adobe.
 You need to share a PDF - but it contains information that should not be seen. A name. An account number. A salary figure. A medical record. An identity number. Simply hiding the text is not enough - it needs to be gone permanently.
 RepetiGo's free PDF redaction tool permanently blacks out selected text, images, and data from your PDF before you download and share it. The redacted content is destroyed - not hidden, not masked, not covered. Permanently removed.
-✓ Permanently remove text, images, and data  ✓ DPDP Act and GDPR compliant workflows  ✓ Mac, Windows, iPhone  ✓ No Adobe Acrobat Pro  ✓ No sign-up  ✓ Files deleted in 60 minutes
+✓ Permanently remove text, images, and data  ✓ Supports DPDP Act and GDPR-aligned workflows  ✓ Mac, Windows, iPhone  ✓ No Adobe Acrobat Pro  ✓ No sign-up  ✓ Files deleted in 60 minutes
 
 ➜  [ Redact PDF Free Now → repetigo.com/pdf-tools/redact-pdf ]
 
@@ -194,7 +194,7 @@ H2: More Free PDF Tools from RepetiGo.
 •  All PDF Tools → /pdf-tools - complete free PDF tools library
 
 ➜  [ Redact PDF Free Now → repetigo.com/pdf-tools/redact-pdf ]
-Permanently remove sensitive data · DPDP Act compliant · No sign-up · Auto-deleted in 60 minutes`;
+Permanently remove sensitive data · DPDP Act-aligned · No sign-up · Auto-deleted in 60 minutes`;
 
 type SeoTable = { headers: string[]; rows: string[][] };
 

@@ -29,6 +29,7 @@ import {
 } from "lucide-react";
 import { LandingNavbar } from "../LandingNavbar";
 import { PublicFooter } from "../PublicFooter";
+import { BUSINESS } from "../../lib/businessInfo";
 
 export const metadata: Metadata = {
   title: "RepetiGo Help & Support Center - Print Shop Software Guides",
@@ -128,7 +129,7 @@ const faqGroups = [
       ["What happens after printing?", "Documents are automatically and permanently deleted within the configured retention window. Only job metadata remains for audit records."],
       ["Can the shop owner download customer documents?", "Documents are visible only for review and printing. Downloading or forwarding is restricted and access is logged."],
       ["Is RepetiGo DPDP aligned?", "RepetiGo is designed around purpose limitation, storage limitation, data minimisation, and security safeguards."],
-      ["Can I request account data deletion?", "Yes. Contact privacy@repetigo.com from your account email. Some statutory records may be retained where required by law."],
+      ["Can I request account data deletion?", `Yes. Contact ${BUSINESS.privacyEmail} from your account email. Some statutory records may be retained where required by law.`],
     ],
   },
   {
@@ -380,7 +381,7 @@ export default function HelpSupportPage() {
               </article>
             ))}
           </div>
-          <p className="support-note">For urgent security concerns: security@repetigo.com - subject line "URGENT". Monitored 24/7.</p>
+          <p className="support-note">For urgent security concerns: {BUSINESS.securityEmail} - subject line "URGENT".</p>
         </div>
       </section>
 

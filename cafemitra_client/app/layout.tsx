@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
+import { WhatsAppFloatButton } from "./WhatsAppFloatButton";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -103,6 +104,7 @@ export default function RootLayout({
           </noscript>
         ) : null}
         {children}
+        <WhatsAppFloatButton />
       </body>
     </html>
   );

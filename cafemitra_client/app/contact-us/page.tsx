@@ -3,13 +3,10 @@ import Link from "next/link";
 import {
   ArrowRight,
   BookOpen,
-  Building2,
-  Clock3,
   CreditCard,
   Download,
   Mail,
   MapPin,
-  MessageCircle,
   Phone,
   ShieldCheck,
   Sparkles,
@@ -18,6 +15,7 @@ import {
 import { LandingNavbar } from "../LandingNavbar";
 import { PublicFooter } from "../PublicFooter";
 import { ContactForm } from "./ContactForm";
+import { BUSINESS, formattedAddress } from "../../lib/businessInfo";
 
 export const metadata: Metadata = {
   title: "Contact RepetiGo - Print Shop Software Support India",
@@ -26,18 +24,15 @@ export const metadata: Metadata = {
 };
 
 const responsePromises = [
-  [MessageCircle, "Live Chat", "< 5 min"],
   [Mail, "Email", "Within 24 hours"],
   [Phone, "WhatsApp", "Within 2 hours"],
 ] as const;
 
 const contactCards = [
-  // [Mail, "Email", "hello@repetigo.com", "For general questions, partnerships, press."],
-  [Wrench, "Support", "support@repetigo.com", "For technical issues, setup help, printer problems."],
-  // [CreditCard, "Billing", "billing@repetigo.com", "For invoices, refunds, subscription changes."],
-  // [Building2, "Enterprise", "enterprise@repetigo.com", "For multi-location setups, API access, custom SLA."],
-  // [MapPin, "Office", "Bengaluru, Karnataka, India.", "Remote-first team serving shops across India."],
-  // [Clock3, "Support Hours", "Monday - Saturday, 9:00 AM - 7:00 PM IST", "Email monitored 24/7. Chat and WhatsApp during business hours."],
+  [Wrench, "Support", BUSINESS.supportEmail, "For technical issues, setup help, printer problems."],
+  [CreditCard, "Billing", BUSINESS.billingEmail, "For invoices, refunds, subscription changes."],
+  [Phone, "WhatsApp", BUSINESS.phone, "WhatsApp only (no voice calls) - for urgent queries during business hours."],
+  [MapPin, "Office", formattedAddress(), "Serving print shops across India."],
 ] as const;
 
 const routes = [
@@ -85,8 +80,7 @@ export default function ContactUsPage() {
           <span className="contact-section-label">Send Us a Message</span>
           <h2>Tell us how we can help.</h2>
           <p>
-            Fill out the form and we will respond within 24 hours. For faster help, start a live chat or message us on
-            WhatsApp.
+            Fill out the form and we will respond within 24 hours. For faster help, message us on WhatsApp.
           </p>
           <ContactForm />
         </div>
@@ -111,8 +105,8 @@ export default function ContactUsPage() {
           <div className="contact-security-note">
             <ShieldCheck size={19} />
             <p>
-              Security or privacy emergency? Email <strong>security@repetigo.com</strong> with subject line
-              <strong> URGENT</strong>. Monitored around the clock.
+              Security or privacy emergency? Email <strong>{BUSINESS.securityEmail}</strong> with subject line
+              <strong> URGENT</strong> and we will prioritise your request.
             </p>
           </div>
         </aside>

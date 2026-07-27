@@ -30,6 +30,7 @@ const footerColumns = [
     links: [
       ["Privacy Policy", "/privacy-policy"],
       ["Terms & Conditions", "/terms-conditions"],
+      ["Refund & Cancellation Policy", "/refund-policy"],
       ["Disclaimer", "/disclaimer"],
     ],
   },
@@ -66,8 +67,13 @@ export function PublicFooter() {
           ))}
         </div>
         <div className="ai-footer-bottom">
-          <p>Copyright 2025 RepetiGo. All rights reserved. Made for India. Built for scale.</p>
+          <p>Copyright 2026 RepetiGo. All rights reserved. Made for India. Built for scale.</p>
           <p>Print Shop Software - Document Automation - Secure Upload - AI Print Management - Cyber Cafe Software India</p>
+          <p>
+            RepetiGo is not affiliated with, endorsed by, or connected to UIDAI, the Government of India, or any
+            government agency. Aadhaar, PAN, and passport are referenced only as examples of customer-provided
+            documents.
+          </p>
         </div>
       </div>
     </footer>

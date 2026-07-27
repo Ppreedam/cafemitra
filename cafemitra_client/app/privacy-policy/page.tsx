@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import {
-  AlertTriangle,
   BrainCircuit,
   Cookie,
   CreditCard,
@@ -12,6 +11,7 @@ import {
 } from "lucide-react";
 import { LandingNavbar } from "../LandingNavbar";
 import { PublicFooter } from "../PublicFooter";
+import { BUSINESS, formattedAddress, legalEntityStatement } from "../../lib/businessInfo";
 
 export const metadata: Metadata = {
   title: "Privacy Policy - RepetiGo Print Shop Software",
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   },
 };
 
-const lastUpdated = "1 July 2025";
+const lastUpdated = BUSINESS.effectiveDate;
 
 const sections = [
   ["introduction", "1. Introduction"],
@@ -168,15 +168,16 @@ const rightsRows = [
 ];
 
 const contactRows = [
-  ["Company Name", "RepetiGo Technologies Pvt. Ltd."],
-  ["Registered Address", "[Full registered address, city, state, PIN code, India]"],
-  ["General Email", "hello@repetigo.com"],
-  ["Privacy & Data Requests", "privacy@repetigo.com"],
-  ["Support Email", "support@repetigo.com"],
-  ["Phone", "+91 XXXXXXXXXX"],
-  ["Website", "https://repetigo.com"],
+  ["Business Name", BUSINESS.brandName],
+  ["Owner / Proprietor", BUSINESS.ownerName],
+  ["Registered Address", formattedAddress()],
+  ["Privacy & Data Requests", BUSINESS.privacyEmail],
+  ["Support Email", BUSINESS.supportEmail],
+  ["WhatsApp", `${BUSINESS.phone} (WhatsApp only, no voice calls)`],
+  ["Website", BUSINESS.website],
   ["Data Protection Officer", "Privacy Team"],
-  ["DPO Contact", "dpo@repetigo.com"],
+  ["DPO Contact", BUSINESS.dpoEmail],
+  ...(BUSINESS.gstin ? [["GSTIN", BUSINESS.gstin]] : []),
 ];
 
 const faqItems = [
@@ -186,10 +187,10 @@ const faqItems = [
   ["Is my data sold to advertisers?", "Never. We do not sell personal data or document data to any third party."],
   ["Are documents used to train AI?", "No. Documents are not used to train any AI model without explicit informed consent."],
   ["Can I disable cookies?", "Essential cookies are required for the platform. Optional analytics and preference cookies can be managed through Cookie Settings."],
-  ["Can I delete my account and data?", "Yes. Contact privacy@repetigo.com to request deletion. Some records may be retained where law requires it."],
+  ["Can I delete my account and data?", `Yes. Contact ${BUSINESS.privacyEmail} to request deletion. Some records may be retained where law requires it.`],
   ["What happens if there is a data breach?", "We will notify affected users as required by applicable law and explain the issue, affected data, and response steps."],
   ["Is payment information safe?", "Yes. Full payment credentials are handled by certified payment partners. RepetiGo stores only transaction references and status."],
-  ["Who handles privacy complaints?", "Contact the Privacy Team at privacy@repetigo.com or write to our registered address."],
+  ["Who handles privacy complaints?", `Contact the Privacy Team at ${BUSINESS.privacyEmail} or write to our registered address.`],
 ];
 
 function DataTable({ rows, headers }: { rows: string[][]; headers?: string[] }) {
@@ -268,14 +269,6 @@ export default function PrivacyPolicyPage() {
         </aside>
 
         <article className="privacy-content">
-          <div className="privacy-alert">
-            <AlertTriangle size={20} />
-            <p>
-              Replace bracketed business placeholders before publishing. This policy is production-ready content for
-              RepetiGo, but it is not a substitute for advice from a qualified lawyer.
-            </p>
-          </div>
-
           <section className="privacy-section" id="introduction">
             <span className="privacy-section-label">Section 1</span>
             <h2>1. Introduction</h2>
@@ -294,6 +287,7 @@ export default function PrivacyPolicyPage() {
               This policy applies to all users of the RepetiGo platform, including shop owners and end customers who use
               a shop's RepetiGo-powered service.
             </p>
+            <p>{legalEntityStatement()}</p>
           </section>
 
           <section className="privacy-section" id="definitions">
@@ -441,7 +435,7 @@ export default function PrivacyPolicyPage() {
             <h2>12. Your Rights</h2>
             <DataTable rows={rightsRows} headers={["Your Right", "What It Means"]} />
             <p>
-              To exercise your rights, contact privacy@repetigo.com. We respond to valid requests within 30 days and
+              To exercise your rights, contact {BUSINESS.privacyEmail}. We respond to valid requests within 30 days and
               may ask you to verify your identity before processing the request.
             </p>
           </section>

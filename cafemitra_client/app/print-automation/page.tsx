@@ -59,7 +59,7 @@ export const metadata: Metadata = {
 const heroBadges = [
   "No WhatsApp Required",
   "AI-Powered",
-  "Auto-Delete in 15 Min",
+  "Auto-Delete After Printing",
   "Works With Your Existing Printer",
 ];
 
@@ -137,14 +137,14 @@ const features = [
     title: "Print Job Tracking and Analytics Dashboard",
     icon: BarChart3,
     text:
-      "Every print job is tracked from upload to deletion. The analytics dashboard shows you daily job volume, peak hours, document types processed, revenue per day, and per-printer utilisation. Print job tracking gives you the data to make staffing, pricing, and equipment decisions. The audit log retains job metadata - timestamp, page count, printer used - for 7 years for business compliance, while document content is deleted after 15 minutes.",
+      "Every print job is tracked from upload to deletion. The analytics dashboard shows you daily job volume, peak hours, document types processed, revenue per day, and per-printer utilisation. Print job tracking gives you the data to make staffing, pricing, and equipment decisions. The audit log retains job metadata - timestamp, page count, printer used - for 7 years for business compliance, while document content is scheduled for deletion shortly after printing, typically within 15 minutes.",
   },
   {
     id: "auto-delete",
     title: "Auto Delete Documents After Printing",
     icon: Trash2,
     text:
-      "After a job is completed, the document is automatically and permanently deleted from PrintPilot within 15 minutes. This is not optional. It cannot be disabled. It is how the system works by default, because we built it this way from day one. The auto delete documents feature means your shop never accumulates a library of customer data that you did not ask for and cannot legally retain.",
+      "After a job is completed, the document is scheduled for automatic, permanent deletion from PrintPilot shortly after, typically within 15 minutes. This is the system default, not a manual step. The auto delete documents feature is designed to help your shop avoid accumulating a library of customer data you did not ask to keep.",
     link: "Read Security Details",
     href: "#security",
   },
@@ -174,12 +174,12 @@ const comparisonRows = [
   ["AI document processing", "Automatic - under 30 seconds", "Manual - 3 to 5 minutes"],
   ["Print queue management", "Real-time dashboard", "Mental tracking / paper"],
   ["Multi-printer support", "Yes - all machines in one view", "No - manual per printer"],
-  ["Auto delete documents", "15 minutes - automatic always", "Never - stays permanently"],
+  ["Auto delete documents", "Scheduled automatically, typically 15 minutes", "Never - stays permanently"],
   ["Print job tracking", "Full audit log + analytics", "No tracking"],
-  ["DPDP Act compliance", "Designed for it", "Creates data liability"],
-  ["Passport photo creation", "Built-in AI - any country format", "External tool required"],
+  ["DPDP Act principles", "Designed to align with them", "No structured approach"],
+  ["Passport photo formatting", "Built-in - crop/resize to spec", "External tool required"],
   ["Setup time", "10 minutes", "Instant - but builds liability"],
-  ["Cost of document data breach", "Near zero - no retention", "Unlimited - data lives forever"],
+  ["Document retention after printing", "Minimal - scheduled for deletion", "Indefinite - data lives forever"],
 ];
 
 const protectionRows = [
@@ -192,12 +192,12 @@ const protectionRows = [
     "Customers upload from their own device via a secure browser page. The document never touches your personal WhatsApp, email, phone, or any personal device.",
   ],
   [
-    "Auto-Delete in 15 Minutes",
-    "Every document is permanently and automatically deleted within 15 minutes of a successful print job. This cannot be disabled - it is the system default.",
+    "Auto-Delete After Printing",
+    "Documents are scheduled for permanent, automatic deletion shortly after a successful print job, typically within 15 minutes. This is the system default and is not left to manual action.",
   ],
   [
     "DPDP Act 2023 Alignment",
-    "PrintPilot is designed to align with India's Digital Personal Data Protection Act 2023. Zero document retention by default means zero data liability for your shop.",
+    "PrintPilot is designed to support privacy practices aligned with India's Digital Personal Data Protection Act 2023. Document files are deleted after printing by default, reducing - but not eliminating - your shop's data-handling obligations.",
   ],
   [
     "Audit Log (Metadata Only)",
@@ -224,8 +224,8 @@ const businessRows = [
   },
   {
     type: "CSC Centres",
-    help: "Government document printing with DPDP Act compliance built in. Audit logs for every transaction. Zero data retention by default.",
-    benefit: "DPDP Act compliant from day one",
+    help: "Printing customer-provided government documents, with audit logs for every transaction and privacy-first architecture aligned with DPDP Act 2023 principles.",
+    benefit: "Built for DPDP-aligned workflows",
     icon: Landmark,
   },
   {
@@ -269,15 +269,15 @@ const faqs = [
   ],
   [
     "What happens to customer documents after printing?",
-    "Documents processed through PrintPilot are automatically and permanently deleted from the system within 15 minutes of a successful print job. This is not a manual process and cannot be disabled - it is built into the platform architecture. Only minimal job metadata is retained in the audit log: timestamp, page count, printer used, and processing time. The actual document content - the Aadhaar card, PAN card, medical report, or resume - is gone from the system within 15 minutes. No data is retained beyond its purpose.",
+    "Documents processed through PrintPilot are scheduled for automatic, permanent deletion from the system shortly after a successful print job, typically within 15 minutes. This is a system default, not a manual step. Only minimal job metadata is retained in the audit log: timestamp, page count, printer used, and processing time. The actual document content - the Aadhaar card, PAN card, medical report, or resume - is not kept beyond what is needed to complete the print job.",
   ],
   [
     "How does multi printer management software work in PrintPilot?",
     "PrintPilot's multi printer management software connects multiple printers to a single dashboard. You install the Print Bridge application on each computer connected to a printer. From the dashboard, you can see all connected printers, their current status, the jobs assigned to each, and any error alerts. You can assign specific document types to specific printers - for example, route colour documents to the colour printer and standard documents to the black-and-white machine. If a printer goes offline, PrintPilot holds the job in queue rather than failing silently. Multi-printer support is included in Business and Enterprise plans.",
   ],
   [
-    "Is PrintPilot DPDP Act compliant?",
-    "PrintPilot is designed to align with India's Digital Personal Data Protection Act (DPDP Act) 2023. The key compliance mechanisms are: zero document retention by default, end-to-end encryption from upload to deletion, no collection of data beyond what is needed to process the print job, and an audit log that retains only metadata - not document content - for business compliance. We recommend consulting your legal advisor for specific DPDP Act compliance obligations applicable to your business.",
+    "Is PrintPilot designed to support DPDP Act compliance?",
+    "PrintPilot is designed to support organizations in meeting DPDP Act 2023 privacy practices - it is not a government-certified or legally guaranteed compliance status, since no such certification exists in India. The key mechanisms are: document files scheduled for deletion shortly after printing by default, end-to-end encryption from upload to deletion, no collection of data beyond what is needed to process the print job, and an audit log that retains only metadata - not document content - for business records. We recommend consulting your legal advisor for the specific DPDP Act obligations applicable to your business.",
   ],
   [
     "How long does PrintPilot take to set up?",
