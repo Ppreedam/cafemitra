@@ -21,13 +21,13 @@ const feeExamples = [
 const walletSteps = [
   ["1", "Your 14-day trial starts free", "The moment you sign up, RepetiGo credits Rs. 10 to your wallet for 14 days so you can try PrintPilot on real customer orders, risk free."],
   ["2", "Recharge when you need more", "Once your 14-day trial ends or your Rs. 10 credit runs out, simply top up your wallet to keep PrintPilot billing your print and photo jobs automatically."],
-  ["3", "Apply for settlement every EOD", "At the end of each day, apply to settle that day's earnings. No waiting for a weekly or monthly payout cycle - your daily income is yours to withdraw the same day."],
+  ["3", "Pay only for completed jobs", "There is no fixed monthly bill. RepetiGo deducts a small, fixed commission from your wallet only when a job actually completes - you always know exactly what you're spending."],
 ];
 
 const walletHighlights = [
   ["Free trial", "14 days"],
   ["Trial wallet credit", "Rs. 10"],
-  ["Settlement cycle", "Every EOD"],
+  ["Billing", "Pay-as-you-go"],
   ["Monthly software fee", "Rs. 0"],
 ];
 
@@ -54,8 +54,8 @@ const faqs = [
     "RepetiGo gives every new shop Rs. 10 of free wallet credit that stays valid for 14 days, so you can put PrintPilot to work on real orders before spending anything. Once the 14 days are over or the Rs. 10 credit is used up, just recharge your wallet to keep PrintPilot billing your jobs without any interruption.",
   ],
   [
-    "How and when do I get my money?",
-    "Your daily earnings are always yours. At the end of each day (EOD) you can apply for settlement, and that day's income is processed for withdrawal - you are never asked to wait for a weekly or monthly cycle to access what you have earned.",
+    "How does wallet billing work?",
+    "Your wallet is a prepaid balance you top up yourself. There is no fixed monthly fee - RepetiGo deducts a small, fixed commission automatically only when PrintPilot completes a job, straight from your wallet balance. You always know exactly what a job costs before it happens.",
   ],
   [
     "Are the PDF tools and Image tools also charged from my wallet?",
@@ -81,7 +81,7 @@ export default function PricingPage() {
           <div className="pricing-hero-meta">
             <span>14-day free trial</span>
             <span>Rs. 10 trial wallet credit</span>
-            <span>Settlement every EOD</span>
+            <span>No monthly software fee</span>
           </div>
         </div>
       </section>
@@ -105,7 +105,7 @@ export default function PricingPage() {
             </h2>
           </div>
           <div className="pricing-offer-grid">
-            {["14-Day Free Trial", "Rs. 10 Free Wallet Credit", "No Setup Fee", "Free PDF & Image Tools", "Daily Settlement"].map((item) => (
+            {["14-Day Free Trial", "Rs. 10 Free Wallet Credit", "No Setup Fee", "Free PDF & Image Tools", "Pay-as-you-go Billing"].map((item) => (
               <span key={item}>
                 <BadgeCheck size={17} /> {item}
               </span>
@@ -152,11 +152,11 @@ export default function PricingPage() {
         </article>
 
         <aside className="pricing-model-card">
-          <span className="pricing-section-label">Wallet & Settlement</span>
-          <h2>Prepaid wallet. Same-day settlement.</h2>
+          <span className="pricing-section-label">Wallet Billing</span>
+          <h2>Prepaid wallet. Pay only for completed jobs.</h2>
           <p>
-            Add credits to your wallet in advance, and RepetiGo draws from it as PrintPilot completes jobs. When it's
-            time to get paid, you don't wait - apply for settlement of your day's earnings every single EOD.
+            Add credits to your wallet in advance, and RepetiGo automatically deducts a small, fixed commission as
+            PrintPilot completes each job - no fixed monthly bill, no manual invoicing to track.
           </p>
 
           <div className="pricing-model-highlights">
@@ -220,7 +220,7 @@ export default function PricingPage() {
             {[
               "You always know exactly what a job costs you - Rs. 0.50 a black & white page, Rs. 1 a color page, Rs. 5 a passport photo request.",
               "Your 14-day trial and Rs. 10 wallet credit let you try PrintPilot on real orders before you ever recharge.",
-              "Every day's earnings settle at EOD, so cash keeps moving into your hands instead of sitting in a monthly queue.",
+              "No fixed monthly software bill - you only pay the small per-job commission, straight from your prepaid wallet.",
             ].map((item) => (
               <div key={item}>
                 <ShieldCheck size={20} />
