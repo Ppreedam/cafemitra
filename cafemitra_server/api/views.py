@@ -27,6 +27,8 @@ from django.utils.dateparse import parse_date
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 
+from .background_remover.remove_background import BackgroundRemovalError, remove_background_bytes
+from .background_remover.passport_photo_processor import ProcessingError, enhance_transparent_bytes
 from .models import AuthToken, ContactMessage, EmailVerificationToken, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, UserProfile, WalletTransaction, WithdrawalRequest
 from cafemitra_server.product_setting import active_payment_gateway
 
@@ -194,11 +196,49 @@ def remove_image_background(request):
     if content_type not in {"image/jpeg", "image/png", "image/webp"}:
         return JsonResponse({"message": "Only JPG, PNG, and WebP images are supported."}, status=400)
 
-    image_bytes = upload.read()
+    enhance = str(request.POST.get("enhance", "true")).lower() not in {"false", "0", "no"}
+
+    try:
+        result_bytes = remove_background_bytes(upload.read())
+    except BackgroundRemovalError as error:
+        return JsonResponse({"message": str(error)}, status=502)
+
+    if enhance:
+        try:
+            result_bytes = enhance_transparent_bytes(result_bytes)
+        except ProcessingError:
+            pass
+
     base_name = re.sub(r"[^A-Za-z0-9._-]+", "-", upload.name.rsplit(".", 1)[0])[:80] or "image"
-    extension = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}.get(content_type, "png")
-    response = HttpResponse(image_bytes, content_type=content_type)
-    response["Content-Disposition"] = f'attachment; filename="{base_name}-background-placeholder.{extension}"'
+    response = HttpResponse(result_bytes, content_type="image/png")
+    response["Content-Disposition"] = f'attachment; filename="{base_name}-no-bg.png"'
+    response["Cache-Control"] = "no-store"
+    return response
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def enhance_background_image(request):
+    """Refine edges and remove color halo from an already-transparent PNG."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    upload = request.FILES.get("image")
+    if not upload:
+        return JsonResponse({"message": "Select an image."}, status=400)
+    if upload.size > 15 * 1024 * 1024:
+        return JsonResponse({"message": "Images must be 15 MB or smaller."}, status=413)
+    if (upload.content_type or "").lower() != "image/png":
+        return JsonResponse({"message": "Upload a transparent PNG to enhance."}, status=400)
+
+    try:
+        result_bytes = enhance_transparent_bytes(upload.read())
+    except ProcessingError as error:
+        return JsonResponse({"message": str(error)}, status=400)
+
+    base_name = re.sub(r"[^A-Za-z0-9._-]+", "-", upload.name.rsplit(".", 1)[0])[:80] or "image"
+    response = HttpResponse(result_bytes, content_type="image/png")
+    response["Content-Disposition"] = f'attachment; filename="{base_name}-enhanced.png"'
     response["Cache-Control"] = "no-store"
     return response
 

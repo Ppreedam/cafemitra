@@ -2,9 +2,8 @@
 
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
-import { Crop, Eye, IdCard, RefreshCw, Trash2, Upload, X } from "lucide-react";
+import { Check, Circle, Crop, Eye, IdCard, Loader2, RefreshCw, Trash2, Upload, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
-import { SkeletonBlock } from "../UiState";
 import { apiFetch, apiUrl } from "@/lib/api";
 import { fetchPricingServiceByKey, type PriceItem } from "@/lib/pricing";
 import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
@@ -12,6 +11,64 @@ import { CropEditor, cropImage, DEFAULT_CROP_RECT, type CropRect } from "../Crop
 
 type JobState = "idle" | "submitting" | "processing" | "done" | "not_found" | "failed";
 type PaperSize = "a4" | "4x6";
+
+type ProcessingStepItem = {
+  title: string;
+  desc: string;
+  duration: number;
+};
+
+type ProcessingGroup = {
+  id: string;
+  title: string;
+  items: ProcessingStepItem[];
+};
+
+const PROCESSING_GROUPS: ProcessingGroup[] = [
+  {
+    id: "preparing",
+    title: "Preparing",
+    items: [
+      { title: "Preparing image...", desc: "Analyzing upload for AI processing", duration: 1300 },
+      { title: "Optimizing for AI processing...", desc: "Creating an efficient working copy", duration: 1600 },
+    ],
+  },
+  {
+    id: "cropping",
+    title: "Cropping",
+    items: [
+      { title: "Face detection", desc: "Locating eyes, chin, and head position", duration: 1700 },
+      { title: "ICAO auto-framing", desc: "Computing eye line, chin, and top spacing", duration: 2000 },
+      { title: "Tilt correction", desc: "Straightening head angle automatically", duration: 1700 },
+    ],
+  },
+  {
+    id: "background",
+    title: "Background removing",
+    items: [{ title: "Background processed", desc: "Removing the original backdrop", duration: 2200 }],
+  },
+  {
+    id: "resizing",
+    title: "Resizing",
+    items: [{ title: "Finalizing", desc: "Generating print-ready passport preview", duration: 1800 }],
+  },
+  {
+    id: "analyzing",
+    title: "Analyzing",
+    items: [{ title: "Compliance check", desc: "Validating against country standards", duration: 2600 }],
+  },
+];
+
+const PROCESSING_ITEMS = PROCESSING_GROUPS.flatMap((group) => group.items.map((item) => ({ ...item, groupId: group.id })));
+
+const PROCESSING_GROUP_RANGES = (() => {
+  let cursor = 0;
+  return PROCESSING_GROUPS.map((group) => {
+    const start = cursor;
+    cursor += group.items.length;
+    return { ...group, start, end: cursor - 1 };
+  });
+})();
 
 type ExistingPassportOrder = {
   id: number;
@@ -45,9 +102,31 @@ export default function PassportPhotoPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [viewOrder, setViewOrder] = useState<ExistingPassportOrder | null>(null);
   const [paperSize, setPaperSize] = useState<PaperSize>("4x6");
+  const [stepCursor, setStepCursor] = useState(0);
   const dropRef = useRef<HTMLLabelElement | null>(null);
   const attemptsRef = useRef(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const stepTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function stopStepAnimation() {
+    if (stepTimeoutRef.current) {
+      clearTimeout(stepTimeoutRef.current);
+      stepTimeoutRef.current = null;
+    }
+  }
+
+  function startStepAnimation() {
+    stopStepAnimation();
+    setStepCursor(0);
+    const scheduleNext = (doneCount: number) => {
+      if (doneCount >= PROCESSING_ITEMS.length - 1) return;
+      stepTimeoutRef.current = setTimeout(() => {
+        setStepCursor(doneCount + 1);
+        scheduleNext(doneCount + 1);
+      }, PROCESSING_ITEMS[doneCount].duration);
+    };
+    scheduleNext(0);
+  }
 
   useEffect(() => {
     loadPricingSetup();
@@ -84,6 +163,7 @@ export default function PassportPhotoPage() {
         setError(order.photoErrorMessage || "Photo generation failed.");
       } else if (order.photoStatus === "pending" || order.photoStatus === "claimed") {
         setJobState("processing");
+        startStepAnimation();
         attemptsRef.current = 0;
         timeoutRef.current = setTimeout(() => checkStatus(order.id), CHECK_INTERVAL_MS);
       }
@@ -198,6 +278,7 @@ ${rowsHtml}
       window.removeEventListener("paste", handlePaste);
       if (previewUrl) URL.revokeObjectURL(previewUrl);
       stopChecking();
+      stopStepAnimation();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -222,7 +303,9 @@ ${rowsHtml}
 
   function resetJob() {
     stopChecking();
+    stopStepAnimation();
     attemptsRef.current = 0;
+    setStepCursor(0);
     setJobState("idle");
     setJobId(null);
     setFinalImageUrl("");
@@ -274,6 +357,7 @@ ${rowsHtml}
     setIsSubmitting(true);
     setJobState("submitting");
     setError("");
+    startStepAnimation();
     try {
       const prompt = buildPassportPrompt(photoVariation);
       const formData = new FormData();
@@ -295,6 +379,7 @@ ${rowsHtml}
       attemptsRef.current = 0;
       timeoutRef.current = setTimeout(() => checkStatus(result.id), CHECK_INTERVAL_MS);
     } catch (submitError) {
+      stopStepAnimation();
       setJobState("failed");
       setError(submitError instanceof Error ? submitError.message : "Could not start the photo request.");
     } finally {
@@ -308,6 +393,7 @@ ${rowsHtml}
     attemptsRef.current = 0;
     setError("");
     setJobState("processing");
+    startStepAnimation();
     checkStatus(jobId);
   }
 
@@ -323,6 +409,8 @@ ${rowsHtml}
 
       if (response.ok && result.found && result.imageUrl) {
         stopChecking();
+        stopStepAnimation();
+        setStepCursor(PROCESSING_ITEMS.length);
         setJobState("done");
         setFinalImageUrl(result.imageUrl);
         return;
@@ -330,12 +418,14 @@ ${rowsHtml}
 
       if (response.ok && !result.found) {
         stopChecking();
+        stopStepAnimation();
         setJobState("failed");
         setError(result.message || "Photo generation failed. Please try again.");
         return;
       }
 
       if (attemptsRef.current >= MAX_CHECK_ATTEMPTS) {
+        stopStepAnimation();
         setJobState("not_found");
         setError("We could not find your processed image yet. Please try again.");
         return;
@@ -344,6 +434,7 @@ ${rowsHtml}
       timeoutRef.current = setTimeout(() => checkStatus(id), CHECK_INTERVAL_MS);
     } catch {
       if (attemptsRef.current >= MAX_CHECK_ATTEMPTS) {
+        stopStepAnimation();
         setJobState("not_found");
         setError("We could not find your processed image yet. Please try again.");
         return;
@@ -353,6 +444,7 @@ ${rowsHtml}
   }
 
   const isBusy = jobState === "submitting" || jobState === "processing";
+  const overallProgress = Math.min(92, Math.round(((stepCursor + 0.5) / PROCESSING_ITEMS.length) * 100));
   const selectedPackage = priceItems.find((item) => item.id === selectedPriceItemId) || priceItems[0];
 
   return (
@@ -509,8 +601,56 @@ ${rowsHtml}
 
             {isBusy ? (
               <div className="passport-processing-state">
-                <SkeletonBlock lines={4} />
-                <p>We are processing the AI image as per your requirement. Please wait...</p>
+                <p>Analyzing face position and applying ICAO-compliant framing for your passport photo.</p>
+                <div className="passport-step-timeline">
+                  {PROCESSING_GROUP_RANGES.map((group, groupIndex) => {
+                    const groupStatus = stepCursor > group.end ? "done" : stepCursor >= group.start ? "active" : "pending";
+                    return (
+                      <div className={`passport-step-group ${groupStatus}`} key={group.id}>
+                        <div className="passport-step-group-head">
+                          <span className="passport-step-group-icon">
+                            {groupStatus === "done" ? <Check size={14} /> : groupIndex + 1}
+                          </span>
+                          <strong>{group.title}</strong>
+                        </div>
+                        {groupStatus !== "pending" ? (
+                          <div className="passport-step-items">
+                            {group.items.map((item, itemOffset) => {
+                              const itemIndex = group.start + itemOffset;
+                              const itemStatus = itemIndex < stepCursor ? "done" : itemIndex === stepCursor ? "active" : "pending";
+                              return (
+                                <div className={`passport-step-item ${itemStatus}`} key={item.title}>
+                                  <span className="passport-step-item-icon">
+                                    {itemStatus === "done" ? (
+                                      <Check size={14} />
+                                    ) : itemStatus === "active" ? (
+                                      <Loader2 size={14} className="passport-step-spin" />
+                                    ) : (
+                                      <Circle size={14} />
+                                    )}
+                                  </span>
+                                  <div>
+                                    <strong>{item.title}</strong>
+                                    <span>{item.desc}</span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="passport-overall-progress">
+                  <div className="passport-overall-progress-label">
+                    <span>Overall progress</span>
+                    <strong>{overallProgress}%</strong>
+                  </div>
+                  <div className="passport-overall-progress-track">
+                    <div className="passport-overall-progress-fill" style={{ width: `${overallProgress}%` }} />
+                  </div>
+                </div>
               </div>
             ) : null}
 

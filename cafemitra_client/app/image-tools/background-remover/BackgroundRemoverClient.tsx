@@ -15,6 +15,7 @@ export default function BackgroundRemoverClient({ children }: { children?: React
   const [processing, setProcessing] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState("");
+  const [enhanceEdges, setEnhanceEdges] = useState(true);
 
   useEffect(() => () => {
     if (sourceUrl) URL.revokeObjectURL(sourceUrl);
@@ -42,6 +43,7 @@ export default function BackgroundRemoverClient({ children }: { children?: React
     try {
       const body = new FormData();
       body.append("image", file);
+      body.append("enhance", String(enhanceEdges));
       const response = await fetch(apiUrl("/api/tools/remove-image-background/"), {
         method: "POST",
         body,
@@ -97,7 +99,13 @@ export default function BackgroundRemoverClient({ children }: { children?: React
               <article><div className="bg-preview-title"><span>Original</span><small>{file.name}</small></div><div className="bg-preview-canvas"><img src={sourceUrl} alt="Original upload" /></div></article>
               <article><div className="bg-preview-title"><span>Background removed</span><small>{resultUrl ? "Transparent PNG" : "Ready to process"}</small></div><div className="bg-preview-canvas checkerboard">{resultUrl ? <img src={resultUrl} alt="Background removed result" /> : <WandSparkles size={52} />}</div></article>
             </div>
-            {processing ? <div className="bg-progress"><div><span>Processing image…</span><strong>{progress}%</strong></div><progress value={progress} max="100" /><small>The current backend endpoint returns the uploaded image as a placeholder.</small></div> : null}
+            {!resultUrl ? (
+              <label className="bg-enhance-toggle">
+                <input type="checkbox" checked={enhanceEdges} onChange={(e) => setEnhanceEdges(e.target.checked)} disabled={processing} />
+                <span>Enhance edges (remove colour halo around hair/edges)</span>
+              </label>
+            ) : null}
+            {processing ? <div className="bg-progress"><div><span>Processing image…</span><strong>{progress}%</strong></div><progress value={progress} max="100" /><small>Removing the background on the server{enhanceEdges ? " and cleaning up edges" : ""}…</small></div> : null}
             {error ? <div className="profile-alert error">{error}</div> : null}
             <div className="bg-actions"><button className="secondary-action" type="button" onClick={reset} disabled={processing}><RotateCcw size={18} /> Start Over</button>{resultUrl ? <a className="bg-download" href={resultUrl} download={downloadName}><Download size={18} /> Download PNG</a> : <button type="button" onClick={removeImageBackground} disabled={processing}><WandSparkles size={18} /> {processing ? "Removing…" : "Remove Background"}</button>}</div>
           </section>

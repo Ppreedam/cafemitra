@@ -6000,9 +6000,186 @@ img.profile-photo {
 }
 
 .passport-processing-state p {
-  color: #59658c;
+  color: var(--muted);
   font-size: 0.9rem;
-  margin-top: 12px;
+  margin: 0 0 16px;
+}
+
+.passport-step-timeline {
+  display: grid;
+  gap: 14px;
+}
+
+.passport-step-group {
+  position: relative;
+  padding-left: 30px;
+}
+
+.passport-step-group::before {
+  content: "";
+  position: absolute;
+  left: 11px;
+  top: 26px;
+  bottom: -14px;
+  width: 2px;
+  background: var(--soft-line);
+}
+
+.passport-step-group:last-child::before {
+  display: none;
+}
+
+.passport-step-group.done::before {
+  background: var(--green);
+}
+
+.passport-step-group-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.passport-step-group-icon {
+  position: absolute;
+  left: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 800;
+  background: var(--mist);
+  color: var(--muted);
+  border: 2px solid var(--soft-line);
+  animation: none;
+}
+
+.passport-step-group.done .passport-step-group-icon {
+  background: var(--green);
+  border-color: var(--green);
+  color: #fff;
+}
+
+.passport-step-group.active .passport-step-group-icon {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+
+.passport-step-group-head strong {
+  font-size: 0.98rem;
+  color: var(--muted);
+}
+
+.passport-step-group.active .passport-step-group-head strong,
+.passport-step-group.done .passport-step-group-head strong {
+  color: var(--ink);
+}
+
+.passport-step-items {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.passport-step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: transparent;
+}
+
+.passport-step-item.done {
+  background: #eefbf4;
+  border-color: #d6f2e3;
+}
+
+.passport-step-item.active {
+  background: #eef0ff;
+  border-color: #dfe2ff;
+}
+
+.passport-step-item-icon {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  margin-top: 1px;
+  color: var(--line);
+}
+
+.passport-step-item.done .passport-step-item-icon {
+  color: var(--green);
+}
+
+.passport-step-item.active .passport-step-item-icon {
+  color: var(--violet);
+}
+
+.passport-step-spin {
+  animation: spin 900ms linear infinite;
+}
+
+.passport-step-item div {
+  display: grid;
+  gap: 2px;
+}
+
+.passport-step-item strong {
+  font-size: 0.88rem;
+  color: var(--muted);
+}
+
+.passport-step-item.done strong,
+.passport-step-item.active strong {
+  color: var(--ink);
+}
+
+.passport-step-item span {
+  font-size: 0.78rem;
+  color: #8b96b8;
+}
+
+.passport-overall-progress {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--soft-line);
+}
+
+.passport-overall-progress-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  font-weight: 750;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.passport-overall-progress-label strong {
+  color: var(--violet);
+}
+
+.passport-overall-progress-track {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--soft-line);
+  overflow: hidden;
+}
+
+.passport-overall-progress-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: var(--brand-hero-gradient);
+  transition: width 600ms ease;
 }
 
 .passport-final-preview img {
@@ -14155,6 +14332,9 @@ img.profile-photo {
 }
 
 .bg-remover-page{max-width:1240px;margin:0 auto}.status-pill{display:inline-flex;align-items:center;gap:7px}.bg-upload-card{min-height:430px;border:2px dashed #b9c9e7;border-radius:24px;background:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px;transition:.2s}.bg-upload-card.dragging{border-color:#2563eb;background:#eff6ff;transform:scale(1.005)}.bg-upload-icon{width:76px;height:76px;border-radius:22px;display:grid;place-items:center;color:#2563eb;background:#eaf1ff;margin-bottom:18px}.bg-upload-card h2{font-size:28px;margin:0 0 8px;color:#0d1748}.bg-upload-card p{color:#64708f;margin:0 0 24px}.bg-upload-card button,.bg-actions button,.bg-download{display:inline-flex;align-items:center;justify-content:center;gap:9px;border:0;border-radius:12px;background:#2563eb;color:#fff;padding:13px 22px;font-weight:800;text-decoration:none;cursor:pointer}.bg-upload-card small{margin-top:14px;color:#8190ac}.bg-workspace{background:#fff;border:1px solid #dce5f2;border-radius:22px;padding:22px}.bg-preview-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}.bg-preview-grid article{border:1px solid #dce5f2;border-radius:16px;overflow:hidden}.bg-preview-title{display:flex;justify-content:space-between;gap:12px;padding:14px 16px;font-weight:800;color:#0d1748}.bg-preview-title small{font-weight:600;color:#7a88a5;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.bg-preview-canvas{height:390px;background:#f4f7fb;display:grid;place-items:center;color:#9aa8bd;padding:16px}.bg-preview-canvas img{width:100%;height:100%;object-fit:contain}.checkerboard{background-color:#fff;background-image:linear-gradient(45deg,#e8edf4 25%,transparent 25%),linear-gradient(-45deg,#e8edf4 25%,transparent 25%),linear-gradient(45deg,transparent 75%,#e8edf4 75%),linear-gradient(-45deg,transparent 75%,#e8edf4 75%);background-size:24px 24px;background-position:0 0,0 12px,12px -12px,-12px 0}.bg-progress{margin-top:18px;padding:16px;border-radius:14px;background:#eff6ff}.bg-progress div{display:flex;justify-content:space-between;font-weight:800;color:#183468}.bg-progress progress{width:100%;height:10px;margin:10px 0}.bg-progress small{color:#64708f}.bg-actions{display:flex;justify-content:flex-end;gap:12px;margin-top:20px}.bg-actions .secondary-action{background:#eef2f8;color:#253354}.bg-actions button:disabled{opacity:.6;cursor:not-allowed}@media(max-width:800px){.bg-preview-grid{grid-template-columns:1fr}.bg-preview-canvas{height:290px}.bg-actions{flex-direction:column}.bg-actions button,.bg-download{width:100%}}
+.bg-enhance-toggle{display:flex;align-items:center;gap:9px;margin-top:18px;font-weight:700;color:#253354;cursor:pointer}
+.bg-enhance-toggle input{width:16px;height:16px;accent-color:#2563eb;cursor:pointer}
+
 .bg-remover-page .bg-preview-canvas img {
   position: absolute !important;
   inset: 16px !important;

@@ -10,7 +10,8 @@ urlpatterns = [
     # --- Tools (standalone utilities, no auth) -------------------------
     re_path(r"^tools/ai-upscale-image/?$", views.ai_upscale_image),  # POST upscale an image via configured AI provider, returns image binary
     re_path(r"^tools/extract-pdf-text/?$", views.extract_pdf_text),  # POST extract text per page from an uploaded PDF
-    re_path(r"^tools/remove-image-background/?$", views.remove_image_background),  # POST strip background from an uploaded image
+    re_path(r"^tools/remove-image-background/?$", views.remove_image_background),  # POST strip background from an uploaded image (optional enhance=false to skip edge cleanup)
+    re_path(r"^tools/enhance-background-image/?$", views.enhance_background_image),  # POST refine edges/remove color halo from an already-transparent PNG
     re_path(r"^tools/website-to-image/?$", views.website_to_image),  # POST screenshot a public URL via configured provider
     re_path(r"^tools/detect-faces/?$", views.detect_faces),  # POST return normalized face bounding boxes for an uploaded image
 
