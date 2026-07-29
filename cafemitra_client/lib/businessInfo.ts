@@ -7,8 +7,8 @@ export const BUSINESS = {
   // Not incorporated with the MCA - operating as a sole proprietorship.
   // Never claim "Pvt. Ltd." status anywhere until the company is actually registered.
   entityType: "proprietorship" as const,
-  ownerName: "Shankar Kumar",
-  registeredAddress: "C/O Shankar Kumar, 79, Ward 05, Rasalpur, Bajpatti",
+  ownerName: "Ankit Kumar",
+  registeredAddress: "C/O Ankit Kumar, 79, Ward 05, Rasalpur, Bajpatti",
   city: "Sitamarhi",
   state: "Bihar",
   pincode: "843314",

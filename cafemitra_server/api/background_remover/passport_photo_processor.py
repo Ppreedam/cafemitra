@@ -342,6 +342,48 @@ def clean_transparent_image(
     return final
 
 
+def clean_transparent_image_light(
+    image: np.ndarray,
+) -> np.ndarray:
+    """Same as clean_transparent_image, but without the alpha erosion step.
+
+    clean_transparent_image's erosion assumes a chroma-key studio backdrop
+    (a person centred well inside the frame) and shrinks the whole
+    silhouette uniformly - fine for that passport-photo pipeline, but it
+    also eats into shoulders/limbs on ordinary photos where the subject
+    runs close to the frame edge. The API "enhance" step only wants the
+    colour-halo despill and edge smoothing, not the silhouette shrink.
+    """
+    bgr = image[:, :, :3]
+    alpha = image[:, :, 3]
+
+    refined_alpha = refine_alpha_mask(
+        alpha,
+        erode_size=0,
+        blur_size=EDGE_BLUR_SIZE,
+    )
+
+    despilled = remove_blue_cyan_spill(
+        bgr,
+        refined_alpha,
+        strength=DESPILL_STRENGTH,
+        edge_width=EDGE_WIDTH,
+    )
+
+    smoothed = smooth_subject_edges(
+        despilled,
+        refined_alpha,
+        edge_width=2,
+    )
+
+    return cv2.merge([
+        smoothed[:, :, 0],
+        smoothed[:, :, 1],
+        smoothed[:, :, 2],
+        refined_alpha,
+    ])
+
+
 def enhance_transparent_bytes(image_bytes: bytes) -> bytes:
     """Refine edges and remove color halo from an in-memory transparent PNG.
 
@@ -358,7 +400,7 @@ def enhance_transparent_bytes(image_bytes: bytes) -> bytes:
             "Image has no transparency to enhance. Remove the background first."
         )
 
-    cleaned = clean_transparent_image(image)
+    cleaned = clean_transparent_image_light(image)
 
     success, encoded = cv2.imencode(".png", cleaned)
     if not success:

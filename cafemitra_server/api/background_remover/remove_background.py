@@ -6,6 +6,7 @@ import sys
 import threading
 from pathlib import Path
 
+import numpy as np
 from PIL import Image
 from rembg import new_session, remove
 
@@ -20,15 +21,28 @@ INPUT_IMAGE_PATH = r"prabhat.jpeg"
 # Background-removed transparent PNG ka output path
 OUTPUT_IMAGE_PATH = r"background-removed_prabhat.png"
 
-# Passport/person photos ke liye achha default model
-MODEL_NAME = "u2net_human_seg"
+# u2net_human_seg ka training data zyadatar "person with margin on all
+# sides" jaisa hai, isliye jab shoulders frame ke edge ko chhoote hain
+# to woh confidently predict nahi kar pata aur crop ho jata hai. isnet
+# ka general-purpose (DIS5K) training set mein border-touching subjects
+# zyada hain, isliye shoulders/limbs jo edge tak jaate hain unko woh
+# zyada reliably capture karta hai, sharper boundary ke saath.
+MODEL_NAME = "isnet-general-use"
 
 # Mask ke edges ko post-process karna hai ya nahi
 POST_PROCESS_MASK = True
 
-# Alpha matting detailed edges improve kar sakta hai,
-# lekin processing slow hogi.
-USE_ALPHA_MATTING = False
+# Alpha matting se boundary (shoulders, hair) ka alpha zyada accurate
+# milta hai bajaye ek hard/binary mask ke - thodi processing slow hoti
+# hai lekin cropped-looking edges ka issue kaafi kam ho jata hai.
+USE_ALPHA_MATTING = True
+
+# Jab subject (shoulders/body) frame ke edge ko chhoo raha ho, model wahan
+# mask thoda andar se crop kar sakta hai. Edge-replicate padding se subject
+# edge se thoda door lagta hai (bina koi mirrored duplicate pattern banaye),
+# isliye mask poora shoulder/body cover karta hai.
+BORDER_PAD_RATIO = 0.3
+MIN_BORDER_PAD_PX = 70
 
 
 class BackgroundRemovalError(Exception):
@@ -75,6 +89,18 @@ def _get_session():
     return _session
 
 
+def _pad_with_reflection(image: Image.Image) -> tuple[Image.Image, int]:
+    """Extend the canvas with mirrored pixels so the subject no longer
+    touches the frame edge, then u2net can trace its full silhouette
+    instead of truncating shoulders/limbs that run off the border.
+    """
+    width, height = image.size
+    pad = max(MIN_BORDER_PAD_PX, round(max(width, height) * BORDER_PAD_RATIO))
+    array = np.array(image)
+    padded = np.pad(array, ((pad, pad), (pad, pad), (0, 0)), mode="edge")
+    return Image.fromarray(padded), pad
+
+
 def remove_background_bytes(image_bytes: bytes) -> bytes:
     """Remove the background from in-memory image bytes and return PNG bytes.
 
@@ -86,9 +112,12 @@ def remove_background_bytes(image_bytes: bytes) -> bytes:
     except Exception as error:
         raise BackgroundRemovalError(f"Image could not be opened: {error}") from error
 
+    width, height = original_image.size
+    padded_image, pad = _pad_with_reflection(original_image)
+
     try:
         result_image = remove(
-            original_image,
+            padded_image,
             session=_get_session(),
             post_process_mask=POST_PROCESS_MASK,
             alpha_matting=USE_ALPHA_MATTING,
@@ -102,7 +131,7 @@ def remove_background_bytes(image_bytes: bytes) -> bytes:
     if not isinstance(result_image, Image.Image):
         raise BackgroundRemovalError("Library ne valid image result return nahi kiya.")
 
-    result_image = result_image.convert("RGBA")
+    result_image = result_image.convert("RGBA").crop((pad, pad, pad + width, pad + height))
 
     buffer = io.BytesIO()
     result_image.save(buffer, format="PNG", optimize=True)
@@ -132,47 +161,19 @@ def remove_image_background(
     print("Image loading...")
 
     try:
-        original_image = Image.open(input_file).convert("RGBA")
+        image_bytes = input_file.read_bytes()
     except Exception as error:
         raise BackgroundRemovalError(
             f"Image open nahi hui: {error}"
         ) from error
 
-    print(f"Image size: {original_image.width} × {original_image.height}")
     print(f"Model: {MODEL_NAME}")
     print("Background remove ho raha hai...")
 
-    try:
-        session = new_session(MODEL_NAME)
-
-        result_image = remove(
-            original_image,
-            session=session,
-            post_process_mask=POST_PROCESS_MASK,
-            alpha_matting=USE_ALPHA_MATTING,
-            alpha_matting_foreground_threshold=240,
-            alpha_matting_background_threshold=10,
-            alpha_matting_erode_size=10,
-        )
-
-    except Exception as error:
-        raise BackgroundRemovalError(
-            f"Background removal failed: {error}"
-        ) from error
-
-    if not isinstance(result_image, Image.Image):
-        raise BackgroundRemovalError(
-            "Library ne valid image result return nahi kiya."
-        )
-
-    result_image = result_image.convert("RGBA")
+    result_bytes = remove_background_bytes(image_bytes)
 
     try:
-        result_image.save(
-            output_file,
-            format="PNG",
-            optimize=True,
-        )
+        output_file.write_bytes(result_bytes)
     except Exception as error:
         raise BackgroundRemovalError(
             f"Output image save nahi hui: {error}"

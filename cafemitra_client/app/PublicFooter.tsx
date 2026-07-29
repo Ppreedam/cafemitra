@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Printer } from "lucide-react";
+import { BUSINESS } from "../lib/businessInfo";
 
 const footerColumns = [
   {
@@ -68,6 +69,7 @@ export function PublicFooter() {
         </div>
         <div className="ai-footer-bottom">
           <p>Copyright 2026 RepetiGo. All rights reserved. Made for India. Built for scale.</p>
+          <p>RepetiGo is a brand owned and operated by {BUSINESS.ownerName}, Proprietor.</p>
           <p>Print Shop Software - Document Automation - Secure Upload - AI Print Management - Cyber Cafe Software India</p>
           <p>
             RepetiGo is not affiliated with, endorsed by, or connected to UIDAI, the Government of India, or any
