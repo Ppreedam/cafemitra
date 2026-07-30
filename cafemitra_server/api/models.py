@@ -166,9 +166,12 @@ class PrintOrder(models.Model):
 
 class WalletTransaction(models.Model):
     KIND_SIGNUP_BONUS = "signup_bonus"
+    KIND_REFERRAL_BONUS = "referral_bonus"
     KIND_ONLINE_ORDER_CREDIT = "online_order_credit"
     KIND_CASH_COUNTER_COLLECTION = "cash_counter_collection"
+    KIND_TOOL_USAGE = "tool_usage"
     KIND_WITHDRAWAL = "withdrawal"
+    KIND_TOPUP = "topup"
 
     DIRECTION_CREDIT = "credit"
     DIRECTION_DEBIT = "debit"
@@ -176,10 +179,15 @@ class WalletTransaction(models.Model):
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="wallet_transactions")
     order = models.ForeignKey(PrintOrder, null=True, blank=True, on_delete=models.SET_NULL, related_name="wallet_transactions")
+    tool_key = models.CharField(max_length=80, blank=True)
     kind = models.CharField(max_length=40)
     direction = models.CharField(max_length=12)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     affects_balance = models.BooleanField(default=True)
+    # Snapshot of UserProfile.balance right after this transaction was applied.
+    # Lets us answer "was the wallet already negative at this point" (needed
+    # for the daily grace-usage limit) without replaying the whole ledger.
+    balance_after = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     note = models.CharField(max_length=255, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -189,6 +197,49 @@ class WalletTransaction(models.Model):
 
     def __str__(self) -> str:
         return f"{self.kind} {self.amount} for {self.user_id}"
+
+
+class WalletSetting(models.Model):
+    """Admin-editable numbers that drive both wallet display and enforcement
+    (signup bonus, referral bonus, grace-credit limit, daily grace-usage cap).
+
+    A single source of truth: the public /api/wallet/config/ endpoint reads
+    these same rows, so marketing pages and backend enforcement can never
+    drift apart the way SIGNUP_BONUS_AMOUNT vs the pricing page did before.
+    """
+
+    key = models.CharField(max_length=60, unique=True)
+    label = models.CharField(max_length=160)
+    value = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["key"]
+
+    def __str__(self) -> str:
+        return f"{self.key} = {self.value}"
+
+
+class ToolPricing(models.Model):
+    """RepetiGo's own per-tool usage fee - separate from ServicePricing,
+    which stores what a shop charges ITS customer at the counter. Editable
+    from Django admin so prices can change without a frontend deploy.
+    """
+
+    tool_key = models.CharField(max_length=80, unique=True)
+    label = models.CharField(max_length=160)
+    unit = models.CharField(max_length=80, blank=True, default="per use")
+    price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    is_billable = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["tool_key"]
+
+    def __str__(self) -> str:
+        return f"{self.tool_key} - Rs. {self.price} ({self.unit})"
 
 
 class WithdrawalRequest(models.Model):

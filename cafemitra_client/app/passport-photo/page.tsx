@@ -4,6 +4,7 @@ import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { Check, Circle, Crop, Eye, IdCard, Loader2, RefreshCw, Trash2, Upload, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
+import { WalletLimitBanner } from "../WalletLimitBanner";
 import { apiFetch, apiUrl } from "@/lib/api";
 import { fetchPricingServiceByKey, type PriceItem } from "@/lib/pricing";
 import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
@@ -450,6 +451,7 @@ ${rowsHtml}
   return (
     <DashboardShell activePath="/passport-photo">
       <div className="dashboard passport-photo-page">
+        <WalletLimitBanner />
         <div className="dashboard-hero pdf-tools-hero">
           <div>
             <span className="auto-print-kicker">PrintPilot Passport Photo Maker</span>

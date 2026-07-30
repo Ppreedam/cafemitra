@@ -21,13 +21,15 @@ INPUT_IMAGE_PATH = r"prabhat.jpeg"
 # Background-removed transparent PNG ka output path
 OUTPUT_IMAGE_PATH = r"background-removed_prabhat.png"
 
-# u2net_human_seg ka training data zyadatar "person with margin on all
-# sides" jaisa hai, isliye jab shoulders frame ke edge ko chhoote hain
-# to woh confidently predict nahi kar pata aur crop ho jata hai. isnet
-# ka general-purpose (DIS5K) training set mein border-touching subjects
-# zyada hain, isliye shoulders/limbs jo edge tak jaate hain unko woh
-# zyada reliably capture karta hai, sharper boundary ke saath.
-MODEL_NAME = "isnet-general-use"
+# isnet-general-use ek generic "salient object" model hai (product/animal/
+# kisi bhi cheez ke liye) - insaan ke plain-colour clothing (jaise flat
+# gray t-shirt) ko kabhi kabhi confidently "foreground" nahi maan pata aur
+# poora torso/shoulder hata deta hai. u2net_human_seg specifically full
+# human body (clothing samet) segment karne ke liye trained hai, isliye
+# ye clothing/shoulders ko reliably capture karta hai. Iski known weakness
+# - frame-edge ko chhoone wale shoulders crop ho jaana - _pad_with_reflection
+# se pehle se hi handle ho raha hai, isliye dono fix ek saath mil jaate hain.
+MODEL_NAME = "u2net_human_seg"
 
 # Mask ke edges ko post-process karna hai ya nahi
 POST_PROCESS_MASK = True
@@ -40,9 +42,12 @@ USE_ALPHA_MATTING = True
 # Jab subject (shoulders/body) frame ke edge ko chhoo raha ho, model wahan
 # mask thoda andar se crop kar sakta hai. Edge-replicate padding se subject
 # edge se thoda door lagta hai (bina koi mirrored duplicate pattern banaye),
-# isliye mask poora shoulder/body cover karta hai.
-BORDER_PAD_RATIO = 0.3
-MIN_BORDER_PAD_PX = 70
+# isliye mask poora shoulder/body cover karta hai. Jahan do edges milte hain
+# (corner), wahan replicate-padding ka corner-fill sabse kam reliable hota
+# hai, isliye corner ke paas wale arm/elbow ko poora capture karne ke liye
+# extra padding chahiye hota hai.
+BORDER_PAD_RATIO = 0.5
+MIN_BORDER_PAD_PX = 130
 
 
 class BackgroundRemovalError(Exception):
@@ -123,7 +128,10 @@ def remove_background_bytes(image_bytes: bytes) -> bytes:
             alpha_matting=USE_ALPHA_MATTING,
             alpha_matting_foreground_threshold=240,
             alpha_matting_background_threshold=10,
-            alpha_matting_erode_size=10,
+            # Narrower "unknown" trimap band around the mask boundary - a
+            # wider band (10px) was pulling in some real arm/shoulder pixels
+            # near a bent-elbow edge and letting matting mark them background.
+            alpha_matting_erode_size=6,
         )
     except Exception as error:
         raise BackgroundRemovalError(f"Background removal failed: {error}") from error

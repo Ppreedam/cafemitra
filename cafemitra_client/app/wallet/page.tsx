@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useEffect, useState } from "react";
-import { ArrowDownToLine, Banknote, Clock3, Landmark, ReceiptText, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowDownToLine, Banknote, Clock3, Landmark, ReceiptText, Wallet } from "lucide-react";
 import { apiFetch, hasStoredSession } from "@/lib/api";
 import { DashboardShell } from "../DashboardShell";
 import { SkeletonBlock, UiState } from "../UiState";
@@ -40,6 +40,13 @@ type WalletData = {
     pendingWithdrawal: number;
     paidWithdrawal: number;
   };
+  limits: {
+    creditLimit: number;
+    dailyGraceLimit: number;
+    todayGraceUsed: number;
+    isLowBalance: boolean;
+    isBlocked: boolean;
+  };
   transactions: WalletTransaction[];
   ledgerPagination: {
     page: number;
@@ -61,6 +68,13 @@ const emptyWallet: WalletData = {
     netWithdrawable: 0,
     pendingWithdrawal: 0,
     paidWithdrawal: 0,
+  },
+  limits: {
+    creditLimit: -50,
+    dailyGraceLimit: 5,
+    todayGraceUsed: 0,
+    isLowBalance: false,
+    isBlocked: false,
   },
   transactions: [],
   ledgerPagination: {
@@ -110,7 +124,12 @@ export default function WalletPage() {
       const response = await apiFetch(`/api/wallet/?${params.toString()}`);
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.message || "Could not load wallet.");
-      const nextWallet = { ...emptyWallet, ...result, summary: { ...emptyWallet.summary, ...(result.summary || {}) } };
+      const nextWallet = {
+        ...emptyWallet,
+        ...result,
+        summary: { ...emptyWallet.summary, ...(result.summary || {}) },
+        limits: { ...emptyWallet.limits, ...(result.limits || {}) },
+      };
       setWallet(nextWallet);
       setAmount(formatAmountInput(nextWallet.summary.netWithdrawable));
       setMessage("");
@@ -168,11 +187,31 @@ export default function WalletPage() {
       <div className="dashboard wallet-dashboard">
         <div className="dashboard-hero">
           <div>
-            <h1>Wallet & Settlement</h1>
+            <h1>Service Credits & Settlement</h1>
             <p>{message || "Online payments are withdrawable. Cash counter money stays with the cafe, and Reptigo commission is deducted from the request amount."}</p>
           </div>
           <span className="status-pill">Wallet Active</span>
         </div>
+
+        {wallet.limits.isBlocked ? (
+          <div className="profile-alert error wallet-limit-alert">
+            <AlertTriangle size={18} />
+            <span>
+              Your service credits balance ({formatCurrency(wallet.balance)}) has reached the minimum allowed limit
+              ({formatCurrency(wallet.limits.creditLimit)}). Paid tools (PrintPilot, Passport Photo) are paused until
+              you top up.
+            </span>
+          </div>
+        ) : wallet.limits.isLowBalance ? (
+          <div className="profile-alert warning wallet-limit-alert">
+            <AlertTriangle size={18} />
+            <span>
+              Your service credits balance is {formatCurrency(wallet.balance)}. You can keep using paid tools up to{" "}
+              {formatCurrency(wallet.limits.creditLimit)}, capped at {formatCurrency(wallet.limits.dailyGraceLimit)}{" "}
+              per day (used {formatCurrency(wallet.limits.todayGraceUsed)} today) - top up to avoid interruption.
+            </span>
+          </div>
+        ) : null}
 
         <section className="metrics-grid wallet-metrics" aria-label="Wallet summary">
           {cards.map((card) => {
@@ -252,7 +291,7 @@ export default function WalletPage() {
 
         <section className="panel wallet-ledger-panel">
           <div className="panel-title-row compact">
-            <h2>Wallet Ledger</h2>
+            <h2>Service Credits Ledger</h2>
             <ReceiptText size={20} />
           </div>
           <div className="wallet-ledger-controls" aria-label="Wallet ledger filters">
@@ -288,7 +327,7 @@ export default function WalletPage() {
             )) : message === "Loading wallet..." ? (
               <SkeletonBlock lines={4} />
             ) : (
-              <UiState icon={ReceiptText} title="No wallet transactions" description="Collected payments and settlement activity will appear here." />
+              <UiState icon={ReceiptText} title="No service credits transactions" description="Collected payments and settlement activity will appear here." />
             )}
           </div>
           <div className="wallet-pagination" aria-label="Wallet ledger pagination">

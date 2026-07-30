@@ -1,10 +1,12 @@
 import re
 
 from django.conf import settings
+from django.contrib import admin
 from django.urls import include, path, re_path
 from django.views.static import serve
 
 urlpatterns = [
+    path("admin/", admin.site.urls),
     path("api/", include("api.urls")),
     # django.conf.urls.static.static() only registers this route when
     # DEBUG=True. This app has no separate web server / storage backend

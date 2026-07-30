@@ -32,6 +32,10 @@ type WalletSummary = {
   summary?: {
     netWithdrawable?: number;
   };
+  limits?: {
+    isLowBalance?: boolean;
+    isBlocked?: boolean;
+  };
 };
 
 const fallbackProfile: ProfileSummary = {
@@ -208,7 +212,12 @@ export function ProfileTopbar({ isSidebarCollapsed = false, onMenuClick, printer
             })}
           </div>
         </details>
-        <Link className="topbar-wallet-link" href="/wallet" aria-label={`Wallet balance ${formatWalletBalance(balance)}`}>
+        <Link
+          className={`topbar-wallet-link ${wallet?.limits?.isBlocked ? "blocked" : wallet?.limits?.isLowBalance ? "low" : ""}`}
+          href="/wallet"
+          aria-label={`Service credits balance ${formatWalletBalance(balance)}${wallet?.limits?.isBlocked ? " - limit reached, top up now" : wallet?.limits?.isLowBalance ? " - low balance" : ""}`}
+          title={wallet?.limits?.isBlocked ? "Service credits limit reached - top up to resume paid tools" : wallet?.limits?.isLowBalance ? "Service credits low - top up soon" : undefined}
+        >
           <Wallet size={21} />
           <span>{formatWalletBalance(balance)}</span>
         </Link>

@@ -56,6 +56,7 @@ import {
   type PrinterPreset,
 } from "@/lib/printpilot-agent";
 import { DashboardShell } from "../DashboardShell";
+import { WalletLimitBanner } from "../WalletLimitBanner";
 
 type NavItem = {
   name: string;
@@ -97,7 +98,7 @@ const navGroups: NavGroup[] = [
     label: "Manage",
     items: [
       { name: "Customers", icon: Users },
-      { name: "Wallet & Settlement", icon: Wallet },
+      { name: "Service Credits & Settlement", icon: Wallet },
       { name: "Pricing & Settings", icon: Settings, href: "/pricing-settings" },
       { name: "Analytics", icon: BarChart3, href: "/analytics" },
       { name: "Reports", icon: FileText },
@@ -559,6 +560,7 @@ export default function AutoPrintPage() {
   return (
     <DashboardShell activePath="/auto-print">
       <div className="dashboard auto-print-dashboard">
+          <WalletLimitBanner />
           <div className="dashboard-hero auto-print-hero">
             <div>
               <span className="auto-print-kicker">RepetiGo PrintPilot</span>

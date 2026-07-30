@@ -27,7 +27,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { DashboardShell } from "@/app/DashboardShell";
-import { fetchPricingServices, formatPriceItem, normalizePaymentMode, savePricingService, type PriceItem, type PriceRange, type PricingService } from "@/lib/pricing";
+import { fetchPricingServices, formatPriceItem, savePricingService, type PriceItem, type PriceRange, type PricingService } from "@/lib/pricing";
 
 type NavItem = {
   name: string;
@@ -62,17 +62,12 @@ const navGroups: NavGroup[] = [
     label: "Manage",
     items: [
       { name: "Customers", icon: Users },
-      { name: "Wallet & Settlement", icon: Wallet },
+      { name: "Service Credits & Settlement", icon: Wallet },
       { name: "Pricing & Settings", icon: Settings, href: "/pricing-settings", active: true },
       { name: "Analytics", icon: BarChart3, href: "/analytics" },
       { name: "Reports", icon: FileText },
     ],
   },
-];
-
-const paymentModeOptions = [
-  { value: "Online Payment", label: "Online Payment" },
-  { value: "Both", label: "Online Payment + Cash Counter" },
 ];
 
 export default function PricingSettingsPage() {
@@ -92,22 +87,6 @@ export default function PricingSettingsPage() {
   }, []);
 
   const activeService = useMemo(() => services.find((service) => service.serviceKey === activeKey), [activeKey, services]);
-
-  function updatePaymentMode(serviceKey: string, value: string) {
-    setServices((current) =>
-      current.map((service) =>
-        service.serviceKey === serviceKey
-          ? {
-              ...service,
-              settings: {
-                ...service.settings,
-                paymentMode: value,
-              },
-            }
-          : service,
-      ),
-    );
-  }
 
   function addPriceItem(serviceKey: string) {
     setServices((current) =>
@@ -309,14 +288,8 @@ export default function PricingSettingsPage() {
                   <div className="service-pricing-form single">
                     <label className="auto-field">
                       <span>Payment Mode</span>
-                      <select value={normalizePaymentMode(String(activeService.settings.paymentMode || "Online Payment"))} onChange={(event) => updatePaymentMode(activeService.serviceKey, event.target.value)}>
-                        {paymentModeOptions.map((option) => (
-                          <option value={option.value} key={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                      <small className="payment-mode-note">Online Payment is always available to customers. Choose "Both" to also accept Cash Counter.</small>
+                      <div className="payment-mode-fixed">Online Payment</div>
+                      <small className="payment-mode-note">Customers always pay online. Cash Counter collection is not available.</small>
                     </label>
                   </div>
 

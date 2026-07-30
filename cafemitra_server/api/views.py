@@ -29,7 +29,7 @@ from django.views.decorators.http import require_http_methods
 
 from .background_remover.remove_background import BackgroundRemovalError, remove_background_bytes
 from .background_remover.passport_photo_processor import ProcessingError, enhance_transparent_bytes
-from .models import AuthToken, ContactMessage, EmailVerificationToken, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, UserProfile, WalletTransaction, WithdrawalRequest
+from .models import AuthToken, ContactMessage, EmailVerificationToken, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, UserProfile, WalletSetting, WalletTransaction, WithdrawalRequest
 from cafemitra_server.product_setting import active_payment_gateway
 
 User = get_user_model()
@@ -38,8 +38,17 @@ ACCESS_TOKEN_TTL = timedelta(hours=1)
 REFRESH_TOKEN_TTL = timedelta(days=30)
 EMAIL_TOKEN_TTL = timedelta(hours=24)
 PASSWORD_RESET_TOKEN_TTL = timedelta(minutes=30)
-SIGNUP_BONUS_AMOUNT = Decimal("5.00")
-REPTIGO_COMMISSION_RATE = Decimal("0.03")
+# WalletSetting keys read via get_wallet_setting() - values (and the numbers
+# shown on the public pricing page) live in the DB / Django admin, not here,
+# so a price change never requires a code deploy. Fallbacks below only apply
+# if a row is somehow missing.
+WALLET_SETTING_DEFAULTS = {
+    "signup_bonus": Decimal("10.00"),
+    "referral_bonus": Decimal("0.00"),
+    "credit_limit": Decimal("-50.00"),
+    "daily_grace_limit": Decimal("5.00"),
+    "collection_commission_rate": Decimal("0.03"),
+}
 UPI_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]{2,256}@[A-Za-z0-9]{2,64}$")
 UPI_PAYMENT_PA = "8298972939@okbizaxis"
 UPI_PAYMENT_STATUS_URL = "https://otp.instadl.in/upi_payment/check_status"
@@ -198,10 +207,25 @@ def remove_image_background(request):
 
     enhance = str(request.POST.get("enhance", "true")).lower() not in {"false", "0", "no"}
 
+    # Pattern for wiring wallet billing into any tool: resolve the caller
+    # (anonymous visitors stay free either way), do the work, then charge on
+    # success. This is a no-op today because ToolPricing has no billable
+    # "background_remover" row - flip is_billable + set a price in Django
+    # admin to start charging, no code change needed. Apply the same two
+    # lines to other tools when they're ready to be monetized.
+    user = auth_user(request)
+    if user:
+        allowed, limit_message = wallet_usage_gate(user, "background_remover")
+        if not allowed:
+            return JsonResponse({"message": limit_message}, status=402)
+
     try:
         result_bytes = remove_background_bytes(upload.read())
     except BackgroundRemovalError as error:
         return JsonResponse({"message": str(error)}, status=502)
+
+    if user:
+        charge_wallet_for_tool(user, "background_remover")
 
     if enhance:
         try:
@@ -542,6 +566,42 @@ def wallet_balance(user):
     return profile.balance
 
 
+def get_wallet_setting(key):
+    """Single source of truth for every wallet number (signup bonus, referral
+    bonus, grace-credit limit, daily grace-usage cap, commission rate).
+
+    Backed by the DB (edit in Django admin, no redeploy needed). Self-seeds
+    a row from WALLET_SETTING_DEFAULTS on first read if one doesn't exist yet,
+    so adding a new setting key never requires its own migration.
+    """
+    setting = WalletSetting.objects.filter(key=key).first()
+    if setting and setting.is_active:
+        return setting.value
+    if setting and not setting.is_active:
+        return Decimal("0.00")
+    default = WALLET_SETTING_DEFAULTS.get(key, Decimal("0.00"))
+    WalletSetting.objects.get_or_create(key=key, defaults={"label": key.replace("_", " ").title(), "value": default})
+    return default
+
+
+def public_wallet_config():
+    """Public payload (no auth) - the pricing page and every dashboard screen
+    read the same numbers from here, so marketing copy and backend
+    enforcement can never drift apart.
+    """
+    tools = ToolPricing.objects.filter(is_billable=True).order_by("tool_key")
+    return {
+        "signupBonus": float(get_wallet_setting("signup_bonus")),
+        "referralBonus": float(get_wallet_setting("referral_bonus")),
+        "creditLimit": float(get_wallet_setting("credit_limit")),
+        "dailyGraceLimit": float(get_wallet_setting("daily_grace_limit")),
+        "tools": [
+            {"toolKey": tool.tool_key, "label": tool.label, "unit": tool.unit, "price": float(tool.price)}
+            for tool in tools
+        ],
+    }
+
+
 def wallet_collection_summary(user):
     online_collected = (
         WalletTransaction.objects.filter(user=user, kind=WalletTransaction.KIND_ONLINE_ORDER_CREDIT)
@@ -556,13 +616,15 @@ def wallet_collection_summary(user):
         or Decimal("0.00")
     )
     total_collected = (online_collected + cash_collected).quantize(Decimal("0.01"))
-    commission = (total_collected * REPTIGO_COMMISSION_RATE).quantize(Decimal("0.01"))
+    commission_rate = get_wallet_setting("collection_commission_rate")
+    commission = (total_collected * commission_rate).quantize(Decimal("0.01"))
     balance = wallet_balance(user)
     net_withdrawable = max(balance - commission, Decimal("0.00")).quantize(Decimal("0.01"))
     return {
         "onlineCollected": online_collected.quantize(Decimal("0.01")),
         "cashCounterCollected": cash_collected.quantize(Decimal("0.01")),
         "totalCollected": total_collected,
+        "commissionRate": commission_rate,
         "commissionPending": commission,
         "netWithdrawable": net_withdrawable,
     }
@@ -594,7 +656,7 @@ def public_withdrawal(withdrawal):
     }
 
 
-def create_wallet_transaction(user, kind, amount, direction, affects_balance=True, order=None, note=""):
+def create_wallet_transaction(user, kind, amount, direction, affects_balance=True, order=None, note="", tool_key=""):
     amount = Decimal(amount).quantize(Decimal("0.01"))
     if amount <= 0:
         return None
@@ -603,34 +665,117 @@ def create_wallet_transaction(user, kind, amount, direction, affects_balance=Tru
     if not order and kind == WalletTransaction.KIND_SIGNUP_BONUS and WalletTransaction.objects.filter(user=user, kind=kind).exists():
         return None
 
-    transaction = WalletTransaction.objects.create(
+    profile, _ = UserProfile.objects.get_or_create(user=user, defaults={"phone": ""})
+    balance_after = profile.balance
+    if affects_balance:
+        if direction == WalletTransaction.DIRECTION_CREDIT:
+            balance_after = (profile.balance + amount).quantize(Decimal("0.01"))
+        elif direction == WalletTransaction.DIRECTION_DEBIT:
+            balance_after = (profile.balance - amount).quantize(Decimal("0.01"))
+        profile.balance = balance_after
+        profile.save(update_fields=["balance"])
+
+    return WalletTransaction.objects.create(
         user=user,
         order=order,
+        tool_key=tool_key,
         kind=kind,
         direction=direction,
         amount=amount,
         affects_balance=affects_balance,
+        balance_after=balance_after if affects_balance else None,
         note=note,
     )
-    if affects_balance:
-        profile, _ = UserProfile.objects.get_or_create(user=user, defaults={"phone": ""})
-        if direction == WalletTransaction.DIRECTION_CREDIT:
-            profile.balance = (profile.balance + amount).quantize(Decimal("0.01"))
-        elif direction == WalletTransaction.DIRECTION_DEBIT:
-            profile.balance = (profile.balance - amount).quantize(Decimal("0.01"))
-        profile.save(update_fields=["balance"])
-    return transaction
 
 
 def ensure_signup_wallet_bonus(user):
     return create_wallet_transaction(
         user,
         WalletTransaction.KIND_SIGNUP_BONUS,
-        SIGNUP_BONUS_AMOUNT,
+        get_wallet_setting("signup_bonus"),
         WalletTransaction.DIRECTION_CREDIT,
         True,
         note="Signup bonus credited.",
     )
+
+
+def charge_wallet_for_tool(user, tool_key, quantity=1, order=None):
+    """Deduct RepetiGo's usage fee for a tool from the shop's wallet.
+
+    Call this right after a tool's main action succeeds (HTTP 200). Enforces
+    the grace-credit floor (WalletSetting "credit_limit", e.g. -50) and the
+    per-day spend cap while the wallet is at/below zero (WalletSetting
+    "daily_grace_limit"). Returns (allowed: bool, message: str, transaction).
+
+    A tool with no ToolPricing row, or is_billable=False, or price 0 is free
+    - this is what keeps PDF/Image tools free today without special-casing
+    them here; flip is_billable in Django admin to start charging for one.
+    """
+    tool = ToolPricing.objects.filter(tool_key=tool_key, is_billable=True).first()
+    if not tool or tool.price <= 0:
+        return True, "", None
+
+    price_total = (tool.price * Decimal(quantity)).quantize(Decimal("0.01"))
+    profile, _ = UserProfile.objects.get_or_create(user=user, defaults={"phone": ""})
+    projected_balance = (profile.balance - price_total).quantize(Decimal("0.01"))
+    credit_limit = get_wallet_setting("credit_limit")
+
+    if projected_balance < credit_limit:
+        return False, (
+            f"Your wallet balance is too low for {tool.label} (minimum allowed balance is Rs. {credit_limit}). "
+            "Please top up your wallet to continue."
+        ), None
+
+    if profile.balance <= Decimal("0.00"):
+        daily_limit = get_wallet_setting("daily_grace_limit")
+        today = timezone.localdate()
+        used_today = (
+            WalletTransaction.objects.filter(
+                user=user,
+                kind=WalletTransaction.KIND_TOOL_USAGE,
+                balance_after__lt=Decimal("0.00"),
+                created_at__date=today,
+            )
+            .aggregate(total=Sum("amount"))
+            .get("total")
+            or Decimal("0.00")
+        )
+        if used_today + price_total > daily_limit:
+            return False, (
+                f"You've reached today's free-usage limit (Rs. {daily_limit}/day while your wallet balance is low). "
+                "Please top up your wallet to keep using paid tools today."
+            ), None
+
+    transaction = create_wallet_transaction(
+        user,
+        WalletTransaction.KIND_TOOL_USAGE,
+        price_total,
+        WalletTransaction.DIRECTION_DEBIT,
+        True,
+        order=order,
+        tool_key=tool_key,
+        note=f"{tool.label} usage" + (f" x{quantity}" if quantity != 1 else "") + ".",
+    )
+    return True, "", transaction
+
+
+def wallet_usage_gate(user, tool_key, quantity=1):
+    """Pre-flight check only (no charge) - use before starting a job so a
+    shop already past its limit is blocked immediately, without waiting for
+    the job to run. The real deduction still happens via charge_wallet_for_tool
+    once the job actually succeeds.
+    """
+    tool = ToolPricing.objects.filter(tool_key=tool_key, is_billable=True).first()
+    if not tool or tool.price <= 0:
+        return True, ""
+    profile, _ = UserProfile.objects.get_or_create(user=user, defaults={"phone": ""})
+    credit_limit = get_wallet_setting("credit_limit")
+    if profile.balance <= credit_limit:
+        return False, (
+            f"Wallet balance has reached the minimum allowed limit (Rs. {credit_limit}). "
+            "Please top up your wallet before starting new paid jobs."
+        )
+    return True, ""
 
 
 def settle_printed_order_wallet(order):
@@ -656,6 +801,31 @@ def settle_printed_order_wallet(order):
             order=order,
             note=f"Cash collected by cafe for order: {order.token_id or order.id}.",
         )
+
+    tool_key, quantity = print_order_tool_usage(order)
+    if tool_key:
+        charge_wallet_for_tool(order.user, tool_key, quantity=quantity, order=order)
+
+
+def resolve_print_tool_key(service_key, price_item_id):
+    """Map a print/passport service + price item to the ToolPricing key
+    RepetiGo bills the shop's wallet for. Returns None for anything not
+    billed per-job.
+    """
+    if service_key == "auto_document_print":
+        return "print_color_page" if price_item_id == "color" else "print_bw_page"
+    if service_key == "passport_photo":
+        return "passport_photo"
+    return None
+
+
+def print_order_tool_usage(order):
+    """(tool_key, quantity) for a completed PrintOrder - see resolve_print_tool_key."""
+    tool_key = resolve_print_tool_key(order.service_key, order.price_item_id)
+    if not tool_key:
+        return None, 0
+    quantity = 1 if order.service_key == "passport_photo" else max(order.pages, 1) * max(order.copies, 1)
+    return tool_key, quantity
 
 
 def public_shop(shop):
@@ -1232,6 +1402,19 @@ def profile(request):
 
 @csrf_exempt
 @require_http_methods(["GET", "OPTIONS"])
+def wallet_config(request):
+    """Public, unauthenticated - signup bonus, referral bonus, wallet grace
+    limit, daily grace-usage cap, and billable tool prices. The pricing page
+    and every dashboard screen fetch this same payload, so the numbers shown
+    to a visitor and the numbers actually enforced server-side can't diverge.
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+    return JsonResponse(public_wallet_config())
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
 def wallet(request):
     if request.method == "OPTIONS":
         return JsonResponse({})
@@ -1273,18 +1456,40 @@ def wallet(request):
         or Decimal("0.00")
     )
 
+    balance = wallet_balance(user)
+    credit_limit = get_wallet_setting("credit_limit")
+    daily_grace_limit = get_wallet_setting("daily_grace_limit")
+    today_grace_used = (
+        WalletTransaction.objects.filter(
+            user=user,
+            kind=WalletTransaction.KIND_TOOL_USAGE,
+            balance_after__lt=Decimal("0.00"),
+            created_at__date=timezone.localdate(),
+        )
+        .aggregate(total=Sum("amount"))
+        .get("total")
+        or Decimal("0.00")
+    )
+
     return JsonResponse(
         {
-            "balance": float(wallet_balance(user)),
+            "balance": float(balance),
             "summary": {
                 "onlineCollected": float(collection_summary["onlineCollected"]),
                 "cashCounterCollected": float(collection_summary["cashCounterCollected"]),
                 "totalCollected": float(collection_summary["totalCollected"]),
-                "commissionRate": float(REPTIGO_COMMISSION_RATE),
+                "commissionRate": float(collection_summary["commissionRate"]),
                 "commissionPending": float(collection_summary["commissionPending"]),
                 "netWithdrawable": float(collection_summary["netWithdrawable"]),
                 "pendingWithdrawal": float(pending_withdrawal),
                 "paidWithdrawal": float(paid_withdrawal),
+            },
+            "limits": {
+                "creditLimit": float(credit_limit),
+                "dailyGraceLimit": float(daily_grace_limit),
+                "todayGraceUsed": float(today_grace_used),
+                "isLowBalance": balance <= Decimal("0.00"),
+                "isBlocked": balance <= credit_limit,
             },
             "transactions": [public_wallet_transaction(transaction) for transaction in transactions],
             "ledgerPagination": {
@@ -1420,7 +1625,11 @@ def pricing_settings(request):
     )
     pricing.service_name = default_service["serviceName"]
     existing_settings = pricing.settings if isinstance(pricing.settings, dict) else {}
-    pricing.settings = {**default_service["settings"], **existing_settings, **settings}
+    merged_settings = {**default_service["settings"], **existing_settings, **settings}
+    # Cash Counter collection is disabled platform-wide - a shop can no
+    # longer opt back into it from pricing settings.
+    merged_settings["paymentMode"] = "Online Payment"
+    pricing.settings = merged_settings
     pricing.save(update_fields=["service_name", "settings", "updated_at"])
 
     return JsonResponse({"service": public_pricing(pricing)})
@@ -1458,19 +1667,24 @@ def public_print_order(request, code):
         total = calculated_total
 
     payment_mode = str(request.POST.get("paymentMode", "Online Payment")).strip()
-    shop_accepts_cash = str((pricing.settings or {}).get("paymentMode", "Online Payment")).strip() in ("Both", "Cash Counter")
-    if payment_mode == "Cash Counter" and not shop_accepts_cash:
-        return JsonResponse({"message": "Cash Counter payment is not available for this shop."}, status=400)
+    # Cash Counter collection is disabled platform-wide - customers always
+    # pay online, regardless of what a shop's own pricing settings say.
+    if payment_mode == "Cash Counter":
+        payment_mode = "Online Payment"
 
     if payment_mode == "No Payment":
         payment_status = PrintOrder.PAYMENT_NO_PAYMENT
         order_status = PrintOrder.STATUS_QUEUED
-    elif payment_mode == "Cash Counter":
-        payment_status = PrintOrder.PAYMENT_CASH_COUNTER
-        order_status = PrintOrder.STATUS_AWAITING_APPROVAL
     else:
         payment_status = PrintOrder.PAYMENT_PENDING
         order_status = PrintOrder.STATUS_AWAITING_PAYMENT
+
+    gate_tool_key = resolve_print_tool_key(service_key, price_item_id)
+    if gate_tool_key:
+        gate_quantity = 1 if service_key == "passport_photo" else max(pages, 1) * max(copies, 1)
+        allowed, gate_message = wallet_usage_gate(user, gate_tool_key, quantity=gate_quantity)
+        if not allowed:
+            return JsonResponse({"message": gate_message}, status=402)
 
     passport_prompt = str(request.POST.get("prompt", "")).strip() if service_key == "passport_photo" else ""
 

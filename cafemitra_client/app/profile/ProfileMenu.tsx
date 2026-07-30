@@ -28,7 +28,7 @@ const profileMenuItems: ProfileMenuItem[] = [
   { label: "My Profile", href: "/profile", icon: UserRound },
   { label: "PrintPilot Setup", href: "/auto-print", icon: Printer },
   { label: "Pricing & Settings", href: "/pricing-settings", icon: Settings },
-  { label: "Wallet & Settlement", href: "/wallet", icon: Wallet },
+  { label: "Service Credits & Settlement", href: "/wallet", icon: Wallet },
   { label: "Analytics", href: "/analytics", icon: BarChart3 },
   { label: "Sign Out", href: "/login", icon: LogOut, onClick: clearSession },
 ];

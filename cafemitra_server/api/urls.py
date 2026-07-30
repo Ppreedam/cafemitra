@@ -30,7 +30,8 @@ urlpatterns = [
     re_path(r"^profile/?$", views.profile),  # GET/PUT fetch or update the owner's user + shop profile
 
     # --- Wallet -----------------------------------------------------------
-    re_path(r"^wallet/?$", views.wallet),  # GET balance, collection summary, and paginated transaction ledger
+    re_path(r"^wallet/config/?$", views.wallet_config),  # GET public signup/referral bonus, grace limits, and billable tool prices
+    re_path(r"^wallet/?$", views.wallet),  # GET balance, collection summary, limits, and paginated transaction ledger
     re_path(r"^wallet/withdraw/?$", views.request_withdrawal),  # POST request a withdrawal against the withdrawable balance
 
     # --- Pricing ----------------------------------------------------------

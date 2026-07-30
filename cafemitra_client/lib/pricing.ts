@@ -100,13 +100,14 @@ export function calculatePriceItemRate(item: PriceItem | undefined, pages: numbe
   return Number((matchedRange || item).rate || 0);
 }
 
-export function normalizePaymentMode(value: string) {
-  return value === "Both" || value === "Cash Counter" ? "Both" : "Online Payment";
+// Cash Counter collection is disabled platform-wide - customers always pay
+// online, regardless of what a shop's saved pricing settings say.
+export function normalizePaymentMode(_value: string) {
+  return "Online Payment";
 }
 
-export function getAllowedPaymentModes(service: PricingService | undefined) {
-  const mode = normalizePaymentMode(String(service?.settings.paymentMode || "Online Payment"));
-  return mode === "Both" ? ["Online Payment", "Cash Counter"] : ["Online Payment"];
+export function getAllowedPaymentModes(_service: PricingService | undefined) {
+  return ["Online Payment"];
 }
 
 export function formatPriceItem(item: PriceItem) {

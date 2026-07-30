@@ -8,7 +8,7 @@ import { BUSINESS, formattedAddress } from "../../lib/businessInfo";
 export const metadata: Metadata = {
   title: "Refund & Cancellation Policy - RepetiGo",
   description:
-    "RepetiGo Refund & Cancellation Policy covering wallet recharges, subscription plans, and print/passport photo job payments.",
+    "RepetiGo Refund & Cancellation Policy covering service credit top-ups, subscription plans, and print/passport photo job payments.",
   robots: {
     index: true,
     follow: true,
@@ -22,16 +22,16 @@ const sections = [
     id: "scope",
     title: "1. What This Policy Covers",
     body: [
-      "This Refund & Cancellation Policy applies to all payments made on the RepetiGo platform, including wallet recharges by shop owners, paid subscription plans, and online payments made by end customers for print or passport photo jobs at a participating shop.",
+      "This Refund & Cancellation Policy applies to all payments made on the RepetiGo platform, including service credit top-ups by shop owners, paid subscription plans, and online payments made by end customers for print or passport photo jobs at a participating shop.",
     ],
   },
   {
-    id: "wallet-recharge",
-    title: "2. Wallet Recharge (Shop Owners)",
+    id: "service-credits-top-up",
+    title: "2. Service Credits Top-up (Shop Owners)",
     bullets: [
-      "Wallet recharges are non-refundable once the amount is credited to your RepetiGo wallet, except where required by law or in case of a duplicate/failed transaction that was incorrectly charged.",
-      "Unused wallet balance can be used for future print and passport photo jobs at any time; it does not expire.",
-      "If a payment is deducted from your bank account or card but not credited to your wallet due to a technical error, contact billing@repetigo.com with your transaction reference within 7 days for reconciliation and refund.",
+      "Service credit top-ups are non-refundable once the amount is credited to your RepetiGo Service Credits balance, except where required by law or in case of a duplicate/failed transaction that was incorrectly charged.",
+      "Unused Service Credits balance can be used for future print and passport photo jobs at any time; it does not expire.",
+      "If a payment is deducted from your bank account or card but not credited to your Service Credits balance due to a technical error, contact billing@repetigo.com with your transaction reference within 7 days for reconciliation and refund.",
     ],
   },
   {
@@ -79,7 +79,7 @@ export default function RefundPolicyPage() {
           </span>
           <h1>Refund & Cancellation Policy</h1>
           <p>
-            How refunds and cancellations work for wallet recharges, subscription plans, and print or passport photo
+            How refunds and cancellations work for service credit top-ups, subscription plans, and print or passport photo
             job payments on RepetiGo.
           </p>
           <div className="terms-hero-meta">

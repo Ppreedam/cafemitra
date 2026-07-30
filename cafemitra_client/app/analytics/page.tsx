@@ -59,7 +59,7 @@ const navGroups: NavGroup[] = [
     label: "Manage",
     items: [
       { name: "Customers", icon: Users },
-      { name: "Wallet & Settlement", icon: Wallet },
+      { name: "Service Credits & Settlement", icon: Wallet },
       { name: "Analytics", icon: BarChart3, href: "/analytics", active: true },
       { name: "Reports", icon: FileText },
     ],
