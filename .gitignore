@@ -12,7 +12,9 @@ cafemitra_client/tsconfig.tsbuildinfo
 __pycache__/
 *.py[cod]
 cafemitra_server/db.sqlite3
-cafemitra_server/media/
+cafemitra_server/media/*
+!cafemitra_server/media/installer/
+!cafemitra_server/media/installer/**
 cafemitra_server/.env
 
 # .NET build/cache
