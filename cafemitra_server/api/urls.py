@@ -71,4 +71,7 @@ urlpatterns = [
     # --- Agent Update (anonymous auto-update endpoints) ---------------------
     re_path(r"^agent/version-check/?$", views.agent_version_check),  # GET latest available agent version (plain text)
     re_path(r"^agent/update/?$", views.agent_update_download),  # GET download the latest agent zip package
+
+    # --- Agent Installer (Download Agent button on PrintPilot Setup) --------
+    re_path(r"^agent/installer/?$", views.agent_installer_download),  # GET download RepetigoInstaller.exe
 ]

@@ -40,7 +40,7 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
-import { clearSession, hasStoredSession } from "@/lib/api";
+import { apiUrl, clearSession, hasStoredSession } from "@/lib/api";
 import { fetchPricingServices, formatPriceItem, normalizePaymentMode, savePricingService, saveServicePrinter, type PriceItem, type PriceRange } from "@/lib/pricing";
 import {
   deleteAgentPrinterPreset,
@@ -177,8 +177,6 @@ const paymentModeOptions = [
   { value: "Online Payment", label: "Online Payment" },
   { value: "Both", label: "Online Payment + Cash Counter" },
 ];
-const PRINTPILOT_AGENT_DOWNLOAD_URL = "https://drive.google.com/";
-
 export default function AutoPrintPage() {
   const router = useRouter();
   const [activeStep, setActiveStep] = useState(0);
@@ -649,7 +647,7 @@ export default function AutoPrintPage() {
                       <p>Install the desktop app on the computer connected to your printer.</p>
                     </div>
                   </div>
-                  <a className="btn btn-primary" href={PRINTPILOT_AGENT_DOWNLOAD_URL} target="_blank" rel="noreferrer" onClick={() => setAgentDownloaded(true)}>
+                  <a className="btn btn-primary" href={apiUrl("/api/agent/installer")} target="_blank" rel="noreferrer" onClick={() => setAgentDownloaded(true)}>
                     <Download size={16} /> Download Agent
                   </a>
                 </div>
