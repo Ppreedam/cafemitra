@@ -16,6 +16,11 @@ function runtimeApiBaseUrl() {
 let refreshInFlight: Promise<boolean> | null = null;
 
 export function apiUrl(path: string) {
+  // Passport photos are stored as base64 data URIs, not file paths - pass
+  // those (and empty strings) through untouched instead of prefixing them
+  // with the API host.
+  if (!path || path.startsWith("data:")) return path;
+
   const baseUrl = runtimeApiBaseUrl();
   const apiPath = path.startsWith("/") ? path : `/${path}`;
 
@@ -24,6 +29,18 @@ export function apiUrl(path: string) {
   }
 
   return `${baseUrl}${apiPath}`;
+}
+
+// `fetch()` on a data: URI throws in some runtimes ("The 'data' scheme is
+// not supported"), so decode it into a Blob directly instead of fetching it.
+export function dataUriToBlob(dataUri: string): Blob {
+  const [header, base64 = ""] = dataUri.split(",", 2);
+  const mimeMatch = /^data:(.*?)(;base64)?$/.exec(header);
+  const mimeType = mimeMatch?.[1] || "image/jpeg";
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  return new Blob([bytes], { type: mimeType });
 }
 
 function normalizeApiBaseUrl(value?: string) {

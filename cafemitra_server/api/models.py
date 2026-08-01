@@ -136,15 +136,18 @@ class PrintOrder(models.Model):
     gateway_order_id = models.CharField(max_length=120, blank=True)
     gateway_payment_id = models.CharField(max_length=120, blank=True)
     status = models.CharField(max_length=40, default=STATUS_AWAITING_PAYMENT)
-    document = models.FileField(upload_to="print_orders/%Y/%m/%d/")
-    original_filename = models.CharField(max_length=255, blank=True)
+    # Passport photo orders don't use a stored file - the raw upload and the
+    # AI result live as base64 data URIs in original_filename/gemini_photo
+    # instead, so document stays blank for that service.
+    document = models.FileField(upload_to="print_orders/%Y/%m/%d/", blank=True)
+    original_filename = models.TextField(blank=True)
     customer_phone = models.CharField(max_length=20, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     paid_at = models.DateTimeField(null=True, blank=True)
     printed_at = models.DateTimeField(null=True, blank=True)
     agent_message = models.TextField(blank=True)
     attire_category = models.CharField(max_length=40, blank=True, default="")
-    gemini_photo = models.CharField(max_length=255, blank=True, default="")
+    gemini_photo = models.TextField(blank=True, default="")
 
     PHOTO_STATUS_PENDING = "pending"
     PHOTO_STATUS_CLAIMED = "claimed"

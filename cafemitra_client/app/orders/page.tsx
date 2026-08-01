@@ -311,7 +311,7 @@ export default function OrdersPage() {
                             )
                           ) : null}
                           {order.serviceKey === "passport_photo" && order.photoStatus === "failed" ? (
-                            <small className="order-status failed">{order.photoErrorMessage || "Passport photo failed"}</small>
+                            <small className="order-status failed">{friendlyPhotoErrorMessage(order)}</small>
                           ) : order.serviceKey === "passport_photo" && !order.geminiPhoto ? (
                             <small>Passport photo processing...</small>
                           ) : null}
@@ -389,7 +389,7 @@ export default function OrdersPage() {
                 {compareOrder.geminiPhoto ? (
                   <img src={apiUrl(compareOrder.geminiPhoto)} alt="AI generated passport photo" />
                 ) : compareOrder.photoStatus === "failed" ? (
-                  <p className="order-status failed">{compareOrder.photoErrorMessage || "Passport photo failed"}</p>
+                  <p className="order-status failed">{friendlyPhotoErrorMessage(compareOrder)}</p>
                 ) : (
                   <p>Passport photo processing...</p>
                 )}
@@ -400,6 +400,17 @@ export default function OrdersPage() {
       ) : null}
     </DashboardShell>
   );
+}
+
+function friendlyPhotoErrorMessage(order: Order) {
+  const message = (order.photoErrorMessage || "").trim();
+  // Older/edge-case failures can carry a raw server error page or .NET
+  // exception text instead of a short message - fall back to the service
+  // title rather than showing that.
+  if (!message || message.length > 200 || message.includes("<") || message.startsWith("HTTP ") || message.startsWith("Response status code")) {
+    return `${order.serviceName || "Passport Size Photo"} failed`;
+  }
+  return message;
 }
 
 function formatStatus(status: string) {

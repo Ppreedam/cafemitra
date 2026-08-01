@@ -62,6 +62,7 @@ urlpatterns = [
     re_path(r"^agent/passport-jobs/?$", views.agent_passport_jobs),  # GET list pending passport-photo AI jobs
     re_path(r"^agent/passport-jobs/(?P<job_id>[0-9]+)/claim/?$", views.claim_passport_job),  # POST atomically claim a pending job
     re_path(r"^agent/passport-jobs/(?P<job_id>[0-9]+)/complete/?$", views.complete_passport_job),  # POST upload final photo, or report failure
+    re_path(r"^agent/passport-jobs/(?P<job_id>[0-9]+)/original-image/?$", views.agent_passport_original_image),  # GET raw upload decoded from base64
 
     # --- Agent (desktop Print Agent, print queue) ---------------------------
     re_path(r"^agent/jobs/?$", views.agent_jobs),  # GET list queued/approved print jobs (excludes passport_photo)
