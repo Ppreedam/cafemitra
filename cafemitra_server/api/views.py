@@ -2091,6 +2091,31 @@ def agent_update_download(request):
     return FileResponse(open(zip_path, "rb"), as_attachment=True, filename=AGENT_UPDATE_ZIP_NAME, content_type="application/zip")
 
 
+# Desktop agent installer. Served anonymously from the PrintPilot Setup page
+# ("Download Agent" button) - drop the built installer at media/installer/
+# under AGENT_INSTALLER_NAME to ship a new version.
+AGENT_INSTALLER_DIR = settings.MEDIA_ROOT / "installer"
+AGENT_INSTALLER_NAME = "RepetigoInstaller.exe"
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def agent_installer_download(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    installer_path = AGENT_INSTALLER_DIR / AGENT_INSTALLER_NAME
+    if not installer_path.exists():
+        return JsonResponse({"message": "No agent installer is available."}, status=404)
+
+    return FileResponse(
+        open(installer_path, "rb"),
+        as_attachment=True,
+        filename=AGENT_INSTALLER_NAME,
+        content_type="application/vnd.microsoft.portable-executable",
+    )
+
+
 @require_http_methods(["GET", "OPTIONS"])
 def public_shop_by_code(request, code):
     if request.method == "OPTIONS":
