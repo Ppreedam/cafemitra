@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Check, Circle, Crop, Eye, IdCard, Loader2, RefreshCw, Trash2, Upload, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
 import { WalletLimitBanner } from "../WalletLimitBanner";
-import { apiFetch, apiUrl } from "@/lib/api";
+import { apiFetch, apiUrl, dataUriToBlob } from "@/lib/api";
 import { fetchPricingServiceByKey, type PriceItem } from "@/lib/pricing";
 import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
 import { CropEditor, cropImage, DEFAULT_CROP_RECT, type CropRect } from "../CropEditor";
@@ -151,7 +151,7 @@ export default function PassportPhotoPage() {
       if (order.attireCategory) setPhotoVariation(order.attireCategory);
 
       if (order.fileUrl) {
-        const blob = await fetch(apiUrl(order.fileUrl)).then((res) => res.blob());
+        const blob = order.fileUrl.startsWith("data:") ? dataUriToBlob(order.fileUrl) : await fetch(apiUrl(order.fileUrl)).then((res) => res.blob());
         setFile(new File([blob], order.fileName || "passport-photo.jpg", { type: blob.type || "image/jpeg" }));
         setPreviewUrl(URL.createObjectURL(blob));
       }

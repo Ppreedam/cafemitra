@@ -3,6 +3,7 @@ import json
 import hashlib
 import hmac
 import ipaddress
+import mimetypes
 import re
 import secrets
 import socket
@@ -10,10 +11,8 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
-import uuid
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
-from pathlib import Path
 
 from django.contrib.auth import authenticate, get_user_model
 from django.conf import settings
@@ -866,8 +865,20 @@ def public_pricing(pricing):
 
 def public_order(order):
     token_id = order.token_id or f"{order.shop_code}-T{order.token_number:03d}"
-    has_document = bool(order.document)
-    gemini_photo_url = (settings.MEDIA_URL + order.gemini_photo) if order.gemini_photo else ""
+    is_passport = order.service_key == "passport_photo"
+    if is_passport:
+        # Raw upload and AI result live as base64 data URIs directly on the
+        # order row for this service - no file on disk to build a URL for.
+        file_name = "passport-photo.jpg"
+        file_url = order.original_filename
+        document_deleted = not bool(order.original_filename)
+        gemini_photo_value = order.gemini_photo
+    else:
+        has_document = bool(order.document)
+        file_name = order.original_filename
+        file_url = order.document.url if has_document else ""
+        document_deleted = not has_document
+        gemini_photo_value = ""
     return {
         "id": order.id,
         "orderNumber": f"{order.shop_code}-{order.id:05d}",
@@ -886,15 +897,15 @@ def public_order(order):
         "paymentStatus": order.payment_status,
         "paymentGateway": order.payment_gateway,
         "status": order.status,
-        "fileName": order.original_filename,
-        "fileUrl": order.document.url if has_document else "",
-        "documentDeleted": not has_document,
+        "fileName": file_name,
+        "fileUrl": file_url,
+        "documentDeleted": document_deleted,
         "customerPhone": order.customer_phone,
         "createdAt": order.created_at.isoformat(),
         "paidAt": order.paid_at.isoformat() if order.paid_at else "",
         "printedAt": order.printed_at.isoformat() if order.printed_at else "",
         "attireCategory": order.attire_category,
-        "geminiPhoto": gemini_photo_url,
+        "geminiPhoto": gemini_photo_value,
         "photoStatus": order.photo_status,
         "photoErrorMessage": order.photo_error_message,
         "passportPrompt": order.passport_prompt,
@@ -1041,6 +1052,27 @@ def money(value):
         return Decimal(str(value)).quantize(Decimal("0.01"))
     except (InvalidOperation, TypeError, ValueError):
         return Decimal("0.00")
+
+
+def file_to_data_uri(uploaded_file):
+    """Read an uploaded/opened file fully and return it as a base64 data URI.
+
+    Used for passport-photo orders, where the raw upload and the AI result
+    are stored directly in the DB (original_filename/gemini_photo) instead
+    of on disk.
+    """
+    content_type = getattr(uploaded_file, "content_type", None) or mimetypes.guess_type(uploaded_file.name)[0] or "image/jpeg"
+    encoded = base64.b64encode(uploaded_file.read()).decode("ascii")
+    return f"data:{content_type};base64,{encoded}"
+
+
+def data_uri_to_bytes(data_uri):
+    """Split a `data:<mime>;base64,<data>` string into (content_type, bytes)."""
+    header, _, encoded = data_uri.partition(",")
+    content_type = "image/jpeg"
+    if header.startswith("data:") and ";base64" in header:
+        content_type = header[len("data:"):].split(";base64", 1)[0] or content_type
+    return content_type, base64.b64decode(encoded)
 
 
 def pricing_rate(settings, price_item_id, pages, fallback_rate):
@@ -1688,6 +1720,15 @@ def public_print_order(request, code):
 
     passport_prompt = str(request.POST.get("prompt", "")).strip() if service_key == "passport_photo" else ""
 
+    # Passport photos are stored as a base64 data URI directly in the DB
+    # (no file on disk); every other service keeps using the FileField.
+    if service_key == "passport_photo":
+        order_document = ""
+        order_original_filename = file_to_data_uri(document)
+    else:
+        order_document = document
+        order_original_filename = document.name
+
     token_number, token_id = next_order_token(user)
     order = PrintOrder.objects.create(
         user=user,
@@ -1705,8 +1746,8 @@ def public_print_order(request, code):
         payment_mode=payment_mode,
         payment_status=payment_status,
         status=order_status,
-        document=document,
-        original_filename=document.name,
+        document=order_document,
+        original_filename=order_original_filename,
         customer_phone=str(request.POST.get("customerPhone", "")).strip(),
         payment_gateway=active_payment_gateway()[0] or "" if payment_status == PrintOrder.PAYMENT_PENDING else "",
         attire_category=str(request.POST.get("attireCategory", "")).strip(),
@@ -2044,17 +2085,7 @@ def agent_upload_gemini_photo(request, order_id):
     if not photo:
         return JsonResponse({"message": "Upload the generated photo as 'photo'."}, status=400)
 
-    relative_dir = f"gemini_photos/{timezone.now():%Y/%m/%d}"
-    absolute_dir = Path(settings.MEDIA_ROOT) / relative_dir
-    absolute_dir.mkdir(parents=True, exist_ok=True)
-    extension = Path(photo.name).suffix or ".png"
-    filename = f"{order.id}_{uuid.uuid4().hex[:8]}{extension}"
-    relative_path = f"{relative_dir}/{filename}"
-    with open(absolute_dir / filename, "wb") as destination:
-        for chunk in photo.chunks():
-            destination.write(chunk)
-
-    order.gemini_photo = relative_path
+    order.gemini_photo = file_to_data_uri(photo)
     order.save(update_fields=["gemini_photo"])
     return JsonResponse({"order": public_order(order)})
 
@@ -2186,8 +2217,7 @@ def save_raw_passport_photo(request):
         payment_mode="No Payment",
         payment_status=PrintOrder.PAYMENT_NO_PAYMENT,
         status=PrintOrder.STATUS_QUEUED,
-        document=photo,
-        original_filename=photo.name,
+        original_filename=file_to_data_uri(photo),
         attire_category=str(request.POST.get("attireCategory", "")).strip(),
         passport_prompt=prompt,
         photo_status=PrintOrder.PHOTO_STATUS_PENDING,
@@ -2196,7 +2226,16 @@ def save_raw_passport_photo(request):
     return JsonResponse({"id": order.id})
 
 
-def public_passport_job(order):
+def public_passport_job(order, request):
+    # The raw upload is stored as a base64 data URI on the order (no file on
+    # disk), but the desktop PrintPilot Agent downloads it over plain HTTP -
+    # so serve it through agent_passport_original_image instead of handing
+    # back the data URI directly.
+    original_image_url = (
+        request.build_absolute_uri(f"/api/agent/passport-jobs/{order.id}/original-image/")
+        if order.original_filename
+        else ""
+    )
     return {
         "id": order.id,
         "prompt": order.passport_prompt,
@@ -2204,10 +2243,10 @@ def public_passport_job(order):
         "priceItemId": order.price_item_id,
         "priceLabel": order.price_label,
         "rate": float(order.rate),
-        "finalImageUrl": (settings.MEDIA_URL + order.gemini_photo) if order.gemini_photo else "",
+        "finalImageUrl": order.gemini_photo,
+        "originalImageUrl": original_image_url,
         "errorMessage": order.photo_error_message,
         "createdAt": order.created_at.isoformat(),
-        "originalImageUrl": order.document.url if order.document else "",
     }
 
 
@@ -2234,7 +2273,7 @@ def check_passport_photo(request):
     for attempt in range(PASSPORT_PHOTO_CHECK_MAX_RETRIES):
         order.refresh_from_db()
         if order.gemini_photo:
-            return JsonResponse({"found": True, "imageUrl": settings.MEDIA_URL + order.gemini_photo})
+            return JsonResponse({"found": True, "imageUrl": order.gemini_photo})
 
         if order.photo_status in (PrintOrder.PHOTO_STATUS_PENDING, PrintOrder.PHOTO_STATUS_CLAIMED):
             stale_seconds = (timezone.now() - order.photo_updated_at).total_seconds() if order.photo_updated_at else 0
@@ -2266,7 +2305,7 @@ def agent_passport_jobs(request):
     jobs = PrintOrder.objects.filter(
         user=user, service_key="passport_photo", photo_status=PrintOrder.PHOTO_STATUS_PENDING,
     ).order_by("created_at")[:20]
-    return JsonResponse({"jobs": [public_passport_job(job) for job in jobs]})
+    return JsonResponse({"jobs": [public_passport_job(job, request) for job in jobs]})
 
 
 @csrf_exempt
@@ -2290,7 +2329,7 @@ def claim_passport_job(request, job_id):
         order.photo_updated_at = timezone.now()
         order.save(update_fields=["photo_status", "photo_updated_at"])
 
-    return JsonResponse(public_passport_job(order))
+    return JsonResponse(public_passport_job(order, request))
 
 
 @csrf_exempt
@@ -2312,24 +2351,31 @@ def complete_passport_job(request, job_id):
         order.photo_error_message = str(request.POST.get("message", "")).strip()
         order.photo_updated_at = timezone.now()
         order.save(update_fields=["photo_status", "photo_error_message", "photo_updated_at"])
-        return JsonResponse(public_passport_job(order))
+        return JsonResponse(public_passport_job(order, request))
 
     final_image = request.FILES.get("final_image")
     if not final_image:
         return JsonResponse({"message": "final_image file is required."}, status=400)
 
-    relative_dir = f"passportsizephoto/final/{timezone.now():%Y/%m/%d}"
-    absolute_dir = Path(settings.MEDIA_ROOT) / relative_dir
-    absolute_dir.mkdir(parents=True, exist_ok=True)
-    extension = Path(final_image.name).suffix or ".png"
-    filename = f"{order.id}_{uuid.uuid4().hex[:8]}{extension}"
-    relative_path = f"{relative_dir}/{filename}"
-    with open(absolute_dir / filename, "wb") as destination:
-        for chunk in final_image.chunks():
-            destination.write(chunk)
-
-    order.gemini_photo = relative_path
+    order.gemini_photo = file_to_data_uri(final_image)
     order.photo_status = PrintOrder.PHOTO_STATUS_DONE
     order.photo_updated_at = timezone.now()
     order.save(update_fields=["gemini_photo", "photo_status", "photo_updated_at"])
-    return JsonResponse(public_passport_job(order))
+    return JsonResponse(public_passport_job(order, request))
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def agent_passport_original_image(request, job_id):
+    """Serve the base64-stored raw upload as a plain image download for the
+    desktop PrintPilot Agent, which fetches it over HTTP (like it used to
+    fetch the old document.url media file) rather than decoding base64."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    order = PrintOrder.objects.filter(id=job_id, service_key="passport_photo").first()
+    if not order or not order.original_filename:
+        return JsonResponse({"message": "Photo not found."}, status=404)
+
+    content_type, image_bytes = data_uri_to_bytes(order.original_filename)
+    return HttpResponse(image_bytes, content_type=content_type)
