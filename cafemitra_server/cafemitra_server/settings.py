@@ -125,7 +125,8 @@ PRODUCTION_FRONTEND_ORIGINS = {
 CORS_ALLOWED_ORIGINS = [
     "https://repetigo.com",
     "https://www.repetigo.com",
-    "http://localhost:3000"
+    "http://localhost:3000",
+    "chrome-extension://haknmckbhgnjnjnhhbidhbinpknnioao",
 ]
 
 CORS_ALLOW_CREDENTIALS = True

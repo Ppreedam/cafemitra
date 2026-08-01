@@ -71,4 +71,13 @@ urlpatterns = [
     # --- Agent Update (anonymous auto-update endpoints) ---------------------
     re_path(r"^agent/version-check/?$", views.agent_version_check),  # GET latest available agent version (plain text)
     re_path(r"^agent/update/?$", views.agent_update_download),  # GET download the latest agent zip package
+
+    # --- Google Places (no auth) --------------------------------------------
+    re_path(r"^google-places/?$", views.google_places),  # GET list (optional ?extracted_status=true/false/all) / POST create (unique name)
+    re_path(r"^google-places/(?P<place_id>[0-9]+)/?$", views.google_place_detail),  # PUT/PATCH mark extracted_status=true, DELETE remove
+
+    # --- Google Place Details (full scraped record, no auth) ----------------
+    re_path(r"^google-place-details/?$", views.google_place_details),  # GET list (optional ?name=, ?status=, ?follow_up= search/filter) / POST create (unique maps_url)
+    re_path(r"^google-place-details/(?P<detail_id>[0-9]+)/?$", views.google_place_detail_item),  # GET one, PUT/PATCH update fields, DELETE remove
+    re_path(r"^google-place-details/(?P<detail_id>[0-9]+)/activities/?$", views.lead_activities),  # GET timeline, POST add a manual note
 ]

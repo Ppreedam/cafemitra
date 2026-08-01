@@ -75,6 +75,16 @@
       "key": "image_path",
       "value": "C:\\\\path\\\\to\\\\image.jpg",
       "type": "string"
+    },
+    {
+      "key": "place_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "place_detail_id",
+      "value": "1",
+      "type": "string"
     }
   ],
   "item": [
@@ -1713,6 +1723,317 @@
               ]
             },
             "description": "GET /api/agent/update/ | src: api.views.agent_update_download | Anonymous. Downloads media/agent/PrintPilot-latest.zip."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Google Places",
+      "item": [
+        {
+          "name": "Create Google Place",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.place && json.place.id) pm.collectionVariables.set('place_id', json.place.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"link\": \"https://www.google.com/maps/place/SIKSHA+DARSHAN+PUBLIC+SCHOOL+COM%2810%2B2%29+COACHING+CLASSES/data=!4m7!3m6!1s0x39ec5a1ac82ed53d:0x54653f9357a73a37!8m2!3d26.5556936!4d85.6934028!16s%2Fg%2F11gf9p38j7!19sChIJPdUuyBpa7DkRNzqnV5M_ZVQ?authuser=0&hl=en&rclk=1\",\n  \"name\": \"SIKSHA DARSHAN PUBLIC SCHOOL COM(10+2) COACHING CLASSES\",\n  \"extractedby\": \"shankar kumar\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/google-places/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "google-places"
+              ]
+            },
+            "description": "POST /api/google-places/ | src: api.views.google_places | No auth. Single object body. Rejects with 409 if name already exists. Saves place_id on success. Also accepts a JSON array of objects for bulk create (see next request)."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Google Places (Batch)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"link\": \"https://www.google.com/maps/place/Example+Coaching+Center/@26.55,85.69,17z\",\n    \"name\": \"Example Coaching Center\",\n    \"extractedby\": \"shankar kumar\"\n  },\n  {\n    \"link\": \"https://www.google.com/maps/place/Another+Shop/@26.56,85.70,17z\",\n    \"name\": \"Another Shop\",\n    \"extractedby\": \"shankar kumar\"\n  }\n]"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/google-places/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "google-places"
+              ]
+            },
+            "description": "POST /api/google-places/ | src: api.views.google_places | No auth. JSON array body - creates each entry, skipping ones whose name already exists (duplicates listed under 'skipped' in the response)."
+          },
+          "response": []
+        },
+        {
+          "name": "List Google Places",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/google-places/?extracted_status=all",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "google-places"
+              ],
+              "query": [
+                {
+                  "key": "extracted_status",
+                  "value": "all",
+                  "description": "true | false | all"
+                }
+              ]
+            },
+            "description": "GET /api/google-places/ | src: api.views.google_places | No auth. extracted_status filter defaults to all when omitted."
+          },
+          "response": []
+        },
+        {
+          "name": "Mark Google Place Extracted",
+          "request": {
+            "method": "PUT",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/google-places/{{place_id}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "google-places",
+                "{{place_id}}"
+              ]
+            },
+            "description": "PUT (or PATCH) /api/google-places/<place_id>/ | src: api.views.google_place_detail | No auth. No body needed - always sets extracted_status=true."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Google Place",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/google-places/{{place_id}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "google-places",
+                "{{place_id}}"
+              ]
+            },
+            "description": "DELETE /api/google-places/<place_id>/ | src: api.views.google_place_detail | No auth."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Google Place Details",
+      "item": [
+        {
+          "name": "Create Google Place Detail",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.placeDetail && json.placeDetail.id) pm.collectionVariables.set('place_detail_id', json.placeDetail.id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"address\": \"SHIV MANDIR, THANA ROAD, near SUMSUNG SERVICE, Vidya Pati Nagar, Sitamarhi, Bihar 843302\",\n  \"image\": \"https://lh3.googleusercontent.com/gps-cs-s/AHRPTWkaxu9rC-bmcfZ9v2rXxfwsiqWsBLIEqbquW6vxKiZvMXyMzoZRR9huczsmzS8G0CAth78hsD9q7neyOeJPx2VvED1dgegmaK1qweiWC5VWy4EP9D9Vt0Mrwnj1nwC-GEcZwjHOV8h-dxDO=w532-h240-k-no\",\n  \"latitude\": \"26.5996223\",\n  \"longitude\": \"85.4952668\",\n  \"maps_url\": \"https://www.google.com/maps/place/SATHI+CYBER+CAFE/@26.5996223,85.4952668,17z/data=!3m1!4b1!4m6!3m5!1s0x39ecf1de9463665d:0x35cbe3419fd7dc31!8m2!3d26.5996223!4d85.4952668!16s%2Fg%2F11xzxvwg0j?authuser=0&hl=en&entry=ttu\",\n  \"name\": \"SATHI CYBER CAFE\",\n  \"phone\": \"092346 46914\",\n  \"rating\": \"5.0\",\n  \"reviews\": null,\n  \"website\": null\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/google-place-details/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "google-place-details"
+              ]
+            },
+            "description": "POST /api/google-place-details/ | src: api.views.google_place_details | No auth. Single object body. Rejects with 409 if maps_url already exists. Saves place_detail_id on success. Also accepts a JSON array of objects for bulk create (see next request)."
+          },
+          "response": []
+        },
+        {
+          "name": "Create Google Place Details (Batch)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"maps_url\": \"https://www.google.com/maps/place/Example+Shop/@26.1,85.2,17z\",\n    \"name\": \"Example Shop\",\n    \"address\": \"Main Road, Sitamarhi, Bihar\",\n    \"latitude\": \"26.1\",\n    \"longitude\": \"85.2\",\n    \"phone\": \"9999999999\",\n    \"rating\": \"4.2\",\n    \"reviews\": 5,\n    \"website\": null,\n    \"image\": null\n  }\n]"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/google-place-details/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "google-place-details"
+              ]
+            },
+            "description": "POST /api/google-place-details/ | src: api.views.google_place_details | No auth. JSON array body - creates each entry, skipping ones whose maps_url already exists (duplicates listed under 'skipped' in the response)."
+          },
+          "response": []
+        },
+        {
+          "name": "List Google Place Details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/google-place-details/?name=",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "google-place-details"
+              ],
+              "query": [
+                {
+                  "key": "name",
+                  "value": "",
+                  "description": "Optional case-insensitive contains filter on name; leave empty to list all"
+                }
+              ]
+            },
+            "description": "GET /api/google-place-details/ | src: api.views.google_place_details | No auth."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Google Place Detail",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/google-place-details/{{place_detail_id}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "google-place-details",
+                "{{place_detail_id}}"
+              ]
+            },
+            "description": "GET /api/google-place-details/<detail_id>/ | src: api.views.google_place_detail_item | No auth."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Google Place Detail",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"phone\": \"9999999999\",\n  \"rating\": \"4.5\",\n  \"reviews\": 12\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/google-place-details/{{place_detail_id}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "google-place-details",
+                "{{place_detail_id}}"
+              ]
+            },
+            "description": "PUT/PATCH /api/google-place-details/<detail_id>/ | src: api.views.google_place_detail_item | No auth. Send only the fields to change (any of: name, address, image, latitude, longitude, maps_url, phone, rating, reviews, website)."
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Google Place Detail",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/google-place-details/{{place_detail_id}}/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "google-place-details",
+                "{{place_detail_id}}"
+              ]
+            },
+            "description": "DELETE /api/google-place-details/<detail_id>/ | src: api.views.google_place_detail_item | No auth."
           },
           "response": []
         }

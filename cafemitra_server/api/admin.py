@@ -1,6 +1,29 @@
 from django.contrib import admin
 
-from .models import ToolPricing, WalletSetting, WalletTransaction, WithdrawalRequest
+from .models import GooglePlace, GooglePlaceDetail, LeadActivity, ToolPricing, WalletSetting, WalletTransaction, WithdrawalRequest
+
+
+@admin.register(GooglePlace)
+class GooglePlaceAdmin(admin.ModelAdmin):
+    list_display = ("name", "link", "extracted_status", "extractedby", "created_at", "updated_at")
+    list_editable = ("extracted_status",)
+    list_filter = ("extracted_status",)
+    search_fields = ("name", "link")
+
+
+@admin.register(GooglePlaceDetail)
+class GooglePlaceDetailAdmin(admin.ModelAdmin):
+    list_display = ("name", "phone", "status", "next_follow_up_at", "rating", "reviews", "created_at", "updated_at")
+    list_editable = ("status", "next_follow_up_at")
+    list_filter = ("status",)
+    search_fields = ("name", "address", "phone", "maps_url")
+
+
+@admin.register(LeadActivity)
+class LeadActivityAdmin(admin.ModelAdmin):
+    list_display = ("lead", "kind", "from_status", "to_status", "created_at")
+    list_filter = ("kind",)
+    search_fields = ("lead__name", "note")
 
 
 @admin.register(WalletSetting)

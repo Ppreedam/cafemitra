@@ -29,7 +29,7 @@ from django.views.decorators.http import require_http_methods
 
 from .background_remover.remove_background import BackgroundRemovalError, remove_background_bytes
 from .background_remover.passport_photo_processor import ProcessingError, enhance_transparent_bytes
-from .models import AuthToken, ContactMessage, EmailVerificationToken, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, UserProfile, WalletSetting, WalletTransaction, WithdrawalRequest
+from .models import AuthToken, ContactMessage, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, UserProfile, WalletSetting, WalletTransaction, WithdrawalRequest
 from cafemitra_server.product_setting import active_payment_gateway
 
 User = get_user_model()
@@ -2308,3 +2308,351 @@ def complete_passport_job(request, job_id):
     order.photo_updated_at = timezone.now()
     order.save(update_fields=["gemini_photo", "photo_status", "photo_updated_at"])
     return JsonResponse(public_passport_job(order))
+
+
+# --- Google Places (Google Maps place links, no auth) -----------------------
+
+def public_google_place(place):
+    return {
+        "id": place.id,
+        "link": place.link,
+        "name": place.name,
+        "extracted_status": place.extracted_status,
+        "extractedby": place.extractedby,
+        "createdAt": place.created_at.isoformat(),
+        "updatedAt": place.updated_at.isoformat(),
+    }
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST", "OPTIONS"])
+def google_places(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    if request.method == "POST":
+        body = parse_body(request)
+        is_batch = isinstance(body, list)
+        items = body if is_batch else [body]
+        if not items:
+            return JsonResponse({"message": "Provide at least one place."}, status=400)
+
+        created = []
+        skipped = []
+        seen_names = set()
+        for item in items:
+            if not isinstance(item, dict):
+                skipped.append({"name": "", "reason": "Invalid entry; expected an object with link and name."})
+                continue
+            link = str(item.get("link", "")).strip()
+            name = str(item.get("name", "")).strip()
+            extractedby = str(item.get("extractedby", "")).strip()
+            if not link or not name:
+                skipped.append({"name": name, "reason": "Both link and name are required."})
+                continue
+            if name in seen_names or GooglePlace.objects.filter(name=name).exists():
+                skipped.append({"name": name, "reason": "A place with this name already exists."})
+                continue
+            seen_names.add(name)
+            place = GooglePlace.objects.create(link=link, name=name, extractedby=extractedby)
+            created.append(public_google_place(place))
+
+        if not is_batch:
+            # Single object payload - keep the plain single-object response shape.
+            if created:
+                return JsonResponse({"message": "Place created.", "place": created[0]}, status=201)
+            reason = skipped[0]["reason"] if skipped else "Could not create place."
+            status = 409 if "already exists" in reason else 400
+            return JsonResponse({"message": reason}, status=status)
+
+        return JsonResponse(
+            {
+                "message": f"{len(created)} place(s) created, {len(skipped)} skipped.",
+                "created": created,
+                "skipped": skipped,
+            },
+            status=201 if created else 400,
+        )
+
+    # GET - list, optionally filtered by extracted_status (true/false/all)
+    status_filter = str(request.GET.get("extracted_status", "all")).strip().lower()
+    places = GooglePlace.objects.all()
+    if status_filter in {"true", "1", "yes"}:
+        places = places.filter(extracted_status=True)
+    elif status_filter in {"false", "0", "no"}:
+        places = places.filter(extracted_status=False)
+    elif status_filter != "all":
+        return JsonResponse({"message": "extracted_status must be true, false, or all."}, status=400)
+
+    return JsonResponse({"count": places.count(), "places": [public_google_place(place) for place in places]})
+
+
+@csrf_exempt
+@require_http_methods(["PUT", "PATCH", "DELETE", "OPTIONS"])
+def google_place_detail(request, place_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    place = GooglePlace.objects.filter(id=place_id).first()
+    if not place:
+        return JsonResponse({"message": "Place not found."}, status=404)
+
+    if request.method == "DELETE":
+        place.delete()
+        return JsonResponse({"message": "Place deleted."})
+
+    # PUT/PATCH - mark this place as extracted
+    place.extracted_status = True
+    place.save(update_fields=["extracted_status", "updated_at"])
+    return JsonResponse({"message": "Place marked as extracted.", "place": public_google_place(place)})
+
+
+# --- Google Place Details (full scraped record, no auth) --------------------
+
+def decimal_or_none(value):
+    if value in (None, ""):
+        return None
+    try:
+        return Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError):
+        return None
+
+
+def int_or_none(value):
+    if value in (None, ""):
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def public_google_place_detail(detail):
+    return {
+        "id": detail.id,
+        "name": detail.name,
+        "address": detail.address,
+        "image": detail.image,
+        "latitude": float(detail.latitude) if detail.latitude is not None else None,
+        "longitude": float(detail.longitude) if detail.longitude is not None else None,
+        "maps_url": detail.maps_url,
+        "phone": detail.phone,
+        "rating": float(detail.rating) if detail.rating is not None else None,
+        "reviews": detail.reviews,
+        "website": detail.website,
+        "status": detail.status,
+        "notes": detail.notes,
+        "next_follow_up_at": detail.next_follow_up_at.isoformat() if detail.next_follow_up_at else None,
+        "createdAt": detail.created_at.isoformat(),
+        "updatedAt": detail.updated_at.isoformat(),
+    }
+
+
+def public_lead_activity(activity):
+    return {
+        "id": activity.id,
+        "leadId": activity.lead_id,
+        "kind": activity.kind,
+        "fromStatus": activity.from_status,
+        "toStatus": activity.to_status,
+        "note": activity.note,
+        "createdAt": activity.created_at.isoformat(),
+    }
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST", "OPTIONS"])
+def google_place_details(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    if request.method == "POST":
+        body = parse_body(request)
+        is_batch = isinstance(body, list)
+        items = body if is_batch else [body]
+        if not items:
+            return JsonResponse({"message": "Provide at least one place detail."}, status=400)
+
+        created = []
+        skipped = []
+        seen_urls = set()
+        for item in items:
+            if not isinstance(item, dict):
+                skipped.append({"name": "", "reason": "Invalid entry; expected an object with maps_url and name."})
+                continue
+            maps_url = str(item.get("maps_url", "")).strip()
+            name = str(item.get("name", "")).strip()
+            if not maps_url or not name:
+                skipped.append({"name": name, "reason": "Both maps_url and name are required."})
+                continue
+            if maps_url in seen_urls or GooglePlaceDetail.objects.filter(maps_url=maps_url).exists():
+                skipped.append({"name": name, "reason": "A place detail with this maps_url already exists."})
+                continue
+            seen_urls.add(maps_url)
+            requested_status = str(item.get("status") or "").strip()
+            detail = GooglePlaceDetail.objects.create(
+                name=name,
+                address=str(item.get("address") or "").strip(),
+                image=str(item.get("image") or "").strip(),
+                latitude=decimal_or_none(item.get("latitude")),
+                longitude=decimal_or_none(item.get("longitude")),
+                maps_url=maps_url,
+                phone=str(item.get("phone") or "").strip(),
+                rating=decimal_or_none(item.get("rating")),
+                reviews=int_or_none(item.get("reviews")),
+                website=str(item.get("website") or "").strip(),
+                status=requested_status if requested_status in dict(GooglePlaceDetail.STATUS_CHOICES) else GooglePlaceDetail.STATUS_NEW,
+                notes=str(item.get("notes") or "").strip(),
+                next_follow_up_at=parse_date(str(item.get("next_follow_up_at") or "").strip()) if item.get("next_follow_up_at") else None,
+            )
+            created.append(public_google_place_detail(detail))
+
+        if not is_batch:
+            # Single object payload - keep the plain single-object response shape.
+            if created:
+                return JsonResponse({"message": "Place detail created.", "placeDetail": created[0]}, status=201)
+            reason = skipped[0]["reason"] if skipped else "Could not create place detail."
+            status = 409 if "already exists" in reason else 400
+            return JsonResponse({"message": reason}, status=status)
+
+        return JsonResponse(
+            {
+                "message": f"{len(created)} place detail(s) created, {len(skipped)} skipped.",
+                "created": created,
+                "skipped": skipped,
+            },
+            status=201 if created else 400,
+        )
+
+    # GET - list all, optionally filtered by ?name= (case-insensitive contains) and/or ?status=
+    query = request.GET.get("name", "").strip()
+    status_filter = request.GET.get("status", "").strip()
+    follow_up_filter = request.GET.get("follow_up", "").strip()
+    details = GooglePlaceDetail.objects.all()
+    if query:
+        details = details.filter(name__icontains=query)
+    if status_filter and status_filter != "all":
+        if status_filter not in dict(GooglePlaceDetail.STATUS_CHOICES):
+            return JsonResponse({"message": "Invalid status filter."}, status=400)
+        details = details.filter(status=status_filter)
+    if follow_up_filter and follow_up_filter != "all":
+        today = timezone.localdate()
+        if follow_up_filter == "overdue":
+            details = details.filter(next_follow_up_at__lt=today)
+        elif follow_up_filter == "today":
+            details = details.filter(next_follow_up_at=today)
+        elif follow_up_filter == "upcoming":
+            details = details.filter(next_follow_up_at__gt=today)
+        elif follow_up_filter == "none":
+            details = details.filter(next_follow_up_at__isnull=True)
+        else:
+            return JsonResponse({"message": "follow_up must be overdue, today, upcoming, none, or all."}, status=400)
+
+    return JsonResponse({"count": details.count(), "placeDetails": [public_google_place_detail(detail) for detail in details]})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "PUT", "PATCH", "DELETE", "OPTIONS"])
+def google_place_detail_item(request, detail_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    detail = GooglePlaceDetail.objects.filter(id=detail_id).first()
+    if not detail:
+        return JsonResponse({"message": "Place detail not found."}, status=404)
+
+    if request.method == "GET":
+        return JsonResponse({"placeDetail": public_google_place_detail(detail)})
+
+    if request.method == "DELETE":
+        detail.delete()
+        return JsonResponse({"message": "Place detail deleted."})
+
+    # PUT/PATCH - update any provided fields
+    body = parse_body(request)
+    if not isinstance(body, dict):
+        return JsonResponse({"message": "Provide an object with the fields to update."}, status=400)
+
+    if "maps_url" in body:
+        new_maps_url = str(body.get("maps_url", "")).strip()
+        if not new_maps_url:
+            return JsonResponse({"message": "maps_url cannot be empty."}, status=400)
+        if GooglePlaceDetail.objects.filter(maps_url=new_maps_url).exclude(id=detail.id).exists():
+            return JsonResponse({"message": "Another place detail already uses this maps_url."}, status=409)
+        detail.maps_url = new_maps_url
+
+    if "name" in body:
+        name = str(body.get("name", "")).strip()
+        if not name:
+            return JsonResponse({"message": "name cannot be empty."}, status=400)
+        detail.name = name
+
+    for field in ("address", "image", "phone", "website"):
+        if field in body:
+            setattr(detail, field, str(body.get(field) or "").strip())
+
+    if "latitude" in body:
+        detail.latitude = decimal_or_none(body.get("latitude"))
+    if "longitude" in body:
+        detail.longitude = decimal_or_none(body.get("longitude"))
+    if "rating" in body:
+        detail.rating = decimal_or_none(body.get("rating"))
+    if "reviews" in body:
+        detail.reviews = int_or_none(body.get("reviews"))
+    if "notes" in body:
+        detail.notes = str(body.get("notes") or "").strip()
+
+    if "next_follow_up_at" in body:
+        raw_date = str(body.get("next_follow_up_at") or "").strip()
+        if not raw_date:
+            detail.next_follow_up_at = None
+        else:
+            parsed = parse_date(raw_date)
+            if not parsed:
+                return JsonResponse({"message": "next_follow_up_at must be an ISO date (YYYY-MM-DD)."}, status=400)
+            detail.next_follow_up_at = parsed
+
+    previous_status = detail.status
+    if "status" in body:
+        new_status = str(body.get("status") or "").strip()
+        if new_status not in dict(GooglePlaceDetail.STATUS_CHOICES):
+            return JsonResponse({"message": "Invalid status."}, status=400)
+        detail.status = new_status
+
+    detail.save()
+
+    if "status" in body and detail.status != previous_status:
+        LeadActivity.objects.create(
+            lead=detail,
+            kind=LeadActivity.KIND_STATUS_CHANGE,
+            from_status=previous_status,
+            to_status=detail.status,
+        )
+
+    return JsonResponse({"message": "Place detail updated.", "placeDetail": public_google_place_detail(detail)})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST", "OPTIONS"])
+def lead_activities(request, detail_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    detail = GooglePlaceDetail.objects.filter(id=detail_id).first()
+    if not detail:
+        return JsonResponse({"message": "Place detail not found."}, status=404)
+
+    if request.method == "GET":
+        activities = detail.activities.all()
+        return JsonResponse({"count": activities.count(), "activities": [public_lead_activity(a) for a in activities]})
+
+    body = parse_body(request)
+    if not isinstance(body, dict):
+        return JsonResponse({"message": "Provide an object with a note."}, status=400)
+
+    note = str(body.get("note") or "").strip()
+    if not note:
+        return JsonResponse({"message": "note is required."}, status=400)
+
+    activity = LeadActivity.objects.create(lead=detail, kind=LeadActivity.KIND_NOTE, note=note)
+    return JsonResponse({"message": "Note added.", "activity": public_lead_activity(activity)}, status=201)

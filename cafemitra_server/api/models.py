@@ -261,3 +261,95 @@ class WithdrawalRequest(models.Model):
 
     def __str__(self) -> str:
         return f"Withdrawal {self.amount} for {self.user_id}"
+
+
+class GooglePlace(models.Model):
+    """A scraped Google Maps place link, tracked for later data extraction."""
+
+    link = models.TextField()
+    name = models.CharField(max_length=255, unique=True)
+    extracted_status = models.BooleanField(default=False)
+    extractedby = models.CharField(max_length=160, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["extracted_status"])]
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class GooglePlaceDetail(models.Model):
+    """Full scraped detail record for a Google Maps place (post-extraction)."""
+
+    STATUS_NEW = "new"
+    STATUS_FOLLOW_UP = "follow_up"
+    STATUS_DISCUSSION = "discussion"
+    STATUS_INTERESTED = "interested"
+    STATUS_CALL_DISCUSSED = "call_discussed"
+    STATUS_CONVERTED = "converted"
+    STATUS_NOT_INTERESTED = "not_interested"
+
+    STATUS_CHOICES = [
+        (STATUS_NEW, "New"),
+        (STATUS_FOLLOW_UP, "Follow-up"),
+        (STATUS_DISCUSSION, "In Discussion"),
+        (STATUS_INTERESTED, "Interested"),
+        (STATUS_CALL_DISCUSSED, "Call Discussed"),
+        (STATUS_CONVERTED, "Converted"),
+        (STATUS_NOT_INTERESTED, "Not Interested"),
+    ]
+
+    name = models.CharField(max_length=255)
+    address = models.TextField(blank=True, default="")
+    image = models.TextField(blank=True, default="")
+    latitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    maps_url = models.CharField(max_length=1000, unique=True)
+    phone = models.CharField(max_length=40, blank=True, default="")
+    rating = models.DecimalField(max_digits=3, decimal_places=1, null=True, blank=True)
+    reviews = models.PositiveIntegerField(null=True, blank=True)
+    website = models.TextField(blank=True, default="")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_NEW)
+    notes = models.TextField(blank=True, default="")
+    next_follow_up_at = models.DateField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["status"]), models.Index(fields=["next_follow_up_at"])]
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class LeadActivity(models.Model):
+    """Timeline entry for a GooglePlaceDetail lead - an automatic status-change
+    record or a manually added note, so the pipeline history isn't lost the
+    way a single overwritable `notes` field would lose it.
+    """
+
+    KIND_STATUS_CHANGE = "status_change"
+    KIND_NOTE = "note"
+
+    KIND_CHOICES = [
+        (KIND_STATUS_CHANGE, "Status change"),
+        (KIND_NOTE, "Note"),
+    ]
+
+    lead = models.ForeignKey(GooglePlaceDetail, on_delete=models.CASCADE, related_name="activities")
+    kind = models.CharField(max_length=20, choices=KIND_CHOICES)
+    from_status = models.CharField(max_length=20, blank=True, default="")
+    to_status = models.CharField(max_length=20, blank=True, default="")
+    note = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["lead", "created_at"])]
+
+    def __str__(self) -> str:
+        return f"{self.kind} on lead #{self.lead_id}"
