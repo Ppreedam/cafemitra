@@ -4,30 +4,31 @@ import CompressImageClient from "./CompressImageClient";
 const pageUrl = "https://repetigo.com/image-tools/compress-image";
 
 export const metadata: Metadata = {
-  title: "Compress Image Online Free India - Reduce JPG, PNG, WebP Size | RepetiGo",
+  title: "Compress Image Online Free India - Reduce to 20KB, 50KB, 100KB | RepetiGo",
   description:
-    "Compress image online free for NTA, Aadhaar, and college portals. Adjustable quality slider for JPG, PNG, and WebP. No sign-up, no upload - runs 100% in your browser.",
+    "Compress image online free - reduce to 20KB, 50KB, 100KB, 200KB. JPG, PNG, WebP. No sign-up, 100% browser-based - nothing ever uploaded. Built for India.",
   alternates: { canonical: pageUrl },
   openGraph: {
-    title: "Compress Image Online Free India - Reduce JPG, PNG, WebP Size | RepetiGo",
+    title: "Compress Image Online Free India - Reduce to 20KB, 50KB, 100KB | RepetiGo",
     description:
-      "Free image compressor with an adjustable quality slider - built for India portal uploads. JPG, PNG, WebP. No sign-up, nothing ever uploaded to a server.",
+      "Free image compressor - reduce to 20KB, 50KB, 100KB, 200KB for India govt portals. JPG, PNG, WebP. No sign-up, 100% browser-based - nothing ever uploaded.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Compress Image Free Online - RepetiGo",
-    description: "Compress JPG, PNG, or WebP free with an adjustable quality slider. No sign-up, 100% browser-based.",
+    title: "Compress Image Free - 20KB, 50KB, 100KB | RepetiGo",
+    description: "Free image compressor for India govt portals. Compress to any target size. No sign-up, 100% browser-based.",
   },
   robots: { index: true, follow: true },
 };
 
-const content = String.raw`H1: Compress Image Online Free. Reduce JPG, PNG, and WebP File Size Instantly.
-RepetiGo's free image compressor reduces the file size of any photo - JPG, PNG, or WebP - right inside your browser. Drag the compression slider to balance file size against quality, and download an image sized for your portal, form, or chat app.
+const content = String.raw`H1: Compress Image Online Free. Reduce to Any Size - 20KB, 50KB, 100KB, or More.
+
+RepetiGo's free image compressor reduces the file size of any photo or image - JPG, PNG, or WebP - right inside your browser. Drag the compression slider to the range that matches your target, and download an image sized for your portal, form, or chat app. Need an exact number like 20KB or 50KB? The size guide further down this page shows you exactly which slider setting gets you there.
 The compress image online free tool works entirely on your own device - phone, tablet, or laptop. Because compression runs locally using your device's own processing power, your original photo is never uploaded to any server - there is no upload wait, and nothing for us to store or delete afterward.
 
-✓ Adjustable Compression Slider   ✓ JPG, PNG, WebP   ✓ No Sign-Up   ✓ 100% Browser-Based - Nothing Uploaded
+✓ Compress to Any Target Size (20KB-200KB+)   ✓ JPG, PNG, WebP   ✓ No Sign-Up   ✓ 100% Browser-Based - Nothing Uploaded
 
 [ Compress Image Free - No Sign-Up → repetigo.com/image-tools/compress-image ]
 
@@ -42,73 +43,84 @@ H2: How to Compress an Image Online Free in 3 Steps.
 Every compression follows the same three steps. No account required, no daily limit.
 H3: Step 1 - Upload Your Image
 Click Select Images or drag and drop your file into the upload area. Supported formats: JPG/JPEG, PNG, and WebP. There is no fixed file size cap - because everything runs on your own device, a very large photo simply takes a little longer to process. Upload works on any device - Android phone, iPhone, Windows laptop, or Mac - from your browser, with no app to install.
-Tip: if a portal only accepts JPG and you have a PNG, run it through the Convert to JPG tool first at /image-tools/convert-to-jpg - converting alone often shrinks the file dramatically before you even compress it.
+Tip: if a portal only accepts JPG and you have a PNG, run it through PNG to JPG first at /image-tools/png-to-jpg - converting alone often shrinks the file dramatically before you even compress it.
 H3: Step 2 - Adjust the Compression Level
 As soon as you upload, RepetiGo automatically compresses your image at a 60% starting level so you have a result immediately. From there, drag the compression slider (10% to 90%) - higher means a smaller file and more visible quality trade-off, lower keeps more detail. The card for each image updates live, showing the exact compressed size next to the original so you can judge the trade-off before downloading.
-For a government portal upload, start high and adjust down only if the preview still looks unclear enough for your purpose:
-
-Compression Level
-Common Indian Portals / Use Cases
-What to Expect
-80-90% (High)
-NTA portals (NEET, JEE, CUET), UPSC, SSC, and banking exam photo uploads - these typically want a very small file
-Strongest compression. Still clear enough for identity verification on screen - check the size shown on the card and nudge higher if the portal's limit is very strict.
-70-85%
-Aadhaar update portal, Voter ID, and many state scholarship portals
-A good balance for ID-style photo uploads. The live preview shows the exact output size before you download.
-55-70% (Default: 60%)
-College admission portals (DU, state universities), job applications, professional registration forms
-Noticeably clearer than high compression while the file stays compact - this is where RepetiGo starts every upload automatically.
-40-55%
-Government job portals (IBPS, SBI, state PSC), income tax portal document uploads, certificates
-Preserves good detail - suited to documents and professional profile photos.
-25-40%
-Email attachments, professional file delivery, higher-quality WhatsApp sharing
-A comfortable general-purpose setting for most digital sharing needs.
-10-25% (Low)
-Client image delivery, institutional submissions where quality matters most
-Keeps most of the original detail while still trimming unnecessary file weight.
-
-🇮🇳 Compressing for a government portal in India: always check the portal's specific size requirement before uploading. NTA (NEET/JEE) usually asks for a JPG under 10-20KB; Aadhaar update usually asks for under 50KB. Start near the high end of the slider, check the size shown on the image card, and adjust until it fits.
-
+Aiming for a specific portal limit like 20KB or 50KB? Skip ahead to the target-size guide below - it maps the most common Indian portal limits to the slider range that reaches them.
 H3: Step 3 - Download Your Compressed Image
 Once compression finishes - usually within a few seconds - a Download button appears on the image card, showing the new file size next to the original so you can compare before saving. For several images at once, use Download ZIP to get every compressed file in one archive.
 
 [ Compress Your Image Now - Free → repetigo.com/image-tools/compress-image ]
 
+H2: ★ Compress Image to a Specific Size - 20KB, 50KB, 100KB, 200KB.
+The most common reason Indian users search for an image compressor is to meet a portal's upload size limit. Every government, educational, and financial portal has different requirements. RepetiGo doesn't take a KB number as direct input - instead, drag the compression slider and watch the live size shown on the image card update in real time. Use this table as your starting point, then fine-tune from there:
+
+Target Size
+Common Indian Portals / Use Cases
+Slider Setting to Try
+20 KB
+NTA portals (NEET, JEE, CUET) passport photo upload. UPSC, SSC, and banking exam photo uploads.
+80-90% - a standard smartphone photo compressed in this range typically lands near 20KB, clear enough for identity verification.
+50 KB
+Aadhaar update portal, Voter ID photo upload, many state government scholarship portals.
+70-85% - slightly better quality than the 20KB range, still comfortably under most ID-photo limits.
+100 KB
+College admission portals (DU, state university admissions), job application portals, professional registration forms.
+55-70% (RepetiGo's 60% default is a good starting point) - looks clear on screen and works well for digital ID cards and profiles.
+200 KB
+Government job application portals (IBPS, SBI, state PSC), income tax portal document uploads.
+40-55% - preserves noticeably more detail, suited to certificates and professional documents.
+1 MB
+Email attachment awareness, professional file delivery, higher-quality WhatsApp sharing.
+25-40% - a comfortable general-purpose setting for most digital sharing needs.
+2 MB
+Higher-quality professional uploads, client image delivery, institutional submission portals.
+10-25% - retains most of the original quality while trimming unnecessary file weight.
+
+🇮🇳 Compress image for government portal India: always check the portal's specific requirement before uploading. NTA (NEET/JEE) usually asks for a JPG under 10-20KB; Aadhaar update usually asks for under 50KB. Drag the slider toward the matching range above, check the live size shown on the image card, and nudge it until the number fits your portal's limit.
+
+[ Compress Image to Your Target Size Free → repetigo.com/image-tools/compress-image ]
+
 H2: Compress Image Without Losing Quality - What You Need to Know.
 The honest answer: RepetiGo's compressor uses lossy compression, so there is always some data trade-off. What "without losing quality" really means in practice is "without visible quality loss at normal viewing sizes." For a portal photo or a WhatsApp image, a 55-70% compression level looks the same as the original on any screen. For a professional print, keep the slider low.
-H3: How the Compression Level Affects Your Photo
-At a low slider value (10-25%), the difference from the original is not visible on a phone or computer screen. Around the default 60%, you might notice very slight softness only if you zoom in on fine detail. Above 80%, the trade-off becomes more visible - use this only when you must hit a very small file size, such as a strict portal limit.
+H3: Lossy Compression - Smaller File, Some Quality Reduction
+Lossy compression (used for JPG and WebP) permanently removes some image data to achieve a smaller file. At a low-to-default slider setting, the difference is invisible on a phone or computer screen. Around 65-80%, you might notice very slight softness in detailed areas if you zoom in. Above 85%, the trade-off becomes more visible - use this range only when you must hit a very small file size, such as a strict portal limit.
+H3: Lossless Compression - Same Quality, Moderate Size Reduction
+Lossless compression reduces file size by reorganising data more efficiently without removing anything - the output is pixel-identical to the original, but the size reduction is smaller. RepetiGo's compressor is a lossy tool by design, built for the portal, WhatsApp, and email use cases where a moderate size trade-off is invisible in practice; it doesn't offer a separate lossless mode. If you need a pixel-identical file, keep your original PNG uncompressed.
 
 Compression Type
 File Size Reduction
-Output Quality
+Quality Impact
+Best Format
 Best For
-Low (10-25%)
+Light (10-25%)
 20-40% smaller
 Virtually no visible loss
+JPG or WebP
 Professional submissions where quality matters most
 Balanced (40-60%, default)
 50-75% smaller
 No visible loss on screen
+JPG or WebP
 Government portals, email, WhatsApp - the recommended default
 High (65-80%)
 75-88% smaller
 Slight softness visible if you zoom in
+JPG or WebP
 Stricter portal limits where size matters more than fine detail
 Maximum (85-90%)
 88-95% smaller
 Visible quality trade-off
+JPG or WebP
 When a portal requires a very small file and only identity verification matters
 
 H2: Which Image Formats Can You Compress?
 H3: JPG / JPEG - Best for Photos
 JPG is the default format from most phone cameras and the format nearly every Indian government portal expects for photo uploads. RepetiGo re-compresses JPG files directly using the slider above.
 H3: PNG - Best for Graphics and Screenshots
-PNG files are usually larger than JPG at the same visual quality. RepetiGo automatically detects whether your PNG has transparent areas: if it does, the compressed output is saved as WebP to preserve the transparency; if the PNG is fully opaque, it is compressed and saved as JPG. This tool does not offer a separate "lossless PNG" mode - for pixel-perfect lossless output, keep the PNG uncompressed.
+PNG files are usually larger than JPG at the same visual quality. RepetiGo automatically detects whether your PNG has transparent areas: if it does, the compressed output is saved as WebP to preserve the transparency; if the PNG is fully opaque, it is compressed and saved as JPG. This tool does not offer a separate manual "lossless PNG" mode - for pixel-perfect lossless output, keep the PNG uncompressed.
 H3: WEBP - Modern Format, Excellent Compression
-WebP typically produces smaller files than JPG at the same visual quality and is the default format for images downloaded from Chrome-based browsers. RepetiGo accepts WebP directly and keeps the output in WebP format. Note: some older Indian government portals only accept JPG - if in doubt, use Convert to JPG at /image-tools/convert-to-jpg after compressing.
+WebP typically produces smaller files than JPG at the same visual quality - often 25-35% smaller - and is the default format for images downloaded from Chrome-based browsers. RepetiGo accepts WebP directly and keeps the output in WebP format. Note: some older Indian government portals only accept JPG - if in doubt, use PNG to JPG or Convert to JPG at /image-tools/convert-to-jpg after compressing.
 
 Format
 Transparency
@@ -131,22 +143,22 @@ H2: Why Indian Students and Professionals Compress Images.
 Use Case
 The Problem
 How RepetiGo Helps
-Govt Exam Photo Upload (NTA, UPSC, SSC)
+📝 Govt Exam Photo Upload (NTA, UPSC, SSC)
 NTA-style portals require a very small passport photo, often under 10-20KB, in JPG format. Phone photos are 1-5MB.
 Drag the compression slider to 80-90% and check the live size shown on the card until it fits the portal's limit.
-College Admission Portal
+🎓 College Admission Portal
 Most college admission portals (DU, state universities) cap photo and document size well under the original phone photo.
 Compress at the 55-70% default range - clear enough for review, small enough for most portal caps.
-WhatsApp Image Sharing
+📱 WhatsApp Image Sharing
 WhatsApp automatically re-compresses large photos, which can reduce quality further than you'd like.
 Compress to a size you control before sending, for more predictable quality than WhatsApp's own auto-compression.
-Aadhaar / PAN / Voter ID Updates
+🏛️ Aadhaar / PAN / Voter ID Updates
 These portals commonly reject photos over roughly 50KB, and phone photos are far larger.
 Compress in the 70-85% range and confirm the size shown on the card before uploading.
-Email Attachments
+📧 Email Attachments
 Sending several high-resolution photos by email creates large attachments that slow down sending and inboxes.
 Compress each photo at a lower level (25-40%) before attaching - a 4MB photo can drop well under 1MB with no visible loss.
-Print Shop / Cyber Café
+🖨️ Print Shop / Cyber Café
 A customer's phone photo is too large for the print system, slowing down processing.
 Compress on the spot using this tool, or use PrintPilot for compression built into the print workflow.
 
@@ -229,8 +241,8 @@ H3: Q2: How do I compress an image without losing quality?
 Keep the compression slider in the lower-to-default range (10-60%) - at these levels, the difference from the original is not visible on a phone or computer screen. For a government portal upload where the file size limit matters more than fine detail, a higher setting (70-90%) is still perfectly usable for identity verification, even though some quality trade-off becomes visible if you zoom in closely.
 H3: Q3: What is the difference between lossy and lossless image compression?
 Lossy compression shrinks a file by discarding some image data - the result looks very close to the original at moderate settings but is not pixel-identical. Lossless compression reorganises data without discarding anything, so the output is pixel-identical, but the size reduction is smaller. RepetiGo's compressor is a lossy tool - it always outputs a compressed JPG or WebP file. It does not offer a separate lossless PNG mode; if you need a pixel-identical file, keep the original PNG uncompressed.
-H3: Q4: How do I compress an image to around 20KB, 50KB, or 100KB for a portal upload?
-RepetiGo doesn't take an exact KB number as input - instead you get a compression slider, and the live preview shows you the resulting file size the moment you adjust it. As a starting point: NTA/JEE-style 20KB limits usually need the slider around 80-90%; Aadhaar's roughly 50KB limit usually needs 70-85%; a 100KB college-portal limit usually works around 55-70%. Drag the slider, watch the size shown on the card, and fine-tune from there until it's under your portal's stated limit.
+H3: Q4: How do I compress an image to exactly 20KB, 50KB, or 100KB?
+RepetiGo doesn't take an exact KB number as input - instead you get a compression slider, and the live preview shows you the resulting file size the moment you adjust it. As a starting point: NTA/JEE-style 20KB limits usually need the slider around 80-90%; Aadhaar's roughly 50KB limit usually needs 70-85%; a 100KB college-portal limit usually works around 55-70%. See the target-size guide above for the full breakdown, drag the slider, watch the size shown on the card, and fine-tune from there until it's under your portal's stated limit.
 H3: Q5: How do I compress a PNG image?
 Upload your PNG - RepetiGo checks it automatically. If the PNG has transparent areas, the compressed output is saved as WebP to keep the transparency. If the PNG is fully opaque (like a screenshot with no transparent background), the output is saved as compressed JPG. There isn't a manual "keep as lossless PNG" option on this tool; if you need a pixel-perfect PNG, don't run it through the compressor.
 H3: Q6: Why does my compressed image look blurry or pixelated?
@@ -251,18 +263,18 @@ Link
 Resize Image
 Change photo dimensions by pixels or percentage for portal compliance
 → /image-tools/resize-image
-Convert to JPG
-Convert PNG, WebP, or other images to JPG - often shrinks file size on its own
-→ /image-tools/convert-to-jpg
+PNG to JPG
+Convert PNG to JPG before compressing - often shrinks file size dramatically on its own
+→ /image-tools/png-to-jpg
 Remove Background
 Remove the background from a photo and download a transparent PNG
 → /image-tools/background-remover
 Crop Image
 Crop to a square, portrait, landscape, or custom ratio before compressing
 → /image-tools/crop-image
-Upscale Image
-Enlarge a low-resolution image while keeping it as clear as possible
-→ /image-tools/upscale-image
+AI Image Upscaler
+Enlarge blurry scans and old photos with real AI-added detail
+→ /image-tools/ai-upscale-image
 Compress PDF
 Reduce PDF file size - for document, not image, compression
 → /pdf-tools/compress-pdf
@@ -326,8 +338,8 @@ function StructuredSeoCopy({ content: source }: { content: string }) {
 }
 
 function getKnownTable(lines: string[]): SeoTableData | null {
-  if (lines[0] === "Compression Level" && lines[1] === "Common Indian Portals / Use Cases") return { headers: ["Compression Level", "Common Indian Portals / Use Cases", "What to Expect"], rows: chunkRows(lines.slice(3), 3) };
-  if (lines[0] === "Compression Type" && lines[1] === "File Size Reduction") return { headers: ["Compression Type", "File Size Reduction", "Output Quality", "Best For"], rows: chunkRows(lines.slice(4), 4) };
+  if (lines[0] === "Target Size" && lines[1] === "Common Indian Portals / Use Cases") return { headers: ["Target Size", "Common Indian Portals / Use Cases", "Slider Setting to Try"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "Compression Type" && lines[1] === "File Size Reduction") return { headers: ["Compression Type", "File Size Reduction", "Quality Impact", "Best Format", "Best For"], rows: chunkRows(lines.slice(5), 5) };
   if (lines[0] === "Format" && lines[1] === "Transparency") return { headers: ["Format", "Transparency", "How RepetiGo Handles It", "Portal Compatibility"], rows: chunkRows(lines.slice(4), 4) };
   if (lines[0] === "Use Case" && lines[1] === "The Problem") return { headers: ["Use Case", "The Problem", "How RepetiGo Helps"], rows: chunkRows(lines.slice(3), 3) };
   if (lines[0] === "Feature" && lines[1] === "RepetiGo") return { headers: ["Feature", "RepetiGo", "TinyPNG", "Squoosh (Google)", "iloveimg"], rows: chunkRows(lines.slice(5), 5) };
@@ -370,7 +382,7 @@ function renderTableCell(cell: string) {
 }
 
 function renderInlineMappedLinks(text: string) {
-  const parts = text.split(/(repetigo\.com\/(?:tools\/image\/[a-z-]*|tools\/pdf\/compress-pdf|pricing)\/?|\/image-tools\/[a-z-]*\/?|\/image-tools\/?|\/pdf-tools\/compress-pdf\/?|\/products\/printpilot\/?|\/privacy-policy\/?|\/pricing\/?)/g);
+  const parts = text.split(/(repetigo\.com\/(?:image-tools\/[a-z-]*|pdf-tools\/compress-pdf|pricing)\/?|\/image-tools\/[a-z-]*\/?|\/image-tools\/?|\/pdf-tools\/compress-pdf\/?|\/products\/printpilot\/?|\/privacy-policy\/?|\/pricing\/?)/g);
   return parts.map((part, index) => {
     const href = mapSeoRoute(part.startsWith("repetigo.com") ? "https://" + part : part);
     if (!href) return part;
@@ -386,8 +398,10 @@ function mapSeoRoute(route: string) {
     "/image-tools/resize-image": "/image-tools/resize-image",
     "/image-tools/crop-image": "/image-tools/crop-image",
     "/image-tools/convert-to-jpg": "/image-tools/convert-to-jpg",
+    "/image-tools/png-to-jpg": "/image-tools/png-to-jpg",
     "/image-tools/background-remover": "/image-tools/background-remover",
     "/image-tools/upscale-image": "/image-tools/upscale-image",
+    "/image-tools/ai-upscale-image": "/image-tools/ai-upscale-image",
     "/pdf-tools/compress-pdf": "/pdf-tools/compress-pdf",
     "/products/printpilot": "/print-automation",
     "/privacy-policy": "/privacy-policy",
@@ -403,8 +417,10 @@ function getRouteLabel(href: string) {
     "/image-tools/resize-image": "Open Resize Image",
     "/image-tools/crop-image": "Open Crop Image",
     "/image-tools/convert-to-jpg": "Open Convert to JPG",
+    "/image-tools/png-to-jpg": "Open PNG to JPG",
     "/image-tools/background-remover": "Open Remove Background",
     "/image-tools/upscale-image": "Open Upscale Image",
+    "/image-tools/ai-upscale-image": "Open AI Image Upscaler",
     "/pdf-tools/compress-pdf": "Open Compress PDF",
     "/print-automation": "Learn About PrintPilot",
     "/privacy-policy": "Read Privacy Policy",
@@ -414,7 +430,7 @@ function getRouteLabel(href: string) {
 }
 
 function JsonLd() {
-  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Image Compressor", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online image compressor with an adjustable quality slider for JPG, PNG, and WebP. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl };
+  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Image Compressor", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online image compressor for JPG, PNG, and WebP. Adjustable compression slider to reach any target size - 20KB, 50KB, 100KB, 200KB and beyond. Runs 100% in your browser - no file is ever uploaded to a server.", url: pageUrl };
   const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Compress an Image Online Free", step: [{ "@type": "HowToStep", name: "Upload Image", text: "Upload Your Image" }, { "@type": "HowToStep", name: "Adjust Compression", text: "Adjust the Compression Level" }, { "@type": "HowToStep", name: "Download", text: "Download Your Compressed Image" }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
   const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "Compress Image", item: pageUrl }] };

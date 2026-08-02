@@ -72,7 +72,7 @@ export function SplitPdfTool({ initialMode = "range", toolTitle = "Split PDF", u
   }
 
   function getGroups(pageCount: number): number[][] {
-    if (mode === "pages") return Array.from(selectedPages).sort((a, b) => a - b).map((page) => [page]);
+    if (mode === "pages") return Array.from(selectedPages).sort((a, b) => a - b).map((page) => [page - 1]);
     if (mode === "size") { const targetBytes = maxSizeMb * (sizeUnit === "MB" ? 1024 * 1024 : 1024); const approximatePages = Math.max(1, Math.floor(targetBytes / Math.max(1, (file?.size || 1) / pageCount))); return chunk(pageCount, approximatePages); }
     if (rangeMode === "fixed") return chunk(pageCount, clamp(fixedPages, 1, pageCount));
     if (rangeMode === "smart") { const parts = clamp(smartParts, 2, pageCount); const perPart = Math.ceil(pageCount / parts); return chunk(pageCount, perPart); }
