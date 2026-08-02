@@ -78,8 +78,9 @@ export default function PngToJpgClient({ children }: { children?: ReactNode }) {
 
   return <DashboardShell activePath="/image-tools">
     <div className="dashboard compress-pdf-page">
+      {children}
       {items.length ? <><input ref={inputRef} hidden multiple type="file" accept="image/png,image/webp,image/gif,image/svg+xml,.png,.webp,.gif,.svg,.heic,.heif" onChange={(event: ChangeEvent<HTMLInputElement>) => { if (event.target.files) void addFiles(event.target.files); event.target.value = ""; }} /><div className="compress-heading"><div><span className="auto-print-kicker">Free Image Tool</span><h2>PNG to JPG</h2><p>Convert PNG images into compact JPG files.</p></div><span><ShieldCheck size={16} /> Files stay in your browser</span></div></> : null}
-      {!items.length ? <><PdfToolUpload title="PNG to JPG" description="Convert PNG, WebP, GIF, or SVG images into JPG - one at a time or in a batch." icon={ImageIcon} inputRef={inputRef} onFiles={(files) => void addFiles(files)} accept="image/png,image/webp,image/gif,image/svg+xml,.png,.webp,.gif,.svg,.heic,.heif" buttonLabel="Select images" dropLabel="or drop PNG, WebP, GIF, or SVG images here" headingLevel={children ? "h2" : "h1"} backHref="/image-tools" backLabel="Image Tools" />{children}</> : <div className="compress-studio">
+      {!items.length ? <PdfToolUpload title="PNG to JPG" description="Convert PNG, WebP, GIF, or SVG images into JPG - one at a time or in a batch." icon={ImageIcon} inputRef={inputRef} onFiles={(files) => void addFiles(files)} accept="image/png,image/webp,image/gif,image/svg+xml,.png,.webp,.gif,.svg,.heic,.heif" buttonLabel="Select images" dropLabel="or drop PNG, WebP, GIF, or SVG images here" headingLevel={children ? "h2" : "h1"} backHref="/image-tools" backLabel="Image Tools" /> : <div className="compress-studio">
         <section className={`compress-workspace ${dragging ? "dragging" : ""}`} onDragOver={(event) => { event.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={drop}>
           <div className="compress-workspace-head"><div><h2>Your image files</h2><p>Files convert to JPG automatically after upload.</p></div><button type="button" disabled={converting} onClick={() => inputRef.current?.click()}><Plus size={18} /> Add images</button></div>
           <div className="compress-file-grid">{items.map((item) => <article className="compress-file-card" key={item.id}>
@@ -97,7 +98,6 @@ export default function PngToJpgClient({ children }: { children?: ReactNode }) {
         </aside>
       </div>}
       {error ? <div className="profile-alert error compress-error" role="alert">{error}</div> : null}
-      {items.length ? children : null}
       {previewItem?.result ? <ImagePreviewModal item={previewItem} onClose={() => setPreviewItem(null)} /> : null}
     </div>
   </DashboardShell>;

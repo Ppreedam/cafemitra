@@ -64,7 +64,7 @@ export default function ConversionTool({ slug, children, uploadTitle, uploadDesc
     finally { setBusy(false); }
   }
 
-  if (!files.length) return <><PdfToolUpload title={uploadTitle || config.title} description={uploadDescription || config.description} icon={config.icon} inputRef={inputRef} onFiles={add} accept={config.accept} multiple={config.multiple} buttonLabel={config.button} dropLabel={config.drop} headingLevel={uploadHeadingLevel || (children ? "h2" : "h1")} />{children}</>;
+  if (!files.length) return <>{children}<PdfToolUpload title={uploadTitle || config.title} description={uploadDescription || config.description} icon={config.icon} inputRef={inputRef} onFiles={add} accept={config.accept} multiple={config.multiple} buttonLabel={config.button} dropLabel={config.drop} headingLevel={uploadHeadingLevel || (children ? "h2" : "h1")} /></>;
   const Icon = config.icon;
   return <div className="conversion-page">
     <input ref={inputRef} hidden type="file" accept={config.accept} multiple={config.multiple} onChange={(event) => { if (event.target.files?.length) add(event.target.files); event.target.value = ""; }} />

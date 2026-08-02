@@ -107,9 +107,10 @@ export default function CompressPdfClient({ children }: { children?: ReactNode }
 
   return <DashboardShell activePath="/pdf-tools">
     <div className="dashboard compress-pdf-page">
+      {children}
       {items.length ? <><input ref={inputRef} hidden multiple type="file" accept="application/pdf,.pdf" onChange={(event: ChangeEvent<HTMLInputElement>) => { if (event.target.files) void addFiles(event.target.files); event.target.value = ""; }} /><div className="compress-heading"><div><span className="auto-print-kicker">Free PDF Tool</span><h2>Compress PDF</h2><p>Reduce PDF file size while balancing document quality.</p></div><span><ShieldCheck size={16} /> Files stay in your browser</span></div></> : null}
 
-      {!items.length ? <><PdfToolUpload title="Compress PDF" description="Reduce PDF file size while balancing document quality." icon={Archive} inputRef={inputRef} onFiles={(files) => void addFiles(files)} headingLevel={children ? "h2" : "h1"} />{children}</> : <div className="compress-studio">
+      {!items.length ? <PdfToolUpload title="Compress PDF" description="Reduce PDF file size while balancing document quality." icon={Archive} inputRef={inputRef} onFiles={(files) => void addFiles(files)} headingLevel={children ? "h2" : "h1"} /> : <div className="compress-studio">
         <section className={`compress-workspace ${dragging ? "dragging" : ""}`} onDragOver={(event) => { event.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={drop}>
           <div className="compress-workspace-head"><div><h2>Your PDF files</h2><p>Files are automatically compressed at 60% after upload.</p></div><button type="button" disabled={compressing} onClick={() => inputRef.current?.click()}><Plus size={18} /> Add PDFs</button></div>
           <div className="compress-file-grid">{items.map((item) => <article className="compress-file-card" key={item.id}>
@@ -130,7 +131,6 @@ export default function CompressPdfClient({ children }: { children?: ReactNode }
         </aside>
       </div>}
       {error ? <div className="profile-alert error compress-error" role="alert">{error}</div> : null}
-      {items.length ? children : null}
       {preview ? <QualityPreviewModal preview={preview} item={items.find((item) => item.id === preview.itemId)} onClose={() => setPreview(null)} /> : null}
     </div>
   </DashboardShell>;

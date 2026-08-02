@@ -83,9 +83,15 @@ export function SplitPdfTool({ initialMode = "range", toolTitle = "Split PDF", u
     const { default: JSZip } = await import("jszip"); const zip = new JSZip(); results.forEach((result) => zip.file(result.name, result.blob)); const blob = await zip.generateAsync({ type: "blob" }); const url = URL.createObjectURL(blob); triggerDownload(url, `${baseName(file?.name || "split")}-split.zip`); setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
-  if (!file) return <DashboardShell activePath="/pdf-tools"><div className="dashboard split-pdf-page"><PdfToolUpload title={uploadTitle} description={uploadDescription} icon={Scissors} inputRef={inputRef} onFiles={(files) => void chooseFile(files)} multiple={false} buttonLabel="Select PDF file" headingLevel={uploadHeadingLevel || (children ? "h2" : "h1")} />{children}</div></DashboardShell>;
+  const effectiveUploadHeadingLevel = uploadHeadingLevel || (children ? "h2" : "h1");
+  const uploadField = <PdfToolUpload title={uploadTitle} description={uploadDescription} icon={Scissors} inputRef={inputRef} onFiles={(files) => void chooseFile(files)} multiple={false} buttonLabel="Select PDF file" headingLevel={effectiveUploadHeadingLevel} />;
+  // When the upload field itself is the real page h1 (an explicit "h1" override, e.g. extract-pages,
+  // which demotes the SEO article's own H1 via skipFirstH1), it must stay first in the DOM. Otherwise
+  // the SEO article contains the real h1 and should render before the generic "h2" upload heading.
+  if (!file) return <DashboardShell activePath="/pdf-tools"><div className="dashboard split-pdf-page">{effectiveUploadHeadingLevel === "h1" ? <>{uploadField}{children}</> : <>{children}{uploadField}</>}</div></DashboardShell>;
 
   return <DashboardShell activePath="/pdf-tools"><div className="dashboard split-pdf-page">
+    {children}
     <input ref={inputRef} hidden type="file" accept="application/pdf,.pdf" onChange={(event) => { if (event.target.files?.length) void chooseFile(event.target.files); event.target.value = ""; }} />
     <div className="split-topline"><span><ShieldCheck size={16} /> Free · No premium limits · Browser processing</span><button type="button" disabled={processing} onClick={reset}><RotateCcw size={16} /> Start over</button></div>
     <div className="split-studio">
@@ -105,7 +111,7 @@ export function SplitPdfTool({ initialMode = "range", toolTitle = "Split PDF", u
         </div>
         <div className="split-side-actions">{processing ? <div className="split-progress"><span>Creating PDFs… {progress}%</span><progress value={progress} max="100" /></div> : null}<button className="split-submit" type="button" disabled={processing || loading || (mode === "pages" && !selectedPages.size)} onClick={splitPdf}>{processing ? <LoaderCircle className="spin" size={20} /> : <Scissors size={20} />} {processing ? "Creating PDFs…" : toolTitle}<ArrowRight size={18} /></button></div>
       </aside>
-    </div>{error ? <div className="profile-alert error split-error">{error}</div> : null}{children}
+    </div>{error ? <div className="profile-alert error split-error">{error}</div> : null}
   </div></DashboardShell>;
 }
 

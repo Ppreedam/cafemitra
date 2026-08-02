@@ -126,6 +126,7 @@ export default function BackgroundRemoverClient({ children }: { children?: React
   return (
     <DashboardShell activePath="/image-tools">
       <div className="dashboard bg-remover-page">
+        {children}
         <div className="dashboard-hero pdf-tools-hero">
           <div><span className="auto-print-kicker">AI Image Tool</span><h2>Background Remover</h2><p>Remove any photo background and download a clean transparent PNG.</p></div>
           <span className="status-pill"><Sparkles size={16} /> Server processing</span>
@@ -171,7 +172,6 @@ export default function BackgroundRemoverClient({ children }: { children?: React
           </section>
         )}
         {!file && error ? <div className="profile-alert error">{error}</div> : null}
-        {children}
       </div>
     </DashboardShell>
   );

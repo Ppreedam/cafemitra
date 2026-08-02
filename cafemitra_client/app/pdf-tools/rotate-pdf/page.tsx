@@ -296,7 +296,7 @@ Complete PDF tools suite
 const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
 export default function RotatePdfPage() {
-  return <DashboardShell activePath="/pdf-tools"><div className="dashboard generic-pdf-tool-page"><PdfEditTool slug="rotate-pdf" headingLevel="h2" /><JsonLd /><article className="tool-seo-content" id="rotate-pdf-guide"><StructuredSeoCopy content={content} /></article></div></DashboardShell>;
+  return <DashboardShell activePath="/pdf-tools"><div className="dashboard generic-pdf-tool-page"><JsonLd /><article className="tool-seo-content" id="rotate-pdf-guide"><StructuredSeoCopy content={content} /></article><PdfEditTool slug="rotate-pdf" headingLevel="h2" /></div></DashboardShell>;
 }
 
 function JsonLd() {

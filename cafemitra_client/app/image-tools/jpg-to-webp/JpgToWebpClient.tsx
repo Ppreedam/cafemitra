@@ -78,8 +78,9 @@ export default function JpgToWebpClient({ children }: { children?: ReactNode }) 
 
   return <DashboardShell activePath="/image-tools">
     <div className="dashboard compress-pdf-page">
+      {children}
       {items.length ? <><input ref={inputRef} hidden multiple type="file" accept="image/jpeg,.jpg,.jpeg" onChange={(event: ChangeEvent<HTMLInputElement>) => { if (event.target.files) void addFiles(event.target.files); event.target.value = ""; }} /><div className="compress-heading"><div><span className="auto-print-kicker">Free Image Tool</span><h2>JPG to WebP</h2><p>Convert JPG images into smaller WebP files.</p></div><span><ShieldCheck size={16} /> Files stay in your browser</span></div></> : null}
-      {!items.length ? <><PdfToolUpload title="JPG to WebP" description="Convert JPG or JPEG images into WebP - smaller files for faster websites." icon={FileImage} inputRef={inputRef} onFiles={(files) => void addFiles(files)} accept="image/jpeg,.jpg,.jpeg" buttonLabel="Select JPG images" dropLabel="or drop JPG images here" headingLevel={children ? "h2" : "h1"} backHref="/image-tools" backLabel="Image Tools" />{children}</> : <div className="compress-studio">
+      {!items.length ? <PdfToolUpload title="JPG to WebP" description="Convert JPG or JPEG images into WebP - smaller files for faster websites." icon={FileImage} inputRef={inputRef} onFiles={(files) => void addFiles(files)} accept="image/jpeg,.jpg,.jpeg" buttonLabel="Select JPG images" dropLabel="or drop JPG images here" headingLevel={children ? "h2" : "h1"} backHref="/image-tools" backLabel="Image Tools" /> : <div className="compress-studio">
         <section className={`compress-workspace ${dragging ? "dragging" : ""}`} onDragOver={(event) => { event.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={drop}>
           <div className="compress-workspace-head"><div><h2>Your JPG files</h2><p>Files convert to WebP automatically after upload.</p></div><button type="button" disabled={converting} onClick={() => inputRef.current?.click()}><Plus size={18} /> Add images</button></div>
           <div className="compress-file-grid">{items.map((item) => <article className="compress-file-card" key={item.id}>
@@ -97,7 +98,6 @@ export default function JpgToWebpClient({ children }: { children?: ReactNode }) 
         </aside>
       </div>}
       {error ? <div className="profile-alert error compress-error" role="alert">{error}</div> : null}
-      {items.length ? children : null}
       {previewItem?.result ? <ImagePreviewModal item={previewItem} onClose={() => setPreviewItem(null)} /> : null}
     </div>
   </DashboardShell>;

@@ -86,9 +86,9 @@ export default function MarkdownToPdfPage() {
   return (
     <DashboardShell activePath="/pdf-tools">
       <div className="dashboard generic-pdf-tool-page">
-        <MarkdownToPdfClient />
         <JsonLd />
         <article className="tool-seo-content" id="markdown-to-pdf-guide">
+          <h1>Markdown to PDF Converter Free Online. Convert .md Files or Pasted Text to PDF - No Pandoc, No Sign-Up.</h1>
           <HeroIntro />
           <section><h2>What Is Markdown and Why Convert It to PDF?</h2><MarkdownIntro /></section>
           <section><h2>What Markdown Elements Are Supported in the PDF?</h2><p>When you convert Markdown to PDF with RepetiGo, the following elements are preserved and formatted correctly in the output PDF:</p><SeoTable headers={["Markdown Element", "Markdown Syntax", "How It Appears in the PDF"]} rows={markdownElements} /><Callout>For best results with code-heavy Markdown files, specify the language after the opening fence, such as python, javascript, or bash. This enables syntax-aware formatting in the PDF output.</Callout></section>
@@ -103,6 +103,7 @@ export default function MarkdownToPdfPage() {
           <RelatedTools />
           <section className="tool-seo-cta"><h2>Convert Markdown to PDF Free Now</h2><p>No Pandoc. No LaTeX. No setup. Paste and download. Auto-deleted in 60 minutes.</p><Link href="/pdf-tools/markdown-to-pdf">Convert Markdown to PDF Free Now</Link></section>
         </article>
+        <MarkdownToPdfClient />
       </div>
     </DashboardShell>
   );

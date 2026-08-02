@@ -66,9 +66,10 @@ export default function OrganizePdfPage() {
     finally { setProcessing(false); }
   }
 
-  if (!sources.length) return <DashboardShell activePath="/pdf-tools"><div className="dashboard organize-pdf-page"><PdfToolUpload title="Organize PDF" description="Reorder, rotate, duplicate, delete or add blank pages to your PDF." icon={GripVertical} inputRef={inputRef} onFiles={(files) => void addFiles(files)} buttonLabel="Select PDF files" headingLevel="h2" /><OrganizeSeoContent /></div></DashboardShell>;
+  if (!sources.length) return <DashboardShell activePath="/pdf-tools"><div className="dashboard organize-pdf-page"><OrganizeSeoContent /><PdfToolUpload title="Organize PDF" description="Reorder, rotate, duplicate, delete or add blank pages to your PDF." icon={GripVertical} inputRef={inputRef} onFiles={(files) => void addFiles(files)} buttonLabel="Select PDF files" headingLevel="h2" /></div></DashboardShell>;
 
   return <DashboardShell activePath="/pdf-tools"><div className="dashboard organize-pdf-page">
+    <OrganizeSeoContent />
     <input ref={inputRef} hidden multiple type="file" accept="application/pdf,.pdf" onChange={(event) => { if (event.target.files?.length) void addFiles(event.target.files); event.target.value = ""; }} />
     <div className="organize-topline"><Link href="/pdf-tools"><ArrowLeft size={16} /> PDF Tools</Link><span><ShieldCheck size={16} /> Free · Private browser processing</span></div>
     <div className="organize-studio">
@@ -86,7 +87,7 @@ export default function OrganizePdfPage() {
         <div className="organize-hint"><Sparkles size={18} /><span><strong>Tip</strong> Drag any page card and drop it at the desired position.</span></div>
         <div className="organize-side-actions">{processing ? <div><span>Creating PDF… {progress}%</span><progress value={progress} max="100" /></div> : null}<button className="organize-submit" type="button" disabled={processing || loading || !pages.length} onClick={organize}>{processing ? <LoaderCircle className="spin" size={19} /> : <GripVertical size={19} />} {processing ? "Organizing…" : "Organize PDF"}</button></div>
       </aside> : <ToolPromotionRail context="organize-result" />}
-    </div>{error ? <div className="profile-alert error organize-error">{error}</div> : null}<OrganizeSeoContent />
+    </div>{error ? <div className="profile-alert error organize-error">{error}</div> : null}
   </div></DashboardShell>;
 }
 

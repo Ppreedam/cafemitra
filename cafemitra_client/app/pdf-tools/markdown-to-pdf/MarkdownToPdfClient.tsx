@@ -116,7 +116,7 @@ export default function MarkdownToPdfClient() {
           <button className={activeTab === "css" ? "active" : ""} type="button" onClick={() => setActiveTab("css")}><Palette size={18} /> Custom CSS</button>
           <button type="button" onClick={() => setFullscreen((value) => !value)}><Expand size={18} /> {fullscreen ? "Exit" : "Fullscreen"}</button>
         </div>
-        <h1>HTML Preview</h1>
+        <h2>HTML Preview</h2>
         <button type="button" onClick={generatePdf} disabled={busy}><Download size={18} /> {busy ? "Generating..." : "Generate PDF"}</button>
       </header>
       {error ? <p className="mdpdf-status mdpdf-status-error">{error}</p> : null}

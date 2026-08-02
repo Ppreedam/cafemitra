@@ -50,8 +50,9 @@ export default function OcrPdfPage() {
 
   function downloadText() { if (!result) return; const url = URL.createObjectURL(new Blob([result.text], { type: "text/plain;charset=utf-8" })); triggerDownload(url, `${baseName(file?.name || "ocr")}-ocr.txt`); setTimeout(() => URL.revokeObjectURL(url), 1000); }
 
-  if (!file) return <DashboardShell activePath="/pdf-tools"><div className="dashboard ocr-pdf-page"><PdfToolUpload title="OCR PDF" description="Convert scanned PDF pages into searchable documents and extract their text." icon={FileSearch} inputRef={inputRef} onFiles={(files) => void chooseFile(files)} multiple={false} buttonLabel="Select PDF file" headingLevel="h2" /><OcrSeoContent /></div></DashboardShell>;
+  if (!file) return <DashboardShell activePath="/pdf-tools"><div className="dashboard ocr-pdf-page"><OcrSeoContent /><PdfToolUpload title="OCR PDF" description="Convert scanned PDF pages into searchable documents and extract their text." icon={FileSearch} inputRef={inputRef} onFiles={(files) => void chooseFile(files)} multiple={false} buttonLabel="Select PDF file" headingLevel="h2" /></div></DashboardShell>;
   return <DashboardShell activePath="/pdf-tools"><div className="dashboard ocr-pdf-page">
+    <OcrSeoContent />
     <input ref={inputRef} hidden type="file" accept="application/pdf,.pdf" onChange={(event) => { if (event.target.files?.length) void chooseFile(event.target.files); event.target.value = ""; }} />
     <div className="ocr-topline"><Link href="/pdf-tools"><ArrowLeft size={16} /> PDF Tools</Link><span><ShieldCheck size={16} /> Text extraction runs on server</span></div>
     <div className="ocr-studio"><section className="ocr-canvas"><header><div><h2>OCR PDF</h2><p>{file.name} · {pages.length} pages · {formatBytes(file.size)}</p></div><button type="button" disabled={processing} onClick={() => inputRef.current?.click()}>Replace PDF</button></header>
@@ -63,7 +64,6 @@ export default function OcrPdfPage() {
       <div className="ocr-side-actions">{processing ? <div><span>{status} · {progress}%</span><progress value={progress} max="100" /></div> : null}<button className="ocr-submit" type="button" disabled={processing || loading || !selected.size} onClick={runOcr}>{processing ? <LoaderCircle className="spin" size={19} /> : <FileSearch size={19} />} {processing ? "Extracting…" : "Extract Text"}</button><button type="button" disabled={processing} onClick={reset}><RotateCcw size={16} /> Start over</button></div>
     </aside> : <ToolPromotionRail context="ocr-result" />}</div>{error ? <div className="profile-alert error ocr-error">{error}</div> : null}
     {showText && result ? <div className="ocr-text-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowText(false); }}><section><header><div><h2>Recognized text</h2><p>{file.name}</p></div><button type="button" onClick={() => setShowText(false)}><X size={20} /></button></header><pre>{result.text || "No readable text was detected."}</pre><footer><button type="button" onClick={downloadText}><Download size={17} /> Download TXT</button></footer></section></div> : null}
-    <OcrSeoContent />
   </div></DashboardShell>;
 }
 

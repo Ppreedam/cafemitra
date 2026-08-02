@@ -77,6 +77,7 @@ export default function MergePdfClient({ children }: { children?: ReactNode }) {
   return (
     <DashboardShell activePath="/pdf-tools">
       <div className={`dashboard merge-studio ${items.length ? "has-files" : "empty"}`}>
+        {children}
         {items.length ? <input ref={inputRef} hidden multiple type="file" accept="application/pdf,.pdf" onChange={(event: ChangeEvent<HTMLInputElement>) => { if (event.target.files) void addFiles(event.target.files); event.target.value = ""; }} /> : null}
         {items.length ? <div className="merge-studio-top"><Link href="/pdf-tools"><ArrowLeft size={17} /> PDF Tools</Link><span><ShieldCheck size={16} /> Free, private browser processing</span></div> : null}
 
@@ -118,7 +119,6 @@ export default function MergePdfClient({ children }: { children?: ReactNode }) {
           </div>
         )}
         {error ? <div className="profile-alert error merge-error" role="alert">{error}</div> : null}
-        {children}
 
         {preview && selectedPreviewPage ? <div className="pdf-preview-backdrop" role="dialog" aria-modal="true" aria-label={`Preview ${preview.file.name}`} onMouseDown={(event) => { if (event.target === event.currentTarget) setPreviewId(null); }}>
           <section className="pdf-preview-modal">

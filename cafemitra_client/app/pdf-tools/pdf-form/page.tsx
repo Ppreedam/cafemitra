@@ -282,5 +282,5 @@ function JsonLd() {
 }
 
 export default function PdfFormPage() {
-  return <DashboardShell activePath="/pdf-tools"><div className="dashboard generic-pdf-tool-page"><PdfEditTool slug="pdf-forms" headingLevel="h2" /><JsonLd /><article className="tool-seo-content" id="pdf-form-guide"><StructuredSeoCopy /></article></div></DashboardShell>;
+  return <DashboardShell activePath="/pdf-tools"><div className="dashboard generic-pdf-tool-page"><JsonLd /><article className="tool-seo-content" id="pdf-form-guide"><StructuredSeoCopy /></article><PdfEditTool slug="pdf-forms" headingLevel="h2" /></div></DashboardShell>;
 }

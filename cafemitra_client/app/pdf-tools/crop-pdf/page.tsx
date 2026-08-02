@@ -295,5 +295,5 @@ function JsonLd() {
 }
 
 export default function CropPdfPage() {
-  return <DashboardShell activePath="/pdf-tools"><div className="dashboard generic-pdf-tool-page"><PdfEditTool slug="crop-pdf" headingLevel="h2" /><JsonLd /><article className="tool-seo-content" id="crop-pdf-guide"><StructuredSeoCopy /></article></div></DashboardShell>;
+  return <DashboardShell activePath="/pdf-tools"><div className="dashboard generic-pdf-tool-page"><JsonLd /><article className="tool-seo-content" id="crop-pdf-guide"><StructuredSeoCopy /></article><PdfEditTool slug="crop-pdf" headingLevel="h2" /></div></DashboardShell>;
 }

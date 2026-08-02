@@ -126,10 +126,15 @@ export default function PdfToolsPage() {
   return (
     <DashboardShell activePath="/pdf-tools">
       <div className="dashboard pdf-tools-page">
+          <JsonLd />
+          <article className="tool-seo-content compress-pdf-seo" id="pdf-tools-guide">
+            <StructuredSeoCopy content={seoContent} />
+          </article>
+
           <div className="dashboard-hero pdf-tools-hero">
             <div>
               <span className="auto-print-kicker">PrintPilot PDF Tools</span>
-              <h1>PDF Tools</h1>
+              <h2>PDF Tools</h2>
               <p>Merge, split, compress, convert, scan, OCR, and AI tools for daily PDF work in one place.</p>
             </div>
             <span className="status-pill">30 Tools Ready</span>
@@ -148,17 +153,13 @@ export default function PdfToolsPage() {
               </Link>
             ))}
           </section>
-
-          <JsonLd />
-          <article className="tool-seo-content compress-pdf-seo" id="pdf-tools-guide">
-            <StructuredSeoCopy content={seoContent} />
-          </article>
       </div>
     </DashboardShell>
   );
 }
 
-const seoContent = String.raw`RepetiGo's free PDF tools cover the entire day-to-day PDF workflow - merge, split, compress, convert to and from Word, Excel, and PowerPoint, sign, watermark, OCR, and more - all in one place, with no sign-up and no watermark on your output. Every tool runs entirely inside your browser: your document is never uploaded to a server, which matters when the file is a scanned Aadhaar card, a mark sheet, a contract, or anything else you'd rather not send anywhere.
+const seoContent = String.raw`H1: Free PDF Tools Online. Merge, Split, Compress, Convert, Sign, and Edit PDF Files - 30+ Tools, No Sign-Up.
+RepetiGo's free PDF tools cover the entire day-to-day PDF workflow - merge, split, compress, convert to and from Word, Excel, and PowerPoint, sign, watermark, OCR, and more - all in one place, with no sign-up and no watermark on your output. Every tool runs entirely inside your browser: your document is never uploaded to a server, which matters when the file is a scanned Aadhaar card, a mark sheet, a contract, or anything else you'd rather not send anywhere.
 Pick any tool from the grid above and get started immediately - no account, no install, no credit card.
 
 H2: What Can You Do With RepetiGo's Free PDF Tools?

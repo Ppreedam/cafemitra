@@ -115,6 +115,7 @@ export default function HeicToJpgClient({ children }: { children?: ReactNode }) 
   return (
     <DashboardShell activePath="/image-tools">
       <div className="dashboard compress-pdf-page">
+        {children}
         {items.length ? (
           <>
             <input
@@ -139,22 +140,19 @@ export default function HeicToJpgClient({ children }: { children?: ReactNode }) 
           </>
         ) : null}
         {!items.length ? (
-          <>
-            <PdfToolUpload
-              title="HEIC to JPG"
-              description="Convert HEIC or HEIF iPhone photos into JPG - one at a time or in a batch."
-              icon={FileImage}
-              inputRef={inputRef}
-              onFiles={(files) => void addFiles(files)}
-              accept="image/heic,image/heif,image/heic-sequence,image/heif-sequence,.heic,.heif"
-              buttonLabel="Select HEIC photos"
-              dropLabel="or drop HEIC or HEIF photos here"
-              headingLevel={children ? "h2" : "h1"}
-              backHref="/image-tools"
-              backLabel="Image Tools"
-            />
-            {children}
-          </>
+          <PdfToolUpload
+            title="HEIC to JPG"
+            description="Convert HEIC or HEIF iPhone photos into JPG - one at a time or in a batch."
+            icon={FileImage}
+            inputRef={inputRef}
+            onFiles={(files) => void addFiles(files)}
+            accept="image/heic,image/heif,image/heic-sequence,image/heif-sequence,.heic,.heif"
+            buttonLabel="Select HEIC photos"
+            dropLabel="or drop HEIC or HEIF photos here"
+            headingLevel={children ? "h2" : "h1"}
+            backHref="/image-tools"
+            backLabel="Image Tools"
+          />
         ) : (
           <div className="compress-studio">
             <section className={`compress-workspace ${dragging ? "dragging" : ""}`} onDragOver={(event) => { event.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={drop}>
@@ -250,7 +248,6 @@ export default function HeicToJpgClient({ children }: { children?: ReactNode }) 
           </div>
         )}
         {error ? <div className="profile-alert error compress-error" role="alert">{error}</div> : null}
-        {items.length ? children : null}
         {previewItem?.result ? <ImagePreviewModal item={previewItem} onClose={() => setPreviewItem(null)} /> : null}
       </div>
     </DashboardShell>
