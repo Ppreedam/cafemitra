@@ -150,6 +150,10 @@ export function AuthPanel({ mode }: AuthPanelProps) {
         router.push(getPostAuthRedirectPath());
       } else {
         setApiNotice(data.message || "Please check your email to continue.");
+        if (isRegister) {
+          setValues(initialValues);
+          setTouched({});
+        }
       }
     } catch (error) {
       setApiError(error instanceof Error ? error.message : "Something went wrong.");

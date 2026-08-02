@@ -40,7 +40,7 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
-import { apiUrl, clearSession, hasStoredSession } from "@/lib/api";
+import { clearSession, hasStoredSession } from "@/lib/api";
 import { fetchPricingServices, formatPriceItem, normalizePaymentMode, savePricingService, saveServicePrinter, type PriceItem, type PriceRange } from "@/lib/pricing";
 import {
   deleteAgentPrinterPreset,
@@ -647,7 +647,7 @@ export default function AutoPrintPage() {
                       <p>Install the desktop app on the computer connected to your printer.</p>
                     </div>
                   </div>
-                  <a className="btn btn-primary" href={apiUrl("/api/agent/installer")} target="_blank" rel="noreferrer" onClick={() => setAgentDownloaded(true)}>
+                  <a className="btn btn-primary" href="https://raw.githubusercontent.com/httpsankit/cafemitra_updates/refs/heads/main/RepetigoInstaller.exe" target="_blank" rel="noreferrer" onClick={() => setAgentDownloaded(true)}>
                     <Download size={16} /> Download Agent
                   </a>
                 </div>
