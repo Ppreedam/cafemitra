@@ -32,7 +32,7 @@ export default function HowToMergePdfBlogPage() {
   };
 
   return (
-    <main className="public-blog-shell">
+    <main className="ai-landing-shell public-blog-shell">
       <LandingNavbar />
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }} />
       <article className="public-blog-article">

@@ -131,6 +131,8 @@ const features = [
     icon: Users,
     text:
       "PrintPilot includes a built-in passport photo creation tool that generates government-standard passport and visa photos automatically. AI detects face boundaries, corrects background colour, applies the correct dimensions for any country's visa requirements, and outputs a print-ready file immediately. No Photoshop. No manual sizing. No guessing whether the dimensions are correct. For shops that offer this service, passport photo creation is typically one of the highest-margin daily revenue streams.",
+    link: "Make a Passport Photo",
+    href: "/tools/photo/passport-photo/",
   },
   {
     id: "analytics",
@@ -294,6 +296,7 @@ const relatedLinks = [
   ["Print Shop Solution", "PrintPilot for standalone print shops and Xerox centres.", "#who-its-for"],
   ["RepetiGo vs WhatsApp", "Honest comparison of PrintPilot and WhatsApp for document handling in print shops.", "#comparison"],
   ["Pricing", "All PrintPilot plans, features included, and how to start your free trial.", "/pricing"],
+  ["RepetiGo Blog", "Guides and how-tos on print automation, PDF tools, and image tools.", "/blog"],
 ];
 
 const schemaGraph = [

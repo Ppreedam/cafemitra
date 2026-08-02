@@ -36,6 +36,7 @@ import {
 import { HomeHeaderActions } from "./HomeHeaderActions";
 import { hasStoredSession } from "@/lib/api";
 import { releaseFlags } from "./release-flags";
+import { blogPosts } from "./blog-data";
 
 const serviceMenu = [
   {
@@ -159,6 +160,7 @@ export function LandingNavbar() {
   const isServicesActive = pathname === "/print-automation";
   const isPdfToolsActive = pathname.startsWith("/pdf-tools");
   const isImageToolsActive = pathname.startsWith("/image-tools");
+  const isBlogActive = pathname.startsWith("/blog");
   const isContactActive = pathname === "/contact-us";
 
   useEffect(() => {
@@ -202,6 +204,12 @@ export function LandingNavbar() {
             </button>
             <ImageToolsMegaMenu />
           </div>
+          <div className="nav-dropdown nav-blog">
+            <Link className={isBlogActive ? "nav-dropdown-trigger nav-link-active" : "nav-dropdown-trigger"} href="/blog">
+              Blog <ChevronDown size={14} aria-hidden />
+            </Link>
+            <BlogMegaMenu />
+          </div>
           <Link className={isContactActive ? "nav-link-active" : undefined} href="/contact-us">
             Contact Us
           </Link>
@@ -223,6 +231,30 @@ function PdfToolsMegaMenu() {
     </section>)}
     <Link className="pdf-menu-all" href="/pdf-tools">View all PDF tools <ArrowRight size={15} /></Link>
   </div>;
+}
+
+function BlogMegaMenu() {
+  return (
+    <div className="nav-mega-menu blog-nav-menu" aria-label="Blog menu">
+      {blogPosts.map((post) => {
+        const Icon = post.icon;
+        return (
+          <Link href={post.href} key={post.slug}>
+            <span className="blog-nav-menu-icon" style={{ "--service-menu-color": post.color } as React.CSSProperties}>
+              <Icon size={16} aria-hidden />
+            </span>
+            <span className="blog-nav-menu-text">
+              <span className="blog-nav-menu-category">{post.category}</span>
+              <strong>{post.title}</strong>
+            </span>
+          </Link>
+        );
+      })}
+      <Link className="pdf-menu-all" href="/blog">
+        View all blog posts <ArrowRight size={15} />
+      </Link>
+    </div>
+  );
 }
 
 function ImageToolsMegaMenu() {
