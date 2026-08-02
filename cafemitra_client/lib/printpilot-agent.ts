@@ -57,7 +57,8 @@ const agentTestPrintEndpoints = ["http://127.0.0.1:8765/test-print"];
 const agentPosterPrintEndpoints = ["http://127.0.0.1:8765/poster-print"];
 const agentPrinterPresetsEndpoints = ["http://127.0.0.1:8765/printer-presets"];
 const agentDeletePrinterPresetEndpoints = ["http://127.0.0.1:8765/printer-presets/delete"];
-const agentRequestTimeoutMs = 700;
+const agentRequestTimeoutMs = 5000;
+const agentPrintRequestTimeoutMs = 30000;
 
 export async function fetchAgentHealth() {
   try {
@@ -84,7 +85,7 @@ export async function runAgentTestPrint(request: TestPrintRequest) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(request),
-  });
+  }, agentPrintRequestTimeoutMs);
 }
 
 export async function runAgentPosterPrint(request: TestPrintRequest) {
@@ -92,7 +93,7 @@ export async function runAgentPosterPrint(request: TestPrintRequest) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(request),
-  });
+  }, agentPrintRequestTimeoutMs);
 }
 
 export async function fetchAgentPrinterPresets() {
@@ -115,12 +116,12 @@ export async function deleteAgentPrinterPreset(preset: PrinterPreset) {
   });
 }
 
-async function fetchAgentEndpoint<T>(endpoints: string[], init?: RequestInit) {
+async function fetchAgentEndpoint<T>(endpoints: string[], init?: RequestInit, timeoutMs = agentRequestTimeoutMs) {
   let lastError: unknown;
 
   for (const endpoint of endpoints) {
     try {
-      const response = await withAgentTimeout(fetch(endpoint, { ...init, cache: "no-store" }));
+      const response = await withAgentTimeout(fetch(endpoint, { ...init, cache: "no-store" }), timeoutMs);
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(getAgentErrorMessage(result, getAgentFallbackMessage(init, endpoint)));
@@ -134,9 +135,9 @@ async function fetchAgentEndpoint<T>(endpoints: string[], init?: RequestInit) {
   throw lastError instanceof Error ? lastError : new Error("PrintPilot Agent request failed.");
 }
 
-function withAgentTimeout(request: Promise<Response>) {
+function withAgentTimeout(request: Promise<Response>, timeoutMs: number) {
   return new Promise<Response>((resolve, reject) => {
-    const timeout = window.setTimeout(() => reject(new Error("PrintPilot Agent request timed out.")), agentRequestTimeoutMs);
+    const timeout = window.setTimeout(() => reject(new Error("PrintPilot Agent request timed out.")), timeoutMs);
     request.then(
       (response) => {
         window.clearTimeout(timeout);
