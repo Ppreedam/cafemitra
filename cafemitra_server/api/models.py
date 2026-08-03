@@ -173,6 +173,7 @@ class WalletTransaction(models.Model):
     KIND_ONLINE_ORDER_CREDIT = "online_order_credit"
     KIND_CASH_COUNTER_COLLECTION = "cash_counter_collection"
     KIND_TOOL_USAGE = "tool_usage"
+    KIND_TOOL_USAGE_BLOCKED = "tool_usage_blocked"
     KIND_WITHDRAWAL = "withdrawal"
     KIND_TOPUP = "topup"
 

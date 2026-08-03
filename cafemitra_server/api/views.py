@@ -659,32 +659,38 @@ def create_wallet_transaction(user, kind, amount, direction, affects_balance=Tru
     amount = Decimal(amount).quantize(Decimal("0.01"))
     if amount <= 0:
         return None
-    if order and WalletTransaction.objects.filter(user=user, order=order, kind=kind).exists():
-        return None
-    if not order and kind == WalletTransaction.KIND_SIGNUP_BONUS and WalletTransaction.objects.filter(user=user, kind=kind).exists():
-        return None
 
-    profile, _ = UserProfile.objects.get_or_create(user=user, defaults={"phone": ""})
-    balance_after = profile.balance
-    if affects_balance:
-        if direction == WalletTransaction.DIRECTION_CREDIT:
-            balance_after = (profile.balance + amount).quantize(Decimal("0.01"))
-        elif direction == WalletTransaction.DIRECTION_DEBIT:
-            balance_after = (profile.balance - amount).quantize(Decimal("0.01"))
-        profile.balance = balance_after
-        profile.save(update_fields=["balance"])
+    # Locking the profile row + writing the ledger entry inside one atomic
+    # transaction keeps balance and history from ever going out of sync
+    # (no deduction without a matching row, no lost update from two
+    # concurrent debits racing on the same wallet).
+    with transaction.atomic():
+        if order and WalletTransaction.objects.filter(user=user, order=order, kind=kind).exists():
+            return None
+        if not order and kind == WalletTransaction.KIND_SIGNUP_BONUS and WalletTransaction.objects.filter(user=user, kind=kind).exists():
+            return None
 
-    return WalletTransaction.objects.create(
-        user=user,
-        order=order,
-        tool_key=tool_key,
-        kind=kind,
-        direction=direction,
-        amount=amount,
-        affects_balance=affects_balance,
-        balance_after=balance_after if affects_balance else None,
-        note=note,
-    )
+        profile, _ = UserProfile.objects.select_for_update().get_or_create(user=user, defaults={"phone": ""})
+        balance_after = profile.balance
+        if affects_balance:
+            if direction == WalletTransaction.DIRECTION_CREDIT:
+                balance_after = (profile.balance + amount).quantize(Decimal("0.01"))
+            elif direction == WalletTransaction.DIRECTION_DEBIT:
+                balance_after = (profile.balance - amount).quantize(Decimal("0.01"))
+            profile.balance = balance_after
+            profile.save(update_fields=["balance"])
+
+        return WalletTransaction.objects.create(
+            user=user,
+            order=order,
+            tool_key=tool_key,
+            kind=kind,
+            direction=direction,
+            amount=amount,
+            affects_balance=affects_balance,
+            balance_after=balance_after if affects_balance else None,
+            note=note,
+        )
 
 
 def ensure_signup_wallet_bonus(user):
@@ -715,47 +721,79 @@ def charge_wallet_for_tool(user, tool_key, quantity=1, order=None):
         return True, "", None
 
     price_total = (tool.price * Decimal(quantity)).quantize(Decimal("0.01"))
-    profile, _ = UserProfile.objects.get_or_create(user=user, defaults={"phone": ""})
-    projected_balance = (profile.balance - price_total).quantize(Decimal("0.01"))
     credit_limit = get_wallet_setting("credit_limit")
 
-    if projected_balance < credit_limit:
-        return False, (
-            f"Your wallet balance is too low for {tool.label} (minimum allowed balance is Rs. {credit_limit}). "
-            "Please top up your wallet to continue."
-        ), None
+    # Lock the wallet row for the whole check-then-deduct sequence so two
+    # concurrent calls for the same user (double-click, webhook retry)
+    # can't both pass the limit checks against the same stale balance and
+    # both deduct - the second one re-checks against the now-updated
+    # balance once it gets the lock.
+    with transaction.atomic():
+        profile, _ = UserProfile.objects.select_for_update().get_or_create(user=user, defaults={"phone": ""})
+        projected_balance = (profile.balance - price_total).quantize(Decimal("0.01"))
 
-    if profile.balance <= Decimal("0.00"):
-        daily_limit = get_wallet_setting("daily_grace_limit")
-        today = timezone.localdate()
-        used_today = (
-            WalletTransaction.objects.filter(
-                user=user,
-                kind=WalletTransaction.KIND_TOOL_USAGE,
-                balance_after__lt=Decimal("0.00"),
-                created_at__date=today,
+        if projected_balance < credit_limit:
+            message = (
+                f"Your wallet balance is too low for {tool.label} (minimum allowed balance is Rs. {credit_limit}). "
+                "Please top up your wallet to continue."
             )
-            .aggregate(total=Sum("amount"))
-            .get("total")
-            or Decimal("0.00")
-        )
-        if used_today + price_total > daily_limit:
-            return False, (
-                f"You've reached today's free-usage limit (Rs. {daily_limit}/day while your wallet balance is low). "
-                "Please top up your wallet to keep using paid tools today."
-            ), None
+            # Log the skipped charge even though nothing is deducted, so a
+            # service delivered for free (e.g. a print already completed
+            # before the wallet is checked) still leaves an audit trail.
+            create_wallet_transaction(
+                user,
+                WalletTransaction.KIND_TOOL_USAGE_BLOCKED,
+                price_total,
+                WalletTransaction.DIRECTION_INFO,
+                False,
+                order=order,
+                tool_key=tool_key,
+                note=f"{tool.label} usage NOT charged (below credit limit): {message}",
+            )
+            return False, message, None
 
-    transaction = create_wallet_transaction(
-        user,
-        WalletTransaction.KIND_TOOL_USAGE,
-        price_total,
-        WalletTransaction.DIRECTION_DEBIT,
-        True,
-        order=order,
-        tool_key=tool_key,
-        note=f"{tool.label} usage" + (f" x{quantity}" if quantity != 1 else "") + ".",
-    )
-    return True, "", transaction
+        if profile.balance <= Decimal("0.00"):
+            daily_limit = get_wallet_setting("daily_grace_limit")
+            today = timezone.localdate()
+            used_today = (
+                WalletTransaction.objects.filter(
+                    user=user,
+                    kind=WalletTransaction.KIND_TOOL_USAGE,
+                    balance_after__lt=Decimal("0.00"),
+                    created_at__date=today,
+                )
+                .aggregate(total=Sum("amount"))
+                .get("total")
+                or Decimal("0.00")
+            )
+            if used_today + price_total > daily_limit:
+                message = (
+                    f"You've reached today's free-usage limit (Rs. {daily_limit}/day while your wallet balance is low). "
+                    "Please top up your wallet to keep using paid tools today."
+                )
+                create_wallet_transaction(
+                    user,
+                    WalletTransaction.KIND_TOOL_USAGE_BLOCKED,
+                    price_total,
+                    WalletTransaction.DIRECTION_INFO,
+                    False,
+                    order=order,
+                    tool_key=tool_key,
+                    note=f"{tool.label} usage NOT charged (daily grace limit reached): {message}",
+                )
+                return False, message, None
+
+        wallet_txn = create_wallet_transaction(
+            user,
+            WalletTransaction.KIND_TOOL_USAGE,
+            price_total,
+            WalletTransaction.DIRECTION_DEBIT,
+            True,
+            order=order,
+            tool_key=tool_key,
+            note=f"{tool.label} usage" + (f" x{quantity}" if quantity != 1 else "") + ".",
+        )
+        return True, "", wallet_txn
 
 
 def wallet_usage_gate(user, tool_key, quantity=1):
@@ -1582,19 +1620,24 @@ def request_withdrawal(request):
         return JsonResponse({"message": "Enter UPI ID or bank account details."}, status=400)
     if method == "UPI" and not UPI_ID_PATTERN.match(account_detail):
         return JsonResponse({"message": "Enter a valid UPI ID like name@bank or mobile@upi."}, status=400)
-    net_withdrawable = wallet_collection_summary(user)["netWithdrawable"]
-    if net_withdrawable < amount:
-        return JsonResponse({"message": "Amount is higher than withdrawable balance after Reptigo commission."}, status=400)
+    # Lock the wallet row before re-checking withdrawable balance so two
+    # concurrent withdrawal requests can't both pass the check against the
+    # same stale balance and both create a debit.
+    with transaction.atomic():
+        UserProfile.objects.select_for_update().get_or_create(user=user, defaults={"phone": ""})
+        net_withdrawable = wallet_collection_summary(user)["netWithdrawable"]
+        if net_withdrawable < amount:
+            return JsonResponse({"message": "Amount is higher than withdrawable balance after Reptigo commission."}, status=400)
 
-    withdrawal = WithdrawalRequest.objects.create(user=user, amount=amount, method=method, account_detail=account_detail, note=note)
-    create_wallet_transaction(
-        user,
-        WalletTransaction.KIND_WITHDRAWAL,
-        amount,
-        WalletTransaction.DIRECTION_DEBIT,
-        True,
-        note=f"Withdrawal requested via {method}.",
-    )
+        withdrawal = WithdrawalRequest.objects.create(user=user, amount=amount, method=method, account_detail=account_detail, note=note)
+        create_wallet_transaction(
+            user,
+            WalletTransaction.KIND_WITHDRAWAL,
+            amount,
+            WalletTransaction.DIRECTION_DEBIT,
+            True,
+            note=f"Withdrawal requested via {method}.",
+        )
 
     return JsonResponse({"withdrawal": public_withdrawal(withdrawal), "balance": float(wallet_balance(user))}, status=201)
 
