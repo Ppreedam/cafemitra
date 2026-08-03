@@ -2261,6 +2261,10 @@ def save_raw_passport_photo(request):
     if not prompt:
         return JsonResponse({"message": "A prompt is required."}, status=400)
 
+    allowed, gate_message = wallet_usage_gate(user, "passport_photo")
+    if not allowed:
+        return JsonResponse({"message": gate_message}, status=402)
+
     ensure_service_pricing(user)
     pricing = ServicePricing.objects.filter(user=user, service_key="passport_photo").first()
     service_name = pricing.service_name if pricing else "Passport Size Photo"
@@ -2428,6 +2432,7 @@ def complete_passport_job(request, job_id):
     order.photo_status = PrintOrder.PHOTO_STATUS_DONE
     order.photo_updated_at = timezone.now()
     order.save(update_fields=["gemini_photo", "photo_status", "photo_updated_at"])
+    charge_wallet_for_tool(user, "passport_photo", quantity=1, order=order)
     return JsonResponse(public_passport_job(order, request))
 
 

@@ -102,7 +102,7 @@ export default function PassportPhotoPage() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [viewOrder, setViewOrder] = useState<ExistingPassportOrder | null>(null);
-  const [paperSize, setPaperSize] = useState<PaperSize>("4x6");
+  const [paperSize, setPaperSize] = useState<PaperSize | null>(null);
   const [stepCursor, setStepCursor] = useState(0);
   const dropRef = useRef<HTMLLabelElement | null>(null);
   const attemptsRef = useRef(0);
