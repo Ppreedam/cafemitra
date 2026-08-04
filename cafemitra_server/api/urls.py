@@ -52,6 +52,8 @@ urlpatterns = [
     re_path(r"^public-orders/(?P<order_id>[0-9]+)/check-upi-payment/?$", views.public_check_upi_payment),  # POST poll UPI collect status for an order
     re_path(r"^public-orders/(?P<order_id>[0-9]+)/razorpay/order/?$", views.public_create_razorpay_order),  # POST create a Razorpay order for online payment
     re_path(r"^public-orders/(?P<order_id>[0-9]+)/razorpay/verify/?$", views.public_verify_razorpay_payment),  # POST verify a completed Razorpay payment signature
+    re_path(r"^public-orders/(?P<order_id>[0-9]+)/payu/order/?$", views.public_create_payu_order),  # POST build the PayU hosted-checkout form fields for online payment
+    re_path(r"^public-orders/(?P<order_id>[0-9]+)/payu/callback/?$", views.public_payu_callback),  # POST PayU surl/furl target - verifies hash, updates order, redirects back to the storefront
     re_path(r"^public-orders/(?P<order_id>[0-9]+)/delete-document/?$", views.public_delete_order_document),  # POST customer deletes their document once printed
 
     # --- Passport Photo (authenticated wizard flow) -------------------------

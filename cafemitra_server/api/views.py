@@ -19,7 +19,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models import Max, Q, Sum
-from django.http import FileResponse, HttpResponse, JsonResponse
+from django.http import FileResponse, HttpResponse, HttpResponseRedirect, JsonResponse
 from django.utils.html import escape
 from django.utils import timezone
 from django.utils.dateparse import parse_date
@@ -29,7 +29,7 @@ from django.views.decorators.http import require_http_methods
 from .background_remover.remove_background import BackgroundRemovalError, remove_background_bytes
 from .background_remover.passport_photo_processor import ProcessingError, enhance_transparent_bytes
 from .models import AuthToken, ContactMessage, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, UserProfile, WalletSetting, WalletTransaction, WithdrawalRequest
-from cafemitra_server.product_setting import active_payment_gateway
+from cafemitra_server.product_setting import PAYMENT_GATEWAYS, active_payment_gateway
 
 User = get_user_model()
 
@@ -1085,6 +1085,27 @@ def razorpay_request(path, payload, config):
         return None, "Razorpay is temporarily unavailable. Please try again."
 
 
+PAYU_TEST_ACTION_URL = "https://test.payu.in/_payment"
+PAYU_LIVE_ACTION_URL = "https://secure.payu.in/_payment"
+
+
+def payu_action_url(config):
+    return PAYU_LIVE_ACTION_URL if config.get("mode") == "live" else PAYU_TEST_ACTION_URL
+
+
+def payu_hash(key, txnid, amount, productinfo, firstname, email, salt):
+    # PayU hosted-checkout request hash: key|txnid|amount|productinfo|firstname|email|udf1..udf10|salt.
+    # We don't use udf1-10, so all ten stay empty.
+    parts = [key, txnid, amount, productinfo, firstname, email] + [""] * 10 + [salt]
+    return hashlib.sha512("|".join(parts).encode("utf-8")).hexdigest()
+
+
+def payu_reverse_hash(salt, status, key, txnid, amount, productinfo, firstname, email):
+    # Response hash is the same fields reversed, salt first, key last (still empty udf1-10).
+    parts = [salt, status] + [""] * 10 + [email, firstname, productinfo, amount, txnid, key]
+    return hashlib.sha512("|".join(parts).encode("utf-8")).hexdigest()
+
+
 def agent_order(order, request):
     payload = public_order(order)
     payload["downloadUrl"] = request.build_absolute_uri(order.document.url) if order.document else ""
@@ -1879,6 +1900,96 @@ def public_verify_razorpay_payment(request, order_id):
         order.gateway_payment_id = payment_id
         order.save(update_fields=["payment_status", "status", "paid_at", "gateway_payment_id"])
     return JsonResponse({"order": public_order(order)})
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def public_create_payu_order(request, order_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+    order = PrintOrder.objects.filter(id=order_id).first()
+    if not order:
+        return JsonResponse({"message": "Order not found."}, status=404)
+    gateway, config = active_payment_gateway()
+    if gateway != "payu" or order.payment_gateway != "payu":
+        return JsonResponse({"message": "PayU is not enabled for this order."}, status=400)
+    if order.payment_status != PrintOrder.PAYMENT_PENDING:
+        return JsonResponse({"message": "This order is not awaiting payment."}, status=400)
+
+    if not order.gateway_order_id:
+        order.gateway_order_id = f"cm{order.id}{secrets.token_hex(6)}"
+        order.save(update_fields=["gateway_order_id"])
+
+    txnid = order.gateway_order_id
+    amount = f"{order.total_amount:.2f}"
+    productinfo = f"Print order {order.shop_code}-{order.id:05d}"[:100]
+    # PayU's hash requires firstname/email but the storefront only collects a
+    # phone number, so we send fixed placeholders - fine for the payment flow,
+    # just means PayU's own receipt emails won't reach the actual customer.
+    firstname = "Customer"
+    email = "customer@cafemitra.app"
+    callback_url = request.build_absolute_uri(f"/api/public-orders/{order.id}/payu/callback/")
+
+    hash_value = payu_hash(config["merchant_key"], txnid, amount, productinfo, firstname, email, config["salt"])
+
+    return JsonResponse({"payment": {
+        "gateway": "payu",
+        "actionUrl": payu_action_url(config),
+        "fields": {
+            "key": config["merchant_key"],
+            "txnid": txnid,
+            "amount": amount,
+            "productinfo": productinfo,
+            "firstname": firstname,
+            "email": email,
+            "phone": order.customer_phone,
+            "surl": callback_url,
+            "furl": callback_url,
+            "hash": hash_value,
+        },
+    }})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def public_payu_callback(request, order_id):
+    order = PrintOrder.objects.filter(id=order_id).first()
+    if not order:
+        return HttpResponseRedirect(settings.FRONTEND_URL)
+
+    payu_config = PAYMENT_GATEWAYS.get("payu", {})
+    configured_key = str(payu_config.get("merchant_key", ""))
+    salt = str(payu_config.get("salt", ""))
+
+    key = str(request.POST.get("key", ""))
+    txnid = str(request.POST.get("txnid", ""))
+    status = str(request.POST.get("status", ""))
+    amount = str(request.POST.get("amount", ""))
+    productinfo = str(request.POST.get("productinfo", ""))
+    firstname = str(request.POST.get("firstname", ""))
+    email = str(request.POST.get("email", ""))
+    received_hash = str(request.POST.get("hash", ""))
+    mihpayid = str(request.POST.get("mihpayid", ""))
+
+    valid = bool(salt) and bool(configured_key) and key == configured_key
+    valid = valid and order.payment_gateway == "payu" and txnid and txnid == order.gateway_order_id
+    if valid:
+        expected_hash = payu_reverse_hash(salt, status, key, txnid, amount, productinfo, firstname, email)
+        valid = bool(received_hash) and hmac.compare_digest(expected_hash, received_hash)
+    if valid:
+        valid = payment_amount_matches(amount, order.total_amount)
+
+    if valid and status.lower() == "success" and order.payment_status == PrintOrder.PAYMENT_PENDING:
+        order.payment_status = PrintOrder.PAYMENT_PAID
+        order.status = PrintOrder.STATUS_QUEUED
+        order.paid_at = timezone.now()
+        order.gateway_payment_id = mihpayid
+        order.save(update_fields=["payment_status", "status", "paid_at", "gateway_payment_id"])
+        result = "success"
+    else:
+        result = "failure"
+
+    return HttpResponseRedirect(f"{settings.FRONTEND_URL}/s/{order.shop_code}?order={order.id}&payment={result}")
 
 
 @csrf_exempt

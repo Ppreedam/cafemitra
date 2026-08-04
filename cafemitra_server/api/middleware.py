@@ -15,6 +15,14 @@ def is_debug_lan_origin(origin):
     return False
 
 
+def is_gateway_callback_path(path):
+    # Payment gateways (e.g. PayU) redirect the customer's browser back with a
+    # server-to-server style POST, not a frontend fetch() call - it carries no
+    # origin we control, so the CORS origin check below doesn't apply. These
+    # endpoints verify authenticity via a signed hash in the view itself.
+    return path.rstrip("/").endswith("/payu/callback")
+
+
 class SimpleCorsMiddleware:
     def __init__(self, get_response):
         self.get_response = get_response
@@ -24,7 +32,7 @@ class SimpleCorsMiddleware:
         allowed_origins = getattr(settings, "CORS_ALLOWED_ORIGINS", set())
         origin_allowed = origin in allowed_origins or is_debug_lan_origin(origin)
         unsafe_method = request.method not in {"GET", "HEAD", "OPTIONS", "TRACE"}
-        if origin and not origin_allowed and unsafe_method:
+        if origin and not origin_allowed and unsafe_method and not is_gateway_callback_path(request.path):
             return JsonResponse({"message": "Origin is not allowed."}, status=403)
 
         if request.method == "OPTIONS":

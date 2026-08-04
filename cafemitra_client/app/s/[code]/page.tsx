@@ -127,6 +127,32 @@ export default function CustomerScanPage() {
       );
   }, [params.code]);
 
+  // PayU is a full-page redirect flow (unlike Razorpay's popup), so after
+  // PayU sends the browser back here the React state is gone - recover the
+  // order from the ?order= query param the backend callback appended.
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const orderIdParam = searchParams.get("order");
+    const paymentResult = searchParams.get("payment");
+    if (!orderIdParam) return;
+
+    fetch(apiUrl(`/api/public-orders/${orderIdParam}/`))
+      .then(async (response) => {
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.message || "Could not load the order.");
+        return result;
+      })
+      .then((result: { order: PrintOrder }) => {
+        setOrder(result.order);
+        if (paymentResult === "success" || result.order.paymentStatus === "paid") {
+          setPaymentMessage("Payment received. Your document has been sent to the print queue.");
+        } else if (paymentResult === "failure") {
+          setPaymentMessage("Payment was not completed. Click Pay with PayU to retry.");
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const activeService = useMemo(() => data?.services.find((service) => service.serviceKey === selectedService), [data, selectedService]);
   const allowedPaymentModes = useMemo(() => getAllowedPaymentModes(activeService), [activeService]);
   const priceItems = activeService ? getPriceItems(activeService) : [];
@@ -188,6 +214,7 @@ export default function CustomerScanPage() {
   const isOnlinePaymentOrder = order?.paymentStatus === "pending" && paymentMode === "Online Payment";
   const isDirectUpiOrder = isOnlinePaymentOrder && order?.paymentGateway === "direct_upi";
   const isRazorpayOrder = isOnlinePaymentOrder && order?.paymentGateway === "razorpay";
+  const isPayuOrder = isOnlinePaymentOrder && order?.paymentGateway === "payu";
   const upiLink = useMemo(() => (order && data ? buildUpiLink(order, data.shop.shopName) : ""), [data, order]);
   const isCafeOpen = data?.status.open !== false;
 
@@ -553,6 +580,8 @@ export default function CustomerScanPage() {
       if (result.order?.paymentStatus === "pending" && paymentMode === "Online Payment") {
         if (result.order.paymentGateway === "razorpay") {
           await openRazorpay(result.order);
+        } else if (result.order.paymentGateway === "payu") {
+          await openPayu(result.order);
         } else {
           setPaymentStarted(true);
           setPaymentMessage("Scan the QR code or open your UPI app. We will verify payment automatically.");
@@ -631,6 +660,35 @@ export default function CustomerScanPage() {
     } catch (paymentError) {
       setOrderError(paymentError instanceof Error ? paymentError.message : "Could not start Razorpay.");
     } finally {
+      setIsSubmittingOrder(false);
+    }
+  }
+
+  async function openPayu(targetOrder: PrintOrder) {
+    setIsSubmittingOrder(true);
+    setOrderError("");
+    try {
+      const response = await fetch(apiUrl(`/api/public-orders/${targetOrder.id}/payu/order/`), { method: "POST" });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.message || "Could not start PayU.");
+
+      // PayU has no JS popup for hosted checkout - submit a real form so the
+      // browser navigates to PayU's page; it redirects back to our backend
+      // callback, which then redirects here with ?order=&payment=.
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = result.payment.actionUrl;
+      Object.entries(result.payment.fields as Record<string, string>).forEach(([fieldName, fieldValue]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = fieldName;
+        input.value = fieldValue;
+        form.appendChild(input);
+      });
+      document.body.appendChild(form);
+      form.submit();
+    } catch (paymentError) {
+      setOrderError(paymentError instanceof Error ? paymentError.message : "Could not start PayU.");
       setIsSubmittingOrder(false);
     }
   }
@@ -1081,6 +1139,13 @@ export default function CustomerScanPage() {
             <button type="button" onClick={() => openRazorpay(order)} disabled={isSubmittingOrder}>
               <Wallet size={18} /> {isSubmittingOrder ? "Opening Razorpay..." : "Pay with Razorpay"}
             </button>
+          ) : isPayuOrder && order ? (
+            <div className="upi-payment-box">
+              {paymentMessage ? <small>{paymentMessage}</small> : null}
+              <button type="button" onClick={() => openPayu(order)} disabled={isSubmittingOrder}>
+                <Wallet size={18} /> {isSubmittingOrder ? "Opening PayU..." : "Pay with PayU"}
+              </button>
+            </div>
           ) : (
             <button type="button" onClick={createPrintOrder} disabled={!hasUploadedFile || !finalFile || isSubmittingOrder || Boolean(order)}>
               <Wallet size={18} /> {isSubmittingOrder ? "Creating Order..." : order ? "Order Created" : "Continue to Payment"}

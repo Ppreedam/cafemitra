@@ -28,6 +28,15 @@ ALLOWED_HOSTS = [host.strip() for host in os.getenv("DJANGO_ALLOWED_HOSTS", "api
 if DEBUG and "*" not in ALLOWED_HOSTS:
     ALLOWED_HOSTS.append("*")
 
+# Nginx terminates HTTPS and forwards plain HTTP to Django in production, so
+# without this Django thinks every request is insecure - request.is_secure()
+# and request.build_absolute_uri() (used to build the PayU surl/furl) would
+# generate http:// URLs, which then get redirected to https:// and drop the
+# POST body PayU sent. Requires nginx to set X-Forwarded-Proto itself (not
+# forward whatever the client sent) - standard `proxy_set_header
+# X-Forwarded-Proto $scheme;` in the nginx config already does this.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
 INSTALLED_APPS = [
     "django.contrib.admin",
     "django.contrib.auth",
@@ -147,3 +156,26 @@ EMAIL_TIMEOUT = int(os.getenv("SMTP_TIMEOUT", "15"))
 EMAIL_HOST_USER = os.getenv("SMTP_USER", "")
 EMAIL_HOST_PASSWORD = os.getenv("SMTP_PASSWORD", "")
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "support@repetigo.com")
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {"format": "{asctime} {levelname} {name}: {message}", "style": "{"},
+    },
+    "handlers": {
+        "console": {"class": "logging.StreamHandler", "formatter": "verbose"},
+        "file": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": BASE_DIR / "django_errors.log",
+            "maxBytes": 5 * 1024 * 1024,
+            "backupCount": 3,
+            "formatter": "verbose",
+            "level": "ERROR",
+        },
+    },
+    "loggers": {
+        "django": {"handlers": ["console", "file"], "level": "INFO", "propagate": True},
+        "django.request": {"handlers": ["console", "file"], "level": "ERROR", "propagate": False},
+    },
+}

@@ -140,9 +140,12 @@ export function AuthPanel({ mode }: AuthPanelProps) {
         }),
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => null);
       if (!response.ok) {
-        throw new Error(data.message ?? "Something went wrong.");
+        throw new Error(data?.message ?? "Server error. Please try again in a moment.");
+      }
+      if (!data) {
+        throw new Error("Unexpected response from server. Please try again.");
       }
 
       if (data.token) {
