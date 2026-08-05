@@ -15,12 +15,16 @@ def is_debug_lan_origin(origin):
     return False
 
 
+GATEWAY_CALLBACK_PATH_SUFFIXES = ("/payu/callback", "/webhooks/phonepe")
+
+
 def is_gateway_callback_path(path):
-    # Payment gateways (e.g. PayU) redirect the customer's browser back with a
-    # server-to-server style POST, not a frontend fetch() call - it carries no
-    # origin we control, so the CORS origin check below doesn't apply. These
-    # endpoints verify authenticity via a signed hash in the view itself.
-    return path.rstrip("/").endswith("/payu/callback")
+    # Payment gateways POST here directly (browser redirect POST, or a
+    # server-to-server webhook) - not a frontend fetch() call, so there's no
+    # origin we control and the CORS origin check below doesn't apply. These
+    # endpoints verify authenticity via a signed hash/credential in the view.
+    trimmed = path.rstrip("/")
+    return any(trimmed.endswith(suffix) for suffix in GATEWAY_CALLBACK_PATH_SUFFIXES)
 
 
 class SimpleCorsMiddleware:

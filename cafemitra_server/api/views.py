@@ -1106,6 +1106,67 @@ def payu_reverse_hash(salt, status, key, txnid, amount, productinfo, firstname, 
     return hashlib.sha512("|".join(parts).encode("utf-8")).hexdigest()
 
 
+PHONEPE_TEST_AUTH_URL = "https://api-preprod.phonepe.com/apis/pg-sandbox/v1/oauth/token"
+PHONEPE_LIVE_AUTH_URL = "https://api.phonepe.com/apis/identity-manager/v1/oauth/token"
+PHONEPE_TEST_PAY_URL = "https://api-preprod.phonepe.com/apis/pg-sandbox/checkout/v2/pay"
+PHONEPE_LIVE_PAY_URL = "https://api.phonepe.com/apis/pg/checkout/v2/pay"
+PHONEPE_TEST_STATUS_URL = "https://api-preprod.phonepe.com/apis/pg-sandbox/checkout/v2/order/{}/status"
+PHONEPE_LIVE_STATUS_URL = "https://api.phonepe.com/apis/pg/checkout/v2/order/{}/status"
+
+
+def phonepe_urls(config):
+    live = config.get("mode") == "live"
+    return {
+        "auth": PHONEPE_LIVE_AUTH_URL if live else PHONEPE_TEST_AUTH_URL,
+        "pay": PHONEPE_LIVE_PAY_URL if live else PHONEPE_TEST_PAY_URL,
+        "status": PHONEPE_LIVE_STATUS_URL if live else PHONEPE_TEST_STATUS_URL,
+    }
+
+
+def phonepe_access_token(config):
+    # Standard Checkout v2 auth: client credentials -> short-lived O-Bearer token.
+    # Fetched fresh per order (no caching) - simplest thing that works at this volume.
+    body = urllib.parse.urlencode({
+        "client_id": config.get("client_id", ""),
+        "client_version": config.get("client_version") or "1",
+        "client_secret": config.get("client_secret", ""),
+        "grant_type": "client_credentials",
+    }).encode("utf-8")
+    request = urllib.request.Request(
+        phonepe_urls(config)["auth"], data=body,
+        headers={"Content-Type": "application/x-www-form-urlencoded"}, method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+            token = payload.get("access_token")
+            return (token, None) if token else (None, "PhonePe did not return an access token.")
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode("utf-8", errors="replace")
+        return None, detail or "PhonePe authentication failed."
+    except (urllib.error.URLError, TimeoutError):
+        return None, "PhonePe is temporarily unavailable. Please try again."
+
+
+def phonepe_api_call(method, url, token, payload=None):
+    data = json.dumps(payload).encode("utf-8") if payload is not None else None
+    request = urllib.request.Request(
+        url, data=data, method=method,
+        headers={"Content-Type": "application/json", "Authorization": f"O-Bearer {token}"},
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=20) as response:
+            return json.loads(response.read().decode("utf-8")), None
+    except urllib.error.HTTPError as error:
+        try:
+            detail = json.loads(error.read().decode("utf-8")).get("message")
+        except (json.JSONDecodeError, AttributeError):
+            detail = None
+        return None, detail or "PhonePe rejected the payment request."
+    except (urllib.error.URLError, TimeoutError):
+        return None, "PhonePe is temporarily unavailable. Please try again."
+
+
 def agent_order(order, request):
     payload = public_order(order)
     payload["downloadUrl"] = request.build_absolute_uri(order.document.url) if order.document else ""
@@ -1990,6 +2051,116 @@ def public_payu_callback(request, order_id):
         result = "failure"
 
     return HttpResponseRedirect(f"{settings.FRONTEND_URL}/s/{order.shop_code}?order={order.id}&payment={result}")
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def public_create_phonepe_order(request, order_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+    order = PrintOrder.objects.filter(id=order_id).first()
+    if not order:
+        return JsonResponse({"message": "Order not found."}, status=404)
+    gateway, config = active_payment_gateway()
+    if gateway != "phonepe" or order.payment_gateway != "phonepe":
+        return JsonResponse({"message": "PhonePe is not enabled for this order."}, status=400)
+    if order.payment_status != PrintOrder.PAYMENT_PENDING:
+        return JsonResponse({"message": "This order is not awaiting payment."}, status=400)
+
+    if not order.gateway_order_id:
+        order.gateway_order_id = f"cm{order.id}{secrets.token_hex(6)}"
+        order.save(update_fields=["gateway_order_id"])
+
+    token, error = phonepe_access_token(config)
+    if error:
+        return JsonResponse({"message": error}, status=502)
+
+    callback_url = request.build_absolute_uri(f"/api/public-orders/{order.id}/phonepe/callback/")
+    payload = {
+        "merchantOrderId": order.gateway_order_id,
+        "amount": int(order.total_amount * 100),
+        "expireAfter": 1200,
+        "paymentFlow": {
+            "type": "PG_CHECKOUT",
+            "message": f"Print order {order.shop_code}-{order.id:05d}",
+            "merchantUrls": {"redirectUrl": callback_url},
+        },
+    }
+    result, error = phonepe_api_call("POST", phonepe_urls(config)["pay"], token, payload)
+    if error or not result or not result.get("redirectUrl"):
+        return JsonResponse({"message": error or "PhonePe did not return a checkout URL."}, status=502)
+
+    return JsonResponse({"payment": {"gateway": "phonepe", "redirectUrl": result["redirectUrl"]}})
+
+
+@require_http_methods(["GET"])
+def public_phonepe_callback(request, order_id):
+    order = PrintOrder.objects.filter(id=order_id).first()
+    if not order:
+        return HttpResponseRedirect(settings.FRONTEND_URL)
+
+    result = "success" if order.payment_status == PrintOrder.PAYMENT_PAID else "failure"
+    phonepe_config = PAYMENT_GATEWAYS.get("phonepe", {})
+    if order.payment_gateway == "phonepe" and order.gateway_order_id and order.payment_status == PrintOrder.PAYMENT_PENDING:
+        # PhonePe's return redirect carries no verifiable payload - re-check
+        # status server-side via the authenticated Order Status API instead
+        # of trusting anything the browser brings back.
+        token, error = phonepe_access_token(phonepe_config)
+        if not error:
+            status_url = phonepe_urls(phonepe_config)["status"].format(order.gateway_order_id)
+            status_payload, error = phonepe_api_call("GET", status_url, token)
+            if not error and status_payload:
+                state = str(status_payload.get("state", "")).upper()
+                amount_paise = status_payload.get("amount")
+                amount_ok = amount_paise is None or payment_amount_matches(Decimal(amount_paise) / 100, order.total_amount)
+                if state == "COMPLETED" and amount_ok:
+                    order.payment_status = PrintOrder.PAYMENT_PAID
+                    order.status = PrintOrder.STATUS_QUEUED
+                    order.paid_at = timezone.now()
+                    order.gateway_payment_id = str(status_payload.get("orderId") or order.gateway_order_id)
+                    order.save(update_fields=["payment_status", "status", "paid_at", "gateway_payment_id"])
+                    result = "success"
+
+    return HttpResponseRedirect(f"{settings.FRONTEND_URL}/s/{order.shop_code}?order={order.id}&payment={result}")
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def phonepe_webhook(request):
+    phonepe_config = PAYMENT_GATEWAYS.get("phonepe", {})
+    expected_username = phonepe_config.get("webhook_username", "")
+    expected_password = phonepe_config.get("webhook_password", "")
+    if not expected_username or not expected_password:
+        return JsonResponse({"message": "Webhook not configured."}, status=503)
+
+    expected_auth = hashlib.sha256(f"{expected_username}:{expected_password}".encode("utf-8")).hexdigest()
+    received_auth = request.headers.get("Authorization", "")
+    if not received_auth or not hmac.compare_digest(expected_auth, received_auth):
+        return JsonResponse({"message": "Invalid webhook credentials."}, status=401)
+
+    body = parse_body(request)
+    # PhonePe nests event data under "payload"; fall back to the top level in
+    # case a particular event type doesn't use that wrapper.
+    payload = body.get("payload") if isinstance(body.get("payload"), dict) else body
+    merchant_order_id = str(payload.get("merchantOrderId") or payload.get("orderId") or "")
+    state = str(payload.get("state") or body.get("event") or "").upper()
+    amount_paise = payload.get("amount")
+
+    order = PrintOrder.objects.filter(gateway_order_id=merchant_order_id, payment_gateway="phonepe").first() if merchant_order_id else None
+    if not order:
+        return JsonResponse({"message": "ok"})
+
+    is_success = "COMPLETED" in state or "SUCCESS" in state
+    amount_ok = amount_paise is None or payment_amount_matches(Decimal(amount_paise) / 100, order.total_amount)
+
+    if is_success and amount_ok and order.payment_status == PrintOrder.PAYMENT_PENDING:
+        order.payment_status = PrintOrder.PAYMENT_PAID
+        order.status = PrintOrder.STATUS_QUEUED
+        order.paid_at = timezone.now()
+        order.gateway_payment_id = str(payload.get("orderId") or merchant_order_id)
+        order.save(update_fields=["payment_status", "status", "paid_at", "gateway_payment_id"])
+
+    return JsonResponse({"message": "ok"})
 
 
 @csrf_exempt

@@ -147,7 +147,7 @@ export default function CustomerScanPage() {
         if (paymentResult === "success" || result.order.paymentStatus === "paid") {
           setPaymentMessage("Payment received. Your document has been sent to the print queue.");
         } else if (paymentResult === "failure") {
-          setPaymentMessage("Payment was not completed. Click Pay with PayU to retry.");
+          setPaymentMessage("Payment was not completed. Please try again.");
         }
       })
       .catch(() => {});
@@ -215,6 +215,7 @@ export default function CustomerScanPage() {
   const isDirectUpiOrder = isOnlinePaymentOrder && order?.paymentGateway === "direct_upi";
   const isRazorpayOrder = isOnlinePaymentOrder && order?.paymentGateway === "razorpay";
   const isPayuOrder = isOnlinePaymentOrder && order?.paymentGateway === "payu";
+  const isPhonepeOrder = isOnlinePaymentOrder && order?.paymentGateway === "phonepe";
   const upiLink = useMemo(() => (order && data ? buildUpiLink(order, data.shop.shopName) : ""), [data, order]);
   const isCafeOpen = data?.status.open !== false;
 
@@ -582,6 +583,8 @@ export default function CustomerScanPage() {
           await openRazorpay(result.order);
         } else if (result.order.paymentGateway === "payu") {
           await openPayu(result.order);
+        } else if (result.order.paymentGateway === "phonepe") {
+          await openPhonepe(result.order);
         } else {
           setPaymentStarted(true);
           setPaymentMessage("Scan the QR code or open your UPI app. We will verify payment automatically.");
@@ -689,6 +692,21 @@ export default function CustomerScanPage() {
       form.submit();
     } catch (paymentError) {
       setOrderError(paymentError instanceof Error ? paymentError.message : "Could not start PayU.");
+      setIsSubmittingOrder(false);
+    }
+  }
+
+  async function openPhonepe(targetOrder: PrintOrder) {
+    setIsSubmittingOrder(true);
+    setOrderError("");
+    try {
+      const response = await fetch(apiUrl(`/api/public-orders/${targetOrder.id}/phonepe/order/`), { method: "POST" });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.message || "Could not start PhonePe.");
+      // PhonePe returns its own hosted checkout URL - just navigate there.
+      window.location.href = result.payment.redirectUrl;
+    } catch (paymentError) {
+      setOrderError(paymentError instanceof Error ? paymentError.message : "Could not start PhonePe.");
       setIsSubmittingOrder(false);
     }
   }
@@ -1144,6 +1162,13 @@ export default function CustomerScanPage() {
               {paymentMessage ? <small>{paymentMessage}</small> : null}
               <button type="button" onClick={() => openPayu(order)} disabled={isSubmittingOrder}>
                 <Wallet size={18} /> {isSubmittingOrder ? "Opening PayU..." : "Pay with PayU"}
+              </button>
+            </div>
+          ) : isPhonepeOrder && order ? (
+            <div className="upi-payment-box">
+              {paymentMessage ? <small>{paymentMessage}</small> : null}
+              <button type="button" onClick={() => openPhonepe(order)} disabled={isSubmittingOrder}>
+                <Wallet size={18} /> {isSubmittingOrder ? "Opening PhonePe..." : "Pay with PhonePe"}
               </button>
             </div>
           ) : (

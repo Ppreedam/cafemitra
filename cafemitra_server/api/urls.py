@@ -54,6 +54,9 @@ urlpatterns = [
     re_path(r"^public-orders/(?P<order_id>[0-9]+)/razorpay/verify/?$", views.public_verify_razorpay_payment),  # POST verify a completed Razorpay payment signature
     re_path(r"^public-orders/(?P<order_id>[0-9]+)/payu/order/?$", views.public_create_payu_order),  # POST build the PayU hosted-checkout form fields for online payment
     re_path(r"^public-orders/(?P<order_id>[0-9]+)/payu/callback/?$", views.public_payu_callback),  # POST PayU surl/furl target - verifies hash, updates order, redirects back to the storefront
+    re_path(r"^public-orders/(?P<order_id>[0-9]+)/phonepe/order/?$", views.public_create_phonepe_order),  # POST create a PhonePe Standard Checkout order, returns the hosted redirectUrl
+    re_path(r"^public-orders/(?P<order_id>[0-9]+)/phonepe/callback/?$", views.public_phonepe_callback),  # GET PhonePe return redirect target - re-checks status via API, redirects back to the storefront
+    re_path(r"^webhooks/phonepe/?$", views.phonepe_webhook),  # POST PhonePe server-to-server payment status webhook (Authorization: sha256(username:password))
     re_path(r"^public-orders/(?P<order_id>[0-9]+)/delete-document/?$", views.public_delete_order_document),  # POST customer deletes their document once printed
 
     # --- Passport Photo (authenticated wizard flow) -------------------------
