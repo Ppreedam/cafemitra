@@ -49,6 +49,16 @@ class UserProfile(models.Model):
     phone = models.CharField(max_length=10)
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     profile_photo = models.TextField(blank=True)
+    # Per-cafe override for how negative the wallet is allowed to go before
+    # paid tools are blocked. Null means "use the global WalletSetting
+    # credit_limit" - only set from Django admin, on a case-by-case basis.
+    credit_limit_override = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    # Platform-granted permission to offer Cash Counter as a customer
+    # payment option. Even when permitted, it's further auto-locked live
+    # whenever the wallet balance drops to/below the effective credit limit
+    # (see cash_counter_available in views.py) - a cafe already owing the
+    # platform money can't also start collecting untracked cash.
+    cash_counter_permitted = models.BooleanField(default=True)
 
     def __str__(self) -> str:
         return self.user.get_full_name() or self.user.email
@@ -236,6 +246,12 @@ class ToolPricing(models.Model):
     label = models.CharField(max_length=160)
     unit = models.CharField(max_length=80, blank=True, default="per use")
     price = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    # Optional per-context override on top of `price`: B2C = tool usage
+    # triggered by serving a customer order (a PrintOrder is involved), B2B =
+    # the cafe owner using the tool directly from their own dashboard. Null
+    # means "fall back to `price`" so existing single-rate rows keep working.
+    price_b2b = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    price_b2c = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
     is_billable = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -265,6 +281,32 @@ class WithdrawalRequest(models.Model):
 
     def __str__(self) -> str:
         return f"Withdrawal {self.amount} for {self.user_id}"
+
+
+class WalletTopup(models.Model):
+    """A gateway-backed wallet recharge (KIND_TOPUP once credited) - mirrors
+    PrintOrder's payment fields but scoped to wallet top-ups instead of a
+    print job, since a top-up isn't tied to any order.
+    """
+
+    STATUS_PENDING = "pending"
+    STATUS_PAID = "paid"
+    STATUS_FAILED = "failed"
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="wallet_topups")
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_gateway = models.CharField(max_length=40, blank=True)
+    gateway_order_id = models.CharField(max_length=120, blank=True)
+    gateway_payment_id = models.CharField(max_length=120, blank=True)
+    status = models.CharField(max_length=20, default=STATUS_PENDING)
+    created_at = models.DateTimeField(auto_now_add=True)
+    paid_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"Topup {self.amount} for {self.user_id} ({self.status})"
 
 
 class GooglePlace(models.Model):

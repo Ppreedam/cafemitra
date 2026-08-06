@@ -5,14 +5,10 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import type React from "react";
 import {
-  BadgeCheck,
   Check,
   Eye,
   EyeOff,
-  FileText,
-  LockKeyhole,
   Printer,
-  ShieldCheck,
   UserRound,
 } from "lucide-react";
 import { apiUrl, storeSession } from "@/lib/api";
@@ -456,43 +452,7 @@ function getPostAuthRedirectPath() {
 function AuthIllustration() {
   return (
     <div className="auth-illustration" aria-hidden="true">
-      <div className="auth-lock">
-        <LockKeyhole size={58} />
-      </div>
-      <div className="auth-phone">
-        <div className="phone-notch" />
-        <div className="phone-user">
-          <UserRound size={34} />
-        </div>
-        <span className="phone-line short" />
-        <span className="phone-box" />
-        <span className="phone-line" />
-        <span className="phone-box" />
-        <span className="phone-line" />
-        <span className="phone-dots" />
-        <button className="phone-button" type="button" tabIndex={-1} />
-      </div>
-      <div className="auth-person seated">
-        <span className="head" />
-        <span className="body" />
-        <span className="laptop" />
-      </div>
-      <div className="auth-person standing">
-        <span className="head" />
-        <span className="body" />
-        <span className="legs" />
-      </div>
-      <div className="auth-bubble">
-        <BadgeCheck size={30} />
-      </div>
-      <div className="auth-doc">
-        <FileText size={34} />
-      </div>
-      <div className="auth-shield">
-        <ShieldCheck size={32} />
-      </div>
-      <div className="plant plant-left" />
-      <div className="plant plant-right" />
+      <img className="auth-illustration-image" src="/login%20page%20image.jpeg" alt="" />
     </div>
   );
 }

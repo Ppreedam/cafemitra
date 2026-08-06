@@ -2,7 +2,7 @@
   "info": {
     "name": "CafeMitra Server API",
     "_postman_id": "9cc4e3aa-2d47-4b8e-bf39-cafemitra-api",
-    "description": "Import this collection in Postman. Set base_url if your Django server is not running on 127.0.0.1:8000. Source: cafemitra_server/api/urls.py and cafemitra_server/api/views.py.",
+    "description": "Import this collection in Postman. Set base_url if your Django server is not running on 127.0.0.1:8000. Source: cafemitra_server/api/urls.py and cafemitra_server/api/views.py. See API_DOCUMENTATION.md at the repo root for full request/response shapes and edge cases for every endpoint. Auth: most owner-facing endpoints require header 'Authorization: Bearer {{token}}' obtained from Login/Verify Email/Refresh Token (their test scripts auto-save {{token}}/{{refresh_token}}/{{shop_code}}). Public storefront and payment-callback endpoints are intentionally unauthenticated.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -62,6 +62,11 @@
       "type": "string"
     },
     {
+      "key": "topup_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
       "key": "job_id",
       "value": "1",
       "type": "string"
@@ -108,7 +113,7 @@
                 "status"
               ]
             },
-            "description": "GET /api/check/server/status/ | src: api.views.check_server_status"
+            "description": "GET /api/check/server/status/ | src: api.views.check_server_status | No auth. Always 200 {status:'ok', message}. Health-check only, no DB access."
           },
           "response": []
         },
@@ -122,10 +127,6 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"fullName\": \"Cafe Owner\",\n  \"email\": \"{{email}}\",\n  \"phone\": \"{{phone}}\",\n  \"subject\": \"General query\",\n  \"message\": \"Need help setting up my print shop.\"\n}"
-            },
             "url": {
               "raw": "{{base_url}}/api/contact-us/",
               "host": [
@@ -136,20 +137,41 @@
                 "contact-us"
               ]
             },
-            "description": "POST /api/contact-us/ | src: api.views.contact_message"
+            "description": "POST /api/contact-us/ | src: api.views.contact_message | No auth. Stores a ContactMessage row (visible only in Django admin - no email is sent). Edge cases: fullName<2 chars->400; invalid email format->400; phone (if given) must match ^[0-9+\\-\\s()]{7,24}$->400; subject<2 chars->400; message<10 or >5000 chars->400. Success is 201.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Cafe Owner\",\n  \"email\": \"{{email}}\",\n  \"phone\": \"{{phone}}\",\n  \"subject\": \"General query\",\n  \"message\": \"Need help setting up my print shop.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
         }
       ]
     },
     {
-      "name": "Tools",
+      "name": "Tools (standalone, no auth)",
       "item": [
         {
           "name": "AI Upscale Image",
           "request": {
             "method": "POST",
             "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/tools/ai-upscale-image/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "tools",
+                "ai-upscale-image"
+              ]
+            },
+            "description": "POST /api/tools/ai-upscale-image/ | src: api.views.ai_upscale_image | No auth. Relays the image to the provider at settings.AI_UPSCALE_API_URL and streams back the binary result (Content-Disposition: attachment). Edge cases: no 'image' file->400; file >15MB->413; content-type not jpeg/png/webp->400; scale not 2/4->400; output_format not webp/png/jpeg/jpg->400; AI_UPSCALE_API_URL unset->503; provider HTTP error->502 with providerDetail; provider unreachable/timeout->502; provider returns non-image or empty body->502.",
             "body": {
               "mode": "formdata",
               "formdata": [
@@ -162,28 +184,16 @@
                   "key": "scale",
                   "value": "2",
                   "type": "text",
-                  "description": "2 | 4"
+                  "description": "2 | 4 (default 2)"
                 },
                 {
                   "key": "output_format",
                   "value": "webp",
                   "type": "text",
-                  "description": "webp | png | jpeg"
+                  "description": "webp | png | jpeg | jpg (default webp)"
                 }
               ]
-            },
-            "url": {
-              "raw": "{{base_url}}/api/tools/ai-upscale-image/",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "tools",
-                "ai-upscale-image"
-              ]
-            },
-            "description": "POST /api/tools/ai-upscale-image/ | src: api.views.ai_upscale_image | Returns the upscaled image binary. Requires AI_UPSCALE_API_URL configured on the server."
+            }
           },
           "response": []
         },
@@ -192,6 +202,18 @@
           "request": {
             "method": "POST",
             "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/tools/extract-pdf-text/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "tools",
+                "extract-pdf-text"
+              ]
+            },
+            "description": "POST /api/tools/extract-pdf-text/ | src: api.views.extract_pdf_text | No auth. Requires PyMuPDF (fitz) installed on the server; returns {text, pages:[{page,text}], pageCount}. Edge cases: no 'pdf' file->400; file >30MB->413; not a PDF (by content-type and .pdf extension)->400; 'pages' present but not valid JSON array of ints->400; PDF is encrypted/corrupted and fitz.open() fails->400; fitz not installed on server->503.",
             "body": {
               "mode": "formdata",
               "formdata": [
@@ -204,22 +226,10 @@
                   "key": "pages",
                   "value": "[1,2]",
                   "type": "text",
-                  "description": "Optional JSON array of 1-based page numbers to extract"
+                  "description": "Optional JSON array of 1-based page numbers to extract; omit for all pages"
                 }
               ]
-            },
-            "url": {
-              "raw": "{{base_url}}/api/tools/extract-pdf-text/",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "tools",
-                "extract-pdf-text"
-              ]
-            },
-            "description": "POST /api/tools/extract-pdf-text/ | src: api.views.extract_pdf_text | Requires PyMuPDF (fitz) installed on the server."
+            }
           },
           "response": []
         },
@@ -227,17 +237,13 @@
           "name": "Remove Image Background",
           "request": {
             "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "image",
-                  "type": "file",
-                  "src": "{{image_path}}"
-                }
-              ]
-            },
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}",
+                "description": "Optional. If present and the tool is billable in ToolPricing, usage is charged to the wallet (402 if blocked). Anonymous calls are always free."
+              }
+            ],
             "url": {
               "raw": "{{base_url}}/api/tools/remove-image-background/",
               "host": [
@@ -249,7 +255,53 @@
                 "remove-image-background"
               ]
             },
-            "description": "POST /api/tools/remove-image-background/ | src: api.views.remove_image_background"
+            "description": "POST /api/tools/remove-image-background/ | src: api.views.remove_image_background | Auth optional (see header note). Returns a transparent PNG binary. Edge cases: no 'image' file->400; file >15MB->413; content-type not jpeg/png/webp->400; if authenticated and tool is billable, wallet below credit limit or daily grace cap ->402; background-removal library failure->502. Currently free for everyone because no billable 'background_remover' ToolPricing row exists by default.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "{{image_path}}"
+                },
+                {
+                  "key": "enhance",
+                  "value": "true",
+                  "type": "text",
+                  "description": "true|false - also run edge/halo cleanup after removal (default true)"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Enhance Background Image",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/tools/enhance-background-image/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "tools",
+                "enhance-background-image"
+              ]
+            },
+            "description": "POST /api/tools/enhance-background-image/ | src: api.views.enhance_background_image | No auth. Refines edges / removes color halo on an ALREADY-transparent PNG (post-processing step, not a background remover). Returns PNG binary. Edge cases: no 'image' file->400; file >15MB->413; content-type must be exactly image/png (jpeg/webp rejected, unlike other image tools)->400; processing library raises ProcessingError->400 with its message.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": "{{image_path}}"
+                }
+              ]
+            }
           },
           "response": []
         },
@@ -263,10 +315,6 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"url\": \"https://example.com\",\n  \"width\": 1440,\n  \"format\": \"png\"\n}"
-            },
             "url": {
               "raw": "{{base_url}}/api/tools/website-to-image/",
               "host": [
@@ -278,7 +326,16 @@
                 "website-to-image"
               ]
             },
-            "description": "POST /api/tools/website-to-image/ | src: api.views.website_to_image | width: 390 | 768 | 1280 | 1440 | 1920. format: png | jpeg. Requires WEBSITE_SCREENSHOT_API_URL configured on the server."
+            "description": "POST /api/tools/website-to-image/ | src: api.views.website_to_image | No auth. Full-page screenshot via settings.WEBSITE_SCREENSHOT_API_URL. Returns image binary. Edge cases: url missing scheme is auto-prefixed with https://; invalid/unparseable URL, or URL with embedded credentials (user:pass@host)->400; hostname resolves to localhost or any private/non-global IP (SSRF guard via DNS resolution)->400; width not one of 390/768/1280/1440/1920->400; format not png/jpeg->400; WEBSITE_SCREENSHOT_API_URL unset->503; provider HTTP error->502 with providerDetail; provider unreachable/timeout->502; provider returns non png/jpeg or empty->502.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"url\": \"https://example.com\",\n  \"width\": 1440,\n  \"format\": \"png\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
         },
@@ -287,6 +344,18 @@
           "request": {
             "method": "POST",
             "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/tools/detect-faces/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "tools",
+                "detect-faces"
+              ]
+            },
+            "description": "POST /api/tools/detect-faces/ | src: api.views.detect_faces | No auth. Requires opencv-python (cv2) + numpy on the server. Returns normalized (0-100 percentage) face bounding boxes: {faces:[{x,y,width,height}], count, width, height}. Edge cases: no 'image' file->400; file >15MB->413; content-type not jpeg/png/webp->400; cv2/numpy not installed->503; image bytes fail to decode->400; images are downscaled internally above 2400px on the longest side before detection (affects returned percentages only, not correctness); at sensitivity!='high', faces smaller than 18% of the largest detected face's area are discarded as false positives.",
             "body": {
               "mode": "formdata",
               "formdata": [
@@ -302,19 +371,7 @@
                   "description": "low | recommended | high"
                 }
               ]
-            },
-            "url": {
-              "raw": "{{base_url}}/api/tools/detect-faces/",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "tools",
-                "detect-faces"
-              ]
-            },
-            "description": "POST /api/tools/detect-faces/ | src: api.views.detect_faces | Requires opencv-python (cv2) installed on the server."
+            }
           },
           "response": []
         }
@@ -325,6 +382,37 @@
       "item": [
         {
           "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/register/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "register"
+              ]
+            },
+            "description": "POST /api/auth/register/ | src: api.views.register_user | No auth. Creates an inactive user + UserProfile + ShopProfile, then emails a verification link (24h TTL). Edge cases: invalid email format->400; fullName<2 chars->400; phone must be exactly 10 digits->400; password<8 chars->400; email already registered (matched on username=email)->409; SMTP send failure rolls back the just-created user and returns 500. Login is blocked (403) until verify-email succeeds.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"fullName\": \"Cafe Owner\",\n  \"phone\": \"{{phone}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -337,126 +425,10 @@
                 ]
               }
             }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{email}}\",\n  \"fullName\": \"Cafe Owner\",\n  \"phone\": \"{{phone}}\",\n  \"password\": \"{{password}}\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/auth/register/",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "register"
-              ]
-            },
-            "description": "POST /api/auth/register/ | src: api.views.register_user"
-          },
-          "response": []
-        },
-        {
-          "name": "Verify Email",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (pm.response.code === 200) {",
-                  "  const json = pm.response.json();",
-                  "  if (json.token) pm.collectionVariables.set('token', json.token);",
-                  "  if (json.refreshToken) pm.collectionVariables.set('refresh_token', json.refreshToken);",
-                  "  if (json.user && json.user.id) pm.collectionVariables.set('shop_code', 'CM' + String(json.user.id).padStart(4, '0'));",
-                  "}"
-                ]
-              }
-            }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"token\": \"{{verification_token}}\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/auth/verify-email/",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "verify-email"
-              ]
-            },
-            "description": "POST /api/auth/verify-email/ | src: api.views.verify_email | Paste token from console/email into verification_token."
-          },
-          "response": []
-        },
-        {
-          "name": "Resend Verification",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{email}}\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/auth/resend-verification/",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "auth",
-                "resend-verification"
-              ]
-            },
-            "description": "POST /api/auth/resend-verification/ | src: api.views.resend_verification"
-          },
-          "response": []
+          ]
         },
         {
           "name": "Login User",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (pm.response.code === 200) {",
-                  "  const json = pm.response.json();",
-                  "  if (json.token) pm.collectionVariables.set('token', json.token);",
-                  "  if (json.refreshToken) pm.collectionVariables.set('refresh_token', json.refreshToken);",
-                  "  if (json.user && json.user.id) pm.collectionVariables.set('shop_code', 'CM' + String(json.user.id).padStart(4, '0'));",
-                  "}"
-                ]
-              }
-            }
-          ],
           "request": {
             "method": "POST",
             "header": [
@@ -465,10 +437,6 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}"
-            },
             "url": {
               "raw": "{{base_url}}/api/auth/login/",
               "host": [
@@ -480,12 +448,18 @@
                 "login"
               ]
             },
-            "description": "POST /api/auth/login/ | src: api.views.login_user | Saves token, refresh_token, and shop_code on success. Each login/refresh gets its own AuthToken row, so a browser session and the desktop Print Agent no longer invalidate each other's token."
+            "description": "POST /api/auth/login/ | src: api.views.login_user | No auth. Issues a fresh access (1h) + refresh (30d) token pair; every login/refresh creates its OWN AuthToken row (browser tab and desktop Print Agent don't invalidate each other). Edge cases: account exists but is_active=False and password is correct -> 403 'verify your email'; wrong email/password -> 401 (same message for both, does not leak which field was wrong).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
-          "response": []
-        },
-        {
-          "name": "Refresh Token",
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -496,11 +470,15 @@
                   "  const json = pm.response.json();",
                   "  if (json.token) pm.collectionVariables.set('token', json.token);",
                   "  if (json.refreshToken) pm.collectionVariables.set('refresh_token', json.refreshToken);",
+                  "  if (json.user && json.user.id) pm.collectionVariables.set('shop_code', 'CM' + String(json.user.id).padStart(4, '0'));",
                   "}"
                 ]
               }
             }
-          ],
+          ]
+        },
+        {
+          "name": "Verify Email",
           "request": {
             "method": "POST",
             "header": [
@@ -509,22 +487,77 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}"
-            },
             "url": {
-              "raw": "{{base_url}}/api/auth/refresh/",
+              "raw": "{{base_url}}/api/auth/verify-email/",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "api",
                 "auth",
-                "refresh"
+                "verify-email"
               ]
             },
-            "description": "POST /api/auth/refresh/ | src: api.views.refresh_token"
+            "description": "POST /api/auth/verify-email/ | src: api.views.verify_email | No auth. Paste the token emailed to the user (or read it from the dev SMTP console backend). Activates the user, credits the one-time signup bonus wallet transaction, and returns a fresh token pair (auto-login). Edge cases: token not found, already used, or expired (24h TTL)->400 'invalid or expired'; re-using the same token a second time fails the same way (used_at is set on first use).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{verification_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.token) pm.collectionVariables.set('token', json.token);",
+                  "  if (json.refreshToken) pm.collectionVariables.set('refresh_token', json.refreshToken);",
+                  "  if (json.user && json.user.id) pm.collectionVariables.set('shop_code', 'CM' + String(json.user.id).padStart(4, '0'));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Resend Verification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/resend-verification/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "resend-verification"
+              ]
+            },
+            "description": "POST /api/auth/resend-verification/ | src: api.views.resend_verification | No auth. Always returns the same generic 200 message regardless of whether the account exists or is already active, to avoid leaking account existence. Edge cases: unknown email or already-active account -> still 200, no email sent (silent no-op); SMTP failure while sending -> 500.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
         },
@@ -538,10 +571,6 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{email}}\"\n}"
-            },
             "url": {
               "raw": "{{base_url}}/api/auth/request-password-reset/",
               "host": [
@@ -553,7 +582,16 @@
                 "request-password-reset"
               ]
             },
-            "description": "POST /api/auth/request-password-reset/ | src: api.views.request_password_reset"
+            "description": "POST /api/auth/request-password-reset/ | src: api.views.request_password_reset | No auth. Always 200 with a generic message regardless of whether the account exists (anti-enumeration), only actually emails a reset link (30 min TTL) if an active account matches. Edge cases: unknown email or inactive account -> still 200, no email sent; SMTP failure -> 500.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
         },
@@ -567,10 +605,6 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"token\": \"{{reset_token}}\",\n  \"password\": \"{{new_password}}\"\n}"
-            },
             "url": {
               "raw": "{{base_url}}/api/auth/reset-password/",
               "host": [
@@ -582,9 +616,67 @@
                 "reset-password"
               ]
             },
-            "description": "POST /api/auth/reset-password/ | src: api.views.reset_password | Paste token into reset_token."
+            "description": "POST /api/auth/reset-password/ | src: api.views.reset_password | No auth. Paste token from the reset email into reset_token. Edge cases: password<8 chars->400; token not found/used/expired (30 min TTL)->400; token valid but user.is_active is False->403 'verify your email first'; on success all existing sessions are NOT revoked (existing AuthToken rows remain valid until they naturally expire).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"{{reset_token}}\",\n  \"password\": \"{{new_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/auth/refresh/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "refresh"
+              ]
+            },
+            "description": "POST /api/auth/refresh/ | src: api.views.refresh_token | No auth (bearer refresh token in body instead). Rotates the access key + extends access expiry by 1h on the SAME AuthToken row; the refresh token itself does not change and keeps its original 30-day expiry. Edge cases: refreshToken missing/blank->401; refresh token not found or its own 30-day expiry has passed->401 'session expired, please login again' (client must re-login, refresh tokens are never auto-renewed).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refresh_token}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.token) pm.collectionVariables.set('token', json.token);",
+                  "  if (json.refreshToken) pm.collectionVariables.set('refresh_token', json.refreshToken);",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Change Password",
@@ -600,10 +692,6 @@
                 "value": "Bearer {{token}}"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"currentPassword\": \"{{password}}\",\n  \"newPassword\": \"{{new_password}}\"\n}"
-            },
             "url": {
               "raw": "{{base_url}}/api/auth/change-password/",
               "host": [
@@ -615,7 +703,16 @@
                 "change-password"
               ]
             },
-            "description": "POST /api/auth/change-password/ | src: api.views.change_password"
+            "description": "POST /api/auth/change-password/ | src: api.views.change_password | Auth required. Edge cases: missing/expired/invalid Bearer token->401; currentPassword incorrect->400; newPassword<8 chars->400; existing AuthToken sessions (other devices) are NOT revoked after a password change.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"{{password}}\",\n  \"newPassword\": \"{{new_password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
         },
@@ -629,10 +726,6 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"email\": \"{{email}}\"\n}"
-            },
             "url": {
               "raw": "{{base_url}}/api/auth/delete-account/",
               "host": [
@@ -644,7 +737,16 @@
                 "delete-account"
               ]
             },
-            "description": "POST /api/auth/delete-account/ | src: api.views.delete_account_by_email | Also accepts DELETE. Permanently deletes the account and its uploaded documents."
+            "description": "POST /api/auth/delete-account/ (DELETE also accepted) | src: api.views.delete_account_by_email | ** No auth and no password confirmation - only requires knowing the account's email address. ** Permanently deletes the user row (cascades to profile, shop, orders, wallet history, tokens via on_delete=CASCADE) and removes uploaded document files from disk/storage. This is irreversible. Edge cases: invalid email format->400; no account with that email/username (case-insensitive)->404; SECURITY NOTE worth confirming with the team: anyone who knows a shop owner's email can delete their entire account and order history with a single unauthenticated POST.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
         }
@@ -673,7 +775,7 @@
                 "profile"
               ]
             },
-            "description": "GET /api/profile/ | src: api.views.profile"
+            "description": "GET /api/profile/ | src: api.views.profile | Auth required. Returns {user, shop}. Edge cases: missing/expired/invalid token->401. First call for a user auto-creates blank UserProfile/ShopProfile rows if missing."
           },
           "response": []
         },
@@ -691,10 +793,6 @@
                 "value": "Bearer {{token}}"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"user\": {\n    \"fullName\": \"Cafe Owner\",\n    \"email\": \"{{email}}\",\n    \"phone\": \"{{phone}}\",\n    \"profilePhoto\": \"\"\n  },\n  \"shop\": {\n    \"shopName\": \"Cyber Cafe Shankar\",\n    \"logo\": \"\",\n    \"banner\": \"\",\n    \"address\": \"Main Road\",\n    \"city\": \"Patna\",\n    \"state\": \"Bihar\",\n    \"pinCode\": \"800001\",\n    \"mobile\": \"{{phone}}\",\n    \"whatsapp\": \"{{phone}}\",\n    \"email\": \"{{email}}\"\n  }\n}"
-            },
             "url": {
               "raw": "{{base_url}}/api/profile/",
               "host": [
@@ -705,7 +803,16 @@
                 "profile"
               ]
             },
-            "description": "PUT /api/profile/ | src: api.views.profile"
+            "description": "PUT /api/profile/ | src: api.views.profile | Auth required. Partial update: any field omitted from 'user'/'shop' keeps its current value. Edge cases: missing/expired/invalid token->401; no server-side format validation on email/phone/pinCode here (unlike register) - a malformed value will simply be saved as-is; changing 'email' does NOT change the login username (username stays the original registration email), so the account may end up with a login email different from profile email.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"user\": {\n    \"fullName\": \"Cafe Owner\",\n    \"email\": \"{{email}}\",\n    \"phone\": \"{{phone}}\",\n    \"profilePhoto\": \"\"\n  },\n  \"shop\": {\n    \"shopName\": \"My Print Shop\",\n    \"address\": \"\",\n    \"city\": \"\",\n    \"state\": \"\",\n    \"pinCode\": \"\",\n    \"mobile\": \"{{phone}}\",\n    \"whatsapp\": \"{{phone}}\",\n    \"email\": \"{{email}}\",\n    \"logo\": \"\",\n    \"banner\": \"\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
         }
@@ -714,6 +821,26 @@
     {
       "name": "Wallet",
       "item": [
+        {
+          "name": "Get Wallet Config (public)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/wallet/config/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "config"
+              ]
+            },
+            "description": "GET /api/wallet/config/ | src: api.views.wallet_config | No auth. Single source of truth for signup bonus, referral bonus, credit limit, daily grace limit, and every billable tool's price - the same numbers the pricing page shows are what's enforced server-side. Values live in WalletSetting/ToolPricing DB rows (Django admin editable), not code, and self-seed defaults on first read."
+          },
+          "response": []
+        },
         {
           "name": "Get Wallet",
           "request": {
@@ -744,22 +871,19 @@
                 },
                 {
                   "key": "ledgerType",
-                  "value": "all",
-                  "description": "all | withdrawable | tracked"
+                  "value": "all"
                 },
                 {
                   "key": "ledgerFrom",
-                  "value": "",
-                  "description": "YYYY-MM-DD"
+                  "value": ""
                 },
                 {
                   "key": "ledgerTo",
-                  "value": "",
-                  "description": "YYYY-MM-DD"
+                  "value": ""
                 }
               ]
             },
-            "description": "GET /api/wallet/ | src: api.views.wallet"
+            "description": "GET /api/wallet/ | src: api.views.wallet | Auth required. Returns balance, collection summary, limits, paginated transaction ledger, and withdrawal history (last 50). Query params (all optional): ledgerPage (default 1, clamped to last page if out of range), ledgerPageSize (default 8, max 50), ledgerType=all|withdrawable|tracked (withdrawable=affects_balance True, tracked=affects_balance False i.e. cash-counter info entries), ledgerFrom/ledgerTo=YYYY-MM-DD inclusive date range filters (invalid dates are silently ignored, not rejected). Edge case: missing/expired/invalid token->401."
           },
           "response": []
         },
@@ -777,10 +901,6 @@
                 "value": "Bearer {{token}}"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"amount\": 1,\n  \"method\": \"UPI\",\n  \"accountDetail\": \"owner@upi\",\n  \"note\": \"Test withdrawal\"\n}"
-            },
             "url": {
               "raw": "{{base_url}}/api/wallet/withdraw/",
               "host": [
@@ -792,14 +912,246 @@
                 "withdraw"
               ]
             },
-            "description": "POST /api/wallet/withdraw/ | src: api.views.request_withdrawal"
+            "description": "POST /api/wallet/withdraw/ | src: api.views.request_withdrawal | Auth required. Creates a pending WithdrawalRequest and immediately debits the wallet ledger (does not wait for admin approval to reduce the displayed withdrawable balance). Edge cases: amount<Rs.1->400; method not 'UPI' or 'Bank'->400; accountDetail<3 chars->400; method=UPI and accountDetail doesn't match name@bank pattern->400; amount exceeds current net withdrawable balance->400; the balance check + debit run inside a row-locked transaction so two concurrent withdrawal requests can't both pass against the same stale balance. Success is 201.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 100,\n  \"method\": \"UPI\",\n  \"accountDetail\": \"owner@upi\",\n  \"note\": \"Monthly withdrawal\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Wallet Topup",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/wallet/topup/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "topup"
+              ]
+            },
+            "description": "POST /api/wallet/topup/ | src: api.views.create_wallet_topup | Auth required. Creates a pending WalletTopup row scoped to whichever payment gateway is currently active (see active_payment_gateway() priority: phonepe > payu > razorpay > direct_upi). Call the matching '.../razorpay|payu|phonepe/order/' endpoint below next with the returned topup.id. Edge cases: amount<Rs.10->400; no gateway enabled, or only 'direct_upi' enabled (which has no online flow here)->503 'online top-up not available'.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 500\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.topup && json.topup.id) pm.collectionVariables.set('topup_id', json.topup.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Topup - Razorpay Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/wallet/topup/{{topup_id}}/razorpay/order/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "topup",
+                "{{topup_id}}",
+                "razorpay",
+                "order"
+              ]
+            },
+            "description": "POST /api/wallet/topup/{topup_id}/razorpay/order/ | src: api.views.wallet_topup_razorpay_order | Auth required, and the topup must belong to the caller. Creates (or reuses) a Razorpay order and returns the fields needed to open Razorpay Checkout client-side. Edge cases: topup not found or belongs to another user->404 (same message either way, no ownership leak); Razorpay isn't the active gateway or wasn't the gateway recorded on this topup->400; topup.status is not 'pending' (already paid/failed)->400; Razorpay API error->502."
+          },
+          "response": []
+        },
+        {
+          "name": "Topup - Razorpay Verify",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/wallet/topup/{{topup_id}}/razorpay/verify/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "topup",
+                "{{topup_id}}",
+                "razorpay",
+                "verify"
+              ]
+            },
+            "description": "POST /api/wallet/topup/{topup_id}/razorpay/verify/ | src: api.views.wallet_topup_verify_razorpay | Auth required. Verifies the HMAC-SHA256 signature Razorpay Checkout returns, then credits the wallet exactly once (row-locked, idempotent even if called twice). Edge cases: topup not found/not owned->404; gateway mismatch or order id mismatch->400; missing/invalid signature->400 'signature verification failed'; already-credited topup replays safely with no double credit.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpay_payment_id\": \"pay_xxx\",\n  \"razorpay_order_id\": \"order_xxx\",\n  \"razorpay_signature\": \"signature_xxx\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Topup - PayU Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/wallet/topup/{{topup_id}}/payu/order/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "topup",
+                "{{topup_id}}",
+                "payu",
+                "order"
+              ]
+            },
+            "description": "POST /api/wallet/topup/{topup_id}/payu/order/ | src: api.views.wallet_topup_payu_order | Auth required. Returns the hosted-checkout actionUrl + signed form fields to POST (as an HTML auto-submit form) to PayU. PayU then redirects the browser to the callback endpoint below with the payment result. Edge cases: topup not found/not owned->404; PayU not the active/recorded gateway->400; topup not 'pending'->400."
+          },
+          "response": []
+        },
+        {
+          "name": "Topup - PayU Callback (gateway->server redirect target)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/wallet/topup/{{topup_id}}/payu/callback/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "topup",
+                "{{topup_id}}",
+                "payu",
+                "callback"
+              ]
+            },
+            "description": "POST /api/wallet/topup/{topup_id}/payu/callback/ | src: api.views.wallet_topup_payu_callback | No auth - this is PayU's surl/furl target, called by the user's browser being redirected FROM PayU, not called directly by API clients. Verifies PayU's reverse hash + merchant key + amount before crediting, then 302-redirects to {FRONTEND_URL}/wallet?topup=<id>&payment=success|failure. Do not call this manually except to inspect the redirect Location header."
+          },
+          "response": []
+        },
+        {
+          "name": "Topup - PhonePe Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/wallet/topup/{{topup_id}}/phonepe/order/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "topup",
+                "{{topup_id}}",
+                "phonepe",
+                "order"
+              ]
+            },
+            "description": "POST /api/wallet/topup/{topup_id}/phonepe/order/ | src: api.views.wallet_topup_phonepe_order | Auth required. Fetches a fresh PhonePe OAuth token (no caching) and returns {payment:{gateway:'phonepe', redirectUrl}} - redirect the browser there to complete checkout. Edge cases: topup not found/not owned->404; PhonePe not active/recorded gateway->400; topup not 'pending'->400; PhonePe auth or pay API failure->502."
+          },
+          "response": []
+        },
+        {
+          "name": "Topup - PhonePe Callback (gateway->server redirect target)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/wallet/topup/{{topup_id}}/phonepe/callback/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "wallet",
+                "topup",
+                "{{topup_id}}",
+                "phonepe",
+                "callback"
+              ]
+            },
+            "description": "GET /api/wallet/topup/{topup_id}/phonepe/callback/ | src: api.views.wallet_topup_phonepe_callback | No auth - PhonePe's redirectUrl target. PhonePe's return redirect carries no verifiable payload, so this re-checks payment state server-side via PhonePe's authenticated Order Status API before crediting, then 302-redirects to {FRONTEND_URL}/wallet?topup=<id>&payment=success|failure. Also credited independently (and typically sooner) by the PhonePe webhook below."
           },
           "response": []
         }
       ]
     },
     {
-      "name": "Pricing",
+      "name": "Pricing Settings",
       "item": [
         {
           "name": "Get Pricing Settings",
@@ -821,7 +1173,7 @@
                 "pricing-settings"
               ]
             },
-            "description": "GET /api/pricing-settings/ | src: api.views.pricing_settings"
+            "description": "GET /api/pricing-settings/ | src: api.views.pricing_settings | Auth required. Returns {services:[...], cashCounter:{permitted, available, reason}} - auto_document_print and passport_photo rows are created with defaults on first call if missing. Edge case: missing/expired/invalid token->401."
           },
           "response": []
         },
@@ -839,10 +1191,6 @@
                 "value": "Bearer {{token}}"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"serviceKey\": \"auto_document_print\",\n  \"settings\": {\n    \"paymentMode\": \"Online Payment\",\n    \"priceItems\": [\n      {\n        \"id\": \"black_white\",\n        \"label\": \"Black & White\",\n        \"rate\": 2\n      },\n      {\n        \"id\": \"color\",\n        \"label\": \"Color\",\n        \"rate\": 10\n      }\n    ]\n  }\n}"
-            },
             "url": {
               "raw": "{{base_url}}/api/pricing-settings/",
               "host": [
@@ -853,14 +1201,23 @@
                 "pricing-settings"
               ]
             },
-            "description": "PUT /api/pricing-settings/ | src: api.views.pricing_settings | serviceKey: auto_document_print | passport_photo"
+            "description": "PUT /api/pricing-settings/ | src: api.views.pricing_settings | Auth required. serviceKey must be 'auto_document_print' or 'passport_photo'; settings is shallow-merged over the existing saved settings (unspecified keys are preserved, not deleted). Edge cases: unknown serviceKey->400; settings not a JSON object->400; setting paymentMode='Both' while Cash Counter is not platform-permitted for this account (UserProfile.cash_counter_permitted=False)->403 (note: a temporarily LOW BALANCE does not block saving 'Both' here - that's enforced live at order time instead, see public_shop_by_code/public_print_order).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"serviceKey\": \"auto_document_print\",\n  \"settings\": {\n    \"paymentMode\": \"Online Payment\",\n    \"isOpen\": true,\n    \"priceItems\": [\n      {\n        \"id\": \"black_white\",\n        \"label\": \"Black & White\",\n        \"rate\": 2\n      },\n      {\n        \"id\": \"color\",\n        \"label\": \"Color\",\n        \"rate\": 10\n      }\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
         }
       ]
     },
     {
-      "name": "Owner Orders",
+      "name": "Owner Orders (authenticated)",
       "item": [
         {
           "name": "Order History",
@@ -882,9 +1239,23 @@
                 "orders"
               ]
             },
-            "description": "GET /api/orders/ | src: api.views.order_history | Latest 100 orders across all services, including passport photo orders with photoStatus/geminiPhoto/passportPrompt fields for the raw/gemini photo compare modal."
+            "description": "GET /api/orders/ | src: api.views.order_history | Auth required. Latest 100 orders across ALL services for the caller, newest first; media fields (fileUrl/geminiPhoto) are stripped for payload size - fetch Order Detail for the full record. Edge case: missing/expired/invalid token->401."
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.orders && json.orders[0]) pm.collectionVariables.set('order_id', json.orders[0].id);",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Order Detail",
@@ -907,7 +1278,7 @@
                 "{{order_id}}"
               ]
             },
-            "description": "GET /api/orders/<order_id>/ | src: api.views.order_detail"
+            "description": "GET /api/orders/{order_id}/ | src: api.views.order_detail | Auth required, order must belong to the caller. Includes full media (fileUrl / geminiPhoto base64 data URI for passport orders, which can be hundreds of KB). Edge cases: missing/expired/invalid token->401; order doesn't exist or belongs to another user->404 (no ownership leak)."
           },
           "response": []
         },
@@ -933,7 +1304,7 @@
                 "mark-paid"
               ]
             },
-            "description": "POST /api/orders/<order_id>/mark-paid/ | src: api.views.mark_passport_order_paid | Order History 'Mark as Paid' action for cash passport-photo orders (service_key=passport_photo, paymentStatus=No Payment only)."
+            "description": "POST /api/orders/{order_id}/mark-paid/ | src: api.views.mark_passport_order_paid | Auth required, order must belong to caller AND service_key='passport_photo'. Manually flips an unpaid ('No Payment') passport order to paid, e.g. after collecting cash outside the wallet flow. Edge cases: order not found/not owned/not a passport order->404; order.paymentStatus is not 'no_payment' (already paid or on a different payment mode)->400."
           },
           "response": []
         },
@@ -959,7 +1330,7 @@
                 "approve-cash"
               ]
             },
-            "description": "POST /api/orders/<order_id>/approve-cash/ | src: api.views.approve_cash_order"
+            "description": "POST /api/orders/{order_id}/approve-cash/ | src: api.views.approve_cash_order | Auth required, order must belong to caller. Moves a Cash Counter order from awaiting_approval to queued so the Print Agent picks it up. Edge cases: order not found/not owned->404; payment_status != 'cash_counter'->400; status != 'awaiting_approval' (already approved/rejected)->400."
           },
           "response": []
         },
@@ -985,7 +1356,7 @@
                 "reject-cash"
               ]
             },
-            "description": "POST /api/orders/<order_id>/reject-cash/ | src: api.views.reject_cash_order"
+            "description": "POST /api/orders/{order_id}/reject-cash/ | src: api.views.reject_cash_order | Auth required, order must belong to caller. Sets status to 'failed'. Edge cases: order not found/not owned->404; payment_status != 'cash_counter'->400. Note: unlike approve, this does not additionally check the current status, so it can reject an order at any status as long as its payment_mode is Cash Counter."
           },
           "response": []
         },
@@ -1011,14 +1382,14 @@
                 "file"
               ]
             },
-            "description": "GET /api/orders/<order_id>/file/ | src: api.views.order_document | Owner Order History 'Print' action - downloads the original uploaded document as an attachment."
+            "description": "GET /api/orders/{order_id}/file/ | src: api.views.order_document | Auth required, order must belong to caller. Streams the original uploaded file as an attachment. Edge cases: missing/expired/invalid token->401; order not found/not owned->404; order has no stored document (e.g. passport-photo orders, which store base64 instead, or a document the customer already deleted)->404."
           },
           "response": []
         }
       ]
     },
     {
-      "name": "Public Shop And Orders",
+      "name": "Public Shop And Orders (anonymous, customer-facing)",
       "item": [
         {
           "name": "Public Shop By Code",
@@ -1036,29 +1407,28 @@
                 "{{shop_code}}"
               ]
             },
-            "description": "GET /api/public-shop/<code>/ | src: api.views.public_shop_by_code"
+            "description": "GET /api/public-shop/{code}/ | src: api.views.public_shop_by_code | No auth. Storefront bootstrap: shop profile, service pricing, open/closed status. code is the cafe's short code (e.g. CM0001), decoded back to a user id via user_from_cafe_code(). Edge cases: code doesn't decode to a real user->404 'Cafe not found'; if a service's saved paymentMode is 'Both' but Cash Counter is currently unavailable (permission revoked or balance at/below credit limit), the response silently downgrades that service's exposed paymentMode to 'Online Payment' for this request only (the stored preference is untouched)."
           },
           "response": []
         },
         {
           "name": "Create Public Print Order",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (pm.response.code === 201) {",
-                  "  const json = pm.response.json();",
-                  "  if (json.order && json.order.id) pm.collectionVariables.set('order_id', json.order.id);",
-                  "}"
-                ]
-              }
-            }
-          ],
           "request": {
             "method": "POST",
             "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/public-shop/{{shop_code}}/orders/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "public-shop",
+                "{{shop_code}}",
+                "orders"
+              ]
+            },
+            "description": "POST /api/public-shop/{code}/orders/ | src: api.views.public_print_order | No auth. Creates a PrintOrder. Server always recalculates totalAmount server-side from the shop's saved price table (any client-sent totalAmount that doesn't match is silently overridden, so the client can't under-pay by tampering with the total). Edge cases: cafe code invalid->404; no 'document' file->400; serviceKey doesn't match a service the shop has configured->400; service is closed (settings.isOpen=false)->403; paymentMode='Cash Counter' but it's currently unavailable for this shop (permission or balance)->400 with the specific reason; the shop's own wallet is checked against the platform's per-page/per-photo tool price BEFORE accepting the order (wallet_usage_gate) - if the shop itself is out of credit->402, meaning a shop that owes RepetiGo money can't accept new customer orders until it tops up; passport_photo orders store the raw upload as a base64 data URI on the row instead of a file. Success is 201.",
             "body": {
               "mode": "formdata",
               "formdata": [
@@ -1070,7 +1440,8 @@
                 {
                   "key": "serviceKey",
                   "value": "auto_document_print",
-                  "type": "text"
+                  "type": "text",
+                  "description": "auto_document_print | passport_photo"
                 },
                 {
                   "key": "pages",
@@ -1095,7 +1466,8 @@
                 {
                   "key": "rate",
                   "value": "2",
-                  "type": "text"
+                  "type": "text",
+                  "description": "Client-supplied; server recomputes and overrides if it doesn't match rate x pages x copies"
                 },
                 {
                   "key": "totalAmount",
@@ -1104,44 +1476,45 @@
                 },
                 {
                   "key": "paymentMode",
-                  "value": "Cash Counter",
+                  "value": "Online Payment",
                   "type": "text",
                   "description": "Online Payment | Cash Counter | No Payment"
                 },
                 {
                   "key": "customerPhone",
-                  "value": "{{phone}}",
+                  "value": "9876543210",
                   "type": "text"
                 },
                 {
                   "key": "attireCategory",
                   "value": "",
                   "type": "text",
-                  "description": "Passport photo maker only"
+                  "description": "passport_photo only"
                 },
                 {
                   "key": "prompt",
                   "value": "",
                   "type": "text",
-                  "description": "Passport photo AI prompt, only used when serviceKey=passport_photo"
+                  "description": "passport_photo only - AI generation prompt"
                 }
               ]
-            },
-            "url": {
-              "raw": "{{base_url}}/api/public-shop/{{shop_code}}/orders/",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "public-shop",
-                "{{shop_code}}",
-                "orders"
-              ]
-            },
-            "description": "POST /api/public-shop/<code>/orders/ | src: api.views.public_print_order | multipart/form-data; set document_path to a real local file."
+            }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.order && json.order.id) pm.collectionVariables.set('order_id', json.order.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Public Order Status",
@@ -1159,28 +1532,7 @@
                 "{{order_id}}"
               ]
             },
-            "description": "GET /api/public-orders/<order_id>/ | src: api.views.public_order_status"
-          },
-          "response": []
-        },
-        {
-          "name": "Public Mark Order Paid",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/api/public-orders/{{order_id}}/mark-paid/",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "public-orders",
-                "{{order_id}}",
-                "mark-paid"
-              ]
-            },
-            "description": "POST /api/public-orders/<order_id>/mark-paid/ | src: api.views.public_mark_order_paid"
+            "description": "GET /api/public-orders/{order_id}/ | src: api.views.public_order_status | No auth - anyone with the numeric order_id can read full order details (by design, for the customer polling their own order on the storefront; there is no secondary secret/token). Edge case: order not found->404."
           },
           "response": []
         },
@@ -1201,7 +1553,7 @@
                 "check-upi-payment"
               ]
             },
-            "description": "POST /api/public-orders/<order_id>/check-upi-payment/ | src: api.views.public_check_upi_payment"
+            "description": "POST /api/public-orders/{order_id}/check-upi-payment/ | src: api.views.public_check_upi_payment | No auth. Used for the 'direct_upi' gateway fallback: polls a third-party UPI status-check API (matching by a generated transaction note + amount) and marks the order paid if it finds a match. Edge cases: order not found->404; order already paid->200 short-circuit, returns payment.status='paid' without re-polling; order not in 'pending' payment status (e.g. cash counter / no payment / already queued)->400; no match yet->200 with payment.status='pending' plus the raw provider response for debugging; upstream provider errors are swallowed into payment.status='pending' rather than surfaced as a 5xx, so a provider outage looks identical to 'not paid yet' to the caller."
           },
           "response": []
         },
@@ -1223,7 +1575,7 @@
                 "order"
               ]
             },
-            "description": "POST /api/public-orders/<order_id>/razorpay/order/ | src: api.views.public_create_razorpay_order | Only works when Razorpay is the active payment gateway and the order is awaiting online payment."
+            "description": "POST /api/public-orders/{order_id}/razorpay/order/ | src: api.views.public_create_razorpay_order | No auth. Edge cases: order not found->404; Razorpay isn't the active gateway or isn't the gateway recorded on this order->400; order.paymentStatus != 'pending'->400; Razorpay API error->502."
           },
           "response": []
         },
@@ -1237,10 +1589,6 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"razorpay_payment_id\": \"\",\n  \"razorpay_order_id\": \"\",\n  \"razorpay_signature\": \"\"\n}"
-            },
             "url": {
               "raw": "{{base_url}}/api/public-orders/{{order_id}}/razorpay/verify/",
               "host": [
@@ -1254,7 +1602,104 @@
                 "verify"
               ]
             },
-            "description": "POST /api/public-orders/<order_id>/razorpay/verify/ | src: api.views.public_verify_razorpay_payment | Fill in values returned by Razorpay Checkout after payment."
+            "description": "POST /api/public-orders/{order_id}/razorpay/verify/ | src: api.views.public_verify_razorpay_payment | No auth. Verifies HMAC-SHA256 signature, then marks the order paid+queued (idempotent - re-verifying an already-paid order just returns it unchanged). Edge cases: order not found->404; gateway/order id mismatch->400; invalid signature->400.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"razorpay_payment_id\": \"pay_xxx\",\n  \"razorpay_order_id\": \"order_xxx\",\n  \"razorpay_signature\": \"signature_xxx\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Public Create PayU Order",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/public-orders/{{order_id}}/payu/order/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "public-orders",
+                "{{order_id}}",
+                "payu",
+                "order"
+              ]
+            },
+            "description": "POST /api/public-orders/{order_id}/payu/order/ | src: api.views.public_create_payu_order | No auth. Returns hosted-checkout actionUrl + signed fields; customer/first name are sent as fixed placeholders since the storefront only collects a phone number (PayU's own receipt email won't reach the actual customer). Edge cases: order not found->404; PayU not active/recorded gateway->400; order not 'pending'->400."
+          },
+          "response": []
+        },
+        {
+          "name": "Public PayU Callback (gateway->browser redirect target)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/public-orders/{{order_id}}/payu/callback/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "public-orders",
+                "{{order_id}}",
+                "payu",
+                "callback"
+              ]
+            },
+            "description": "POST /api/public-orders/{order_id}/payu/callback/ | src: api.views.public_payu_callback | No auth - PayU's surl/furl target, invoked by the customer's browser being redirected FROM PayU. Verifies reverse hash + merchant key + amount, marks paid+queued on success, then 302-redirects to {FRONTEND_URL}/s/{shop_code}?order={id}&payment=success|failure."
+          },
+          "response": []
+        },
+        {
+          "name": "Public Create PhonePe Order",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/public-orders/{{order_id}}/phonepe/order/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "public-orders",
+                "{{order_id}}",
+                "phonepe",
+                "order"
+              ]
+            },
+            "description": "POST /api/public-orders/{order_id}/phonepe/order/ | src: api.views.public_create_phonepe_order | No auth. Returns {payment:{gateway:'phonepe', redirectUrl}}. Edge cases: order not found->404; PhonePe not active/recorded gateway->400; order not 'pending'->400; PhonePe auth/pay API failure->502."
+          },
+          "response": []
+        },
+        {
+          "name": "Public PhonePe Callback (gateway->browser redirect target)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/public-orders/{{order_id}}/phonepe/callback/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "public-orders",
+                "{{order_id}}",
+                "phonepe",
+                "callback"
+              ]
+            },
+            "description": "GET /api/public-orders/{order_id}/phonepe/callback/ | src: api.views.public_phonepe_callback | No auth - PhonePe's redirectUrl target. Re-checks payment state server-side via PhonePe's Order Status API (the redirect itself carries no verifiable payload) before marking paid, then 302-redirects to {FRONTEND_URL}/s/{shop_code}?order={id}&payment=success|failure."
           },
           "response": []
         },
@@ -1275,31 +1720,55 @@
                 "delete-document"
               ]
             },
-            "description": "POST /api/public-orders/<order_id>/delete-document/ | src: api.views.public_delete_order_document | Works after order status is printed."
+            "description": "POST /api/public-orders/{order_id}/delete-document/ | src: api.views.public_delete_order_document | No auth - customer self-service 'delete my document after printing' button, anyone with the order_id can trigger it. Edge cases: order not found->404; order.status != 'printed' yet->400 'can delete only after printed'; document already deleted->200 with an informational message instead of an error (safe to call twice)."
+          },
+          "response": []
+        },
+        {
+          "name": "PhonePe Server Webhook",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "<sha256 hex of webhook_username:webhook_password, set in PhonePe dashboard>"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/webhooks/phonepe/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "webhooks",
+                "phonepe"
+              ]
+            },
+            "description": "POST /api/webhooks/phonepe/ | src: api.views.phonepe_webhook | Server-to-server only, not a browser flow. Auth is a static header: Authorization must equal sha256(f'{webhook_username}:{webhook_password}') as configured in both the PhonePe dashboard and PHONEPE_WEBHOOK_USERNAME/PASSWORD env vars (compared with hmac.compare_digest). Looks up merchantOrderId against BOTH PrintOrder.gateway_order_id (prefix 'cm...') and WalletTopup.gateway_order_id (prefix 'wt...') scoped to payment_gateway='phonepe', and credits whichever one matches - this is the authoritative/most-reliable payment confirmation path (independent of whether the customer's browser ever reaches the redirect callback). Edge cases: webhook_username/password not configured server-side->503; missing/incorrect Authorization->401; merchantOrderId doesn't match any pending order or topup->200 'ok' no-op (webhook is always acknowledged 200 to stop PhonePe's retries, even when nothing matched); amount mismatch->silently ignored, not credited; already-paid order/topup->idempotent no-op.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"payload\": {\n    \"merchantOrderId\": \"cm123abc\",\n    \"state\": \"COMPLETED\",\n    \"amount\": 20000,\n    \"orderId\": \"OMOxxxxx\"\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
         }
       ]
     },
     {
-      "name": "Passport Photo",
+      "name": "Passport Photo (authenticated wizard flow)",
       "item": [
         {
           "name": "Save Raw Passport Photo",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (pm.response.code === 200) {",
-                  "  const json = pm.response.json();",
-                  "  if (json.id) pm.collectionVariables.set('order_id', json.id);",
-                  "}"
-                ]
-              }
-            }
-          ],
           "request": {
             "method": "POST",
             "header": [
@@ -1308,6 +1777,17 @@
                 "value": "Bearer {{token}}"
               }
             ],
+            "url": {
+              "raw": "{{base_url}}/api/save-raw-passport-photo/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "save-raw-passport-photo"
+              ]
+            },
+            "description": "POST /api/save-raw-passport-photo/ | src: api.views.save_raw_passport_photo | Auth required. Creates a passport_photo PrintOrder with photo_status='pending' (payment_mode='No Payment' up front - use Mark Passport Order Paid or Public routes later to charge). Raw photo is stored as base64 on the row. Queued for the desktop PrintPilot Agent to pick up via Agent Passport Jobs. Edge cases: missing/expired/invalid token->401; no 'photo' file->400; blank prompt->400; wallet usage-gate check for the 'passport_photo' tool fails (shop below credit limit)->402 - this blocks STARTING the AI job, separate from the later charge_wallet_for_tool that actually deducts once the agent completes it.",
             "body": {
               "mode": "formdata",
               "formdata": [
@@ -1318,7 +1798,12 @@
                 },
                 {
                   "key": "prompt",
-                  "value": "Generate a passport size photo with a plain white background.",
+                  "value": "Professional passport photo, white background, formal attire",
+                  "type": "text"
+                },
+                {
+                  "key": "rate",
+                  "value": "30",
                   "type": "text"
                 },
                 {
@@ -1332,30 +1817,28 @@
                   "type": "text"
                 },
                 {
-                  "key": "rate",
-                  "value": "30",
-                  "type": "text"
-                },
-                {
                   "key": "attireCategory",
-                  "value": "",
+                  "value": "formal",
                   "type": "text"
                 }
               ]
-            },
-            "url": {
-              "raw": "{{base_url}}/api/save-raw-passport-photo/",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "save-raw-passport-photo"
-              ]
-            },
-            "description": "POST /api/save-raw-passport-photo/ | src: api.views.save_raw_passport_photo | Creates a PrintOrder (service_key=passport_photo) for the wizard flow; saves order_id on success."
+            }
           },
-          "response": []
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.id) pm.collectionVariables.set('order_id', json.id);",
+                  "}"
+                ]
+              }
+            }
+          ]
         },
         {
           "name": "Check Passport Photo",
@@ -1371,10 +1854,6 @@
                 "value": "Bearer {{token}}"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"id\": \"{{order_id}}\"\n}"
-            },
             "url": {
               "raw": "{{base_url}}/api/api-passport-photo-check/",
               "host": [
@@ -1385,186 +1864,23 @@
                 "api-passport-photo-check"
               ]
             },
-            "description": "POST /api/api-passport-photo-check/ | src: api.views.check_passport_photo | Polls (up to 5x, 5s apart) for the Agent-generated final photo on the order created via Save Raw Passport Photo."
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Agent",
-      "item": [
-        {
-          "name": "Agent Jobs",
-          "request": {
-            "method": "GET",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "url": {
-              "raw": "{{base_url}}/api/agent/jobs/",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "agent",
-                "jobs"
-              ]
-            },
-            "description": "GET /api/agent/jobs/ | src: api.views.agent_jobs | Print-queue jobs only (excludes passport_photo service, see Agent Passport Jobs folder)."
-          },
-          "response": []
-        },
-        {
-          "name": "Update Agent Job Status - Printing",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
+            "description": "POST /api/api-passport-photo-check/ | src: api.views.check_passport_photo | Auth required, order must belong to caller and be service_key='passport_photo'. ** Long-polling: this request can block the caller for up to ~25 seconds ** (retries every 5s, 5 attempts) while waiting for the agent to finish - set your HTTP client timeout accordingly. Edge cases: 'id' missing or not an integer->400; order not found/not owned/not passport type->404; still pending after all retries->404 'not ready yet'; if pending/claimed for longer than 60s with no update, the job is auto-marked 'failed' server-side mid-poll ('agent did not respond in time'); if photo_status='failed', returns 200 (not an error status) with found:false and a sanitized error message (raw agent error text/HTML/.NET stack traces are replaced with a generic fallback via friendly_photo_error_message).",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"status\": \"printing\",\n  \"message\": \"Printing started\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/agent/jobs/{{order_id}}/status/",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "agent",
-                "jobs",
-                "{{order_id}}",
-                "status"
-              ]
-            },
-            "description": "POST /api/agent/jobs/<order_id>/status/ | src: api.views.agent_job_status | status: printing | printed | failed"
-          },
-          "response": []
-        },
-        {
-          "name": "Update Agent Job Status - Printed",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"status\": \"printed\",\n  \"message\": \"Printed successfully\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/agent/jobs/{{order_id}}/status/",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "agent",
-                "jobs",
-                "{{order_id}}",
-                "status"
-              ]
-            },
-            "description": "POST /api/agent/jobs/<order_id>/status/ | src: api.views.agent_job_status | status: printing | printed | failed. Marking as printed settles the wallet (credits online-paid orders, tracks cash-counter collections)."
-          },
-          "response": []
-        },
-        {
-          "name": "Update Agent Job Status - Failed",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              },
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"status\": \"failed\",\n  \"message\": \"Print failed\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/agent/jobs/{{order_id}}/status/",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "agent",
-                "jobs",
-                "{{order_id}}",
-                "status"
-              ]
-            },
-            "description": "POST /api/agent/jobs/<order_id>/status/ | src: api.views.agent_job_status | status: printing | printed | failed"
-          },
-          "response": []
-        },
-        {
-          "name": "Upload Gemini Photo",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Authorization",
-                "value": "Bearer {{token}}"
-              }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "photo",
-                  "type": "file",
-                  "src": "{{image_path}}"
+              "raw": "{\n  \"id\": \"{{order_id}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
                 }
-              ]
-            },
-            "url": {
-              "raw": "{{base_url}}/api/agent/jobs/{{order_id}}/gemini-photo/",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "agent",
-                "jobs",
-                "{{order_id}}",
-                "gemini-photo"
-              ]
-            },
-            "description": "POST /api/agent/jobs/<order_id>/gemini-photo/ | src: api.views.agent_upload_gemini_photo | Stores the AI-generated photo on any order (not limited to passport_photo) for the Order History raw/gemini compare modal."
+              }
+            }
           },
           "response": []
         }
       ]
     },
     {
-      "name": "Agent Passport Jobs",
+      "name": "Agent Passport Jobs (desktop Print Agent, AI photo queue)",
       "item": [
         {
           "name": "Agent Passport Jobs",
@@ -1587,26 +1903,12 @@
                 "passport-jobs"
               ]
             },
-            "description": "GET /api/agent/passport-jobs/ | src: api.views.agent_passport_jobs | Lists pending passport-photo AI jobs (photoStatus=pending) waiting to be claimed by the desktop Print Agent."
+            "description": "GET /api/agent/passport-jobs/ | src: api.views.agent_passport_jobs | Auth required (the agent authenticates as the cafe owner). Lists up to 20 oldest-first pending passport-photo jobs for the caller's shop. Edge case: missing/expired/invalid token->401."
           },
           "response": []
         },
         {
           "name": "Claim Passport Job",
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "if (pm.response.code === 200) {",
-                  "  const json = pm.response.json();",
-                  "  if (json.id) pm.collectionVariables.set('job_id', json.id);",
-                  "}"
-                ]
-              }
-            }
-          ],
           "request": {
             "method": "POST",
             "header": [
@@ -1628,7 +1930,7 @@
                 "claim"
               ]
             },
-            "description": "POST /api/agent/passport-jobs/<job_id>/claim/ | src: api.views.claim_passport_job | Atomically moves the job from pending to claimed; 409 if another agent already claimed it."
+            "description": "POST /api/agent/passport-jobs/{job_id}/claim/ | src: api.views.claim_passport_job | Auth required, job must belong to caller. Atomically (row-locked) flips status pending->claimed so two agent instances can't both work the same job. Edge cases: job not found/not owned->404; job is not currently 'pending' (already claimed/done/failed)->409 Conflict."
           },
           "response": []
         },
@@ -1642,28 +1944,6 @@
                 "value": "Bearer {{token}}"
               }
             ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "final_image",
-                  "type": "file",
-                  "src": "{{image_path}}"
-                },
-                {
-                  "key": "status",
-                  "value": "",
-                  "type": "text",
-                  "description": "Leave empty to complete successfully, or set to 'failed' with a 'message' field and omit final_image"
-                },
-                {
-                  "key": "message",
-                  "value": "",
-                  "type": "text",
-                  "description": "Required only when status=failed"
-                }
-              ]
-            },
             "url": {
               "raw": "{{base_url}}/api/agent/passport-jobs/{{job_id}}/complete/",
               "host": [
@@ -1677,14 +1957,246 @@
                 "complete"
               ]
             },
-            "description": "POST /api/agent/passport-jobs/<job_id>/complete/ | src: api.views.complete_passport_job | On success uploads final_image and sets photoStatus=done; on failure send status=failed and message instead."
+            "description": "POST /api/agent/passport-jobs/{job_id}/complete/ | src: api.views.complete_passport_job | Auth required, job must belong to caller. Two mutually exclusive modes selected by the 'status' field: status=failed records photo_error_message (sanitized) and stops there; otherwise requires 'final_image', stores it as base64 on the order, marks photo_status='done', and immediately charges the shop's wallet for the 'passport_photo' tool usage. Edge cases: job not found/not owned->404; status!='failed' and no 'final_image' file provided->400; can be called on a job regardless of its current photo_status (no 'must be claimed first' check here, unlike Claim).",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "final_image",
+                  "type": "file",
+                  "src": "{{image_path}}",
+                  "description": "Required unless status=failed"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "type": "text",
+                  "description": "Leave blank for success; set to 'failed' to report a failure instead (then 'message' is used and 'final_image' is ignored)"
+                },
+                {
+                  "key": "message",
+                  "value": "",
+                  "type": "text",
+                  "description": "Failure reason - only used when status=failed"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Agent Passport Original Image",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/agent/passport-jobs/{{job_id}}/original-image/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "passport-jobs",
+                "{{job_id}}",
+                "original-image"
+              ]
+            },
+            "description": "GET /api/agent/passport-jobs/{job_id}/original-image/ | src: api.views.agent_passport_original_image | ** No auth check at all ** (unlike every other /agent/ endpoint) - any caller who knows or guesses a job_id can download that customer's raw uploaded photo. Serves the base64-stored raw upload (or, for legacy orders, the on-disk file) as a raw image binary for the desktop agent to fetch over plain HTTP. Edge cases: job_id doesn't match a passport_photo order, or the order has neither a stored data-URI nor a document file->404. Worth flagging to the team as a potential information-disclosure gap if job ids are guessable/sequential."
           },
           "response": []
         }
       ]
     },
     {
-      "name": "Agent Update",
+      "name": "Agent (desktop Print Agent, print queue)",
+      "item": [
+        {
+          "name": "Agent Jobs",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/agent/jobs/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "jobs"
+              ]
+            },
+            "description": "GET /api/agent/jobs/ | src: api.views.agent_jobs | Auth required. Up to 20 oldest-first jobs excluding passport_photo (that has its own queue above): status='queued', OR status='awaiting_approval' with payment_status='cash_counter'. Includes downloadUrl (absolute) for the Agent to fetch the document. Edge case: missing/expired/invalid token->401."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Agent Job Status - Printing",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/agent/jobs/{{order_id}}/status/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "jobs",
+                "{{order_id}}",
+                "status"
+              ]
+            },
+            "description": "POST /api/agent/jobs/{order_id}/status/ | src: api.views.agent_job_status | Auth required, order must belong to caller. status must be one of printing | printed | failed. Edge cases: order not found/not owned->404; invalid status value->400.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"printing\",\n  \"message\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Agent Job Status - Printed",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/agent/jobs/{{order_id}}/status/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "jobs",
+                "{{order_id}}",
+                "status"
+              ]
+            },
+            "description": "POST /api/agent/jobs/{order_id}/status/ | src: api.views.agent_job_status | Same endpoint as above with status='printed'. This is the ONLY path that triggers settle_printed_order_wallet(): online-paid orders credit the shop's wallet with the sale amount, cash-counter orders log an info-only (non-balance-affecting) collection entry, and the platform's own per-page/per-photo tool usage fee is deducted here. Edge cases: order not found/not owned->404; calling 'printed' twice re-runs settlement each time (settle_printed_order_wallet only checks order.status=='printed', not whether it was already settled) - can double-credit/double-charge if the Agent retries this call after a slow response, worth flagging.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"printed\",\n  \"message\": \"Printed successfully\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Agent Job Status - Failed",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/agent/jobs/{{order_id}}/status/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "jobs",
+                "{{order_id}}",
+                "status"
+              ]
+            },
+            "description": "POST /api/agent/jobs/{order_id}/status/ | src: api.views.agent_job_status | Same endpoint with status='failed'. No wallet settlement occurs; the order simply moves to a terminal failed state.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"failed\",\n  \"message\": \"Printer offline\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Gemini Photo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/agent/jobs/{{order_id}}/gemini-photo/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "jobs",
+                "{{order_id}}",
+                "gemini-photo"
+              ]
+            },
+            "description": "POST /api/agent/jobs/{order_id}/gemini-photo/ | src: api.views.agent_upload_gemini_photo | Auth required, order must belong to caller. Attaches an AI-generated photo to ANY order (not restricted to passport_photo service_key, despite the name). Edge cases: order not found/not owned->404; no 'photo' file->400.",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "src": "{{image_path}}"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Agent Update & Installer (anonymous)",
       "item": [
         {
           "name": "Agent Version Check",
@@ -1702,7 +2214,7 @@
                 "version-check"
               ]
             },
-            "description": "GET /api/agent/version-check/ | src: api.views.agent_version_check | Anonymous. Returns plain-text version from media/agent/version.txt."
+            "description": "GET /api/agent/version-check/ | src: api.views.agent_version_check | No auth. Returns the contents of media/agent/version.txt as plain text (empty string if the file doesn't exist yet - not a 404). Bump this file to ship a new agent version."
           },
           "response": []
         },
@@ -1722,17 +2234,67 @@
                 "update"
               ]
             },
-            "description": "GET /api/agent/update/ | src: api.views.agent_update_download | Anonymous. Downloads media/agent/PrintPilot-latest.zip."
+            "description": "GET /api/agent/update/ | src: api.views.agent_update_download | No auth. Streams media/agent/PrintPilot-latest.zip as an attachment. Edge case: zip not present on disk->404 'no update package available'."
+          },
+          "response": []
+        },
+        {
+          "name": "Agent Installer Download",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/agent/installer/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "agent",
+                "installer"
+              ]
+            },
+            "description": "GET /api/agent/installer/ | src: api.views.agent_installer_download | No auth. Streams media/installer/RepetigoInstaller.exe (the 'Download Agent' button on the PrintPilot Setup page). Edge case: installer not present on disk->404 'no installer available'."
           },
           "response": []
         }
       ]
     },
     {
-      "name": "Google Places",
+      "name": "Google Places (internal lead scraping, no auth)",
       "item": [
         {
           "name": "Create Google Place",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/google-places/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "google-places"
+              ]
+            },
+            "description": "POST /api/google-places/ | src: api.views.google_places | ** No auth - open write endpoint. ** Single object -> single {place} response; JSON array -> batch mode returning {created:[...], skipped:[...]}. name is globally unique. Edge cases: link or name blank (per item)->skipped with reason (single mode: 400); name already exists, or duplicated within the same batch payload->skipped with reason (single mode: 409); non-object array item->skipped 'invalid entry'; batch mode returns 201 if at least one item was created, else 400, and always includes both created[] and skipped[] regardless.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"link\": \"https://maps.google.com/?cid=12345\",\n  \"name\": \"Cyber Cafe Example\",\n  \"extractedby\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -1746,32 +2308,7 @@
                 ]
               }
             }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"link\": \"https://www.google.com/maps/place/SIKSHA+DARSHAN+PUBLIC+SCHOOL+COM%2810%2B2%29+COACHING+CLASSES/data=!4m7!3m6!1s0x39ec5a1ac82ed53d:0x54653f9357a73a37!8m2!3d26.5556936!4d85.6934028!16s%2Fg%2F11gf9p38j7!19sChIJPdUuyBpa7DkRNzqnV5M_ZVQ?authuser=0&hl=en&rclk=1\",\n  \"name\": \"SIKSHA DARSHAN PUBLIC SCHOOL COM(10+2) COACHING CLASSES\",\n  \"extractedby\": \"shankar kumar\"\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/google-places/",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "google-places"
-              ]
-            },
-            "description": "POST /api/google-places/ | src: api.views.google_places | No auth. Single object body. Rejects with 409 if name already exists. Saves place_id on success. Also accepts a JSON array of objects for bulk create (see next request)."
-          },
-          "response": []
+          ]
         },
         {
           "name": "Create Google Places (Batch)",
@@ -1783,10 +2320,6 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "[\n  {\n    \"link\": \"https://www.google.com/maps/place/Example+Coaching+Center/@26.55,85.69,17z\",\n    \"name\": \"Example Coaching Center\",\n    \"extractedby\": \"shankar kumar\"\n  },\n  {\n    \"link\": \"https://www.google.com/maps/place/Another+Shop/@26.56,85.70,17z\",\n    \"name\": \"Another Shop\",\n    \"extractedby\": \"shankar kumar\"\n  }\n]"
-            },
             "url": {
               "raw": "{{base_url}}/api/google-places/",
               "host": [
@@ -1797,7 +2330,16 @@
                 "google-places"
               ]
             },
-            "description": "POST /api/google-places/ | src: api.views.google_places | No auth. JSON array body - creates each entry, skipping ones whose name already exists (duplicates listed under 'skipped' in the response)."
+            "description": "POST /api/google-places/ (batch) | src: api.views.google_places | Same endpoint as Create Google Place, sending a JSON array body instead of an object. See that entry's edge cases.",
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"link\": \"https://maps.google.com/?cid=1\",\n    \"name\": \"Cafe One\"\n  },\n  {\n    \"link\": \"https://maps.google.com/?cid=2\",\n    \"name\": \"Cafe Two\"\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
         },
@@ -1818,12 +2360,11 @@
               "query": [
                 {
                   "key": "extracted_status",
-                  "value": "all",
-                  "description": "true | false | all"
+                  "value": "all"
                 }
               ]
             },
-            "description": "GET /api/google-places/ | src: api.views.google_places | No auth. extracted_status filter defaults to all when omitted."
+            "description": "GET /api/google-places/?extracted_status=all | src: api.views.google_places | No auth. extracted_status accepts true|1|yes, false|0|no, or all (default). Edge case: any other value->400."
           },
           "response": []
         },
@@ -1843,7 +2384,7 @@
                 "{{place_id}}"
               ]
             },
-            "description": "PUT (or PATCH) /api/google-places/<place_id>/ | src: api.views.google_place_detail | No auth. No body needed - always sets extracted_status=true."
+            "description": "PUT (or PATCH) /api/google-places/{place_id}/ | src: api.views.google_place_detail | No auth. The ONLY thing this does is set extracted_status=True - it ignores any other fields in the body. Edge case: place_id not found->404."
           },
           "response": []
         },
@@ -1863,17 +2404,47 @@
                 "{{place_id}}"
               ]
             },
-            "description": "DELETE /api/google-places/<place_id>/ | src: api.views.google_place_detail | No auth."
+            "description": "DELETE /api/google-places/{place_id}/ | src: api.views.google_place_detail | No auth, irreversible hard delete. Edge case: place_id not found->404."
           },
           "response": []
         }
       ]
     },
     {
-      "name": "Google Place Details",
+      "name": "Google Place Details (internal CRM, no auth)",
       "item": [
         {
           "name": "Create Google Place Detail",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/google-place-details/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "google-place-details"
+              ]
+            },
+            "description": "POST /api/google-place-details/ | src: api.views.google_place_details | ** No auth. ** Same single-vs-batch-array shape as Google Places. maps_url is globally unique (the dedupe key). status defaults to 'new' if omitted or not one of the valid STATUS_CHOICES (new, follow_up, discussion, interested, call_discussed, converted, not_interested) - invalid values are silently coerced to 'new', not rejected. Edge cases: maps_url or name blank->skipped (single mode 400); maps_url already exists / duplicated in-batch->skipped (single mode 409); latitude/longitude/rating that fail Decimal parsing, or reviews that fails int parsing, are silently stored as null rather than rejected.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Cyber Cafe Example\",\n  \"maps_url\": \"https://maps.google.com/?cid=12345\",\n  \"address\": \"123 Main St\",\n  \"phone\": \"9876543210\",\n  \"rating\": 4.5,\n  \"reviews\": 120,\n  \"website\": \"https://example.com\",\n  \"status\": \"new\",\n  \"notes\": \"\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
           "event": [
             {
               "listen": "test",
@@ -1887,32 +2458,7 @@
                 ]
               }
             }
-          ],
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"address\": \"SHIV MANDIR, THANA ROAD, near SUMSUNG SERVICE, Vidya Pati Nagar, Sitamarhi, Bihar 843302\",\n  \"image\": \"https://lh3.googleusercontent.com/gps-cs-s/AHRPTWkaxu9rC-bmcfZ9v2rXxfwsiqWsBLIEqbquW6vxKiZvMXyMzoZRR9huczsmzS8G0CAth78hsD9q7neyOeJPx2VvED1dgegmaK1qweiWC5VWy4EP9D9Vt0Mrwnj1nwC-GEcZwjHOV8h-dxDO=w532-h240-k-no\",\n  \"latitude\": \"26.5996223\",\n  \"longitude\": \"85.4952668\",\n  \"maps_url\": \"https://www.google.com/maps/place/SATHI+CYBER+CAFE/@26.5996223,85.4952668,17z/data=!3m1!4b1!4m6!3m5!1s0x39ecf1de9463665d:0x35cbe3419fd7dc31!8m2!3d26.5996223!4d85.4952668!16s%2Fg%2F11xzxvwg0j?authuser=0&hl=en&entry=ttu\",\n  \"name\": \"SATHI CYBER CAFE\",\n  \"phone\": \"092346 46914\",\n  \"rating\": \"5.0\",\n  \"reviews\": null,\n  \"website\": null\n}"
-            },
-            "url": {
-              "raw": "{{base_url}}/api/google-place-details/",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "api",
-                "google-place-details"
-              ]
-            },
-            "description": "POST /api/google-place-details/ | src: api.views.google_place_details | No auth. Single object body. Rejects with 409 if maps_url already exists. Saves place_detail_id on success. Also accepts a JSON array of objects for bulk create (see next request)."
-          },
-          "response": []
+          ]
         },
         {
           "name": "Create Google Place Details (Batch)",
@@ -1924,10 +2470,6 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "[\n  {\n    \"maps_url\": \"https://www.google.com/maps/place/Example+Shop/@26.1,85.2,17z\",\n    \"name\": \"Example Shop\",\n    \"address\": \"Main Road, Sitamarhi, Bihar\",\n    \"latitude\": \"26.1\",\n    \"longitude\": \"85.2\",\n    \"phone\": \"9999999999\",\n    \"rating\": \"4.2\",\n    \"reviews\": 5,\n    \"website\": null,\n    \"image\": null\n  }\n]"
-            },
             "url": {
               "raw": "{{base_url}}/api/google-place-details/",
               "host": [
@@ -1938,7 +2480,16 @@
                 "google-place-details"
               ]
             },
-            "description": "POST /api/google-place-details/ | src: api.views.google_place_details | No auth. JSON array body - creates each entry, skipping ones whose maps_url already exists (duplicates listed under 'skipped' in the response)."
+            "description": "POST /api/google-place-details/ (batch) | src: api.views.google_place_details | Same endpoint as Create Google Place Detail with a JSON array body. See that entry's edge cases.",
+            "body": {
+              "mode": "raw",
+              "raw": "[\n  {\n    \"name\": \"Cafe One\",\n    \"maps_url\": \"https://maps.google.com/?cid=1\"\n  },\n  {\n    \"name\": \"Cafe Two\",\n    \"maps_url\": \"https://maps.google.com/?cid=2\"\n  }\n]",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
         },
@@ -1948,7 +2499,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/api/google-place-details/?name=",
+              "raw": "{{base_url}}/api/google-place-details/?name=&status=all&follow_up=all",
               "host": [
                 "{{base_url}}"
               ],
@@ -1959,12 +2510,19 @@
               "query": [
                 {
                   "key": "name",
-                  "value": "",
-                  "description": "Optional case-insensitive contains filter on name; leave empty to list all"
+                  "value": ""
+                },
+                {
+                  "key": "status",
+                  "value": "all"
+                },
+                {
+                  "key": "follow_up",
+                  "value": "all"
                 }
               ]
             },
-            "description": "GET /api/google-place-details/ | src: api.views.google_place_details | No auth."
+            "description": "GET /api/google-place-details/ | src: api.views.google_place_details | No auth. Query params (all optional): name (case-insensitive contains match), status (one of the STATUS_CHOICES, or 'all'), follow_up=overdue|today|upcoming|none|all (based on next_follow_up_at vs today). Edge cases: status not a valid choice and not 'all'->400; follow_up not one of the listed values->400."
           },
           "response": []
         },
@@ -1984,7 +2542,7 @@
                 "{{place_detail_id}}"
               ]
             },
-            "description": "GET /api/google-place-details/<detail_id>/ | src: api.views.google_place_detail_item | No auth."
+            "description": "GET /api/google-place-details/{detail_id}/ | src: api.views.google_place_detail_item | No auth. Edge case: not found->404."
           },
           "response": []
         },
@@ -1998,10 +2556,6 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"phone\": \"9999999999\",\n  \"rating\": \"4.5\",\n  \"reviews\": 12\n}"
-            },
             "url": {
               "raw": "{{base_url}}/api/google-place-details/{{place_detail_id}}/",
               "host": [
@@ -2013,7 +2567,16 @@
                 "{{place_detail_id}}"
               ]
             },
-            "description": "PUT/PATCH /api/google-place-details/<detail_id>/ | src: api.views.google_place_detail_item | No auth. Send only the fields to change (any of: name, address, image, latitude, longitude, maps_url, phone, rating, reviews, website)."
+            "description": "PUT or PATCH /api/google-place-details/{detail_id}/ | src: api.views.google_place_detail_item | No auth. Partial update - only keys present in the body are touched (both PUT and PATCH behave identically here, i.e. PUT is NOT a full-replace despite the HTTP convention). Changing 'status' auto-creates a LeadActivity(kind=status_change) timeline entry recording from_status/to_status. Edge cases: maps_url present but blank->400; new maps_url collides with a different existing record->409; name present but blank->400; next_follow_up_at present but not a valid ISO date (and not blank)->400 (blank clears it to null); status present but not a valid choice->400; body not a JSON object->400.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"follow_up\",\n  \"notes\": \"Called, interested, follow up next week\",\n  \"next_follow_up_at\": \"2026-08-15\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
         },
@@ -2033,7 +2596,63 @@
                 "{{place_detail_id}}"
               ]
             },
-            "description": "DELETE /api/google-place-details/<detail_id>/ | src: api.views.google_place_detail_item | No auth."
+            "description": "DELETE /api/google-place-details/{detail_id}/ | src: api.views.google_place_detail_item | No auth, irreversible hard delete - also cascades to delete its LeadActivity timeline (on_delete=CASCADE). Edge case: not found->404."
+          },
+          "response": []
+        },
+        {
+          "name": "List Lead Activities",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/google-place-details/{{place_detail_id}}/activities/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "google-place-details",
+                "{{place_detail_id}}",
+                "activities"
+              ]
+            },
+            "description": "GET /api/google-place-details/{detail_id}/activities/ | src: api.views.lead_activities | No auth. Full timeline (status changes + manual notes), newest first. Edge case: detail_id not found->404."
+          },
+          "response": []
+        },
+        {
+          "name": "Add Lead Activity Note",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/google-place-details/{{place_detail_id}}/activities/",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "google-place-details",
+                "{{place_detail_id}}",
+                "activities"
+              ]
+            },
+            "description": "POST /api/google-place-details/{detail_id}/activities/ | src: api.views.lead_activities | No auth. Adds a manual kind='note' timeline entry (kind='status_change' entries can only be created automatically by the update endpoint, not through this route). Edge cases: detail_id not found->404; body not an object, or note blank->400. Success is 201.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"note\": \"Called the owner, will decide by Friday.\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
           },
           "response": []
         }

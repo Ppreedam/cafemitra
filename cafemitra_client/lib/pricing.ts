@@ -100,14 +100,33 @@ export function calculatePriceItemRate(item: PriceItem | undefined, pages: numbe
   return Number((matchedRange || item).rate || 0);
 }
 
-// Cash Counter collection is disabled platform-wide - customers always pay
-// online, regardless of what a shop's saved pricing settings say.
-export function normalizePaymentMode(_value: string) {
-  return "Online Payment";
+export function normalizePaymentMode(value: string) {
+  return value === "Both" || value === "Cash Counter" ? "Both" : "Online Payment";
 }
 
-export function getAllowedPaymentModes(_service: PricingService | undefined) {
-  return ["Online Payment"];
+export function getAllowedPaymentModes(service: PricingService | undefined) {
+  const mode = normalizePaymentMode(String(service?.settings.paymentMode || "Online Payment"));
+  return mode === "Both" ? ["Online Payment", "Cash Counter"] : ["Online Payment"];
+}
+
+export type CashCounterStatus = {
+  permitted: boolean;
+  available: boolean;
+  reason: string;
+};
+
+export async function fetchCashCounterStatus(): Promise<CashCounterStatus> {
+  const fallback: CashCounterStatus = { permitted: true, available: true, reason: "" };
+  if (!hasStoredSession()) return fallback;
+
+  try {
+    const response = await apiFetch("/api/pricing-settings/");
+    if (!response.ok) return fallback;
+    const result = (await response.json()) as { cashCounter?: CashCounterStatus };
+    return result.cashCounter || fallback;
+  } catch {
+    return fallback;
+  }
 }
 
 export function formatPriceItem(item: PriceItem) {

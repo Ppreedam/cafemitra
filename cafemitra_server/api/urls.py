@@ -33,6 +33,13 @@ urlpatterns = [
     re_path(r"^wallet/config/?$", views.wallet_config),  # GET public signup/referral bonus, grace limits, and billable tool prices
     re_path(r"^wallet/?$", views.wallet),  # GET balance, collection summary, limits, and paginated transaction ledger
     re_path(r"^wallet/withdraw/?$", views.request_withdrawal),  # POST request a withdrawal against the withdrawable balance
+    re_path(r"^wallet/topup/?$", views.create_wallet_topup),  # POST start a wallet top-up, returns {id, amount, gateway}
+    re_path(r"^wallet/topup/(?P<topup_id>[0-9]+)/razorpay/order/?$", views.wallet_topup_razorpay_order),  # POST create a Razorpay order for a top-up
+    re_path(r"^wallet/topup/(?P<topup_id>[0-9]+)/razorpay/verify/?$", views.wallet_topup_verify_razorpay),  # POST verify a completed Razorpay top-up payment signature
+    re_path(r"^wallet/topup/(?P<topup_id>[0-9]+)/payu/order/?$", views.wallet_topup_payu_order),  # POST build the PayU hosted-checkout form fields for a top-up
+    re_path(r"^wallet/topup/(?P<topup_id>[0-9]+)/payu/callback/?$", views.wallet_topup_payu_callback),  # POST PayU surl/furl target - verifies hash, credits wallet, redirects back to /wallet
+    re_path(r"^wallet/topup/(?P<topup_id>[0-9]+)/phonepe/order/?$", views.wallet_topup_phonepe_order),  # POST create a PhonePe Standard Checkout order for a top-up
+    re_path(r"^wallet/topup/(?P<topup_id>[0-9]+)/phonepe/callback/?$", views.wallet_topup_phonepe_callback),  # GET PhonePe return redirect target, redirects back to /wallet
 
     # --- Pricing ----------------------------------------------------------
     re_path(r"^pricing-settings/?$", views.pricing_settings),  # GET/PUT per-service pricing (auto_document_print, passport_photo)

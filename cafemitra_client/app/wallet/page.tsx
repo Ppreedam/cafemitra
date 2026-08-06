@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useEffect, useState } from "react";
-import { AlertTriangle, ArrowDownToLine, Banknote, Clock3, Landmark, ReceiptText, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowDownToLine, ArrowUpToLine, Banknote, Clock3, ReceiptText, Wallet } from "lucide-react";
 import { apiFetch, hasStoredSession } from "@/lib/api";
 import { DashboardShell } from "../DashboardShell";
 import { SkeletonBlock, UiState } from "../UiState";
@@ -34,8 +34,6 @@ type WalletData = {
     onlineCollected: number;
     cashCounterCollected: number;
     totalCollected: number;
-    commissionRate: number;
-    commissionPending: number;
     netWithdrawable: number;
     pendingWithdrawal: number;
     paidWithdrawal: number;
@@ -63,8 +61,6 @@ const emptyWallet: WalletData = {
     onlineCollected: 0,
     cashCounterCollected: 0,
     totalCollected: 0,
-    commissionRate: 0.03,
-    commissionPending: 0,
     netWithdrawable: 0,
     pendingWithdrawal: 0,
     paidWithdrawal: 0,
@@ -90,6 +86,23 @@ type LedgerType = "all" | "withdrawable" | "tracked";
 
 const upiIdPattern = /^[A-Za-z0-9._-]{2,256}@[A-Za-z0-9]{2,64}$/;
 
+function loadScript(src: string) {
+  return new Promise<void>((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
+    if (existing) {
+      if (existing.dataset.loaded === "true") resolve();
+      else existing.addEventListener("load", () => resolve(), { once: true });
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.onload = () => { script.dataset.loaded = "true"; resolve(); };
+    script.onerror = () => reject(new Error("Razorpay Checkout could not load."));
+    document.body.appendChild(script);
+  });
+}
+
 export default function WalletPage() {
   const [wallet, setWallet] = useState<WalletData>(emptyWallet);
   const [message, setMessage] = useState("Loading wallet...");
@@ -102,10 +115,29 @@ export default function WalletPage() {
   const [ledgerFrom, setLedgerFrom] = useState("");
   const [ledgerTo, setLedgerTo] = useState("");
   const [ledgerPage, setLedgerPage] = useState(1);
+  const [topupAmount, setTopupAmount] = useState("100");
+  const [isToppingUp, setIsToppingUp] = useState(false);
+  const [topupMessage, setTopupMessage] = useState("");
+  const [historyTab, setHistoryTab] = useState<"ledger" | "withdrawals">("ledger");
 
   useEffect(() => {
     loadWallet();
   }, [ledgerPage, ledgerType, ledgerFrom, ledgerTo]);
+
+  // Razorpay resolves the payment client-side, but PayU/PhonePe are
+  // full-page redirects - after the backend callback sends the browser back
+  // here, recover the result from the ?topup=&payment= query params it appended.
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const paymentResult = searchParams.get("payment");
+    if (!searchParams.get("topup")) return;
+    if (paymentResult === "success") {
+      setMessage("Top-up successful. Your wallet balance has been updated.");
+      loadWallet();
+    } else if (paymentResult === "failure") {
+      setMessage("Top-up payment was not completed. Please try again.");
+    }
+  }, []);
 
   async function loadWallet() {
     if (!hasStoredSession()) {
@@ -162,9 +194,96 @@ export default function WalletPage() {
     }
   }
 
+  async function submitTopup(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsToppingUp(true);
+    setTopupMessage("");
+
+    try {
+      const createResponse = await apiFetch("/api/wallet/topup/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount: topupAmount }),
+      });
+      const created = await createResponse.json().catch(() => ({}));
+      if (!createResponse.ok) throw new Error(created.message || "Could not start top-up.");
+
+      const topupId = created.topup.id;
+      const gateway = created.topup.gateway as string;
+      if (gateway === "razorpay") await openRazorpayTopup(topupId);
+      else if (gateway === "payu") await openPayuTopup(topupId);
+      else if (gateway === "phonepe") await openPhonepeTopup(topupId);
+      else throw new Error("No online payment gateway is configured for top-up.");
+    } catch (error) {
+      setTopupMessage(error instanceof Error ? error.message : "Could not start top-up.");
+      setIsToppingUp(false);
+    }
+  }
+
+  async function openRazorpayTopup(topupId: number) {
+    await loadScript("https://checkout.razorpay.com/v1/checkout.js");
+    const response = await apiFetch(`/api/wallet/topup/${topupId}/razorpay/order/`, { method: "POST" });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.message || "Could not start Razorpay.");
+    const Razorpay = (window as typeof window & { Razorpay?: new (options: Record<string, unknown>) => { open: () => void } }).Razorpay;
+    if (!Razorpay) throw new Error("Razorpay Checkout could not load.");
+    const checkout = new Razorpay({
+      key: result.payment.keyId,
+      amount: result.payment.amount,
+      currency: result.payment.currency,
+      name: result.payment.name,
+      description: result.payment.description,
+      order_id: result.payment.gatewayOrderId,
+      theme: { color: "#2563eb" },
+      handler: async (payment: Record<string, string>) => {
+        const verifyResponse = await apiFetch(`/api/wallet/topup/${topupId}/razorpay/verify/`, {
+          method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payment),
+        });
+        const verified = await verifyResponse.json().catch(() => ({}));
+        setIsToppingUp(false);
+        if (!verifyResponse.ok) {
+          setTopupMessage(verified.message || "Payment verification failed.");
+          return;
+        }
+        setTopupMessage("Top-up successful. Your wallet balance has been updated.");
+        await loadWallet();
+      },
+      modal: { ondismiss: () => { setIsToppingUp(false); setTopupMessage("Payment was not completed."); } },
+    });
+    checkout.open();
+  }
+
+  async function openPayuTopup(topupId: number) {
+    const response = await apiFetch(`/api/wallet/topup/${topupId}/payu/order/`, { method: "POST" });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.message || "Could not start PayU.");
+
+    // PayU has no JS popup for hosted checkout - submit a real form so the
+    // browser navigates to PayU's page; it redirects back to our backend
+    // callback, which then redirects here with ?topup=&payment=.
+    const form = document.createElement("form");
+    form.method = "POST";
+    form.action = result.payment.actionUrl;
+    Object.entries(result.payment.fields as Record<string, string>).forEach(([fieldName, fieldValue]) => {
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = fieldName;
+      input.value = fieldValue;
+      form.appendChild(input);
+    });
+    document.body.appendChild(form);
+    form.submit();
+  }
+
+  async function openPhonepeTopup(topupId: number) {
+    const response = await apiFetch(`/api/wallet/topup/${topupId}/phonepe/order/`, { method: "POST" });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.message || "Could not start PhonePe.");
+    window.location.href = result.payment.redirectUrl;
+  }
+
   const cards = [
     { label: "Withdrawable Balance", value: formatCurrency(wallet.summary.netWithdrawable), icon: Wallet, color: "#42b98e" },
-    { label: "Reptigo Commission", value: formatCurrency(wallet.summary.commissionPending), icon: Landmark, color: "#6d63df" },
     { label: "Online Balance", value: formatCurrency(wallet.balance), icon: Clock3, color: "#ff9a52" },
     { label: "Cash Counter Collected", value: formatCurrency(wallet.summary.cashCounterCollected), icon: Banknote, color: "#4a9dec" },
   ];
@@ -188,7 +307,7 @@ export default function WalletPage() {
         <div className="dashboard-hero">
           <div>
             <h1>Service Credits & Settlement</h1>
-            <p>{message || "Online payments are withdrawable. Cash counter money stays with the cafe, and Reptigo commission is deducted from the request amount."}</p>
+            <p>{message || "Online payments are withdrawable, cash counter money stays with the cafe, and every paid tool use is deducted from your balance as it happens."}</p>
           </div>
           <span className="status-pill">Wallet Active</span>
         </div>
@@ -224,7 +343,7 @@ export default function WalletPage() {
                 <div className="metric-content">
                   <div className="metric-label">{card.label}</div>
                   <div className="metric-value">{card.value}</div>
-                  <div className="metric-meta">{metricMeta(card.label, wallet.summary.commissionRate)}</div>
+                  <div className="metric-meta">{metricMeta(card.label)}</div>
                 </div>
               </article>
             );
@@ -232,117 +351,143 @@ export default function WalletPage() {
         </section>
 
         <section className="wallet-layout">
-          <form className="panel wallet-withdraw-panel" onSubmit={submitWithdrawal}>
-            <div className="panel-title-row compact">
-              <div>
-                <h2>Request Withdrawal</h2>
-                <p>Amount is auto-filled after Reptigo commission.</p>
-              </div>
-              <ArrowDownToLine size={20} />
-            </div>
-            <label className="auto-field">
-              <span>Amount</span>
-              <input min="0" step="0.01" max={wallet.summary.netWithdrawable || undefined} type="number" value={amount} onChange={(event) => setAmount(event.target.value)} />
-            </label>
-            <label className="auto-field">
-              <span>Method</span>
-              <select value={method} onChange={(event) => setMethod(event.target.value)}>
-                <option>UPI</option>
-                <option>Bank</option>
-              </select>
-            </label>
-            <label className="auto-field">
-              <span>{method === "UPI" ? "UPI ID" : "Bank Details"}</span>
-              <input
-                aria-invalid={Boolean(upiError)}
-                placeholder={method === "UPI" ? "name@bank" : "Account number, IFSC, name"}
-                value={accountDetail}
-                onChange={(event) => setAccountDetail(event.target.value)}
-              />
-              {upiError ? <small className="field-error">{upiError}</small> : null}
-            </label>
-            <label className="auto-field">
-              <span>Note</span>
-              <input value={note} onChange={(event) => setNote(event.target.value)} />
-            </label>
-            <button className="btn btn-primary" type="submit" disabled={isSubmitting || !canSubmitWithdrawal}>
-              <ArrowDownToLine size={16} /> {isSubmitting ? "Requesting..." : "Request Withdrawal"}
-            </button>
-          </form>
-
-          <article className="panel">
-            <div className="panel-title-row compact">
-              <h2>Withdrawal History</h2>
-              <ReceiptText size={20} />
-            </div>
-            <div className="wallet-list">
-              {wallet.withdrawals.length ? wallet.withdrawals.map((withdrawal) => (
-                <div className="wallet-row" key={withdrawal.id}>
-                  <div>
-                    <strong>{formatCurrency(withdrawal.amount)}</strong>
-                    <span>{withdrawal.method} | {withdrawal.accountDetail}</span>
-                  </div>
-                  <span className={`order-status ${withdrawal.status}`}>{formatLabel(withdrawal.status)}</span>
-                </div>
-              )) : <UiState icon={ReceiptText} title="No withdrawal requests" description="Your withdrawal requests will appear here after you submit one." />}
-            </div>
-          </article>
-        </section>
-
-        <section className="panel wallet-ledger-panel">
-          <div className="panel-title-row compact">
-            <h2>Service Credits Ledger</h2>
-            <ReceiptText size={20} />
-          </div>
-          <div className="wallet-ledger-controls" aria-label="Wallet ledger filters">
-            <label className="auto-field">
-              <span>From</span>
-              <input type="date" value={ledgerFrom} onChange={(event) => updateLedgerFilter({ from: event.target.value })} />
-            </label>
-            <label className="auto-field">
-              <span>To</span>
-              <input type="date" value={ledgerTo} onChange={(event) => updateLedgerFilter({ to: event.target.value })} />
-            </label>
-            <label className="auto-field">
-              <span>Status</span>
-              <select value={ledgerType} onChange={(event) => updateLedgerFilter({ type: event.target.value as LedgerType })}>
-                <option value="all">All</option>
-                <option value="withdrawable">Withdrawable</option>
-                <option value="tracked">Tracked only</option>
-              </select>
-            </label>
-          </div>
-          <div className="wallet-list">
-            {wallet.transactions.length ? wallet.transactions.map((transaction) => (
-              <div className="wallet-row" key={transaction.id}>
+          <div className="wallet-forms-stack">
+            <form className="panel wallet-withdraw-panel" onSubmit={submitTopup}>
+              <div className="panel-title-row compact">
                 <div>
-                  <strong>{formatLabel(transaction.kind)}</strong>
-                  <span>{transaction.note || (transaction.affectsBalance ? "Affects withdrawable balance" : "Tracked separately")}</span>
+                  <h2>Top Up Wallet</h2>
+                  <p>Add service credits to keep paid tools running.</p>
                 </div>
-                <div className="wallet-amount">
-                  <strong className={transaction.direction}>{transaction.direction === "debit" ? "-" : transaction.direction === "credit" ? "+" : ""}{formatCurrency(transaction.amount)}</strong>
-                  <small>{transaction.affectsBalance ? "Withdrawable" : "Tracked only"}</small>
-                </div>
+                <ArrowUpToLine size={20} />
               </div>
-            )) : message === "Loading wallet..." ? (
-              <SkeletonBlock lines={4} />
-            ) : (
-              <UiState icon={ReceiptText} title="No service credits transactions" description="Collected payments and settlement activity will appear here." />
-            )}
+              <label className="auto-field">
+                <span>Amount</span>
+                <input min="10" step="0.01" type="number" value={topupAmount} onChange={(event) => setTopupAmount(event.target.value)} />
+              </label>
+              {topupMessage ? <small className="field-error">{topupMessage}</small> : null}
+              <button className="btn btn-primary" type="submit" disabled={isToppingUp || Number(topupAmount) < 10}>
+                <ArrowUpToLine size={16} /> {isToppingUp ? "Processing..." : "Top Up Now"}
+              </button>
+            </form>
+
+            <form className="panel wallet-withdraw-panel" onSubmit={submitWithdrawal}>
+              <div className="panel-title-row compact">
+                <div>
+                  <h2>Request Withdrawal</h2>
+                  <p>Amount is auto-filled with your withdrawable balance.</p>
+                </div>
+                <ArrowDownToLine size={20} />
+              </div>
+              <label className="auto-field">
+                <span>Amount</span>
+                <input min="0" step="0.01" max={wallet.summary.netWithdrawable || undefined} type="number" value={amount} onChange={(event) => setAmount(event.target.value)} />
+              </label>
+              <label className="auto-field">
+                <span>Method</span>
+                <select value={method} onChange={(event) => setMethod(event.target.value)}>
+                  <option>UPI</option>
+                  <option>Bank</option>
+                </select>
+              </label>
+              <label className="auto-field">
+                <span>{method === "UPI" ? "UPI ID" : "Bank Details"}</span>
+                <input
+                  aria-invalid={Boolean(upiError)}
+                  placeholder={method === "UPI" ? "name@bank" : "Account number, IFSC, name"}
+                  value={accountDetail}
+                  onChange={(event) => setAccountDetail(event.target.value)}
+                />
+                {upiError ? <small className="field-error">{upiError}</small> : null}
+              </label>
+              <label className="auto-field">
+                <span>Note</span>
+                <input value={note} onChange={(event) => setNote(event.target.value)} />
+              </label>
+              <button className="btn btn-primary" type="submit" disabled={isSubmitting || !canSubmitWithdrawal}>
+                <ArrowDownToLine size={16} /> {isSubmitting ? "Requesting..." : "Request Withdrawal"}
+              </button>
+            </form>
           </div>
-          <div className="wallet-pagination" aria-label="Wallet ledger pagination">
-            <span>
-              Page {pagination.page} of {pagination.totalPages} | {pagination.total} entries
-            </span>
-            <div>
-              <button type="button" onClick={() => setLedgerPage((page) => Math.max(page - 1, 1))} disabled={pagination.page <= 1}>
-                Previous
-              </button>
-              <button type="button" onClick={() => setLedgerPage((page) => Math.min(page + 1, pagination.totalPages))} disabled={pagination.page >= pagination.totalPages}>
-                Next
-              </button>
+
+          <article className="panel wallet-history-panel">
+            <div className="panel-title-row compact">
+              <h2>{historyTab === "ledger" ? "Service Credits Ledger" : "Withdrawal History"}</h2>
+              <div className="wallet-history-toggle" role="tablist" aria-label="Wallet history view">
+                <button type="button" role="tab" aria-selected={historyTab === "ledger"} className={historyTab === "ledger" ? "active" : ""} onClick={() => setHistoryTab("ledger")}>
+                  Ledger
+                </button>
+                <button type="button" role="tab" aria-selected={historyTab === "withdrawals"} className={historyTab === "withdrawals" ? "active" : ""} onClick={() => setHistoryTab("withdrawals")}>
+                  Withdrawals
+                </button>
+              </div>
             </div>
-          </div>
+
+            {historyTab === "ledger" ? (
+              <>
+                <div className="wallet-ledger-controls" aria-label="Wallet ledger filters">
+                  <label className="auto-field">
+                    <span>From</span>
+                    <input type="date" value={ledgerFrom} onChange={(event) => updateLedgerFilter({ from: event.target.value })} />
+                  </label>
+                  <label className="auto-field">
+                    <span>To</span>
+                    <input type="date" value={ledgerTo} onChange={(event) => updateLedgerFilter({ to: event.target.value })} />
+                  </label>
+                  <label className="auto-field">
+                    <span>Status</span>
+                    <select value={ledgerType} onChange={(event) => updateLedgerFilter({ type: event.target.value as LedgerType })}>
+                      <option value="all">All</option>
+                      <option value="withdrawable">Withdrawable</option>
+                      <option value="tracked">Tracked only</option>
+                    </select>
+                  </label>
+                </div>
+                <div className="wallet-list">
+                  {wallet.transactions.length ? wallet.transactions.map((transaction) => (
+                    <div className="wallet-row" key={transaction.id}>
+                      <div>
+                        <strong>{formatLabel(transaction.kind)}</strong>
+                        <span>{transaction.note || (transaction.affectsBalance ? "Affects withdrawable balance" : "Tracked separately")}</span>
+                      </div>
+                      <div className="wallet-amount">
+                        <strong className={transaction.direction}>{transaction.direction === "debit" ? "-" : transaction.direction === "credit" ? "+" : ""}{formatCurrency(transaction.amount)}</strong>
+                        <small>{transaction.affectsBalance ? "Withdrawable" : "Tracked only"}</small>
+                      </div>
+                    </div>
+                  )) : message === "Loading wallet..." ? (
+                    <SkeletonBlock lines={4} />
+                  ) : (
+                    <UiState icon={ReceiptText} title="No service credits transactions" description="Collected payments and settlement activity will appear here." />
+                  )}
+                </div>
+                <div className="wallet-pagination" aria-label="Wallet ledger pagination">
+                  <span>
+                    Page {pagination.page} of {pagination.totalPages} | {pagination.total} entries
+                  </span>
+                  <div>
+                    <button type="button" onClick={() => setLedgerPage((page) => Math.max(page - 1, 1))} disabled={pagination.page <= 1}>
+                      Previous
+                    </button>
+                    <button type="button" onClick={() => setLedgerPage((page) => Math.min(page + 1, pagination.totalPages))} disabled={pagination.page >= pagination.totalPages}>
+                      Next
+                    </button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="wallet-list">
+                {wallet.withdrawals.length ? wallet.withdrawals.map((withdrawal) => (
+                  <div className="wallet-row" key={withdrawal.id}>
+                    <div>
+                      <strong>{formatCurrency(withdrawal.amount)}</strong>
+                      <span>{withdrawal.method} | {withdrawal.accountDetail}</span>
+                    </div>
+                    <span className={`order-status ${withdrawal.status}`}>{formatLabel(withdrawal.status)}</span>
+                  </div>
+                )) : <UiState icon={ReceiptText} title="No withdrawal requests" description="Your withdrawal requests will appear here after you submit one." />}
+              </div>
+            )}
+          </article>
         </section>
       </div>
     </DashboardShell>
@@ -358,10 +503,9 @@ function formatAmountInput(value: number) {
   return amount > 0 ? amount.toFixed(2).replace(/\.00$/, "") : "";
 }
 
-function metricMeta(label: string, commissionRate: number) {
-  if (label === "Withdrawable Balance") return "After commission";
-  if (label === "Reptigo Commission") return `${Math.round(Number(commissionRate || 0) * 100)}% of total collection`;
-  if (label === "Online Balance") return "Before commission";
+function metricMeta(label: string) {
+  if (label === "Withdrawable Balance") return "Ready to withdraw";
+  if (label === "Online Balance") return "Wallet balance";
   if (label === "Cash Counter Collected") return "Already with cafe";
   return "Wallet ledger";
 }

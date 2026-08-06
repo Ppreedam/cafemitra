@@ -1056,10 +1056,6 @@ export default function CustomerScanPage() {
             <h2>Order Summary</h2>
           </div>
           <div className="customer-summary-row">
-            <span>Service</span>
-            <strong>{activeService?.serviceName}</strong>
-          </div>
-          <div className="customer-summary-row">
             <span>Rate</span>
             <strong>{selectedItem?.label} Rs. {selectedRate}</strong>
           </div>

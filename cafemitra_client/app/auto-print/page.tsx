@@ -41,7 +41,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { clearSession, hasStoredSession } from "@/lib/api";
-import { fetchPricingServices, formatPriceItem, normalizePaymentMode, savePricingService, saveServicePrinter, type PriceItem, type PriceRange } from "@/lib/pricing";
+import { fetchCashCounterStatus, fetchPricingServices, formatPriceItem, normalizePaymentMode, savePricingService, saveServicePrinter, type PriceItem, type PriceRange } from "@/lib/pricing";
 import {
   deleteAgentPrinterPreset,
   fallbackColorModes,
@@ -205,6 +205,8 @@ export default function AutoPrintPage() {
     { id: "color", label: "Color", rate: 10 },
   ]);
   const [paymentMode, setPaymentMode] = useState("Online Payment");
+  const [cashCounterAvailable, setCashCounterAvailable] = useState(true);
+  const [cashCounterReason, setCashCounterReason] = useState("");
   const [pricingMessage, setPricingMessage] = useState("");
   const [pricingError, setPricingError] = useState("");
   const [isSavingPricing, setIsSavingPricing] = useState(false);
@@ -279,6 +281,11 @@ export default function AutoPrintPage() {
         }
       })
       .catch(() => undefined);
+
+    fetchCashCounterStatus().then((status) => {
+      setCashCounterAvailable(status.available);
+      setCashCounterReason(status.reason);
+    });
 
     verifyAgent({ silent: true });
   }, [router]);
@@ -802,21 +809,28 @@ export default function AutoPrintPage() {
                     ))}
                   </div>
                   <div className="payment-mode-list">
-                    {paymentModeOptions.map((option) => (
-                      <button
-                        className={paymentMode === option.value ? "active" : ""}
-                        key={option.value}
-                        type="button"
-                        onClick={() => {
-                          setPaymentMode(option.value);
-                          setPricingSaved(false);
-                        }}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
+                    {paymentModeOptions.map((option) => {
+                      const isBothOption = option.value === "Both";
+                      const isLocked = isBothOption && !cashCounterAvailable;
+                      return (
+                        <button
+                          className={paymentMode === option.value ? "active" : ""}
+                          key={option.value}
+                          type="button"
+                          disabled={isLocked}
+                          title={isLocked ? cashCounterReason : undefined}
+                          onClick={() => {
+                            setPaymentMode(option.value);
+                            setPricingSaved(false);
+                          }}
+                        >
+                          {option.label}
+                        </button>
+                      );
+                    })}
                   </div>
                   <p className="payment-mode-note">Online Payment is always available to customers. Turn on "Online Payment + Cash Counter" to also let customers pay at your counter.</p>
+                  {!cashCounterAvailable ? <p className="payment-mode-note payment-mode-locked">{cashCounterReason}</p> : null}
                   {pricingMessage ? <div className="profile-alert success">{pricingMessage}</div> : null}
                   {pricingError ? <div className="profile-alert error">{pricingError}</div> : null}
                   <button className="btn btn-primary" type="button" onClick={saveAutoPrintPricing} disabled={isSavingPricing}>

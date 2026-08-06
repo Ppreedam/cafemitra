@@ -48,6 +48,8 @@ type Order = {
   fileUrl: string;
   attireCategory?: string;
   geminiPhoto?: string;
+  hasRawPhoto?: boolean;
+  hasGeminiPhoto?: boolean;
   photoStatus?: string;
   photoErrorMessage?: string;
   passportPrompt?: string;
@@ -115,6 +117,7 @@ export default function OrdersPage() {
   const [markingPaidId, setMarkingPaidId] = useState<number | null>(null);
   const [actionError, setActionError] = useState("");
   const [compareOrder, setCompareOrder] = useState<Order | null>(null);
+  const [compareLoading, setCompareLoading] = useState(false);
   const cashApprovalOrders = orders.filter((order) => order.paymentStatus === "cash_counter" && order.status === "awaiting_approval");
   const passportQueuedCount = orders.filter((order) => order.serviceKey === "passport_photo" && order.status === "queued").length;
   const filteredOrders = useMemo(
@@ -179,6 +182,22 @@ export default function OrdersPage() {
       setActionError(error instanceof Error ? error.message : "Could not mark this order as paid.");
     } finally {
       setMarkingPaidId(null);
+    }
+  }
+
+  async function openCompare(order: Order) {
+    // The list response omits the base64 photo payloads to keep /api/orders/
+    // fast - fetch the single order here to get the actual image data.
+    setCompareOrder(order);
+    setCompareLoading(true);
+    try {
+      const response = await apiFetch(`/api/orders/${order.id}/`);
+      const result = await response.json().catch(() => ({}));
+      if (response.ok && result.order) {
+        setCompareOrder(result.order);
+      }
+    } finally {
+      setCompareLoading(false);
     }
   }
 
@@ -299,20 +318,20 @@ export default function OrdersPage() {
                           {order.attireCategory ? <small>{passportAttireLabels[order.attireCategory] || order.attireCategory}</small> : null}
                         </td>
                         <td>
-                          {order.fileUrl ? (
-                            order.serviceKey === "passport_photo" ? (
-                              <button type="button" className="orders-file-link" onClick={() => setCompareOrder(order)}>
+                          {order.serviceKey === "passport_photo" ? (
+                            order.hasRawPhoto ? (
+                              <button type="button" className="orders-file-link" onClick={() => openCompare(order)}>
                                 {order.fileName || "Document"}
                               </button>
-                            ) : (
-                              <a href={apiUrl(order.fileUrl)} target="_blank" rel="noreferrer">
-                                {order.fileName || "Document"}
-                              </a>
-                            )
+                            ) : null
+                          ) : order.fileUrl ? (
+                            <a href={apiUrl(order.fileUrl)} target="_blank" rel="noreferrer">
+                              {order.fileName || "Document"}
+                            </a>
                           ) : null}
                           {order.serviceKey === "passport_photo" && order.photoStatus === "failed" ? (
                             <small className="order-status failed">{friendlyPhotoErrorMessage(order)}</small>
-                          ) : order.serviceKey === "passport_photo" && !order.geminiPhoto ? (
+                          ) : order.serviceKey === "passport_photo" && !order.hasGeminiPhoto ? (
                             <small>Passport photo processing...</small>
                           ) : null}
                         </td>
@@ -382,11 +401,19 @@ export default function OrdersPage() {
             <div className="passport-compare-body">
               <div className="passport-compare-pane">
                 <span>Raw Photo</span>
-                {compareOrder.fileUrl ? <img src={apiUrl(compareOrder.fileUrl)} alt="Raw upload" /> : <p>Not available</p>}
+                {compareLoading ? (
+                  <div className="passport-compare-spinner"><span className="passport-compare-spinner-ring" /></div>
+                ) : compareOrder.fileUrl ? (
+                  <img src={apiUrl(compareOrder.fileUrl)} alt="Raw upload" />
+                ) : (
+                  <p>Not available</p>
+                )}
               </div>
               <div className="passport-compare-pane">
                 <span>Gemini Photo</span>
-                {compareOrder.geminiPhoto ? (
+                {compareLoading ? (
+                  <div className="passport-compare-spinner"><span className="passport-compare-spinner-ring" /></div>
+                ) : compareOrder.geminiPhoto ? (
                   <img src={apiUrl(compareOrder.geminiPhoto)} alt="AI generated passport photo" />
                 ) : compareOrder.photoStatus === "failed" ? (
                   <p className="order-status failed">{friendlyPhotoErrorMessage(compareOrder)}</p>

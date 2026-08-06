@@ -28,7 +28,7 @@ from django.views.decorators.http import require_http_methods
 
 from .background_remover.remove_background import BackgroundRemovalError, remove_background_bytes
 from .background_remover.passport_photo_processor import ProcessingError, enhance_transparent_bytes
-from .models import AuthToken, ContactMessage, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, UserProfile, WalletSetting, WalletTransaction, WithdrawalRequest
+from .models import AuthToken, ContactMessage, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from cafemitra_server.product_setting import PAYMENT_GATEWAYS, active_payment_gateway
 
 User = get_user_model()
@@ -565,6 +565,50 @@ def wallet_balance(user):
     return profile.balance
 
 
+def effective_credit_limit(user):
+    """The negative-balance floor for this cafe: a per-cafe
+    UserProfile.credit_limit_override if admin has set one, otherwise the
+    global WalletSetting "credit_limit". Call sites that already hold a
+    locked `profile` row (e.g. charge_wallet_for_tool) should read
+    profile.credit_limit_override directly instead of calling this, to avoid
+    a second query.
+    """
+    profile, _ = UserProfile.objects.get_or_create(user=user, defaults={"phone": ""})
+    if profile.credit_limit_override is not None:
+        return profile.credit_limit_override
+    return get_wallet_setting("credit_limit")
+
+
+def cash_counter_permission_reason(profile):
+    """Permission-only check (no balance) - what gates SAVING "Both" as a
+    shop's pricing preference. A temporarily low balance shouldn't force the
+    owner to re-save their preference once they top up; that's handled
+    separately by cash_counter_available for live/order-time gating.
+    """
+    if not profile.cash_counter_permitted:
+        return "Cash Counter is not enabled for your account yet. Contact RepetiGo support to request access."
+    return ""
+
+
+def cash_counter_available(user):
+    """Live availability (permission AND current balance) - what gates what
+    customers actually see on the storefront and what's enforced at order
+    creation. Recomputed fresh every time, never cached on the saved
+    preference.
+    """
+    profile, _ = UserProfile.objects.get_or_create(user=user, defaults={"phone": ""})
+    reason = cash_counter_permission_reason(profile)
+    if reason:
+        return False, reason
+    credit_limit = profile.credit_limit_override if profile.credit_limit_override is not None else get_wallet_setting("credit_limit")
+    if profile.balance <= credit_limit:
+        return False, (
+            f"Cash Counter is temporarily locked because your wallet balance (Rs. {profile.balance}) is at or below "
+            f"the minimum allowed limit (Rs. {credit_limit}). Top up your wallet to re-enable it."
+        )
+    return True, ""
+
+
 def get_wallet_setting(key):
     """Single source of truth for every wallet number (signup bonus, referral
     bonus, grace-credit limit, daily grace-usage cap, commission rate).
@@ -615,16 +659,12 @@ def wallet_collection_summary(user):
         or Decimal("0.00")
     )
     total_collected = (online_collected + cash_collected).quantize(Decimal("0.01"))
-    commission_rate = get_wallet_setting("collection_commission_rate")
-    commission = (total_collected * commission_rate).quantize(Decimal("0.01"))
     balance = wallet_balance(user)
-    net_withdrawable = max(balance - commission, Decimal("0.00")).quantize(Decimal("0.01"))
+    net_withdrawable = max(balance, Decimal("0.00")).quantize(Decimal("0.01"))
     return {
         "onlineCollected": online_collected.quantize(Decimal("0.01")),
         "cashCounterCollected": cash_collected.quantize(Decimal("0.01")),
         "totalCollected": total_collected,
-        "commissionRate": commission_rate,
-        "commissionPending": commission,
         "netWithdrawable": net_withdrawable,
     }
 
@@ -704,24 +744,39 @@ def ensure_signup_wallet_bonus(user):
     )
 
 
+def tool_price_for_context(tool, order):
+    """Effective per-use price for a ToolPricing row: prefers the B2C rate
+    when usage is tied to a customer order (order is not None), the B2B rate
+    for the cafe's own direct usage (order is None), falling back to the
+    shared `price` when the context-specific rate isn't set.
+    """
+    if order is not None:
+        return tool.price_b2c if tool.price_b2c is not None else tool.price
+    return tool.price_b2b if tool.price_b2b is not None else tool.price
+
+
 def charge_wallet_for_tool(user, tool_key, quantity=1, order=None):
     """Deduct RepetiGo's usage fee for a tool from the shop's wallet.
 
     Call this right after a tool's main action succeeds (HTTP 200). Enforces
-    the grace-credit floor (WalletSetting "credit_limit", e.g. -50) and the
-    per-day spend cap while the wallet is at/below zero (WalletSetting
+    the grace-credit floor (per-cafe UserProfile.credit_limit_override, or
+    else the global WalletSetting "credit_limit", e.g. -50) and the per-day
+    spend cap while the wallet is at/below zero (WalletSetting
     "daily_grace_limit"). Returns (allowed: bool, message: str, transaction).
 
-    A tool with no ToolPricing row, or is_billable=False, or price 0 is free
-    - this is what keeps PDF/Image tools free today without special-casing
-    them here; flip is_billable in Django admin to start charging for one.
+    A tool with no ToolPricing row, or is_billable=False, or an effective
+    price of 0 is free - this is what keeps PDF/Image tools free today
+    without special-casing them here; flip is_billable in Django admin to
+    start charging for one.
     """
     tool = ToolPricing.objects.filter(tool_key=tool_key, is_billable=True).first()
-    if not tool or tool.price <= 0:
+    if not tool:
+        return True, "", None
+    unit_price = tool_price_for_context(tool, order)
+    if unit_price <= 0:
         return True, "", None
 
-    price_total = (tool.price * Decimal(quantity)).quantize(Decimal("0.01"))
-    credit_limit = get_wallet_setting("credit_limit")
+    price_total = (unit_price * Decimal(quantity)).quantize(Decimal("0.01"))
 
     # Lock the wallet row for the whole check-then-deduct sequence so two
     # concurrent calls for the same user (double-click, webhook retry)
@@ -730,6 +785,7 @@ def charge_wallet_for_tool(user, tool_key, quantity=1, order=None):
     # balance once it gets the lock.
     with transaction.atomic():
         profile, _ = UserProfile.objects.select_for_update().get_or_create(user=user, defaults={"phone": ""})
+        credit_limit = profile.credit_limit_override if profile.credit_limit_override is not None else get_wallet_setting("credit_limit")
         projected_balance = (profile.balance - price_total).quantize(Decimal("0.01"))
 
         if projected_balance < credit_limit:
@@ -796,17 +852,17 @@ def charge_wallet_for_tool(user, tool_key, quantity=1, order=None):
         return True, "", wallet_txn
 
 
-def wallet_usage_gate(user, tool_key, quantity=1):
+def wallet_usage_gate(user, tool_key, quantity=1, order=None):
     """Pre-flight check only (no charge) - use before starting a job so a
     shop already past its limit is blocked immediately, without waiting for
     the job to run. The real deduction still happens via charge_wallet_for_tool
     once the job actually succeeds.
     """
     tool = ToolPricing.objects.filter(tool_key=tool_key, is_billable=True).first()
-    if not tool or tool.price <= 0:
+    if not tool or tool_price_for_context(tool, order) <= 0:
         return True, ""
     profile, _ = UserProfile.objects.get_or_create(user=user, defaults={"phone": ""})
-    credit_limit = get_wallet_setting("credit_limit")
+    credit_limit = profile.credit_limit_override if profile.credit_limit_override is not None else get_wallet_setting("credit_limit")
     if profile.balance <= credit_limit:
         return False, (
             f"Wallet balance has reached the minimum allowed limit (Rs. {credit_limit}). "
@@ -901,17 +957,21 @@ def public_pricing(pricing):
     }
 
 
-def public_order(order):
+def public_order(order, include_media=True):
     token_id = order.token_id or f"{order.shop_code}-T{order.token_number:03d}"
     is_passport = order.service_key == "passport_photo"
     if is_passport:
         # Raw upload and AI result live as base64 data URIs directly on the
         # order row for this service - no file on disk to build a URL for.
         # Orders created before this switched over still have a real file
-        # instead, so fall back to that.
+        # instead, so fall back to that. These base64 payloads can be
+        # hundreds of KB each, so list views (include_media=False) skip them
+        # and only expose hasRawPhoto/hasGeminiPhoto - the full data is
+        # fetched on demand via order_detail when a single order is opened.
         file_name = "passport-photo.jpg"
+        has_raw_photo = bool(order.original_filename.startswith("data:") or order.document)
         if order.original_filename.startswith("data:"):
-            file_url = order.original_filename
+            file_url = order.original_filename if include_media else ""
             document_deleted = False
         elif order.document:
             file_url = order.document.url
@@ -919,12 +979,15 @@ def public_order(order):
         else:
             file_url = ""
             document_deleted = True
-        gemini_photo_value = order.gemini_photo
+        has_gemini_photo = bool(order.gemini_photo)
+        gemini_photo_value = order.gemini_photo if include_media else ""
     else:
         has_document = bool(order.document)
         file_name = order.original_filename
         file_url = order.document.url if has_document else ""
         document_deleted = not has_document
+        has_raw_photo = has_document
+        has_gemini_photo = False
         gemini_photo_value = ""
     return {
         "id": order.id,
@@ -947,6 +1010,8 @@ def public_order(order):
         "fileName": file_name,
         "fileUrl": file_url,
         "documentDeleted": document_deleted,
+        "hasRawPhoto": has_raw_photo,
+        "hasGeminiPhoto": has_gemini_photo,
         "customerPhone": order.customer_phone,
         "createdAt": order.created_at.isoformat(),
         "paidAt": order.paid_at.isoformat() if order.paid_at else "",
@@ -1632,7 +1697,7 @@ def wallet(request):
     )
 
     balance = wallet_balance(user)
-    credit_limit = get_wallet_setting("credit_limit")
+    credit_limit = effective_credit_limit(user)
     daily_grace_limit = get_wallet_setting("daily_grace_limit")
     today_grace_used = (
         WalletTransaction.objects.filter(
@@ -1653,8 +1718,6 @@ def wallet(request):
                 "onlineCollected": float(collection_summary["onlineCollected"]),
                 "cashCounterCollected": float(collection_summary["cashCounterCollected"]),
                 "totalCollected": float(collection_summary["totalCollected"]),
-                "commissionRate": float(collection_summary["commissionRate"]),
-                "commissionPending": float(collection_summary["commissionPending"]),
                 "netWithdrawable": float(collection_summary["netWithdrawable"]),
                 "pendingWithdrawal": float(pending_withdrawal),
                 "paidWithdrawal": float(paid_withdrawal),
@@ -1709,7 +1772,7 @@ def request_withdrawal(request):
         UserProfile.objects.select_for_update().get_or_create(user=user, defaults={"phone": ""})
         net_withdrawable = wallet_collection_summary(user)["netWithdrawable"]
         if net_withdrawable < amount:
-            return JsonResponse({"message": "Amount is higher than withdrawable balance after Reptigo commission."}, status=400)
+            return JsonResponse({"message": "Amount is higher than your withdrawable wallet balance."}, status=400)
 
         withdrawal = WithdrawalRequest.objects.create(user=user, amount=amount, method=method, account_detail=account_detail, note=note)
         create_wallet_transaction(
@@ -1786,7 +1849,12 @@ def pricing_settings(request):
 
     if request.method == "GET":
         pricing = ServicePricing.objects.filter(user=user)
-        return JsonResponse({"services": [public_pricing(item) for item in pricing]})
+        profile, _ = UserProfile.objects.get_or_create(user=user, defaults={"phone": ""})
+        available, reason = cash_counter_available(user)
+        return JsonResponse({
+            "services": [public_pricing(item) for item in pricing],
+            "cashCounter": {"permitted": profile.cash_counter_permitted, "available": available, "reason": reason},
+        })
 
     body = parse_body(request)
     service_key = str(body.get("serviceKey", "")).strip()
@@ -1806,9 +1874,11 @@ def pricing_settings(request):
     pricing.service_name = default_service["serviceName"]
     existing_settings = pricing.settings if isinstance(pricing.settings, dict) else {}
     merged_settings = {**default_service["settings"], **existing_settings, **settings}
-    # Cash Counter collection is disabled platform-wide - a shop can no
-    # longer opt back into it from pricing settings.
-    merged_settings["paymentMode"] = "Online Payment"
+    if merged_settings.get("paymentMode") == "Both":
+        profile, _ = UserProfile.objects.get_or_create(user=user, defaults={"phone": ""})
+        permission_reason = cash_counter_permission_reason(profile)
+        if permission_reason:
+            return JsonResponse({"message": permission_reason}, status=403)
     pricing.settings = merged_settings
     pricing.save(update_fields=["service_name", "settings", "updated_at"])
 
@@ -1847,14 +1917,17 @@ def public_print_order(request, code):
         total = calculated_total
 
     payment_mode = str(request.POST.get("paymentMode", "Online Payment")).strip()
-    # Cash Counter collection is disabled platform-wide - customers always
-    # pay online, regardless of what a shop's own pricing settings say.
     if payment_mode == "Cash Counter":
-        payment_mode = "Online Payment"
+        available, reason = cash_counter_available(user)
+        if not available:
+            return JsonResponse({"message": reason or "Cash Counter payment is not available for this shop."}, status=400)
 
     if payment_mode == "No Payment":
         payment_status = PrintOrder.PAYMENT_NO_PAYMENT
         order_status = PrintOrder.STATUS_QUEUED
+    elif payment_mode == "Cash Counter":
+        payment_status = PrintOrder.PAYMENT_CASH_COUNTER
+        order_status = PrintOrder.STATUS_AWAITING_APPROVAL
     else:
         payment_status = PrintOrder.PAYMENT_PENDING
         order_status = PrintOrder.STATUS_AWAITING_PAYMENT
@@ -2145,22 +2218,286 @@ def phonepe_webhook(request):
     merchant_order_id = str(payload.get("merchantOrderId") or payload.get("orderId") or "")
     state = str(payload.get("state") or body.get("event") or "").upper()
     amount_paise = payload.get("amount")
+    is_success = "COMPLETED" in state or "SUCCESS" in state
 
+    # This webhook is shared across both PrintOrder payments and wallet
+    # top-ups - the two use distinct gateway_order_id prefixes ("cm" vs
+    # "wt") but we still scope the lookup by payment_gateway to match the
+    # per-flow order-creation views exactly.
     order = PrintOrder.objects.filter(gateway_order_id=merchant_order_id, payment_gateway="phonepe").first() if merchant_order_id else None
-    if not order:
+    if order:
+        amount_ok = amount_paise is None or payment_amount_matches(Decimal(amount_paise) / 100, order.total_amount)
+        if is_success and amount_ok and order.payment_status == PrintOrder.PAYMENT_PENDING:
+            order.payment_status = PrintOrder.PAYMENT_PAID
+            order.status = PrintOrder.STATUS_QUEUED
+            order.paid_at = timezone.now()
+            order.gateway_payment_id = str(payload.get("orderId") or merchant_order_id)
+            order.save(update_fields=["payment_status", "status", "paid_at", "gateway_payment_id"])
         return JsonResponse({"message": "ok"})
 
-    is_success = "COMPLETED" in state or "SUCCESS" in state
-    amount_ok = amount_paise is None or payment_amount_matches(Decimal(amount_paise) / 100, order.total_amount)
-
-    if is_success and amount_ok and order.payment_status == PrintOrder.PAYMENT_PENDING:
-        order.payment_status = PrintOrder.PAYMENT_PAID
-        order.status = PrintOrder.STATUS_QUEUED
-        order.paid_at = timezone.now()
-        order.gateway_payment_id = str(payload.get("orderId") or merchant_order_id)
-        order.save(update_fields=["payment_status", "status", "paid_at", "gateway_payment_id"])
+    topup = WalletTopup.objects.filter(gateway_order_id=merchant_order_id, payment_gateway="phonepe").first() if merchant_order_id else None
+    if topup:
+        amount_ok = amount_paise is None or payment_amount_matches(Decimal(amount_paise) / 100, topup.amount)
+        if is_success and amount_ok and topup.status == WalletTopup.STATUS_PENDING:
+            credit_wallet_topup(topup, str(payload.get("orderId") or merchant_order_id))
 
     return JsonResponse({"message": "ok"})
+
+
+def credit_wallet_topup(topup, gateway_payment_id):
+    """Mark a WalletTopup paid and credit the wallet exactly once - safe to
+    call more than once for the same top-up (verify call racing a webhook
+    retry), since the STATUS_PENDING guard runs under a row lock.
+    """
+    with transaction.atomic():
+        locked = WalletTopup.objects.select_for_update().get(id=topup.id)
+        if locked.status != WalletTopup.STATUS_PENDING:
+            return
+        locked.status = WalletTopup.STATUS_PAID
+        locked.paid_at = timezone.now()
+        locked.gateway_payment_id = gateway_payment_id
+        locked.save(update_fields=["status", "paid_at", "gateway_payment_id"])
+        create_wallet_transaction(
+            locked.user,
+            WalletTransaction.KIND_TOPUP,
+            locked.amount,
+            WalletTransaction.DIRECTION_CREDIT,
+            True,
+            note=f"Wallet top-up #{locked.id} via {locked.payment_gateway}.",
+        )
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def create_wallet_topup(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    body = parse_body(request)
+    amount = money(body.get("amount"))
+    if amount < Decimal("10.00"):
+        return JsonResponse({"message": "Top-up amount must be at least Rs. 10."}, status=400)
+
+    gateway, config = active_payment_gateway()
+    if not gateway or gateway == "direct_upi":
+        return JsonResponse({"message": "Online top-up is not available right now. Please contact support."}, status=503)
+
+    topup = WalletTopup.objects.create(user=user, amount=amount, payment_gateway=gateway)
+    return JsonResponse({"topup": {"id": topup.id, "amount": float(topup.amount), "gateway": gateway}}, status=201)
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def wallet_topup_razorpay_order(request, topup_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+    topup = WalletTopup.objects.filter(id=topup_id, user=user).first()
+    if not topup:
+        return JsonResponse({"message": "Top-up not found."}, status=404)
+    gateway, config = active_payment_gateway()
+    if gateway != "razorpay" or topup.payment_gateway != "razorpay":
+        return JsonResponse({"message": "Razorpay is not enabled for this top-up."}, status=400)
+    if topup.status != WalletTopup.STATUS_PENDING:
+        return JsonResponse({"message": "This top-up is not awaiting payment."}, status=400)
+    if not topup.gateway_order_id:
+        payload, error = razorpay_request("orders", {
+            "amount": int(topup.amount * 100), "currency": "INR",
+            "receipt": f"topup_{topup.id}", "notes": {"topup_id": str(topup.id), "user_id": str(user.id)},
+        }, config)
+        if error:
+            return JsonResponse({"message": error}, status=502)
+        topup.gateway_order_id = payload["id"]
+        topup.save(update_fields=["gateway_order_id"])
+    return JsonResponse({"payment": {
+        "gateway": "razorpay", "keyId": config["key_id"], "gatewayOrderId": topup.gateway_order_id,
+        "amount": int(topup.amount * 100), "currency": "INR", "name": "RepetiGo",
+        "description": f"Wallet top-up #{topup.id}",
+    }})
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def wallet_topup_verify_razorpay(request, topup_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+    topup = WalletTopup.objects.filter(id=topup_id, user=user).first()
+    if not topup:
+        return JsonResponse({"message": "Top-up not found."}, status=404)
+    gateway, config = active_payment_gateway()
+    body = parse_body(request)
+    payment_id = str(body.get("razorpay_payment_id", ""))
+    gateway_order_id = str(body.get("razorpay_order_id", ""))
+    signature = str(body.get("razorpay_signature", ""))
+    if gateway != "razorpay" or not topup.gateway_order_id or gateway_order_id != topup.gateway_order_id:
+        return JsonResponse({"message": "Invalid payment order."}, status=400)
+    expected = hmac.new(config["key_secret"].encode(), f"{gateway_order_id}|{payment_id}".encode(), hashlib.sha256).hexdigest()
+    if not payment_id or not hmac.compare_digest(expected, signature):
+        return JsonResponse({"message": "Payment signature verification failed."}, status=400)
+    credit_wallet_topup(topup, payment_id)
+    return JsonResponse({"balance": float(wallet_balance(user))})
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def wallet_topup_payu_order(request, topup_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+    topup = WalletTopup.objects.filter(id=topup_id, user=user).first()
+    if not topup:
+        return JsonResponse({"message": "Top-up not found."}, status=404)
+    gateway, config = active_payment_gateway()
+    if gateway != "payu" or topup.payment_gateway != "payu":
+        return JsonResponse({"message": "PayU is not enabled for this top-up."}, status=400)
+    if topup.status != WalletTopup.STATUS_PENDING:
+        return JsonResponse({"message": "This top-up is not awaiting payment."}, status=400)
+
+    if not topup.gateway_order_id:
+        topup.gateway_order_id = f"wt{topup.id}{secrets.token_hex(6)}"
+        topup.save(update_fields=["gateway_order_id"])
+
+    txnid = topup.gateway_order_id
+    amount = f"{topup.amount:.2f}"
+    productinfo = f"Wallet top-up #{topup.id}"[:100]
+    firstname = user.get_full_name() or "Cafe Owner"
+    email = user.email or "owner@cafemitra.app"
+    callback_url = request.build_absolute_uri(f"/api/wallet/topup/{topup.id}/payu/callback/")
+
+    hash_value = payu_hash(config["merchant_key"], txnid, amount, productinfo, firstname, email, config["salt"])
+
+    return JsonResponse({"payment": {
+        "gateway": "payu",
+        "actionUrl": payu_action_url(config),
+        "fields": {
+            "key": config["merchant_key"],
+            "txnid": txnid,
+            "amount": amount,
+            "productinfo": productinfo,
+            "firstname": firstname,
+            "email": email,
+            "phone": "",
+            "surl": callback_url,
+            "furl": callback_url,
+            "hash": hash_value,
+        },
+    }})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def wallet_topup_payu_callback(request, topup_id):
+    topup = WalletTopup.objects.filter(id=topup_id).first()
+    if not topup:
+        return HttpResponseRedirect(settings.FRONTEND_URL)
+
+    payu_config = PAYMENT_GATEWAYS.get("payu", {})
+    configured_key = str(payu_config.get("merchant_key", ""))
+    salt = str(payu_config.get("salt", ""))
+
+    key = str(request.POST.get("key", ""))
+    txnid = str(request.POST.get("txnid", ""))
+    status = str(request.POST.get("status", ""))
+    amount = str(request.POST.get("amount", ""))
+    productinfo = str(request.POST.get("productinfo", ""))
+    firstname = str(request.POST.get("firstname", ""))
+    email = str(request.POST.get("email", ""))
+    received_hash = str(request.POST.get("hash", ""))
+    mihpayid = str(request.POST.get("mihpayid", ""))
+
+    valid = bool(salt) and bool(configured_key) and key == configured_key
+    valid = valid and topup.payment_gateway == "payu" and txnid and txnid == topup.gateway_order_id
+    if valid:
+        expected_hash = payu_reverse_hash(salt, status, key, txnid, amount, productinfo, firstname, email)
+        valid = bool(received_hash) and hmac.compare_digest(expected_hash, received_hash)
+    if valid:
+        valid = payment_amount_matches(amount, topup.amount)
+
+    if valid and status.lower() == "success" and topup.status == WalletTopup.STATUS_PENDING:
+        credit_wallet_topup(topup, mihpayid)
+
+    result = "success" if WalletTopup.objects.filter(id=topup.id, status=WalletTopup.STATUS_PAID).exists() else "failure"
+    return HttpResponseRedirect(f"{settings.FRONTEND_URL}/wallet?topup={topup.id}&payment={result}")
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def wallet_topup_phonepe_order(request, topup_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+    topup = WalletTopup.objects.filter(id=topup_id, user=user).first()
+    if not topup:
+        return JsonResponse({"message": "Top-up not found."}, status=404)
+    gateway, config = active_payment_gateway()
+    if gateway != "phonepe" or topup.payment_gateway != "phonepe":
+        return JsonResponse({"message": "PhonePe is not enabled for this top-up."}, status=400)
+    if topup.status != WalletTopup.STATUS_PENDING:
+        return JsonResponse({"message": "This top-up is not awaiting payment."}, status=400)
+
+    if not topup.gateway_order_id:
+        topup.gateway_order_id = f"wt{topup.id}{secrets.token_hex(6)}"
+        topup.save(update_fields=["gateway_order_id"])
+
+    token, error = phonepe_access_token(config)
+    if error:
+        return JsonResponse({"message": error}, status=502)
+
+    callback_url = request.build_absolute_uri(f"/api/wallet/topup/{topup.id}/phonepe/callback/")
+    payload = {
+        "merchantOrderId": topup.gateway_order_id,
+        "amount": int(topup.amount * 100),
+        "expireAfter": 1200,
+        "paymentFlow": {
+            "type": "PG_CHECKOUT",
+            "message": f"Wallet top-up #{topup.id}",
+            "merchantUrls": {"redirectUrl": callback_url},
+        },
+    }
+    result, error = phonepe_api_call("POST", phonepe_urls(config)["pay"], token, payload)
+    if error or not result or not result.get("redirectUrl"):
+        return JsonResponse({"message": error or "PhonePe did not return a checkout URL."}, status=502)
+
+    return JsonResponse({"payment": {"gateway": "phonepe", "redirectUrl": result["redirectUrl"]}})
+
+
+@require_http_methods(["GET"])
+def wallet_topup_phonepe_callback(request, topup_id):
+    topup = WalletTopup.objects.filter(id=topup_id).first()
+    if not topup:
+        return HttpResponseRedirect(settings.FRONTEND_URL)
+
+    result = "success" if topup.status == WalletTopup.STATUS_PAID else "failure"
+    phonepe_config = PAYMENT_GATEWAYS.get("phonepe", {})
+    if topup.payment_gateway == "phonepe" and topup.gateway_order_id and topup.status == WalletTopup.STATUS_PENDING:
+        # Same as the PrintOrder redirect callback - PhonePe's return redirect
+        # carries no verifiable payload, so re-check status server-side via
+        # the authenticated Order Status API instead of trusting the browser.
+        token, error = phonepe_access_token(phonepe_config)
+        if not error:
+            status_url = phonepe_urls(phonepe_config)["status"].format(topup.gateway_order_id)
+            status_payload, error = phonepe_api_call("GET", status_url, token)
+            if not error and status_payload:
+                state = str(status_payload.get("state", "")).upper()
+                amount_paise = status_payload.get("amount")
+                amount_ok = amount_paise is None or payment_amount_matches(Decimal(amount_paise) / 100, topup.amount)
+                if state == "COMPLETED" and amount_ok:
+                    credit_wallet_topup(topup, str(status_payload.get("orderId") or topup.gateway_order_id))
+                    result = "success"
+
+    return HttpResponseRedirect(f"{settings.FRONTEND_URL}/wallet?topup={topup.id}&payment={result}")
 
 
 @csrf_exempt
@@ -2174,7 +2511,7 @@ def order_history(request):
         return JsonResponse({"message": "Unauthorized."}, status=401)
 
     orders = PrintOrder.objects.filter(user=user).order_by("-created_at")[:100]
-    return JsonResponse({"orders": [public_order(order) for order in orders]})
+    return JsonResponse({"orders": [public_order(order, include_media=False) for order in orders]})
 
 
 @csrf_exempt
@@ -2510,11 +2847,23 @@ def public_shop_by_code(request, code):
     auto_print = ServicePricing.objects.filter(user=user, service_key="auto_document_print").first()
     is_open = bool((auto_print.settings or {}).get("isOpen", True)) if auto_print else True
 
+    # The owner's saved preference (settings.paymentMode) can be "Both" even
+    # when Cash Counter is currently unavailable (permission revoked, or
+    # balance too low) - resolve what customers actually see live, without
+    # touching the stored preference itself.
+    cash_available, _ = cash_counter_available(user)
+    services_payload = []
+    for item in pricing:
+        data = public_pricing(item)
+        if data["settings"].get("paymentMode") == "Both" and not cash_available:
+            data["settings"] = {**data["settings"], "paymentMode": "Online Payment"}
+        services_payload.append(data)
+
     return JsonResponse(
         {
             "code": cafe_code_for_user(user),
             "shop": public_shop(shop),
-            "services": [public_pricing(item) for item in pricing],
+            "services": services_payload,
             "status": {"verified": True, "open": is_open},
         }
     )

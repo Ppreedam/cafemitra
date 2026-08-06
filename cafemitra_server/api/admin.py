@@ -1,6 +1,13 @@
 from django.contrib import admin
 
-from .models import GooglePlace, GooglePlaceDetail, LeadActivity, ToolPricing, WalletSetting, WalletTransaction, WithdrawalRequest
+from .models import GooglePlace, GooglePlaceDetail, LeadActivity, ToolPricing, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
+
+
+@admin.register(UserProfile)
+class UserProfileAdmin(admin.ModelAdmin):
+    list_display = ("user", "phone", "balance", "credit_limit_override", "cash_counter_permitted")
+    list_editable = ("credit_limit_override", "cash_counter_permitted")
+    search_fields = ("user__email", "user__username", "phone")
 
 
 @admin.register(GooglePlace)
@@ -35,8 +42,8 @@ class WalletSettingAdmin(admin.ModelAdmin):
 
 @admin.register(ToolPricing)
 class ToolPricingAdmin(admin.ModelAdmin):
-    list_display = ("tool_key", "label", "unit", "price", "is_billable", "updated_at")
-    list_editable = ("price", "is_billable")
+    list_display = ("tool_key", "label", "unit", "price", "price_b2b", "price_b2c", "is_billable", "updated_at")
+    list_editable = ("price", "price_b2b", "price_b2c", "is_billable")
     search_fields = ("tool_key", "label")
 
 
@@ -46,6 +53,13 @@ class WithdrawalRequestAdmin(admin.ModelAdmin):
     list_editable = ("status",)
     list_filter = ("status", "method")
     search_fields = ("user__email", "user__username", "account_detail")
+
+
+@admin.register(WalletTopup)
+class WalletTopupAdmin(admin.ModelAdmin):
+    list_display = ("id", "user", "amount", "payment_gateway", "status", "created_at", "paid_at")
+    list_filter = ("status", "payment_gateway")
+    search_fields = ("user__email", "user__username", "gateway_order_id", "gateway_payment_id")
 
 
 @admin.register(WalletTransaction)

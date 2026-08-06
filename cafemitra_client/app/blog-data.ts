@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { Files, IdCard, Printer } from "lucide-react";
+import { IdCard, Printer } from "lucide-react";
 
 export type BlogPost = {
   slug: string;
@@ -14,17 +14,6 @@ export type BlogPost = {
 };
 
 export const blogPosts: BlogPost[] = [
-  {
-    slug: "how-to-merge-pdf-online",
-    href: "/blog/pdf/how-to-merge-pdf-online",
-    category: "PDF Guide",
-    title: "How to Merge PDF Files Online Free in India",
-    excerpt:
-      "Combine Aadhaar, PAN, marksheets, certificates, forms, and office PDFs into one clean document with a simple step-by-step guide.",
-    readTime: "4 min read",
-    icon: Files,
-    color: "#2563eb",
-  },
   {
     slug: "printpilot-print-automation",
     href: "/print-automation",
