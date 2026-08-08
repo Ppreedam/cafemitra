@@ -13,6 +13,7 @@ import { apiFetch, hasStoredSession, storeSession } from "@/lib/api";
 import { fallbackPrinters, fetchAgentHealth, saveAgentPrinter, type AgentHealth } from "@/lib/printpilot-agent";
 import { fetchPricingServiceByKey, saveServicePrinter } from "@/lib/pricing";
 import { ProfileMenu } from "./ProfileMenu";
+import { ToolSearch } from "../ToolSearch";
 
 type ProfileSummary = {
   user: {
@@ -182,6 +183,7 @@ export function ProfileTopbar({ isSidebarCollapsed = false, onMenuClick, printer
         >
           <Menu size={22} />
         </button>
+        <ToolSearch />
       </div>
       <div className="topbar-right">
         <div className="business-switcher">

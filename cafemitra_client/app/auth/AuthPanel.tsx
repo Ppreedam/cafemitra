@@ -207,7 +207,7 @@ export function AuthPanel({ mode }: AuthPanelProps) {
               Repeti<span className="brand-accent">Go</span>
             </span>
           </Link>
-          <AuthIllustration />
+          <AuthIllustration isRegister={isRegister} />
           <div className="auth-visual-copy">
             <h2>Run your print shop on autopilot</h2>
             <p>Secure QR uploads, AI document processing, print queues, wallet tracking, and customer tools in one place.</p>
@@ -449,10 +449,14 @@ function getPostAuthRedirectPath() {
   return nextPath.startsWith("/") && !nextPath.startsWith("//") ? nextPath : "/dashboard";
 }
 
-function AuthIllustration() {
+function AuthIllustration({ isRegister }: { isRegister: boolean }) {
   return (
     <div className="auth-illustration" aria-hidden="true">
-      <img className="auth-illustration-image" src="/login%20page%20image.jpeg" alt="" />
+      <img
+        className="auth-illustration-image"
+        src={isRegister ? "/Create-account.png" : "/Log-in.png"}
+        alt=""
+      />
     </div>
   );
 }

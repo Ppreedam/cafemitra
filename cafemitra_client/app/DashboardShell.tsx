@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { ReactNode } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   CircleHelp,
   ClipboardList,
@@ -60,9 +60,24 @@ export function DashboardShell({ activePath, children }: { activePath: string; c
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const printerServiceKey = printerServiceKeyByPath[activePath] || "auto_document_print";
 
+  useEffect(() => {
+    // Reset whenever the viewport crosses the mobile breakpoint - "collapsed"
+    // means "hidden off-canvas" on mobile and "icon rail" on desktop, so a
+    // toggle state from one side doesn't mean anything useful on the other.
+    // A mount-only check would get stuck: resizing from mobile to desktop
+    // (e.g. dragging DevTools' responsive width) without a reload left the
+    // sidebar stuck collapsed to an icon rail instead of showing in full.
+    const mql = window.matchMedia("(max-width: 820px)");
+    const handleChange = (event: MediaQueryListEvent) => setIsSidebarCollapsed(event.matches);
+    setIsSidebarCollapsed(mql.matches);
+    mql.addEventListener("change", handleChange);
+    return () => mql.removeEventListener("change", handleChange);
+  }, []);
+
   return (
     <main className={`app-frame ${isSidebarCollapsed ? "sidebar-collapsed" : ""}`}>
       <AppSidebar activePath={activePath} isCollapsed={isSidebarCollapsed} />
+      <div className="sidebar-backdrop" onClick={() => setIsSidebarCollapsed(true)} aria-hidden />
       <section className="app-main">
         <ProfileTopbar
           isSidebarCollapsed={isSidebarCollapsed}

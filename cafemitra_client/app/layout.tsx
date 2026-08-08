@@ -68,6 +68,9 @@ export const metadata: Metadata = {
     "customer document management",
   ],
   publisher: "RepetiGo",
+  icons: {
+    icon: "/Fab-Icon.png",
+  },
   alternates: {
     canonical: siteUrl,
   },

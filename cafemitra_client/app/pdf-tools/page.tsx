@@ -17,6 +17,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
+import { pdfTools, pdfToolHref } from "../pdfToolsData";
 
 type NavItem = {
   name: string;
@@ -28,15 +29,6 @@ type NavItem = {
 type NavGroup = {
   label: string;
   items: NavItem[];
-};
-
-type PdfTool = {
-  name: string;
-  description: string;
-  badge: string;
-  color: string;
-  isNew?: boolean;
-  href?: string;
 };
 
 const pageUrl = "https://repetigo.com/pdf-tools";
@@ -87,39 +79,6 @@ const navGroups: NavGroup[] = [
       { name: "Reports", icon: FileText },
     ],
   },
-];
-
-const pdfTools: PdfTool[] = [
-  { name: "Merge PDF", description: "Combine PDFs in the order you want with an easy PDF merger.", badge: "PDF", color: "#f26b4f", href: "/pdf-tools/merge-pdf" },
-  { name: "Split PDF", description: "Separate pages or whole sets into independent PDF files.", badge: "PDF", color: "#f26b4f" },
-  { name: "Extract Pages", description: "Pull selected PDF pages into a new file without changing the original.", badge: "EXT", color: "#2563eb", href: "/pdf-tools/extract-pages" },
-  { name: "Remove Pages", description: "Delete unwanted, blank, or duplicate PDF pages and download a clean file.", badge: "DEL", color: "#2563eb", href: "/pdf-tools/remove-pages" },
-  { name: "Compress PDF", description: "Reduce file size while keeping maximum PDF quality.", badge: "ZIP", color: "#83bd55", href: "/pdf-tools/compress-pdf" },
-  { name: "PDF to Word", description: "Convert PDF files into easy to edit DOC and DOCX documents.", badge: "W", color: "#4d80c5" },
-  { name: "PDF to PowerPoint", description: "Turn PDF files into editable PPT and PPTX slideshows.", badge: "P", color: "#f26b4f" },
-  { name: "PDF to Excel", description: "Pull PDF data into Excel spreadsheets in a few seconds.", badge: "X", color: "#58a86b" },
-  { name: "Word to PDF", description: "Make DOC and DOCX files easy to read by converting them to PDF.", badge: "W", color: "#5c8ddd" },
-  { name: "PowerPoint to PDF", description: "Convert PPT and PPTX slideshows into easy to view PDFs.", badge: "P", color: "#f26b4f" },
-  { name: "Excel to PDF", description: "Convert Excel spreadsheets into shareable PDF documents.", badge: "X", color: "#58a86b" },
-  { name: "Edit PDF", description: "Add text, images, shapes, or freehand annotations to a PDF.", badge: "EDIT", color: "#b0649b" },
-  { name: "PDF to JPG", description: "Convert each PDF page into JPG or extract images from a PDF.", badge: "JPG", color: "#e4c32f" },
-  { name: "JPG to PDF", description: "Convert JPG images to PDF and adjust orientation or margins.", badge: "JPG", color: "#e0c024" },
-  { name: "Sign PDF", description: "Sign yourself or request electronic signatures from others.", badge: "SIGN", color: "#4e82bd" },
-  { name: "Watermark", description: "Stamp an image or text over your PDF with position controls.", badge: "WM", color: "#b0649b" },
-  { name: "Rotate PDF", description: "Rotate one page or many pages at once.", badge: "ROT", color: "#b0649b" },
-  { name: "HTML to PDF", description: "Convert saved HTML pages into clean PDF documents.", badge: "HTML", color: "#e4c32f", href: "/pdf-tools/html-to-pdf" },
-  { name: "Markdown to PDF", description: "Convert Markdown files into clean, shareable PDF documents.", badge: "MD", color: "#4d80c5", href: "/pdf-tools/markdown-to-pdf", isNew: true },
-  { name: "Unlock PDF", description: "Remove PDF password security when you have permission.", badge: "KEY", color: "#4e82bd" },
-  { name: "Protect PDF", description: "Encrypt PDF documents with a password to prevent access.", badge: "LOCK", color: "#4e82bd" },
-  { name: "Organize PDF", description: "Sort, delete, or add PDF pages to your document.", badge: "ABC", color: "#f26b4f" },
-  { name: "PDF to PDF/A", description: "Transform PDFs into ISO-standard PDF/A archive files.", badge: "A", color: "#4e82bd" },
-  { name: "Repair PDF", description: "Repair damaged PDFs and recover data from corrupt files.", badge: "FIX", color: "#83bd55" },
-  { name: "Page numbers", description: "Add page numbers with custom position and typography.", badge: "123", color: "#b0649b" },
-  { name: "OCR PDF", description: "Convert scanned PDFs into searchable, selectable documents.", badge: "OCR", color: "#83bd55" },
-  { name: "Compare PDF", description: "Compare two PDFs side by side and spot changes.", badge: "CMP", color: "#4e82bd" },
-  { name: "Redact PDF", description: "Permanently remove sensitive text and graphics from a PDF.", badge: "RED", color: "#4e82bd" },
-  { name: "Crop PDF", description: "Crop margins or selected areas, then apply to pages.", badge: "CROP", color: "#b0649b" },
-  { name: "PDF Forms", description: "Detect form fields and create fillable PDFs.", badge: "FORM", color: "#b0649b", isNew: true },
 ];
 
 export default function PdfToolsPage() {
@@ -447,14 +406,4 @@ function JsonLd() {
   const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "PDF Tools", item: pageUrl }] };
 
   return <>{[softwareApplication, itemList, faqPage, breadcrumb].map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>;
-}
-
-function pdfToolHref(name: string) {
-  const specialRoutes: Record<string, string> = {
-    "Watermark": "watermark-pdf",
-    "Page numbers": "page-numbers",
-    "PDF to PDF/A": "pdf-to-pdfa",
-  };
-  const slug = specialRoutes[name] || name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-  return `/pdf-tools/${slug}`;
 }

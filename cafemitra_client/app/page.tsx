@@ -405,7 +405,7 @@ function WhatIsRepetiGo() {
 function WhyExists() {
   return (
     <section className="ai-soft-section">
-      <div className="ai-container ai-narrow ai-section">
+      <div className="ai-container ai-narrow">
         <SectionTag icon={Target}>Why We Exist</SectionTag>
         <h2>Why RepetiGo Exists.</h2>
         <div className="ai-copy-stack">
@@ -462,7 +462,7 @@ function Mission() {
 function Vision() {
   return (
     <section className="ai-soft-section">
-      <div className="ai-container ai-section">
+      <div className="ai-container ai-narrow">
         <SectionTag icon={Rocket}>Our Vision</SectionTag>
         <h2>Where RepetiGo Is Going.</h2>
         <div className="ai-copy-stack">
@@ -518,7 +518,7 @@ function Values() {
 function WhatWeAutomate() {
   return (
     <section className="ai-soft-section">
-      <div className="ai-container ai-section">
+      <div className="ai-container">
         <SectionTag icon={Layers}>What We Automate</SectionTag>
         <h2>Everything We Automate - Today and Tomorrow.</h2>
         <p>

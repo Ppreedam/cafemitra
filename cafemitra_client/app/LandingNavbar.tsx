@@ -18,6 +18,7 @@ import {
   FileText,
   Files,
   IdCard,
+  Menu,
   Printer,
   RotateCw,
   Scissors,
@@ -156,6 +157,7 @@ export function LandingNavbar() {
   const pathname = usePathname();
   const [showNotice, setShowNotice] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const isHomeActive = pathname === "/";
   const isServicesActive = pathname === "/print-automation";
   const isPdfToolsActive = pathname.startsWith("/pdf-tools");
@@ -166,6 +168,10 @@ export function LandingNavbar() {
   useEffect(() => {
     setIsLoggedIn(hasStoredSession());
   }, []);
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+  }, [pathname]);
 
   return (
     <header className="site-header">
@@ -214,8 +220,38 @@ export function LandingNavbar() {
             Contact Us
           </Link>
         </nav>
-        <HomeHeaderActions />
+        <div className="header-inner-right">
+          <HomeHeaderActions />
+          <button
+            type="button"
+            className="mobile-menu-toggle"
+            aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={isMobileMenuOpen}
+            onClick={() => setIsMobileMenuOpen((open) => !open)}
+          >
+            {isMobileMenuOpen ? <X size={20} aria-hidden /> : <Menu size={20} aria-hidden />}
+          </button>
+        </div>
       </div>
+      {isMobileMenuOpen ? (
+        <nav className="mobile-nav-drawer" aria-label="Mobile navigation">
+          <Link className={isServicesActive ? "nav-link-active" : undefined} href="/print-automation">
+            Automation Tools
+          </Link>
+          <Link className={isPdfToolsActive ? "nav-link-active" : undefined} href="/pdf-tools">
+            PDF Tools
+          </Link>
+          <Link className={isImageToolsActive ? "nav-link-active" : undefined} href="/image-tools">
+            Image Tools
+          </Link>
+          <Link className={isBlogActive ? "nav-link-active" : undefined} href="/blog">
+            Blog
+          </Link>
+          <Link className={isContactActive ? "nav-link-active" : undefined} href="/contact-us">
+            Contact Us
+          </Link>
+        </nav>
+      ) : null}
     </header>
   );
 }
