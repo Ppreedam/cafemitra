@@ -29,18 +29,16 @@ import {
   Printer,
   QrCode,
   RefreshCw,
-  Send,
   Settings,
   Share2,
   ShieldCheck,
-  Smartphone,
   Trash2,
   UserRound,
   Users,
   Wallet,
   type LucideIcon,
 } from "lucide-react";
-import { clearSession, hasStoredSession } from "@/lib/api";
+import { apiUrl, clearSession, hasStoredSession } from "@/lib/api";
 import { fetchCashCounterStatus, fetchPricingServices, formatPriceItem, normalizePaymentMode, savePricingService, saveServicePrinter, type PriceItem, type PriceRange } from "@/lib/pricing";
 import {
   deleteAgentPrinterPreset,
@@ -221,6 +219,8 @@ export default function AutoPrintPage() {
   const [testStatus, setTestStatus] = useState<"idle" | "printing" | "success">("idle");
   const [testPrintMessage, setTestPrintMessage] = useState("");
   const [testPrintError, setTestPrintError] = useState("");
+  const [qrDownloadError, setQrDownloadError] = useState("");
+  const [isDownloadingQr, setIsDownloadingQr] = useState(false);
   const printerReady = printerSaved && Boolean(selectedPrinter);
   const pricingReady = pricingSaved && priceItems.length > 0;
   const qrSetupReady = qrReady || (agentConnected && printerReady && pricingReady && Boolean(qrUrl));
@@ -544,14 +544,24 @@ export default function AutoPrintPage() {
   }
 
   async function downloadQr() {
-    const image = qrImage || (await generateQr({ copyToClipboard: false }));
-    const svg = buildQrPosterSvg(shopName, shopCode, qrUrl, image);
-    const blob = new Blob([svg], { type: "image/svg+xml" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `${shopCode}-qr-poster.svg`;
-    link.click();
-    URL.revokeObjectURL(link.href);
+    setQrDownloadError("");
+    setIsDownloadingQr(true);
+    try {
+      const image = qrImage || (await generateQr({ copyToClipboard: false }));
+      const logoImage = await loadLogoDataUrl();
+      const svg = buildQrPosterSvg(shopName, shopCode, qrUrl, image, logoImage);
+      const pdfBytes = await buildQrPosterPdf(svg);
+      const blob = new Blob([pdfBytes as BlobPart], { type: "application/pdf" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `${shopCode}-qr-poster.pdf`;
+      link.click();
+      URL.revokeObjectURL(link.href);
+    } catch (error) {
+      setQrDownloadError(error instanceof Error ? error.message : "Could not generate the QR poster PDF.");
+    } finally {
+      setIsDownloadingQr(false);
+    }
   }
 
   function shareQr() {
@@ -654,7 +664,7 @@ export default function AutoPrintPage() {
                       <p>Install the desktop app on the computer connected to your printer.</p>
                     </div>
                   </div>
-                  <a className="btn btn-primary" href="https://raw.githubusercontent.com/httpsankit/cafemitra_updates/refs/heads/main/RepetigoInstaller.exe" target="_blank" rel="noreferrer" onClick={() => setAgentDownloaded(true)}>
+                  <a className="btn btn-primary" href={apiUrl("/api/agent/installer/")} download="RepetigoInstaller.exe" onClick={() => setAgentDownloaded(true)}>
                     <Download size={16} /> Download Agent
                   </a>
                 </div>
@@ -843,52 +853,114 @@ export default function AutoPrintPage() {
                 <div className="wizard-action-content qr-action">
                   <div className="qr-poster-shell">
                     <div className="qr-buttons">
-                      <button className="btn btn-primary" disabled={!qrSetupReady} type="button" onClick={downloadQr}>
-                        <Download size={16} /> Download
+                      <button className="btn btn-primary" disabled={!qrSetupReady || isDownloadingQr} type="button" onClick={downloadQr}>
+                        <Download size={16} /> {isDownloadingQr ? "Preparing PDF..." : "Download"}
                       </button>
                       <button className="btn" disabled={!qrSetupReady} type="button" onClick={shareQr}>
                         <Share2 size={16} /> Share
                       </button>
                     </div>
+                    {qrDownloadError ? <div className="profile-alert error">{qrDownloadError}</div> : null}
                     <div className="qr-poster-card">
-                      <div className="qr-poster-hero">
-                        <Send size={42} />
-                        <h3>{shopName}</h3>
-                        <p>Scan. Upload. Pay. Print.</p>
-                      </div>
-                      <div className="qr-poster-body">
+                      <div className="qr-poster-top">
+                        <img className="qr-poster-logo-img" src="/logo.png" alt="RepetiGo" />
+                        <div className="qr-poster-divider">
+                          <span className="qr-poster-divider-line" />
+                          <span className="qr-poster-divider-icon">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M12 2L4 5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V5l-8-3z" stroke="white" strokeWidth={1.6} strokeLinejoin="round" />
+                              <rect x="9.3" y="10.5" width="5.4" height="4.4" rx="1" stroke="white" strokeWidth={1.4} />
+                              <path d="M10.2 10.5V9a1.8 1.8 0 0 1 3.6 0v1.5" stroke="white" strokeWidth={1.4} />
+                            </svg>
+                          </span>
+                          <span className="qr-poster-divider-line qr-poster-divider-line-right" />
+                        </div>
+                        <h3 className="qr-poster-title">Scan to Print</h3>
+                        <p className="qr-poster-subtitle">Secure. Private. AI-Powered.</p>
+
                         <div className="poster-qr-frame" aria-label="Generated shop QR preview">
-                          {qrImage ? (
-                            <>
-                              <img src={qrImage} alt="Shop QR code" />
-                              <span className="qr-brand-badge poster-brand-badge">
-                                <span className="brand-repeti">Repeti</span><span className="brand-go">GO</span>
-                              </span>
-                            </>
-                          ) : (
-                            <QrCode size={150} />
-                          )}
+                          <span className="poster-qr-corner poster-qr-corner-tl" />
+                          <span className="poster-qr-corner poster-qr-corner-tr" />
+                          <span className="poster-qr-corner poster-qr-corner-bl" />
+                          <span className="poster-qr-corner poster-qr-corner-br" />
+                          {qrImage ? <img src={qrImage} alt="Shop QR code" /> : <QrCode size={150} />}
                         </div>
-                        <div className="poster-upload-row">
-                          <span className="poster-icon-tile">
-                            <Smartphone size={28} />
-                          </span>
-                          <strong>Scan to Upload Documents</strong>
-                        </div>
-                        <div className="poster-secure-row">
-                          <span className="poster-shield">
-                            <ShieldCheck size={34} />
-                          </span>
-                          <div>
-                            <strong>Secure Document Upload</strong>
-                            <p>Your documents are encrypted, private, and automatically deleted after printing.</p>
+
+                        <div className="poster-steps-row">
+                          <div className="poster-step">
+                            <span className="poster-step-icon poster-step-blue">
+                              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M4 8V5a1 1 0 0 1 1-1h3M20 8V5a1 1 0 0 0-1-1h-3M4 16v3a1 1 0 0 0 1 1h3M20 16v3a1 1 0 0 1-1 1h-3" stroke="white" strokeWidth={1.8} strokeLinecap="round" />
+                                <rect x="8" y="9" width="3" height="3" fill="white" />
+                                <rect x="13" y="9" width="3" height="3" fill="white" />
+                                <rect x="8" y="13" width="3" height="3" fill="white" />
+                              </svg>
+                            </span>
+                            <strong>Scan</strong>
+                          </div>
+                          <span className="poster-step-dots">...</span>
+                          <div className="poster-step">
+                            <span className="poster-step-icon poster-step-blue">
+                              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M7 18a4.5 4.5 0 0 1-.6-8.96A5.5 5.5 0 0 1 17.4 9.5 4 4 0 0 1 17 18H7z" stroke="white" strokeWidth={1.7} strokeLinejoin="round" />
+                                <path d="M12 17v-6m0 0-2.4 2.4M12 11l2.4 2.4" stroke="white" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            </span>
+                            <strong>Upload</strong>
+                          </div>
+                          <span className="poster-step-dots">...</span>
+                          <div className="poster-step">
+                            <span className="poster-step-icon poster-step-teal">
+                              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M6 9V4h12v5" stroke="white" strokeWidth={1.7} strokeLinejoin="round" />
+                                <rect x="4" y="9" width="16" height="7" rx="1.4" stroke="white" strokeWidth={1.7} />
+                                <rect x="7" y="14" width="10" height="6" stroke="white" strokeWidth={1.7} />
+                              </svg>
+                            </span>
+                            <strong>Print</strong>
                           </div>
                         </div>
                       </div>
-                      <div className="qr-poster-footer">
-                        <span>Powered by</span>
-                        <strong>Repeti<span>Go</span></strong>
+
+                      <div className="qr-poster-shop-band">{shopName}</div>
+
+                      <div className="qr-poster-footer-dark">
+                        <div className="poster-footer-col">
+                          <span className="poster-footer-icon">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M12 2L4 5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V5l-8-3z" strokeWidth={1.6} strokeLinejoin="round" />
+                              <path d="M9 12l2 2 4-4" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          </span>
+                          <strong>Secure</strong>
+                          <p>End-to-end<br />Encryption</p>
+                        </div>
+                        <div className="poster-footer-col">
+                          <span className="poster-footer-icon">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <circle cx="12" cy="8" r="3.2" strokeWidth={1.6} />
+                              <path d="M6 20c0-3.3 2.7-6 6-6" strokeWidth={1.6} strokeLinecap="round" />
+                              <rect x="12.4" y="14.5" width="6.5" height="5.5" rx="1" strokeWidth={1.6} />
+                              <path d="M14 14.5v-1.3a1.6 1.6 0 0 1 3.2 0v1.3" strokeWidth={1.6} />
+                            </svg>
+                          </span>
+                          <strong>Private</strong>
+                          <p>Your Data<br />is Safe</p>
+                        </div>
+                        <div className="poster-footer-col">
+                          <span className="poster-footer-icon">
+                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                              <path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m-8 0 1 12.5A1.5 1.5 0 0 0 8.5 21h7a1.5 1.5 0 0 0 1.5-1.5L18 7" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
+                              <path d="M10 11v6M14 11v6" strokeWidth={1.6} strokeLinecap="round" />
+                            </svg>
+                          </span>
+                          <strong>Auto-delete</strong>
+                          <p>Files removed<br />after printing</p>
+                        </div>
                       </div>
+
+                      <div className="poster-wave" />
+                      <div className="qr-poster-url-bar">{formatDisplayUrl(qrUrl)}</div>
                     </div>
                   </div>
                 </div>
@@ -989,54 +1061,179 @@ async function createQrImage(value: string) {
   });
 }
 
+function formatDisplayUrl(url: string) {
+  return url.replace(/^https?:\/\//, "").replace(/\?.*$/, "");
+}
+
+async function loadLogoDataUrl() {
+  const response = await fetch("/logo.png");
+  const blob = await response.blob();
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = () => reject(new Error("Could not load the RepetiGo logo."));
+    reader.readAsDataURL(blob);
+  });
+}
+
 function formatAgentConnectedMessage(health: AgentHealth) {
   const account = health.account ? `Signed in as ${health.account}.` : "";
   const printer = health.printer ? `Printer: ${health.printer}.` : "Select a printer to continue.";
   return [account, printer].filter(Boolean).join(" ");
 }
 
-function buildQrPosterSvg(shopName: string, shopCode: string, qrUrl: string, qrImage: string) {
+function buildQrPosterSvg(shopName: string, shopCode: string, qrUrl: string, qrImage: string, logoImage: string) {
   const qrMarkup = qrImage
-    ? `<image href="${qrImage}" x="184" y="324" width="352" height="352"/>
-       <rect x="266" y="469" width="188" height="50" rx="25" fill="#ffffff" stroke="#1f63f2" stroke-width="5"/>
-       <text x="360" y="502" text-anchor="middle" font-family="Arial, sans-serif" font-size="25" font-weight="900" fill="#08164a">Repeti<tspan fill="#2b6df3">Go</tspan></text>`
-    : `<rect x="184" y="324" width="352" height="352" rx="18" fill="#eef4ff"/>
-       <path d="M330 470h60v60h-60zM252 374h88v88h-88zM380 374h88v88h-88zM252 584h88v88h-88z" fill="none" stroke="#1f63f2" stroke-width="15"/>`;
+    ? `<image href="${qrImage}" x="184" y="298" width="352" height="352"/>`
+    : `<rect x="184" y="298" width="352" height="352" rx="18" fill="#eef4ff"/>
+       <path d="M330 444h60v60h-60zM252 348h88v88h-88zM380 348h88v88h-88zM252 558h88v88h-88z" fill="none" stroke="#3b6fd1" stroke-width="15"/>`;
+
+  const displayUrl = escapeSvg(formatDisplayUrl(qrUrl) || "repetigo.com");
 
   return `
-<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1120" viewBox="0 0 720 1120">
-  <rect width="720" height="1120" fill="#f5f8ff"/>
-  <rect x="24" y="24" width="672" height="1072" rx="42" fill="#ffffff" stroke="#1f63f2" stroke-width="3"/>
-  <clipPath id="posterClip"><rect x="24" y="24" width="672" height="1072" rx="42"/></clipPath>
-  <g clip-path="url(#posterClip)">
-    <rect x="24" y="24" width="672" height="220" fill="#061340"/>
-    <circle cx="360" cy="42" r="170" fill="#0c2c87" opacity="0.36"/>
-    <path d="M315 80l96-42-26 88-24-31-36 26 28-36z" fill="#2f76ff"/>
-    <path d="M305 85l-44 13M314 103l-32 10M326 118l-25 7" fill="none" stroke="#8fb5ff" stroke-width="7" stroke-linecap="round"/>
-    <text x="360" y="148" text-anchor="middle" font-family="Arial, sans-serif" font-size="48" font-weight="900" fill="#ffffff">${escapeSvg(shopName)}</text>
-    <text x="360" y="195" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" font-weight="900" fill="#ffd21f">Scan. Upload. Pay. Print.</text>
-    <path d="M24 221C204 268 516 268 696 221v66H24z" fill="#1f63f2"/>
-    <path d="M24 238C204 284 516 284 696 238v72H24z" fill="#ffffff"/>
-  </g>
-  <rect x="136" y="292" width="448" height="448" rx="34" fill="#ffffff" stroke="#1f63f2" stroke-width="5"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="1120" viewBox="0 0 720 1120" font-family="'Baloo 2', Arial, sans-serif">
+  <defs>
+    <linearGradient id="goGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#3b6fd1"/>
+      <stop offset="1" stop-color="#22c0a2"/>
+    </linearGradient>
+  </defs>
+  <rect width="720" height="1120" fill="#ffffff"/>
+
+  <image href="${logoImage}" x="170" y="32" width="380" height="79.7"/>
+
+  <line x1="150" y1="148" x2="298" y2="148" stroke="#c8cee3" stroke-width="2"/>
+  <circle cx="360" cy="148" r="24" fill="url(#goGrad)"/>
+  <path d="M360 133l9 4v7c0 6-4 9.6-9 11.3-5-1.7-9-5.3-9-11.3v-7z" fill="none" stroke="#ffffff" stroke-width="2"/>
+  <rect x="354" y="146" width="12" height="9.5" rx="2" fill="none" stroke="#ffffff" stroke-width="1.8"/>
+  <line x1="422" y1="148" x2="570" y2="148" stroke="#c8cee3" stroke-width="2"/>
+
+  <text x="360" y="220" text-anchor="middle" font-size="58" font-weight="800" fill="#1a2456">Scan to Print</text>
+  <text x="360" y="260" text-anchor="middle" font-size="24" font-weight="600" fill="#8a8f9c">Secure. Private. AI-Powered.</text>
+
+  <path d="M184 334v-24a12 12 0 0112-12h24" fill="none" stroke="#3b6fd1" stroke-width="7"/>
+  <path d="M536 334v-24a12 12 0 00-12-12h-24" fill="none" stroke="#22c0a2" stroke-width="7"/>
+  <path d="M184 614v24a12 12 0 0012 12h24" fill="none" stroke="#3b6fd1" stroke-width="7"/>
+  <path d="M536 614v24a12 12 0 01-12 12h-24" fill="none" stroke="#22c0a2" stroke-width="7"/>
   ${qrMarkup}
-  <circle cx="154" cy="796" r="40" fill="#eaf2ff"/>
-  <rect x="141" y="772" width="26" height="48" rx="6" fill="none" stroke="#1f63f2" stroke-width="5"/>
-  <path d="M148 788h13M148 808h13M153 798h18" stroke="#1f63f2" stroke-width="4" stroke-linecap="round"/>
-  <text x="206" y="807" font-family="Arial, sans-serif" font-size="29" font-weight="900" fill="#08164a">Scan to Upload Documents</text>
-  <line x1="84" y1="842" x2="636" y2="842" stroke="#dfe7f4" stroke-width="2"/>
-  <circle cx="154" cy="914" r="48" fill="#eaf2ff"/>
-  <path d="M154 876l32 14v25c0 28-20 42-32 47-12-5-32-19-32-47v-25z" fill="#1f63f2"/>
-  <rect x="142" y="909" width="24" height="22" rx="4" fill="#ffffff"/>
-  <path d="M147 909v-9a7 7 0 0114 0v9" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round"/>
-  <text x="214" y="900" font-family="Arial, sans-serif" font-size="27" font-weight="900" fill="#16a34a">Secure Document Upload</text>
-  <text x="214" y="936" font-family="Arial, sans-serif" font-size="21" font-weight="700" fill="#08164a">Encrypted, private, and automatically</text>
-  <text x="214" y="964" font-family="Arial, sans-serif" font-size="21" font-weight="700" fill="#08164a">deleted after printing.</text>
-  <rect x="24" y="1018" width="672" height="78" rx="34" fill="#0b6cff"/>
-  <rect x="24" y="1064" width="672" height="32" fill="#0b6cff"/>
-  <text x="304" y="1066" text-anchor="end" font-family="Arial, sans-serif" font-size="25" font-weight="700" fill="#ffffff">Powered by</text>
-  <text x="324" y="1068" font-family="Arial, sans-serif" font-size="36" font-weight="900" fill="#ffffff">Repeti<tspan fill="#9fc2ff">Go</tspan></text>
+
+  <text x="284" y="744" text-anchor="middle" font-size="26" font-weight="800" fill="#1a2456">...</text>
+  <text x="436" y="744" text-anchor="middle" font-size="26" font-weight="800" fill="#1a2456">...</text>
+
+  <circle cx="222" cy="728" r="36" fill="#3b6fd1"/>
+  <path d="M206 716v-8a5 5 0 015-5h6M238 716v-8a5 5 0 00-5-5h-6M206 740v8a5 5 0 005 5h6M238 740v8a5 5 0 01-5 5h-6" fill="none" stroke="#ffffff" stroke-width="3"/>
+  <rect x="212" y="722" width="6" height="6" fill="#ffffff"/>
+  <rect x="223" y="722" width="6" height="6" fill="#ffffff"/>
+  <rect x="212" y="733" width="6" height="6" fill="#ffffff"/>
+  <text x="222" y="792" text-anchor="middle" font-size="24" font-weight="700" fill="#1a2456">Scan</text>
+
+  <circle cx="360" cy="728" r="36" fill="#3b6fd1"/>
+  <path d="M344 736a11 11 0 01-1.5-21.9A13 13 0 01382 720a9.5 9.5 0 01-1 18.9H344z" fill="none" stroke="#ffffff" stroke-width="2.6"/>
+  <path d="M360 738v-14m0 0-5.5 5.5M360 724l5.5 5.5" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="360" y="792" text-anchor="middle" font-size="24" font-weight="700" fill="#1a2456">Upload</text>
+
+  <circle cx="498" cy="728" r="36" fill="#22c0a2"/>
+  <path d="M488 718v-11h20v11" fill="none" stroke="#ffffff" stroke-width="2.6"/>
+  <rect x="481" y="718" width="34" height="16.5" rx="3" fill="none" stroke="#ffffff" stroke-width="2.6"/>
+  <rect x="488" y="731" width="20" height="13" fill="none" stroke="#ffffff" stroke-width="2.6"/>
+  <text x="498" y="792" text-anchor="middle" font-size="24" font-weight="700" fill="#1a2456">Print</text>
+
+  <rect x="0" y="826" width="720" height="68" fill="#22c0a2"/>
+  <text x="360" y="868" text-anchor="middle" font-size="28" font-weight="700" letter-spacing="4" fill="#ffffff">${escapeSvg(shopName.toUpperCase())}</text>
+
+  <rect x="0" y="894" width="720" height="196" fill="#1a2456"/>
+  <line x1="248" y1="924" x2="248" y2="1058" stroke="rgba(255,255,255,0.25)" stroke-width="2"/>
+  <line x1="472" y1="924" x2="472" y2="1058" stroke="rgba(255,255,255,0.25)" stroke-width="2"/>
+
+  <circle cx="124" cy="946" r="24" fill="none"/>
+  <path d="M124 932l14 6v10c0 10-8 16-14 19-6-3-14-9-14-19v-10z" fill="none" stroke="#ffffff" stroke-width="2.6"/>
+  <path d="M118 947l4 4 8-8" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="124" y="1004" text-anchor="middle" font-size="24" font-weight="700" fill="#ffffff">Secure</text>
+  <text x="124" y="1030" text-anchor="middle" font-size="16" fill="#c7cbe0">End-to-end</text>
+  <text x="124" y="1050" text-anchor="middle" font-size="16" fill="#c7cbe0">Encryption</text>
+
+  <circle cx="360" cy="936" r="9" fill="none" stroke="#ffffff" stroke-width="2.6"/>
+  <path d="M347 960c0-9 6.5-16 13-16s13 7 13 16" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"/>
+  <rect x="373" y="947" width="17.5" height="14.5" rx="2.6" fill="none" stroke="#ffffff" stroke-width="2.6"/>
+  <path d="M377 947v-3.4a4.2 4.2 0 018.4 0v3.4" fill="none" stroke="#ffffff" stroke-width="2.6"/>
+  <text x="360" y="1004" text-anchor="middle" font-size="24" font-weight="700" fill="#ffffff">Private</text>
+  <text x="360" y="1030" text-anchor="middle" font-size="16" fill="#c7cbe0">Your Data</text>
+  <text x="360" y="1050" text-anchor="middle" font-size="16" fill="#c7cbe0">is Safe</text>
+
+  <path d="M583 926h28M591 926v-4a2.6 2.6 0 012.6-2.6h4.8a2.6 2.6 0 012.6 2.6v4m-16 0 2.6 26.5a3.9 3.9 0 003.9 3.5h9.8a3.9 3.9 0 003.9-3.5L603 926" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M593 934v13M601 934v13" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"/>
+  <text x="596" y="1004" text-anchor="middle" font-size="24" font-weight="700" fill="#ffffff">Auto-delete</text>
+  <text x="596" y="1030" text-anchor="middle" font-size="16" fill="#c7cbe0">Files removed</text>
+  <text x="596" y="1050" text-anchor="middle" font-size="16" fill="#c7cbe0">after printing</text>
+
+  <path d="M0 1082C180 1058 540 1058 720 1082V1120H0z" fill="url(#goGrad)"/>
+  <text x="360" y="1105" text-anchor="middle" font-size="18" font-weight="700" fill="#ffffff">${displayUrl}</text>
 </svg>`;
+}
+
+const POSTER_WIDTH = 720;
+const POSTER_HEIGHT = 1120;
+
+async function rasterizePosterSvg(svg: string, scale = 3) {
+  const svgBlob = new Blob([svg], { type: "image/svg+xml;charset=utf-8" });
+  const url = URL.createObjectURL(svgBlob);
+  try {
+    const img = new window.Image();
+    await new Promise<void>((resolve, reject) => {
+      img.onload = () => resolve();
+      img.onerror = () => reject(new Error("Could not render the QR poster image."));
+      img.src = url;
+    });
+
+    const canvas = document.createElement("canvas");
+    canvas.width = POSTER_WIDTH * scale;
+    canvas.height = POSTER_HEIGHT * scale;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Canvas is not supported in this browser.");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+    const dataUrl = canvas.toDataURL("image/png");
+    const base64 = dataUrl.split(",")[1] ?? "";
+    const binary = atob(base64);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+    return bytes;
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
+async function buildQrPosterPdf(svg: string) {
+  const [{ PDFDocument }, pngBytes] = await Promise.all([import("pdf-lib"), rasterizePosterSvg(svg)]);
+
+  const pdfDoc = await PDFDocument.create();
+  const A4_WIDTH = 595.28;
+  const A4_HEIGHT = 841.89;
+  const margin = 24;
+
+  const page = pdfDoc.addPage([A4_WIDTH, A4_HEIGHT]);
+  const pngImage = await pdfDoc.embedPng(pngBytes);
+
+  const posterAspect = POSTER_WIDTH / POSTER_HEIGHT;
+  const maxWidth = A4_WIDTH - margin * 2;
+  const maxHeight = A4_HEIGHT - margin * 2;
+  let drawWidth = maxWidth;
+  let drawHeight = drawWidth / posterAspect;
+  if (drawHeight > maxHeight) {
+    drawHeight = maxHeight;
+    drawWidth = drawHeight * posterAspect;
+  }
+
+  page.drawImage(pngImage, {
+    x: (A4_WIDTH - drawWidth) / 2,
+    y: (A4_HEIGHT - drawHeight) / 2,
+    width: drawWidth,
+    height: drawHeight,
+  });
+
+  return pdfDoc.save();
 }
 
 function escapeSvg(value: string) {

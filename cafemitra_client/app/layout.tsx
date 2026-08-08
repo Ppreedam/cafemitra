@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Baloo_2, Inter, Nunito } from "next/font/google";
 import "./globals.css";
 import { WhatsAppFloatButton } from "./WhatsAppFloatButton";
 
@@ -8,6 +8,20 @@ const inter = Inter({
   display: "swap",
   weight: ["400", "500", "600", "700", "800", "900"],
   variable: "--font-inter",
+});
+
+const baloo2 = Baloo_2({
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["500", "600", "700", "800"],
+  variable: "--font-baloo",
+});
+
+const nunito = Nunito({
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400", "600", "700"],
+  variable: "--font-nunito",
 });
 
 const siteUrl = "https://repetigo.com/";
@@ -77,7 +91,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={`${inter.variable} ${baloo2.variable} ${nunito.variable}`}>
       <head>
         {shouldLoadAnalytics ? (
           <script
