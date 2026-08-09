@@ -3062,7 +3062,10 @@ def complete_passport_job(request, job_id):
     if not final_image:
         return JsonResponse({"message": "final_image file is required."}, status=400)
 
-    content_type = getattr(final_image, "content_type", None) or mimetypes.guess_type(final_image.name)[0] or "image/jpeg"
+    # The desktop agent uploads with a generic application/octet-stream
+    # content-type, so guess from the real filename extension first -
+    # falling back to the upload's own content-type only if that fails.
+    content_type = mimetypes.guess_type(final_image.name)[0] or getattr(final_image, "content_type", None) or "image/jpeg"
     cleaned_bytes = remove_gemini_watermark(final_image.read(), content_type)
     encoded = base64.b64encode(cleaned_bytes).decode("ascii")
 
