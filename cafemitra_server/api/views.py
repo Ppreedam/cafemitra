@@ -3004,8 +3004,10 @@ def agent_passport_jobs(request):
     if not user:
         return JsonResponse({"message": "Unauthorized."}, status=401)
 
+    # Any authenticated caller gets the full pending queue (not just their
+    # own orders) so a single agent can process everyone's passport photos.
     jobs = PrintOrder.objects.filter(
-        user=user, service_key="passport_photo", photo_status=PrintOrder.PHOTO_STATUS_PENDING,
+        service_key="passport_photo", photo_status=PrintOrder.PHOTO_STATUS_PENDING,
     ).order_by("created_at")[:20]
     return JsonResponse({"jobs": [public_passport_job(job, request) for job in jobs]})
 
@@ -3021,7 +3023,7 @@ def claim_passport_job(request, job_id):
         return JsonResponse({"message": "Unauthorized."}, status=401)
 
     with transaction.atomic():
-        order = PrintOrder.objects.select_for_update().filter(id=job_id, user=user, service_key="passport_photo").first()
+        order = PrintOrder.objects.select_for_update().filter(id=job_id, service_key="passport_photo").first()
         if not order:
             return JsonResponse({"message": "Photo job not found."}, status=404)
         if order.photo_status != PrintOrder.PHOTO_STATUS_PENDING:
@@ -3044,7 +3046,7 @@ def complete_passport_job(request, job_id):
     if not user:
         return JsonResponse({"message": "Unauthorized."}, status=401)
 
-    order = PrintOrder.objects.filter(id=job_id, user=user, service_key="passport_photo").first()
+    order = PrintOrder.objects.filter(id=job_id, service_key="passport_photo").first()
     if not order:
         return JsonResponse({"message": "Photo job not found."}, status=404)
 
@@ -3063,7 +3065,9 @@ def complete_passport_job(request, job_id):
     order.photo_status = PrintOrder.PHOTO_STATUS_DONE
     order.photo_updated_at = timezone.now()
     order.save(update_fields=["gemini_photo", "photo_status", "photo_updated_at"])
-    charge_wallet_for_tool(user, "passport_photo", quantity=1, order=order)
+    # Bill the order's own owner even when the bulk agent (a different
+    # account) is the one completing the job on their behalf.
+    charge_wallet_for_tool(order.user, "passport_photo", quantity=1, order=order)
     return JsonResponse(public_passport_job(order, request))
 
 
