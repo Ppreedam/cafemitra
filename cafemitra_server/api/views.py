@@ -28,6 +28,7 @@ from django.views.decorators.http import require_http_methods
 
 from .background_remover.remove_background import BackgroundRemovalError, remove_background_bytes
 from .background_remover.passport_photo_processor import ProcessingError, enhance_transparent_bytes
+from .background_remover.watermark_remover import remove_gemini_watermark
 from .models import AuthToken, ContactMessage, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from cafemitra_server.product_setting import PAYMENT_GATEWAYS, active_payment_gateway
 
@@ -3061,7 +3062,11 @@ def complete_passport_job(request, job_id):
     if not final_image:
         return JsonResponse({"message": "final_image file is required."}, status=400)
 
-    order.gemini_photo = file_to_data_uri(final_image)
+    content_type = getattr(final_image, "content_type", None) or mimetypes.guess_type(final_image.name)[0] or "image/jpeg"
+    cleaned_bytes = remove_gemini_watermark(final_image.read(), content_type)
+    encoded = base64.b64encode(cleaned_bytes).decode("ascii")
+
+    order.gemini_photo = f"data:{content_type};base64,{encoded}"
     order.photo_status = PrintOrder.PHOTO_STATUS_DONE
     order.photo_updated_at = timezone.now()
     order.save(update_fields=["gemini_photo", "photo_status", "photo_updated_at"])
