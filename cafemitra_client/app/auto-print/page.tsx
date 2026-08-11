@@ -113,9 +113,11 @@ const setupSteps: SetupStep[] = [
   { key: "test", title: "Test Print", helper: "Send a demo page to printer", icon: Play },
 ];
 
-const setupStepGuides: Record<SetupStep["key"], { title: string; videoUrl?: string; bullets: string[] }> = {
+// TODO: swap each youtubeId below for the real step-by-step tutorial video (YouTube video ID, the part after "v=" in the URL).
+const setupStepGuides: Record<SetupStep["key"], { title: string; youtubeId?: string; bullets: string[] }> = {
   download: {
     title: "Install the desktop agent",
+    youtubeId: "jNQXAC9IVRw",
     bullets: [
       "Download the PrintPilot Agent on the computer connected to the printer.",
       "Extract the file if it is downloaded as a ZIP.",
@@ -124,6 +126,7 @@ const setupStepGuides: Record<SetupStep["key"], { title: string; videoUrl?: stri
   },
   verify: {
     title: "Confirm the agent connection",
+    youtubeId: "jNQXAC9IVRw",
     bullets: [
       "Make sure the desktop agent is open.",
       "Login in the agent with the same RepetiGo account.",
@@ -132,6 +135,7 @@ const setupStepGuides: Record<SetupStep["key"], { title: string; videoUrl?: stri
   },
   printer: {
     title: "Choose the default printer",
+    youtubeId: "jNQXAC9IVRw",
     bullets: [
       "Select the printer that should receive customer print jobs.",
       "Use Microsoft Print to PDF only for testing.",
@@ -140,6 +144,7 @@ const setupStepGuides: Record<SetupStep["key"], { title: string; videoUrl?: stri
   },
   pricing: {
     title: "Set customer print pricing",
+    youtubeId: "jNQXAC9IVRw",
     bullets: [
       "Add charges for black and white, color, or custom services.",
       "Use page ranges when the rate changes by page count.",
@@ -148,6 +153,7 @@ const setupStepGuides: Record<SetupStep["key"], { title: string; videoUrl?: stri
   },
   qr: {
     title: "Prepare the customer QR",
+    youtubeId: "jNQXAC9IVRw",
     bullets: [
       "Generate the QR for your shop.",
       "Download and print the QR poster.",
@@ -156,6 +162,7 @@ const setupStepGuides: Record<SetupStep["key"], { title: string; videoUrl?: stri
   },
   test: {
     title: "Run one test print",
+    youtubeId: "jNQXAC9IVRw",
     bullets: [
       "Confirm the agent is connected and a printer is selected.",
       "Click Run Test Print to send a sample QR page.",
@@ -584,9 +591,20 @@ export default function AutoPrintPage() {
             </div>
             <div className="auto-print-hero-actions">
               <span className={`status-pill ${printPilotActive ? "" : "warning"}`}>{printPilotActive ? "PrintPilot Active" : "Setup in Progress"}</span>
-              <button className={`shop-status-toggle ${isShopOpen ? "open" : "closed"}`} type="button" onClick={toggleShopOpenStatus} disabled={isSavingShopStatus}>
-                <span />
-                {isSavingShopStatus ? "Updating..." : isShopOpen ? "Shop Open" : "Shop Closed"}
+              <button
+                className={`shop-status-toggle ${isShopOpen ? "open" : "closed"}`}
+                type="button"
+                role="switch"
+                aria-checked={isShopOpen}
+                onClick={toggleShopOpenStatus}
+                disabled={isSavingShopStatus}
+              >
+                <span className="shop-status-toggle-track">
+                  <span className="shop-status-toggle-thumb" />
+                </span>
+                <span className="shop-status-toggle-label">
+                  {isSavingShopStatus ? "Updating..." : isShopOpen ? "Shop Open" : "Shop Closed"}
+                </span>
               </button>
             </div>
           </div>
@@ -992,8 +1010,15 @@ export default function AutoPrintPage() {
                   <span className="agent-status success">Help</span>
                 </div>
                 <div className="guide-video">
-                  {currentGuide.videoUrl ? (
-                    <video controls src={currentGuide.videoUrl} />
+                  {currentGuide.youtubeId ? (
+                    <iframe
+                      key={currentStep.key}
+                      src={`https://www.youtube.com/embed/${currentGuide.youtubeId}?autoplay=1&mute=1&rel=0`}
+                      title={`${currentGuide.title} - video guide`}
+                      allow="autoplay; encrypted-media; picture-in-picture"
+                      allowFullScreen
+                      frameBorder={0}
+                    />
                   ) : (
                     <div className="guide-video-placeholder">
                       <Play size={28} />

@@ -28,13 +28,10 @@ from django.views.decorators.http import require_http_methods
 
 from .background_remover.remove_background import BackgroundRemovalError, remove_background_bytes
 from .background_remover.passport_photo_processor import ProcessingError, enhance_transparent_bytes
-<<<<<<< Updated upstream
 from .background_remover.watermark_remover import remove_gemini_watermark
 from .models import AuthToken, ContactMessage, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
-=======
 from .admin_roles import role_allows_section
 from .models import Agent, AuthToken, ContactMessage, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
->>>>>>> Stashed changes
 from cafemitra_server.product_setting import PAYMENT_GATEWAYS, active_payment_gateway
 
 User = get_user_model()

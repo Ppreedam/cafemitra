@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Printer } from "lucide-react";
 import { BUSINESS } from "../lib/businessInfo";
 
 const footerColumns = [
@@ -44,9 +43,6 @@ export function PublicFooter() {
         <div className="ai-footer-grid">
           <div>
             <Link className="ai-footer-brand" href="/">
-              <span>
-                <Printer size={16} />
-              </span>
               <b className="ai-footer-wordmark">
                 Repeti<em>Go</em>
               </b>

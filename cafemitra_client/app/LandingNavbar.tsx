@@ -143,9 +143,6 @@ const imageToolGroups = [
 export function Brand() {
   return (
     <Link className="brand" href="/">
-      <span className="brand-mark" aria-hidden>
-        <Printer size={16} />
-      </span>
       <span className="brand-main">
         Repeti<span className="brand-accent">Go</span>
       </span>

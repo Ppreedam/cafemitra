@@ -8,7 +8,6 @@ import {
   Check,
   Eye,
   EyeOff,
-  Printer,
   UserRound,
 } from "lucide-react";
 import { apiUrl, storeSession } from "@/lib/api";
@@ -200,9 +199,6 @@ export function AuthPanel({ mode }: AuthPanelProps) {
       >
         <div className="auth-visual">
           <Link className="brand auth-brand" href="/">
-            <span className="brand-mark" aria-hidden>
-              <Printer size={16} />
-            </span>
             <span className="brand-main">
               Repeti<span className="brand-accent">Go</span>
             </span>

@@ -112,7 +112,8 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [message, setMessage] = useState("Loading orders...");
   const [printFilter, setPrintFilter] = useState<PrintFilter>("all");
-  const [dateFilter, setDateFilter] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [markingPaidId, setMarkingPaidId] = useState<number | null>(null);
   const [actionError, setActionError] = useState("");
@@ -128,10 +129,11 @@ export default function OrdersPage() {
           (printFilter === "pass" && order.status === "printed") ||
           (printFilter === "fail" && order.status === "failed") ||
           (printFilter === "passport_queue" && order.serviceKey === "passport_photo" && order.status === "queued");
-        const matchesDate = !dateFilter || getLocalDateInputValue(order.createdAt) === dateFilter;
+        const orderDate = getLocalDateInputValue(order.createdAt);
+        const matchesDate = (!dateFrom || orderDate >= dateFrom) && (!dateTo || orderDate <= dateTo);
         return matchesPrint && matchesDate;
       }),
-    [dateFilter, orders, printFilter]
+    [dateFrom, dateTo, orders, printFilter]
   );
   const totalPages = Math.max(1, Math.ceil(filteredOrders.length / ORDERS_PER_PAGE));
   const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -141,7 +143,7 @@ export default function OrdersPage() {
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [dateFilter, printFilter]);
+  }, [dateFrom, dateTo, printFilter]);
 
   useEffect(() => {
     if (!hasStoredSession()) {
@@ -253,10 +255,24 @@ export default function OrdersPage() {
                   </button>
                 </div>
 
-                <label className="orders-date-filter">
+                <div className="orders-date-filter">
                   <CalendarDays size={16} />
-                  <input aria-label="Filter orders by date" type="date" value={dateFilter} onChange={(event) => setDateFilter(event.target.value)} />
-                </label>
+                  <input
+                    aria-label="Filter orders from date"
+                    type="date"
+                    value={dateFrom}
+                    max={dateTo || undefined}
+                    onChange={(event) => setDateFrom(event.target.value)}
+                  />
+                  <span className="orders-date-filter-sep">to</span>
+                  <input
+                    aria-label="Filter orders to date"
+                    type="date"
+                    value={dateTo}
+                    min={dateFrom || undefined}
+                    onChange={(event) => setDateTo(event.target.value)}
+                  />
+                </div>
 
                 <button
                   className={`orders-passport-queue-filter${printFilter === "passport_queue" ? " active" : ""}`}
@@ -267,10 +283,11 @@ export default function OrdersPage() {
                   {passportQueuedCount > 0 ? <span className="orders-filter-badge">{passportQueuedCount}</span> : null}
                 </button>
 
-                {(printFilter !== "all" || dateFilter) && (
+                {(printFilter !== "all" || dateFrom || dateTo) && (
                   <button className="orders-clear-filter" type="button" onClick={() => {
                     setPrintFilter("all");
-                    setDateFilter("");
+                    setDateFrom("");
+                    setDateTo("");
                   }}>
                     Clear
                   </button>
