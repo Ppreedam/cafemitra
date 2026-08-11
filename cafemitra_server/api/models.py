@@ -59,9 +59,57 @@ class UserProfile(models.Model):
     # (see cash_counter_available in views.py) - a cafe already owing the
     # platform money can't also start collecting untracked cash.
     cash_counter_permitted = models.BooleanField(default=True)
+    # Stamped on every GET /agent/jobs/ poll (see views.agent_jobs) - the
+    # simplest possible "is this shop's desktop Print Agent alive" signal,
+    # since the agent doesn't report its version or send a dedicated
+    # heartbeat today.
+    agent_last_seen_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self) -> str:
         return self.user.get_full_name() or self.user.email
+
+
+class Agent(models.Model):
+    """A referral partner (typically a cybercafe already on RepetiGo) who
+    refers new shops and earns a commission on their printed orders. Distinct
+    from the "Print Agent" desktop software - this is a business partner, not
+    an app. Full onboarding/commission-accrual/payout flow ships in the admin
+    dashboard's Referral Agent Program phase; this model exists ahead of that
+    so ShopProfile.referred_by_agent doesn't need a later backfill migration.
+    """
+
+    COMMISSION_PERCENTAGE = "percentage"
+    COMMISSION_FIXED = "fixed"
+
+    COMMISSION_TYPE_CHOICES = [
+        (COMMISSION_PERCENTAGE, "Percentage"),
+        (COMMISSION_FIXED, "Fixed amount"),
+    ]
+
+    STATUS_PENDING = "pending"
+    STATUS_ACTIVE = "active"
+    STATUS_SUSPENDED = "suspended"
+
+    STATUS_CHOICES = [
+        (STATUS_PENDING, "Pending"),
+        (STATUS_ACTIVE, "Active"),
+        (STATUS_SUSPENDED, "Suspended"),
+    ]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="agent_profiles")
+    referral_code = models.CharField(max_length=32, unique=True)
+    commission_type = models.CharField(max_length=20, choices=COMMISSION_TYPE_CHOICES, default=COMMISSION_PERCENTAGE)
+    commission_rate = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
+    special_offer_note = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"Agent {self.referral_code} ({self.user_id})"
 
 
 class ShopProfile(models.Model):
@@ -76,6 +124,10 @@ class ShopProfile(models.Model):
     mobile = models.CharField(max_length=10, blank=True)
     whatsapp = models.CharField(max_length=10, blank=True)
     email = models.EmailField(blank=True)
+    # Set at signup if the shop used a referral code (or by admin later) -
+    # dormant until the Referral Agent Program phase wires up commission
+    # accrual, but modeled now so it doesn't need a backfill migration then.
+    referred_by_agent = models.ForeignKey(Agent, null=True, blank=True, on_delete=models.SET_NULL, related_name="referred_shops")
 
     def __str__(self) -> str:
         return self.shop_name or f"Shop for {self.user_id}"
@@ -90,6 +142,7 @@ class ContactMessage(models.Model):
     ip_address = models.GenericIPAddressField(null=True, blank=True)
     user_agent = models.TextField(blank=True)
     is_read = models.BooleanField(default=False)
+    admin_note = models.TextField(blank=True, default="")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -155,6 +208,15 @@ class PrintOrder(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     paid_at = models.DateTimeField(null=True, blank=True)
     printed_at = models.DateTimeField(null=True, blank=True)
+    # Stamped once settle_printed_order_wallet has actually run for this
+    # order - guards against a retried `status=printed` call (slow-response
+    # retry from the desktop Print Agent) re-running the wallet credit/fee
+    # deduction. See agent_job_status: this check is done under a
+    # select_for_update() row lock on the order itself, which the wallet
+    # ledger's own (user, order, kind) dedupe can't guarantee alone since
+    # that check-then-create isn't protected by the same lock as the balance
+    # update, and can race under two concurrent calls.
+    settled_at = models.DateTimeField(null=True, blank=True)
     agent_message = models.TextField(blank=True)
     attire_category = models.CharField(max_length=40, blank=True, default="")
     gemini_photo = models.TextField(blank=True, default="")
@@ -185,7 +247,10 @@ class WalletTransaction(models.Model):
     KIND_TOOL_USAGE = "tool_usage"
     KIND_TOOL_USAGE_BLOCKED = "tool_usage_blocked"
     KIND_WITHDRAWAL = "withdrawal"
+    KIND_WITHDRAWAL_REVERSAL = "withdrawal_reversal"
     KIND_TOPUP = "topup"
+    KIND_ADMIN_ADJUSTMENT = "admin_adjustment"
+    KIND_REFERRAL_COMMISSION = "referral_commission"
 
     DIRECTION_CREDIT = "credit"
     DIRECTION_DEBIT = "debit"
@@ -399,3 +464,90 @@ class LeadActivity(models.Model):
 
     def __str__(self) -> str:
         return f"{self.kind} on lead #{self.lead_id}"
+
+
+class AdminActivityLog(models.Model):
+    """Audit trail for RepetiGo admin-dashboard actions - who did what to
+    which object and when. Written by admin_activity.log_admin_activity(),
+    called from every mutating admin_views.py endpoint. `target_type` +
+    `target_id` are loose (no FK) on purpose: a single log format needs to
+    reference shops, withdrawals, agents, contact messages, etc without a
+    different column per type.
+    """
+
+    admin_user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="admin_activity_logs")
+    action = models.CharField(max_length=80)
+    target_type = models.CharField(max_length=40, blank=True, default="")
+    target_id = models.CharField(max_length=40, blank=True, default="")
+    detail = models.TextField(blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [models.Index(fields=["target_type", "target_id"]), models.Index(fields=["admin_user", "created_at"])]
+
+    def __str__(self) -> str:
+        return f"{self.action} by {self.admin_user_id} on {self.target_type}#{self.target_id}"
+
+
+class AdminRole(models.Model):
+    """Granular role for a platform-staff (is_staff=True) account. A staff
+    user with NO row here defaults to super_admin (see
+    admin_auth.get_admin_role) - existing staff accounts created before
+    this model shipped keep full access rather than being locked out.
+    """
+
+    ROLE_SUPER_ADMIN = "super_admin"
+    ROLE_FINANCE = "finance"
+    ROLE_SUPPORT = "support"
+    ROLE_SALES = "sales"
+
+    ROLE_CHOICES = [
+        (ROLE_SUPER_ADMIN, "Super Admin"),
+        (ROLE_FINANCE, "Finance"),
+        (ROLE_SUPPORT, "Support"),
+        (ROLE_SALES, "Sales"),
+    ]
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="admin_role")
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=ROLE_SUPER_ADMIN)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"{self.user_id}: {self.role}"
+
+
+class ScrapeRun(models.Model):
+    """One run of the Selenium Google-Maps extractor (see
+    api.lead_scraper_runner) - tracks progress so the admin dashboard's
+    "Run Extractor" button can poll status instead of blocking the HTTP
+    request for however long Chrome+Selenium takes.
+    """
+
+    STATUS_RUNNING = "running"
+    STATUS_COMPLETED = "completed"
+    STATUS_FAILED = "failed"
+
+    STATUS_CHOICES = [
+        (STATUS_RUNNING, "Running"),
+        (STATUS_COMPLETED, "Completed"),
+        (STATUS_FAILED, "Failed"),
+    ]
+
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_RUNNING)
+    started_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="scrape_runs")
+    max_places = models.PositiveIntegerField(default=5)
+    processed_count = models.PositiveIntegerField(default=0)
+    success_count = models.PositiveIntegerField(default=0)
+    failed_count = models.PositiveIntegerField(default=0)
+    log = models.TextField(blank=True, default="")
+    error_message = models.TextField(blank=True, default="")
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["-started_at"]
+
+    def __str__(self) -> str:
+        return f"ScrapeRun #{self.id} ({self.status})"

@@ -1,8 +1,51 @@
 from django.urls import re_path
 
-from . import views
+from . import admin_views, views
 
 urlpatterns = [
+    # --- Admin (RepetiGo platform dashboard, staff-only) ---------------
+    re_path(r"^admin/auth/login/?$", admin_views.admin_login),  # POST staff-only login, issues a token pair (rejects non-staff even with correct password)
+    re_path(r"^admin/me/?$", admin_views.admin_me),  # GET current admin's profile
+    re_path(r"^admin/overview/?$", admin_views.admin_overview),  # GET platform-wide KPI tiles + recent-activity feed
+    re_path(r"^admin/shops/?$", admin_views.admin_shops),  # GET paginated/filtered shop list (search, balanceFilter, cashCounter, status)
+    re_path(r"^admin/shops/(?P<shop_id>[0-9]+)/?$", admin_views.admin_shop_detail),  # GET full shop detail (profile+pricing+orders+wallet) / PUT credit-limit + cash-counter permission
+    re_path(r"^admin/shops/(?P<shop_id>[0-9]+)/adjust-balance/?$", admin_views.admin_shop_adjust_balance),  # POST manual wallet credit/debit with a mandatory reason (audit-logged)
+    re_path(r"^admin/shops/(?P<shop_id>[0-9]+)/suspend/?$", admin_views.admin_shop_suspend),  # POST deactivate a shop account
+    re_path(r"^admin/shops/(?P<shop_id>[0-9]+)/reactivate/?$", admin_views.admin_shop_reactivate),  # POST reactivate a suspended shop account
+    re_path(r"^admin/orders/stuck/?$", admin_views.admin_stuck_orders),  # GET awaiting-approval / stuck photo jobs across all shops
+    re_path(r"^admin/orders/?$", admin_views.admin_orders),  # GET paginated/filtered platform-wide order list (shop, service, paymentMode, status, from, to)
+    re_path(r"^admin/orders/(?P<order_id>[0-9]+)/?$", admin_views.admin_order_detail),  # GET full order detail (any shop, admin-only)
+    re_path(r"^admin/wallet/ledger/?$", admin_views.admin_wallet_ledger),  # GET platform-wide wallet transaction ledger (shop, type, from, to)
+    re_path(r"^admin/wallet/topups/?$", admin_views.admin_wallet_topups),  # GET gateway-wise top-up list (gateway, status)
+    re_path(r"^admin/withdrawals/?$", admin_views.admin_withdrawals),  # GET withdrawal request queue (status)
+    re_path(r"^admin/withdrawals/(?P<withdrawal_id>[0-9]+)/approve/?$", admin_views.admin_withdrawal_approve),  # POST mark a pending withdrawal as paid
+    re_path(r"^admin/withdrawals/(?P<withdrawal_id>[0-9]+)/reject/?$", admin_views.admin_withdrawal_reject),  # POST reject a pending withdrawal and reverse its debit
+    re_path(r"^admin/wallet-settings/?$", admin_views.admin_wallet_settings),  # GET global wallet config rows
+    re_path(r"^admin/wallet-settings/(?P<key>[a-z_]+)/?$", admin_views.admin_wallet_setting_detail),  # PUT edit one wallet setting's value/isActive
+    re_path(r"^admin/tool-pricing/?$", admin_views.admin_tool_pricing),  # GET RepetiGo's own per-tool usage fees
+    re_path(r"^admin/tool-pricing/(?P<tool_key>[\w-]+)/?$", admin_views.admin_tool_pricing_detail),  # PUT edit one tool's price/price_b2b/price_b2c/is_billable
+    re_path(r"^admin/agents/?$", admin_views.admin_agents),  # GET list (status filter) / POST onboard an existing account as a referral agent
+    re_path(r"^admin/agents/(?P<agent_id>[0-9]+)/?$", admin_views.admin_agent_detail),  # GET detail (referred shops + commission ledger) / PUT commission rate/type/status/offer
+    re_path(r"^admin/contact-messages/?$", admin_views.admin_contact_messages),  # GET inbox (status=unread|resolved)
+    re_path(r"^admin/contact-messages/(?P<message_id>[0-9]+)/?$", admin_views.admin_contact_message_detail),  # PUT mark resolved/unread + internal note
+    re_path(r"^admin/print-agent/stats/?$", admin_views.admin_print_agent_stats),  # GET desktop Print Agent last-seen per shop + recent failed jobs
+    re_path(r"^admin/wallet/ledger/export/?$", admin_views.admin_wallet_ledger_export),  # GET CSV download of the filtered wallet ledger (same filters as the JSON list, capped at 5000 rows)
+    re_path(r"^admin/orders/export/?$", admin_views.admin_orders_export),  # GET CSV download of the filtered order list (same filters as the JSON list, capped at 5000 rows)
+    re_path(r"^admin/notifications/?$", admin_views.admin_notifications),  # GET cheap poll-friendly counts for sidebar badges
+    re_path(r"^admin/analytics/signups/?$", admin_views.admin_signup_analytics),  # GET signup time-series (from, to, granularity=day|week|month) + referral-agent breakdown
+    re_path(r"^admin/activity-log/?$", admin_views.admin_activity_log),  # GET audit trail of admin-dashboard actions (targetType, action filters)
+    re_path(r"^admin/shops/(?P<shop_id>[0-9]+)/send-password-reset/?$", admin_views.admin_shop_send_password_reset),  # POST trigger the standard password-reset email for a shop
+    re_path(r"^admin/shops/(?P<shop_id>[0-9]+)/impersonate/?$", admin_views.admin_shop_impersonate),  # POST issue a fresh token pair for the shop's own account (logged, support/debug use)
+    re_path(r"^admin/shops/bulk-suspend/?$", admin_views.admin_shops_bulk_suspend),  # POST {shopIds: [...]} suspend multiple shops at once
+    re_path(r"^admin/shops/bulk-reactivate/?$", admin_views.admin_shops_bulk_reactivate),  # POST {shopIds: [...]} reactivate multiple shops at once
+    re_path(r"^admin/staff/?$", admin_views.admin_staff),  # GET list all platform-staff accounts with their role / POST promote an existing account to staff by email (super_admin only)
+    re_path(r"^admin/staff/(?P<staff_id>[0-9]+)/role/?$", admin_views.admin_staff_set_role),  # PUT set a staff account's role (super_admin only)
+    re_path(r"^admin/staff/(?P<staff_id>[0-9]+)/revoke/?$", admin_views.admin_staff_revoke),  # POST demote a staff account back to a regular account (super_admin only)
+    re_path(r"^admin/wallet/earnings-summary/?$", admin_views.admin_wallet_earnings_summary),  # GET today/this-week/this-month platform earning vs prior period
+    re_path(r"^admin/recent-activity/?$", admin_views.admin_recent_activity),  # GET paginated merged orders+topups+withdrawals feed
+    re_path(r"^admin/leads/scrape/run/?$", admin_views.admin_leads_scrape_run),  # POST start the Selenium scrape-queue extractor in the background
+    re_path(r"^admin/leads/scrape/status/?$", admin_views.admin_leads_scrape_status),  # GET latest extractor run's progress/status
+
     # --- System -------------------------------------------------------
     re_path(r"^check/server/status/?$", views.check_server_status),  # GET  health check, returns {status, message}
     re_path(r"^contact-us/?$", views.contact_message),  # POST create a contact-us message (name/email/phone/subject/message)

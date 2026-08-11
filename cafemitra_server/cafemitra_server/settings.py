@@ -135,6 +135,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://repetigo.com",
     "https://www.repetigo.com",
     "http://localhost:3000",
+    "http://localhost:3002",  # cafemitra_admin dev server
     "chrome-extension://haknmckbhgnjnjnhhbidhbinpknnioao",
 ]
 

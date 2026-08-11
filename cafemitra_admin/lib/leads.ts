@@ -1,24 +1,4 @@
-import { clearToken, getToken } from "./auth";
-
-const rawBase = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8000/api";
-export const API_BASE_URL = rawBase.replace(/\/+$/, "");
-
-export type AdminUser = {
-  id: string;
-  email: string;
-  fullName: string;
-};
-
-export function adminLogin(email: string, password: string) {
-  return request<{ token: string; refreshToken: string; user: AdminUser }>("/admin/auth/login/", {
-    method: "POST",
-    body: JSON.stringify({ email, password }),
-  });
-}
-
-export function fetchAdminMe() {
-  return request<{ user: AdminUser }>("/admin/me/");
-}
+import { request } from "./api";
 
 export type Lead = {
   id: number;
@@ -58,32 +38,6 @@ export type QueueItem = {
   createdAt: string;
   updatedAt: string;
 };
-
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const token = getToken();
-  const res = await fetch(`${API_BASE_URL}${path}`, {
-    ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...(init?.headers || {}),
-    },
-  });
-
-  const isJson = res.headers.get("content-type")?.includes("application/json");
-  const body = isJson ? await res.json() : undefined;
-
-  if (res.status === 401) {
-    clearToken();
-  }
-
-  if (!res.ok) {
-    const message = (body && (body.message as string)) || `Request failed (${res.status})`;
-    throw new Error(message);
-  }
-
-  return body as T;
-}
 
 // --- Leads (GooglePlaceDetail) ----------------------------------------
 
@@ -134,8 +88,18 @@ export function addLeadNote(id: number, note: string) {
 
 // --- Scrape queue (GooglePlace) ----------------------------------------
 
-export function fetchQueue(statusFilter: "all" | "true" | "false") {
-  return request<{ count: number; places: QueueItem[] }>(`/google-places/?extracted_status=${statusFilter}`);
+export function fetchQueue(statusFilter: "all" | "true" | "false", page?: number, pageSize?: number) {
+  const query = new URLSearchParams({ extracted_status: statusFilter });
+  if (page) query.set("page", String(page));
+  if (pageSize) query.set("pageSize", String(pageSize));
+  return request<{
+    count: number;
+    page: number;
+    pageSize: number;
+    pendingCount: number;
+    extractedCount: number;
+    places: QueueItem[];
+  }>(`/google-places/?${query.toString()}`);
 }
 
 export function addQueueItem(data: { name: string; link: string; extractedby?: string }) {
@@ -158,4 +122,30 @@ export function markQueueItemExtracted(id: number) {
 
 export function deleteQueueItem(id: number) {
   return request<{ message: string }>(`/google-places/${id}/`, { method: "DELETE" });
+}
+
+// --- Selenium scrape-queue extractor ---------------------------------------
+
+export type ScrapeRun = {
+  id: number;
+  status: "running" | "completed" | "failed";
+  maxPlaces: number;
+  processedCount: number;
+  successCount: number;
+  failedCount: number;
+  log: string;
+  errorMessage: string;
+  startedAt: string;
+  completedAt: string | null;
+};
+
+export function startScrapeRun(maxPlaces?: number) {
+  return request<{ run: ScrapeRun }>("/admin/leads/scrape/run/", {
+    method: "POST",
+    body: JSON.stringify({ maxPlaces }),
+  });
+}
+
+export function fetchScrapeStatus() {
+  return request<{ run: ScrapeRun | null }>("/admin/leads/scrape/status/");
 }

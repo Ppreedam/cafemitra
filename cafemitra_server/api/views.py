@@ -18,7 +18,7 @@ from django.contrib.auth import authenticate, get_user_model
 from django.conf import settings
 from django.core.mail import send_mail
 from django.db import transaction
-from django.db.models import Max, Q, Sum
+from django.db.models import Count, Max, Q, Sum
 from django.http import FileResponse, HttpResponse, HttpResponseRedirect, JsonResponse
 from django.utils.html import escape
 from django.utils import timezone
@@ -28,8 +28,13 @@ from django.views.decorators.http import require_http_methods
 
 from .background_remover.remove_background import BackgroundRemovalError, remove_background_bytes
 from .background_remover.passport_photo_processor import ProcessingError, enhance_transparent_bytes
+<<<<<<< Updated upstream
 from .background_remover.watermark_remover import remove_gemini_watermark
 from .models import AuthToken, ContactMessage, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
+=======
+from .admin_roles import role_allows_section
+from .models import Agent, AuthToken, ContactMessage, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
+>>>>>>> Stashed changes
 from cafemitra_server.product_setting import PAYMENT_GATEWAYS, active_payment_gateway
 
 User = get_user_model()
@@ -898,7 +903,41 @@ def settle_printed_order_wallet(order):
 
     tool_key, quantity = print_order_tool_usage(order)
     if tool_key:
-        charge_wallet_for_tool(order.user, tool_key, quantity=quantity, order=order)
+        _allowed, _message, fee_txn = charge_wallet_for_tool(order.user, tool_key, quantity=quantity, order=order)
+        if fee_txn:
+            accrue_referral_commission(order, fee_txn)
+
+
+def accrue_referral_commission(order, fee_txn):
+    """If this shop was referred by a Referral Agent, credit the agent a cut
+    of the usage-fee RepetiGo just charged the shop - hooked right where the
+    fee itself is deducted so it never runs without a matching charge.
+    create_wallet_transaction's own (user, order, kind) dedupe check keeps a
+    retried settlement (see the module-level double-settlement note on
+    agent_job_status) from crediting the same commission twice.
+    """
+    shop = getattr(order.user, "shop", None)
+    agent = getattr(shop, "referred_by_agent", None) if shop else None
+    if not agent or agent.status != Agent.STATUS_ACTIVE:
+        return
+
+    if agent.commission_type == Agent.COMMISSION_PERCENTAGE:
+        commission = (fee_txn.amount * agent.commission_rate / Decimal("100")).quantize(Decimal("0.01"))
+    else:
+        commission = agent.commission_rate
+
+    if commission <= 0:
+        return
+
+    create_wallet_transaction(
+        agent.user,
+        WalletTransaction.KIND_REFERRAL_COMMISSION,
+        commission,
+        WalletTransaction.DIRECTION_CREDIT,
+        True,
+        order=order,
+        note=f"Referral commission from {shop.shop_name or order.user.email} ({order.token_id or order.id}).",
+    )
 
 
 def resolve_print_tool_key(service_key, price_item_id):
@@ -1442,6 +1481,7 @@ def register_user(request):
     full_name = str(body.get("fullName", "")).strip()
     phone = str(body.get("phone", "")).strip()
     password = str(body.get("password", ""))
+    referral_code = str(body.get("referralCode", "")).strip()
 
     if not re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", email):
         return JsonResponse({"message": "Enter a valid email address."}, status=400)
@@ -1454,12 +1494,16 @@ def register_user(request):
     if User.objects.filter(username=email).exists():
         return JsonResponse({"message": "Account already exists. Please login."}, status=409)
 
+    # An unknown/inactive code is silently ignored rather than rejected - a
+    # typo'd referral code shouldn't block someone from signing up at all.
+    referring_agent = Agent.objects.filter(referral_code=referral_code, status=Agent.STATUS_ACTIVE).first() if referral_code else None
+
     user = User.objects.create_user(username=email, email=email, password=password)
     user.first_name = full_name
     user.is_active = False
     user.save(update_fields=["first_name", "is_active"])
     UserProfile.objects.create(user=user, phone=phone)
-    ShopProfile.objects.create(user=user, shop_name="Cyber Cafe Shankar", mobile=phone, whatsapp=phone, email=email)
+    ShopProfile.objects.create(user=user, shop_name="Cyber Cafe Shankar", mobile=phone, whatsapp=phone, email=email, referred_by_agent=referring_agent)
     try:
         create_email_verification(user)
     except Exception:
@@ -1815,18 +1859,24 @@ def change_password(request):
 @csrf_exempt
 @require_http_methods(["POST", "DELETE", "OPTIONS"])
 def delete_account_by_email(request):
+    """Auth + current-password required - previously this accepted just an
+    email with no auth at all, meaning anyone who knew a cafe owner's email
+    could permanently delete their account, orders, and wallet history with
+    a single unauthenticated POST. Now it can only delete the CALLER's own
+    account, and only after confirming their password (same check as
+    change_password), closing that gap.
+    """
     if request.method == "OPTIONS":
         return JsonResponse({})
 
-    body = parse_body(request)
-    email = str(body.get("email", "")).strip().lower()
-
-    if not re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", email):
-        return JsonResponse({"message": "Enter a valid email address."}, status=400)
-
-    account = User.objects.filter(Q(username__iexact=email) | Q(email__iexact=email)).first()
+    account = auth_user(request)
     if not account:
-        return JsonResponse({"message": "Account not found."}, status=404)
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    body = parse_body(request)
+    password = str(body.get("password", ""))
+    if not account.check_password(password):
+        return JsonResponse({"message": "Current password is incorrect."}, status=400)
 
     deleted_email = account.email or account.username
     with transaction.atomic():
@@ -2621,23 +2671,6 @@ def order_document(request, order_id):
 
 @csrf_exempt
 @require_http_methods(["POST", "OPTIONS"])
-def public_mark_order_paid(request, order_id):
-    if request.method == "OPTIONS":
-        return JsonResponse({})
-
-    order = PrintOrder.objects.filter(id=order_id).first()
-    if not order:
-        return JsonResponse({"message": "Order not found."}, status=404)
-
-    order.payment_status = PrintOrder.PAYMENT_PAID
-    order.status = PrintOrder.STATUS_QUEUED
-    order.paid_at = timezone.now()
-    order.save(update_fields=["payment_status", "status", "paid_at"])
-    return JsonResponse({"order": public_order(order)})
-
-
-@csrf_exempt
-@require_http_methods(["POST", "OPTIONS"])
 def public_check_upi_payment(request, order_id):
     if request.method == "OPTIONS":
         return JsonResponse({})
@@ -2715,6 +2748,8 @@ def agent_jobs(request):
     if not user:
         return JsonResponse({"message": "Unauthorized."}, status=401)
 
+    UserProfile.objects.filter(user=user).update(agent_last_seen_at=timezone.now())
+
     jobs = PrintOrder.objects.filter(user=user).exclude(service_key="passport_photo").filter(
         Q(status=PrintOrder.STATUS_QUEUED)
         | Q(status=PrintOrder.STATUS_AWAITING_APPROVAL, payment_status=PrintOrder.PAYMENT_CASH_COUNTER)
@@ -2746,7 +2781,15 @@ def agent_job_status(request, order_id):
     if next_status == PrintOrder.STATUS_PRINTED:
         order.printed_at = timezone.now()
         order.save(update_fields=["status", "agent_message", "printed_at"])
-        settle_printed_order_wallet(order)
+        # Row-locked check-and-set on the order itself so a retried
+        # `status=printed` call (slow response, agent re-sends) can't run
+        # settlement twice - see the settled_at field comment on PrintOrder.
+        with transaction.atomic():
+            locked_order = PrintOrder.objects.select_for_update().get(id=order.id)
+            if locked_order.settled_at is None:
+                settle_printed_order_wallet(locked_order)
+                locked_order.settled_at = timezone.now()
+                locked_order.save(update_fields=["settled_at"])
     else:
         order.save(update_fields=["status", "agent_message"])
 
@@ -3096,6 +3139,15 @@ def public_google_place(place):
 @csrf_exempt
 @require_http_methods(["GET", "POST", "OPTIONS"])
 def google_places(request):
+    """No auth on purpose (reverted 2026-08-11) - the Chrome scraping
+    extension that populates this queue while browsing Google Maps can't
+    send an Authorization header, so this stays open like it originally was.
+    This is the known "Google Places CRM is unauthenticated" gap from
+    API_DOCUMENTATION.md section 15 #5 - the leads PIPELINE endpoints
+    (google_place_details / google_place_detail_item / lead_activities,
+    used by the Leads CRM UI in cafemitra_admin) are still auth+role-gated;
+    only this scrape-queue intake stays open.
+    """
     if request.method == "OPTIONS":
         return JsonResponse({})
 
@@ -3153,12 +3205,43 @@ def google_places(request):
     elif status_filter != "all":
         return JsonResponse({"message": "extracted_status must be true, false, or all."}, status=400)
 
-    return JsonResponse({"count": places.count(), "places": [public_google_place(place) for place in places]})
+    try:
+        page = max(1, int(request.GET.get("page", 1)))
+    except (TypeError, ValueError):
+        page = 1
+    try:
+        page_size = min(50, max(1, int(request.GET.get("pageSize", 20))))
+    except (TypeError, ValueError):
+        page_size = 20
+    count = places.count()
+    start = (page - 1) * page_size
+    page_items = places[start : start + page_size]
+
+    # Global counts (ignore the extracted_status filter/pagination above) -
+    # the Scrape Queue page's Pending/Extracted stat cards need the TRUE
+    # totals, not just what happens to be on the current page.
+    global_stats = GooglePlace.objects.aggregate(
+        pending=Count("id", filter=Q(extracted_status=False)),
+        extracted=Count("id", filter=Q(extracted_status=True)),
+    )
+
+    return JsonResponse(
+        {
+            "count": count,
+            "page": page,
+            "pageSize": page_size,
+            "pendingCount": global_stats["pending"],
+            "extractedCount": global_stats["extracted"],
+            "places": [public_google_place(place) for place in page_items],
+        }
+    )
 
 
 @csrf_exempt
 @require_http_methods(["PUT", "PATCH", "DELETE", "OPTIONS"])
 def google_place_detail(request, place_id):
+    """No auth on purpose - same scrape-queue extension as google_places()
+    above also calls this to mark items extracted."""
     if request.method == "OPTIONS":
         return JsonResponse({})
 
@@ -3234,6 +3317,14 @@ def public_lead_activity(activity):
 def google_place_details(request):
     if request.method == "OPTIONS":
         return JsonResponse({})
+
+    staff_user = auth_user(request)
+    if not staff_user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+    if not staff_user.is_staff:
+        return JsonResponse({"message": "Not authorized for admin access."}, status=403)
+    if not role_allows_section(staff_user, "leads"):
+        return JsonResponse({"message": "Your admin role does not have access to this section."}, status=403)
 
     if request.method == "POST":
         body = parse_body(request)
@@ -3326,6 +3417,14 @@ def google_place_detail_item(request, detail_id):
     if request.method == "OPTIONS":
         return JsonResponse({})
 
+    staff_user = auth_user(request)
+    if not staff_user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+    if not staff_user.is_staff:
+        return JsonResponse({"message": "Not authorized for admin access."}, status=403)
+    if not role_allows_section(staff_user, "leads"):
+        return JsonResponse({"message": "Your admin role does not have access to this section."}, status=403)
+
     detail = GooglePlaceDetail.objects.filter(id=detail_id).first()
     if not detail:
         return JsonResponse({"message": "Place detail not found."}, status=404)
@@ -3407,6 +3506,14 @@ def lead_activities(request, detail_id):
     if request.method == "OPTIONS":
         return JsonResponse({})
 
+    staff_user = auth_user(request)
+    if not staff_user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+    if not staff_user.is_staff:
+        return JsonResponse({"message": "Not authorized for admin access."}, status=403)
+    if not role_allows_section(staff_user, "leads"):
+        return JsonResponse({"message": "Your admin role does not have access to this section."}, status=403)
+
     detail = GooglePlaceDetail.objects.filter(id=detail_id).first()
     if not detail:
         return JsonResponse({"message": "Place detail not found."}, status=404)
@@ -3432,9 +3539,21 @@ def lead_activities(request, detail_id):
 def agent_passport_original_image(request, job_id):
     """Serve the base64-stored raw upload as a plain image download for the
     desktop PrintPilot Agent, which fetches it over HTTP (like it used to
-    fetch the old document.url media file) rather than decoding base64."""
+    fetch the old document.url media file) rather than decoding base64.
+
+    Auth required (previously this had none): a guessable/sequential job_id
+    was enough for anyone to download any customer's raw uploaded photo with
+    no login at all. Checked against the codebase first - neither
+    cafemitra_client nor the current Print Agent source actually calls this
+    route today (OriginalImageUrl is an unused DTO field), so requiring a
+    token here doesn't break any deployed caller.
+    """
     if request.method == "OPTIONS":
         return JsonResponse({})
+
+    caller = auth_user(request)
+    if not caller:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
 
     order = PrintOrder.objects.filter(id=job_id, service_key="passport_photo").first()
     if not order:

@@ -68,6 +68,10 @@ button.nav-dropdown-trigger {
 
 .brand-accent {
   color: var(--orange);
+  background: var(--brand-hero-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .brand-dot {
@@ -8040,6 +8044,10 @@ img.profile-photo {
 
 .auth-shell .brand-accent {
   color: var(--auth-brand);
+  background: var(--brand-hero-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .auth-shell .main-nav {
@@ -8206,6 +8214,10 @@ img.profile-photo {
 
 .auth-brand .brand-accent {
   color: var(--auth-brand);
+  background: var(--brand-hero-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .auth-visual-copy {
@@ -10613,6 +10625,10 @@ img.profile-photo {
 
 .about-shell .brand-accent {
   color: var(--about-brand);
+  background: var(--brand-hero-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .about-shell .main-nav {
@@ -11243,6 +11259,10 @@ img.profile-photo {
 
 .terms-shell .brand-accent {
   color: var(--terms-brand);
+  background: var(--brand-hero-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .terms-shell .main-nav {
@@ -11789,11 +11809,18 @@ img.profile-photo {
   font-size: 1.12rem;
 }
 
-.support-shell .brand-accent,
 .support-shell .main-nav a:hover,
 .support-shell .nav-dropdown-trigger:hover,
 .support-shell .nav-link-active {
   color: var(--support-brand);
+}
+
+.support-shell .brand-accent {
+  color: var(--support-brand);
+  background: var(--brand-hero-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .support-shell .main-nav {
@@ -12595,11 +12622,18 @@ img.profile-photo {
   font-size: 1.12rem;
 }
 
-.contact-shell .brand-accent,
 .contact-shell .main-nav a:hover,
 .contact-shell .nav-dropdown-trigger:hover,
 .contact-shell .nav-link-active {
   color: var(--contact-brand);
+}
+
+.contact-shell .brand-accent {
+  color: var(--contact-brand);
+  background: var(--brand-hero-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .contact-shell .main-nav {
@@ -13185,11 +13219,18 @@ img.profile-photo {
   font-size: 1.12rem;
 }
 
-.disclaimer-shell .brand-accent,
 .disclaimer-shell .main-nav a:hover,
 .disclaimer-shell .nav-dropdown-trigger:hover,
 .disclaimer-shell .nav-link-active {
   color: var(--disclaimer-brand);
+}
+
+.disclaimer-shell .brand-accent {
+  color: var(--disclaimer-brand);
+  background: var(--brand-hero-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .disclaimer-shell .main-nav {
@@ -13606,11 +13647,18 @@ img.profile-photo {
   font-size: 1.12rem;
 }
 
-.privacy-shell .brand-accent,
 .privacy-shell .main-nav a:hover,
 .privacy-shell .nav-dropdown-trigger:hover,
 .privacy-shell .nav-link-active {
   color: var(--privacy-brand);
+}
+
+.privacy-shell .brand-accent {
+  color: var(--privacy-brand);
+  background: var(--brand-hero-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .privacy-shell .main-nav {
@@ -14077,11 +14125,18 @@ img.profile-photo {
   font-size: 1.12rem;
 }
 
-.pricing-shell .brand-accent,
 .pricing-shell .main-nav a:hover,
 .pricing-shell .nav-dropdown-trigger:hover,
 .pricing-shell .nav-link-active {
   color: var(--pricing-brand);
+}
+
+.pricing-shell .brand-accent {
+  color: var(--pricing-brand);
+  background: var(--brand-hero-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .pricing-shell .main-nav {
@@ -16320,7 +16375,13 @@ img.profile-photo {
   --pp-shadow: 0 1px 2px oklch(0.2 0.05 262 / 0.04), 0 20px 45px -18px oklch(0.2 0.05 262 / 0.18);
   --pp-shadow-sm: 0 10px 24px -14px oklch(0.2 0.05 262 / 0.16);
 }
-.printpilot-landing-shell .brand-accent { color: var(--pp-accent); }
+.printpilot-landing-shell .brand-accent {
+  color: var(--pp-accent);
+  background: var(--brand-hero-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
 
 .printpilot-page {
   position: relative;

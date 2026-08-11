@@ -1,6 +1,36 @@
 from django.contrib import admin
 
-from .models import GooglePlace, GooglePlaceDetail, LeadActivity, ToolPricing, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
+from .models import AdminActivityLog, AdminRole, Agent, GooglePlace, GooglePlaceDetail, LeadActivity, ScrapeRun, ToolPricing, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
+
+
+@admin.register(ScrapeRun)
+class ScrapeRunAdmin(admin.ModelAdmin):
+    list_display = ("id", "status", "started_by", "max_places", "processed_count", "success_count", "failed_count", "started_at", "completed_at")
+    list_filter = ("status",)
+    search_fields = ("started_by__email",)
+
+
+@admin.register(AdminActivityLog)
+class AdminActivityLogAdmin(admin.ModelAdmin):
+    list_display = ("action", "admin_user", "target_type", "target_id", "created_at")
+    list_filter = ("action", "target_type")
+    search_fields = ("admin_user__email", "target_id", "detail")
+
+
+@admin.register(AdminRole)
+class AdminRoleAdmin(admin.ModelAdmin):
+    list_display = ("user", "role", "updated_at")
+    list_editable = ("role",)
+    list_filter = ("role",)
+    search_fields = ("user__email", "user__username")
+
+
+@admin.register(Agent)
+class AgentAdmin(admin.ModelAdmin):
+    list_display = ("referral_code", "user", "status", "commission_type", "commission_rate", "created_at")
+    list_editable = ("status", "commission_rate")
+    list_filter = ("status", "commission_type")
+    search_fields = ("referral_code", "user__email", "user__username")
 
 
 @admin.register(UserProfile)

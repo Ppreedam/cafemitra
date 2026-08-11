@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { clearToken } from "@/lib/auth";
 
 const links = [
   { href: "/leads", label: "Leads" },
@@ -10,6 +11,14 @@ const links = [
 
 export default function Nav() {
   const pathname = usePathname();
+  const router = useRouter();
+
+  if (pathname === "/login") return null;
+
+  function handleLogout() {
+    clearToken();
+    router.replace("/login");
+  }
 
   return (
     <header className="border-b border-slate-200 bg-white">
@@ -33,6 +42,9 @@ export default function Nav() {
             );
           })}
         </nav>
+        <button onClick={handleLogout} className="ml-auto text-sm text-slate-500 hover:text-red-600">
+          Log out
+        </button>
       </div>
     </header>
   );
