@@ -14,9 +14,9 @@ logger = logging.getLogger("django")
 # enough (and comparable in size to any local-mean kernel that could spot
 # it) that detection missed it on real photos. A fixed box tightly sized
 # to just the icon - not a large search - is simpler and reliable.
-WATERMARK_CENTER_X_RATIO = 0.865
-WATERMARK_CENTER_Y_RATIO = 0.895
-WATERMARK_BOX_RATIO = 0.055  # box side length as a fraction of image width - hugs just the icon
+WATERMARK_CENTER_X_RATIO = 0.934
+WATERMARK_CENTER_Y_RATIO = 0.947
+WATERMARK_BOX_RATIO = 0.03  # box side length as a fraction of image width - hugs just the icon
 FEATHER_PIXELS = 4  # soft blend width at the very edge of the patch, in pixels
 
 
