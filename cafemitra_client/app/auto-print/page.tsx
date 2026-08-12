@@ -113,11 +113,10 @@ const setupSteps: SetupStep[] = [
   { key: "test", title: "Test Print", helper: "Send a demo page to printer", icon: Play },
 ];
 
-// TODO: swap each youtubeId below for the real step-by-step tutorial video (YouTube video ID, the part after "v=" in the URL).
 const setupStepGuides: Record<SetupStep["key"], { title: string; youtubeId?: string; bullets: string[] }> = {
   download: {
     title: "Install the desktop agent",
-    youtubeId: "jNQXAC9IVRw",
+    youtubeId: "hXQMlTIynDg",
     bullets: [
       "Download the PrintPilot Agent on the computer connected to the printer.",
       "Extract the file if it is downloaded as a ZIP.",
@@ -126,7 +125,7 @@ const setupStepGuides: Record<SetupStep["key"], { title: string; youtubeId?: str
   },
   verify: {
     title: "Confirm the agent connection",
-    youtubeId: "jNQXAC9IVRw",
+    youtubeId: "x0MDUlcpWyY",
     bullets: [
       "Make sure the desktop agent is open.",
       "Login in the agent with the same RepetiGo account.",
@@ -135,7 +134,7 @@ const setupStepGuides: Record<SetupStep["key"], { title: string; youtubeId?: str
   },
   printer: {
     title: "Choose the default printer",
-    youtubeId: "jNQXAC9IVRw",
+    youtubeId: "GhFBF4ZY-Bc",
     bullets: [
       "Select the printer that should receive customer print jobs.",
       "Use Microsoft Print to PDF only for testing.",
@@ -144,7 +143,7 @@ const setupStepGuides: Record<SetupStep["key"], { title: string; youtubeId?: str
   },
   pricing: {
     title: "Set customer print pricing",
-    youtubeId: "jNQXAC9IVRw",
+    youtubeId: "0Rsqf4AdST0",
     bullets: [
       "Add charges for black and white, color, or custom services.",
       "Use page ranges when the rate changes by page count.",
@@ -153,7 +152,7 @@ const setupStepGuides: Record<SetupStep["key"], { title: string; youtubeId?: str
   },
   qr: {
     title: "Prepare the customer QR",
-    youtubeId: "jNQXAC9IVRw",
+    youtubeId: "oEuTk6xRWkM",
     bullets: [
       "Generate the QR for your shop.",
       "Download and print the QR poster.",
@@ -162,7 +161,7 @@ const setupStepGuides: Record<SetupStep["key"], { title: string; youtubeId?: str
   },
   test: {
     title: "Run one test print",
-    youtubeId: "jNQXAC9IVRw",
+    youtubeId: "LmCbdEtdUqU",
     bullets: [
       "Confirm the agent is connected and a printer is selected.",
       "Click Run Test Print to send a sample QR page.",
