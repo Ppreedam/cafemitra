@@ -53,7 +53,7 @@ const contactRows = [
   ["Business Address", formattedAddress()],
   ["General Support", BUSINESS.supportEmail],
   ["Legal & Compliance", BUSINESS.legalEmail],
-  ["Billing", BUSINESS.billingEmail],
+  ["Billing", BUSINESS.supportEmail],
   ["Security", BUSINESS.securityEmail],
   ["WhatsApp", `${BUSINESS.phone} (WhatsApp only, no voice calls)`],
   ["Website", BUSINESS.website],

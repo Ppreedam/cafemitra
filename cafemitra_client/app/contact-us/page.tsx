@@ -30,7 +30,7 @@ const responsePromises = [
 
 const contactCards = [
   [Wrench, "Support", BUSINESS.supportEmail, "For technical issues, setup help, printer problems."],
-  [CreditCard, "Billing", BUSINESS.billingEmail, "For invoices, refunds, subscription changes."],
+  [CreditCard, "Billing", BUSINESS.supportEmail, "For invoices, refunds, subscription changes."],
   [Phone, "WhatsApp", BUSINESS.phone, "WhatsApp only (no voice calls) - for urgent queries during business hours."],
   [MapPin, "Office", formattedAddress(), "Serving print shops across India."],
 ] as const;
