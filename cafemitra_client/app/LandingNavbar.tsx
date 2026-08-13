@@ -173,14 +173,14 @@ export function LandingNavbar() {
   return (
     <header className="site-header">
       {showNotice ? (
-        <div className="notice-bar" role="region" aria-label="Launch offer">
+        <div className="notice-bar" role="region" aria-label="Free to use">
           <div className="notice-bar-inner">
-            <span>Launch offer - 14 days free, no credit card required.</span>
+            <span>RepetiGo is free to use - No credits or monthly charge required.</span>
             <Link className="notice-bar-cta" href="/register">
-              Start Free Trial <ArrowRight size={14} aria-hidden />
+              Get Started Free <ArrowRight size={14} aria-hidden />
             </Link>
           </div>
-          <button className="notice-bar-close" type="button" aria-label="Dismiss launch offer" onClick={() => setShowNotice(false)}>
+          <button className="notice-bar-close" type="button" aria-label="Dismiss notice" onClick={() => setShowNotice(false)}>
             <X size={15} aria-hidden />
           </button>
         </div>

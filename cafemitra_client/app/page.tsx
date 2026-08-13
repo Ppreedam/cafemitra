@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Fragment } from "react";
 import type { ElementType, ReactNode } from "react";
 import {
   ArrowRight,
@@ -10,7 +9,6 @@ import {
   Clock,
   Coffee,
   Compass,
-  CreditCard,
   FileText,
   Gauge,
   GraduationCap,
@@ -32,13 +30,13 @@ import {
   Store,
   Target,
   Trash2,
-  UploadCloud,
   Users,
   X,
   Zap,
 } from "lucide-react";
 import { LandingNavbar } from "./LandingNavbar";
 import { PublicFooter } from "./PublicFooter";
+import { HeroStepsProgress } from "./HeroStepsProgress";
 
 type IconType = ElementType;
 
@@ -51,13 +49,6 @@ const trust = [
   { icon: Lock, label: "Secure document upload" },
   { icon: Trash2, label: "Auto-delete after printing" },
   { icon: Zap, label: "Setup in 10 minutes" },
-];
-
-const heroSteps: { icon: IconType; label: string }[] = [
-  { icon: ScanLine, label: "Scan" },
-  { icon: UploadCloud, label: "Upload" },
-  { icon: CreditCard, label: "Pay" },
-  { icon: Printer, label: "Print" },
 ];
 
 const socialStats = [
@@ -346,29 +337,7 @@ function HeroVisual() {
         src="/hero-print-queue.jpeg"
         alt="RepetiGo live print queue dashboard"
       />
-      <div className="ai-steps-card">
-        <div className="ai-steps-head">
-          <strong>How customers use RepetiGo</strong>
-          <a href="#demo">
-            <Play size={12} /> How it works
-          </a>
-        </div>
-        <div className="ai-steps-row">
-          {heroSteps.map((step, index) => (
-            <Fragment key={step.label}>
-              <div className="ai-step">
-                <span className="ai-step-icon">
-                  <step.icon size={20} />
-                </span>
-                <span className="ai-step-copy">
-                  <strong>{step.label}</strong>
-                </span>
-              </div>
-              {index < heroSteps.length - 1 ? <ChevronRight className="ai-step-arrow" size={18} /> : null}
-            </Fragment>
-          ))}
-        </div>
-      </div>
+      <HeroStepsProgress />
     </div>
   );
 }
