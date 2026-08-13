@@ -154,7 +154,7 @@ const sections: TermsSectionData[] = [
       ["Payment Processing", "Payments are processed by certified third-party payment gateways. By making a payment, you also agree to the payment gateway's terms."],
       ["No Card Storage", "RepetiGo does not store or access full card numbers, CVV, UPI PIN, or complete payment credentials."],
       ["Taxes", "Fees are exclusive of applicable taxes unless stated otherwise. You are responsible for applicable taxes including GST."],
-      ["Payment Errors", "Contact billing@repetigo.com within 7 days if you believe a payment error occurred."],
+      ["Payment Errors", "Contact support@repetigo.com within 7 days if you believe a payment error occurred."],
       ["Refund Policy", "Refund eligibility is governed by our separate Refund Policy. Review it before making a purchase."],
     ],
   },

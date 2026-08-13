@@ -27,7 +27,21 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { DashboardShell } from "@/app/DashboardShell";
-import { fetchPricingServices, formatPriceItem, savePricingService, type PriceItem, type PriceRange, type PricingService } from "@/lib/pricing";
+import {
+  fetchCashCounterStatus,
+  fetchPricingServices,
+  formatPriceItem,
+  normalizePaymentMode,
+  savePricingService,
+  type PriceItem,
+  type PriceRange,
+  type PricingService,
+} from "@/lib/pricing";
+
+const paymentModeOptions = [
+  { value: "Online Payment", label: "Online Payment" },
+  { value: "Both", label: "Online Payment + Cash Counter" },
+];
 
 type NavItem = {
   name: string;
@@ -76,6 +90,8 @@ export default function PricingSettingsPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
   const [savingKey, setSavingKey] = useState("");
+  const [cashCounterAvailable, setCashCounterAvailable] = useState(true);
+  const [cashCounterReason, setCashCounterReason] = useState("");
 
   useEffect(() => {
     fetchPricingServices()
@@ -84,7 +100,22 @@ export default function PricingSettingsPage() {
         setActiveKey(items[0]?.serviceKey || "auto_document_print");
       })
       .catch(() => setError("Could not load pricing settings."));
+
+    fetchCashCounterStatus().then((status) => {
+      setCashCounterAvailable(status.available);
+      setCashCounterReason(status.reason);
+    });
   }, []);
+
+  function updatePaymentMode(serviceKey: string, value: string) {
+    setServices((current) =>
+      current.map((service) =>
+        service.serviceKey === serviceKey
+          ? { ...service, settings: { ...service.settings, paymentMode: value } }
+          : service,
+      ),
+    );
+  }
 
   const activeService = useMemo(() => services.find((service) => service.serviceKey === activeKey), [activeKey, services]);
 
@@ -288,9 +319,28 @@ export default function PricingSettingsPage() {
                   <div className="service-pricing-form single">
                     <label className="auto-field">
                       <span>Payment Mode</span>
-                      <div className="payment-mode-fixed">Online Payment</div>
-                      <small className="payment-mode-note">Customers always pay online. Cash Counter collection is not available.</small>
                     </label>
+                    <div className="payment-mode-list">
+                      {paymentModeOptions.map((option) => {
+                        const isBothOption = option.value === "Both";
+                        const isLocked = isBothOption && !cashCounterAvailable;
+                        const currentMode = normalizePaymentMode(String(activeService.settings.paymentMode ?? "Online Payment"));
+                        return (
+                          <button
+                            className={currentMode === option.value ? "active" : ""}
+                            key={option.value}
+                            type="button"
+                            disabled={isLocked}
+                            title={isLocked ? cashCounterReason : undefined}
+                            onClick={() => updatePaymentMode(activeService.serviceKey, option.value)}
+                          >
+                            {option.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                    <p className="payment-mode-note">Online Payment is always available to customers. Turn on "Online Payment + Cash Counter" to also let customers pay at your counter.</p>
+                    {!cashCounterAvailable ? <p className="payment-mode-note payment-mode-locked">{cashCounterReason}</p> : null}
                   </div>
 
                   <section className="price-items-panel" aria-label="Flexible price items">

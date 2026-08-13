@@ -85,6 +85,15 @@ export default function BackgroundRemoverClient({ children }: { children?: React
     setProcessing(true);
     setError("");
     setProgress(1);
+    // The real removal happens in a single server round-trip with no
+    // incremental status, so a progress bar frozen at 1% for the whole
+    // wait reads as stuck/broken (especially on a slow first request while
+    // the AI model warms up). Ease it toward 90% instead - never quite
+    // finishing until the response actually arrives - which reads as
+    // "still working" rather than "hung".
+    const progressTimer = setInterval(() => {
+      setProgress((current) => (current < 90 ? current + Math.max(1, Math.round((90 - current) * 0.08)) : current));
+    }, 400);
     try {
       const body = new FormData();
       body.append("image", file);
@@ -105,6 +114,7 @@ export default function BackgroundRemoverClient({ children }: { children?: React
       console.error(reason);
       setError(reason instanceof Error ? reason.message : "Background could not be removed. Please try again.");
     } finally {
+      clearInterval(progressTimer);
       setProcessing(false);
     }
   }
@@ -166,7 +176,7 @@ export default function BackgroundRemoverClient({ children }: { children?: React
                 </div>
               </div>
             ) : null}
-            {processing ? <div className="bg-progress"><div><span>Processing image…</span><strong>{progress}%</strong></div><progress value={progress} max="100" /><small>Removing the background on the server{enhanceEdges ? " and cleaning up edges" : ""}…</small></div> : null}
+            {processing ? <div className="bg-progress"><div><span>Processing image…</span><strong>{progress}%</strong></div><progress value={progress} max="100" /><small>Removing the background on the server{enhanceEdges ? " and cleaning up edges" : ""}… this can take up to a minute.</small></div> : null}
             {error ? <div className="profile-alert error">{error}</div> : null}
             <div className="bg-actions"><button className="secondary-action" type="button" onClick={reset} disabled={processing}><RotateCcw size={18} /> Start Over</button>{resultUrl ? <a className="bg-download" href={resultUrl} download={downloadName}><Download size={18} /> Download PNG</a> : <button type="button" onClick={removeImageBackground} disabled={processing}><WandSparkles size={18} /> {processing ? "Removing…" : "Remove Background"}</button>}</div>
           </section>

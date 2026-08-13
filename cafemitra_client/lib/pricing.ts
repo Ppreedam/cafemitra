@@ -31,6 +31,7 @@ export const defaultPricingServices: PricingService[] = [
       paymentMode: "Online Payment",
       selectedPrinter: "",
       pricingSaved: false,
+      testPrintDone: false,
       priceItems: [
         { id: "black_white", label: "Black & White", rate: 2 },
         { id: "color", label: "Color", rate: 10 },

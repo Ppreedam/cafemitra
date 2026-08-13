@@ -24,7 +24,6 @@ export const BUSINESS = {
   // (legal@ / security@ / privacy@ / dpo@ would bounce if a reviewer emails them).
   supportEmail: "support@repetigo.com",
   legalEmail: "support@repetigo.com",
-  billingEmail: "billing@repetigo.com",
   securityEmail: "support@repetigo.com",
   privacyEmail: "support@repetigo.com",
   dpoEmail: "support@repetigo.com",

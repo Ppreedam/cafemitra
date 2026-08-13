@@ -37,7 +37,7 @@ const contactCards = [
 
 const routes = [
   ["I'm setting up RepetiGo", "Live Chat or Setup Guide", "Setup takes 10 minutes. Our guides walk through every step.", "/help-support"],
-  ["I have a billing question", "billing@repetigo.com", "Include your account email and invoice number for the fastest resolution.", "mailto:billing@repetigo.com"],
+  ["I have a billing question", "support@repetigo.com", "Include your account email and invoice number for the fastest resolution.", "mailto:support@repetigo.com"],
   ["I want to partner or integrate", "enterprise@repetigo.com", "We respond to partner enquiries within 1 business day.", "mailto:enterprise@repetigo.com"],
 ];
 

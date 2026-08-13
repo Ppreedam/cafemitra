@@ -223,6 +223,7 @@ export default function AutoPrintPage() {
   const [qrUrl, setQrUrl] = useState("");
   const [qrImage, setQrImage] = useState("");
   const [testStatus, setTestStatus] = useState<"idle" | "printing" | "success">("idle");
+  const [testPrintDone, setTestPrintDone] = useState(false);
   const [testPrintMessage, setTestPrintMessage] = useState("");
   const [testPrintError, setTestPrintError] = useState("");
   const [qrDownloadError, setQrDownloadError] = useState("");
@@ -230,7 +231,7 @@ export default function AutoPrintPage() {
   const printerReady = printerSaved && Boolean(selectedPrinter);
   const pricingReady = pricingSaved && priceItems.length > 0;
   const qrSetupReady = qrReady || (agentConnected && printerReady && pricingReady && Boolean(qrUrl));
-  const testPrintReady = testStatus === "success";
+  const testPrintReady = testPrintDone || testStatus === "success";
   const stepCompletion: Record<SetupStep["key"], boolean> = {
     download: agentDownloaded || agentConnected,
     verify: agentConnected,
@@ -279,6 +280,7 @@ export default function AutoPrintPage() {
         setPriceItems(Array.isArray(autoPrint.settings.priceItems) ? autoPrint.settings.priceItems : priceItems);
         setPaymentMode(normalizePaymentMode(String(autoPrint.settings.paymentMode ?? "Online Payment")));
         setPricingSaved(Boolean(autoPrint.settings.pricingSaved));
+        setTestPrintDone(Boolean(autoPrint.settings.testPrintDone));
         setIsShopOpen(autoPrint.settings.isOpen !== false);
         const savedPrinter = String(autoPrint.settings.selectedPrinter || "").trim();
         if (savedPrinter) {
@@ -374,6 +376,8 @@ export default function AutoPrintPage() {
       });
       setTestStatus("success");
       setTestPrintMessage(result.message || `QR test page sent to ${result.printer || selectedPrinter}.`);
+      setTestPrintDone(true);
+      savePricingService("auto_document_print", { testPrintDone: true }).catch(() => undefined);
     } catch (error) {
       setTestStatus("idle");
       setTestPrintError(error instanceof Error ? error.message : "Could not run test print. Is the PrintPilot Agent running?");

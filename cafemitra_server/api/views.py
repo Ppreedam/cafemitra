@@ -62,6 +62,7 @@ DEFAULT_SERVICE_PRICING = {
             "paymentMode": "Online Payment",
             "selectedPrinter": "",
             "pricingSaved": False,
+            "testPrintDone": False,
             "isOpen": True,
             "priceItems": [
                 {"id": "black_white", "label": "Black & White", "rate": 2},
@@ -431,7 +432,7 @@ def create_email_verification(user):
               <td style="padding:30px 32px;">
                 <p style="margin:0;font-size:17px;line-height:1.7;font-weight:800;color:#0d1748;">Hello {safe_owner_name},</p>
                 <p style="margin:12px 0 0;font-size:15px;line-height:1.75;color:#59658c;">
-                  Thank you for creating your RepetiGo account. Please verify your email address to activate your account and start using your print shop dashboard.
+                  Thank you for creating your RepetiGo account. Please verify your email address to activate your account and start using your Repetigo dashboard.
                 </p>
                 <div style="margin:26px 0;text-align:center;">
                   <a href="{safe_verify_url}" style="display:inline-block;border-radius:12px;padding:14px 24px;background:#2563eb;color:#ffffff;text-decoration:none;font-size:15px;font-weight:900;box-shadow:0 12px 26px rgba(37,99,235,0.24);">Verify Account</a>
@@ -526,7 +527,7 @@ def create_password_reset(user):
                 </p>
                 <div style="margin-top:26px;border-radius:14px;padding:18px;background:#eef4ff;border:1px solid #dbe7ff;">
                   <p style="margin:0;font-size:14px;line-height:1.75;color:#33415f;">
-                    <strong style="color:#0d1748;">Our motive:</strong> RepetiGo helps print shops work faster while keeping customer documents secure and private.
+                    <strong style="color:#0d1748;">Our motive:</strong> RepetiGo helps cyber cafes and print shops reduce repetitive manual work, protect customer documents, and run faster with AI-powered print automation.
                   </p>
                 </div>
                 <p style="margin:24px 0 0;font-size:15px;line-height:1.75;color:#59658c;">
@@ -1467,6 +1468,37 @@ def contact_message(request):
         status=201,
     )
 
+DISPOSABLE_EMAIL_DOMAINS = {
+    "mailinator.com", "tempmail.com", "temp-mail.org", "temp-mail.io", "tempmailo.com",
+    "guerrillamail.com", "guerrillamail.info", "guerrillamail.biz", "guerrillamail.de",
+    "guerrillamail.net", "guerrillamail.org", "guerrillamailblock.com", "sharklasers.com",
+    "10minutemail.com", "10minutemail.net", "20minutemail.com", "throwawaymail.com",
+    "yopmail.com", "yopmail.fr", "yopmail.net", "trashmail.com", "trashmail.me",
+    "trashmail.net", "trash-mail.com", "getnada.com", "nada.email", "fakeinbox.com",
+    "dispostable.com", "mohmal.com", "emailondeck.com", "mintemail.com", "moakt.com",
+    "spamgourmet.com", "mytemp.email", "tempinbox.com", "33mail.com", "maildrop.cc",
+    "mailnesia.com", "harakirimail.com", "tmpmail.org", "tmpmail.net", "fakemailgenerator.com",
+    "crazymailing.com", "mailcatch.com", "mailexpire.com", "e4ward.com", "spam4.me",
+    "incognitomail.org", "mytrashmail.com", "no-spam.ws", "spambox.us", "trbvm.com",
+    "wegwerfmail.de", "wegwerfmail.net", "wegwerfmail.org", "mailnull.com", "discard.email",
+    "discardmail.com", "discardmail.de", "sogetthis.com", "tempr.email", "burnermail.io",
+    "luxusmail.org", "mailsac.com", "mailtemp.info", "tempmailaddress.com", "throwam.com",
+    "getairmail.com", "anonbox.net", "airmail.cc", "byom.de", "correotemporal.org",
+    "einrot.com", "fake-mail.net", "fakemail.net", "jetable.org", "kasmail.com",
+    "kurzepost.de", "letthemeatspam.com", "mail-temporaire.fr", "mailimate.com",
+    "mailme.lv", "meltmail.com", "objectmail.com", "proxymail.eu", "rcpt.at",
+    "spamfree24.org", "spamherelots.com", "spamhereplease.com", "spamthisplease.com",
+    "tempemail.net", "tempymail.com", "thankyou2010.com", "trash2009.com", "veryrealemail.com",
+    "zippymail.info", "one-time.email", "inboxbear.com", "tempmailbox.com", "emailfake.com",
+    "moakt.cc", "moakt.ws", "vpsmail.com", "disbox.net", "disbox.org",
+}
+
+
+def is_disposable_email(email):
+    domain = email.rsplit("@", 1)[-1].strip().lower()
+    return domain in DISPOSABLE_EMAIL_DOMAINS
+
+
 @csrf_exempt
 @require_http_methods(["POST", "OPTIONS"])
 def register_user(request):
@@ -1482,6 +1514,8 @@ def register_user(request):
 
     if not re.match(r"^[^\s@]+@[^\s@]+\.[^\s@]+$", email):
         return JsonResponse({"message": "Enter a valid email address."}, status=400)
+    if is_disposable_email(email):
+        return JsonResponse({"message": "Temporary or disposable email addresses are not allowed. Please use a permanent email address."}, status=400)
     if len(full_name) < 2:
         return JsonResponse({"message": "Enter your full name."}, status=400)
     if not re.match(r"^\d{10}$", phone):

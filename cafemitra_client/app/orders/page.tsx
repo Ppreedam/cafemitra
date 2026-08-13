@@ -19,6 +19,7 @@ import {
   LayoutGrid,
   MessageCircle,
   Printer,
+  RefreshCw,
   Settings,
   UserRound,
   Users,
@@ -117,6 +118,7 @@ export default function OrdersPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [markingPaidId, setMarkingPaidId] = useState<number | null>(null);
   const [actionError, setActionError] = useState("");
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [compareOrder, setCompareOrder] = useState<Order | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
   const cashApprovalOrders = orders.filter((order) => order.paymentStatus === "cash_counter" && order.status === "awaiting_approval");
@@ -145,31 +147,40 @@ export default function OrdersPage() {
     setCurrentPage(1);
   }, [dateFrom, dateTo, printFilter]);
 
-  useEffect(() => {
+  async function loadOrders(options: { silent?: boolean } = {}) {
     if (!hasStoredSession()) {
       setMessage("Please login to view order history.");
       return;
     }
 
-    async function loadOrders() {
-      try {
-        const response = await apiFetch("/api/orders/");
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          if (response.status === 401) {
-            setMessage("Session expired. Please login again to view orders.");
-            return;
-          }
-          throw new Error(result.message || "Could not load orders.");
-        }
-        setOrders(result.orders || []);
-        setMessage("");
-      } catch (error) {
-        setMessage(error instanceof Error ? error.message : "Could not load orders.");
-      }
+    if (options.silent) {
+      setIsRefreshing(true);
+    } else {
+      setMessage("Loading orders...");
     }
 
+    try {
+      const response = await apiFetch("/api/orders/");
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        if (response.status === 401) {
+          setMessage("Session expired. Please login again to view orders.");
+          return;
+        }
+        throw new Error(result.message || "Could not load orders.");
+      }
+      setOrders(result.orders || []);
+      setMessage("");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Could not load orders.");
+    } finally {
+      if (options.silent) setIsRefreshing(false);
+    }
+  }
+
+  useEffect(() => {
     loadOrders();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function markOrderPaid(orderId: number) {
@@ -180,6 +191,12 @@ export default function OrdersPage() {
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.message || "Could not mark this order as paid.");
       setOrders((current) => current.map((order) => (order.id === orderId ? result.order : order)));
+      // Narrow update only - the compare modal's order carries base64 image
+      // payloads the list-style mark-paid response omits, so a full spread
+      // would wipe the photos already shown.
+      setCompareOrder((current) =>
+        current && current.id === orderId ? { ...current, paymentStatus: result.order.paymentStatus, status: result.order.status } : current,
+      );
     } catch (error) {
       setActionError(error instanceof Error ? error.message : "Could not mark this order as paid.");
     } finally {
@@ -211,7 +228,19 @@ export default function OrdersPage() {
               <h1>Order History</h1>
               <p>Manage customer print handover by token.</p>
             </div>
-            <span className="status-pill">{orders.length} Orders</span>
+            <div className="orders-hero-actions">
+              <button
+                type="button"
+                className="orders-refresh-btn"
+                onClick={() => loadOrders({ silent: true })}
+                disabled={isRefreshing}
+                aria-label="Refresh orders"
+                title="Refresh orders"
+              >
+                <RefreshCw size={16} className={isRefreshing ? "spinning" : ""} /> {isRefreshing ? "Refreshing..." : "Refresh"}
+              </button>
+              <span className="status-pill">{orders.length} Orders</span>
+            </div>
           </div>
 
           {cashApprovalOrders.length ? (
@@ -427,18 +456,39 @@ export default function OrdersPage() {
                 )}
               </div>
               <div className="passport-compare-pane">
-                <span>Gemini Photo</span>
+                <span>Your Passport Photo</span>
                 {compareLoading ? (
                   <div className="passport-compare-spinner"><span className="passport-compare-spinner-ring" /></div>
                 ) : compareOrder.geminiPhoto ? (
                   <img src={apiUrl(compareOrder.geminiPhoto)} alt="AI generated passport photo" />
                 ) : compareOrder.photoStatus === "failed" ? (
-                  <p className="order-status failed">{friendlyPhotoErrorMessage(compareOrder)}</p>
+                  <div className="passport-compare-empty">
+                    <span className="order-status failed">{friendlyPhotoErrorMessage(compareOrder)}</span>
+                  </div>
                 ) : (
                   <p>Passport photo processing...</p>
                 )}
               </div>
             </div>
+            {compareOrder.paymentStatus === "no_payment" || (compareOrder.status === "queued" && compareOrder.paymentStatus === "paid") ? (
+              <div className="passport-compare-actions">
+                {compareOrder.paymentStatus === "no_payment" ? (
+                  <button
+                    type="button"
+                    className="btn"
+                    disabled={markingPaidId === compareOrder.id}
+                    onClick={() => markOrderPaid(compareOrder.id)}
+                  >
+                    <Wallet size={16} /> {markingPaidId === compareOrder.id ? "Marking..." : "Mark as Paid"}
+                  </button>
+                ) : null}
+                {compareOrder.status === "queued" && compareOrder.paymentStatus === "paid" ? (
+                  <Link href={`/passport-photo?orderId=${compareOrder.id}`} className="btn btn-primary">
+                    <Printer size={16} /> Print
+                  </Link>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
       ) : null}

@@ -87,7 +87,7 @@ const troubleshooting = [
     title: "Payment Failed or Not Recorded",
     symptom: "Customer paid but the transaction is not visible in dashboard.",
     causes: ["UPI confirmation delay", "Delayed payment webhook", "Payment gateway issue"],
-    steps: ["Wait 2 minutes and refresh dashboard.", "Check Billing > Transactions by date and amount.", "Contact billing@repetigo.com with the transaction reference."],
+    steps: ["Wait 2 minutes and refresh dashboard.", "Check Billing > Transactions by date and amount.", "Contact support@repetigo.com with the transaction reference."],
   },
 ];
 

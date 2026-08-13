@@ -2,7 +2,8 @@
 
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
-import { Check, Circle, Crop, Eye, IdCard, Loader2, RefreshCw, Trash2, Upload, X } from "lucide-react";
+import Link from "next/link";
+import { Check, Circle, Crop, Eye, IdCard, Loader2, RefreshCw, Settings, Trash2, Upload, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
 import { WalletLimitBanner } from "../WalletLimitBanner";
 import { apiFetch, apiUrl, dataUriToBlob } from "@/lib/api";
@@ -12,6 +13,20 @@ import { CropEditor, cropImage, DEFAULT_CROP_RECT, type CropRect } from "../Crop
 
 type JobState = "idle" | "submitting" | "processing" | "done" | "not_found" | "failed";
 type PaperSize = "a4" | "4x6";
+
+const goodPhotoExamples = [
+  { src: "/Good_bad_image/GoodImage1.jpg", caption: "Face clearly visible, straight look" },
+  { src: "/Good_bad_image/GoodImage3.jpg", caption: "Plain, light background" },
+  { src: "/Good_bad_image/GoodImage2.jpg", caption: "Both ears visible" },
+  { src: "/Good_bad_image/GoodImage4.jpg", caption: "Neutral expression, mouth closed" },
+];
+
+const avoidPhotoExamples = [
+  { src: "/Good_bad_image/avoid1.jpg", caption: "Sunglasses or cap" },
+  { src: "/Good_bad_image/avoid2.jpg", caption: "Blurry or low-resolution photo" },
+  { src: "/Good_bad_image/avoid3.jpg", caption: "Shadows across the face" },
+  { src: "/Good_bad_image/avoid4.jpg", caption: "Angled or side pose" },
+];
 
 type ProcessingStepItem = {
   title: string;
@@ -102,6 +117,7 @@ export default function PassportPhotoPage() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [viewOrder, setViewOrder] = useState<ExistingPassportOrder | null>(null);
+  const [isLoadingOrder, setIsLoadingOrder] = useState(false);
   const [paperSize, setPaperSize] = useState<PaperSize | null>(null);
   const [stepCursor, setStepCursor] = useState(0);
   const dropRef = useRef<HTMLLabelElement | null>(null);
@@ -140,6 +156,7 @@ export default function PassportPhotoPage() {
   }, []);
 
   async function loadExistingOrder(orderId: number) {
+    setIsLoadingOrder(true);
     try {
       const response = await apiFetch(`/api/orders/${orderId}/`);
       const result = await response.json().catch(() => ({}));
@@ -170,6 +187,8 @@ export default function PassportPhotoPage() {
       }
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : "Could not load this order.");
+    } finally {
+      setIsLoadingOrder(false);
     }
   }
 
@@ -458,9 +477,21 @@ ${rowsHtml}
             <h1>Passport Size Photo Maker</h1>
             <p>Upload a photo, choose a professional attire, and get an AI-generated passport photo that meets official standards.</p>
           </div>
-          <span className="status-pill">AI Powered</span>
+          <div className="auto-print-hero-actions">
+            <Link className="icon-action-btn" href="/pricing-settings" aria-label="Pricing settings" title="Pricing settings">
+              <Settings size={18} />
+            </Link>
+            <span className="status-pill">AI Powered</span>
+          </div>
         </div>
 
+        {isLoadingOrder ? (
+          <div className="passport-order-loading">
+            <Loader2 size={28} className="passport-step-spin" />
+            <strong>Loading your order...</strong>
+            <span>Fetching your photo, this can take a moment.</span>
+          </div>
+        ) : (
         <section className="passport-maker-grid">
           <article className="customer-panel">
             <div className="customer-panel-head">
@@ -658,7 +689,12 @@ ${rowsHtml}
 
             {jobState === "done" && finalImageUrl ? (
               <div className="passport-final-preview">
-                <img src={apiUrl(finalImageUrl)} alt="Final passport photo" />
+                <div className="passport-final-preview-frame">
+                  <img src={apiUrl(finalImageUrl)} alt="Final passport photo" />
+                  <span className="passport-final-preview-badge">
+                    <Check size={12} /> Ready
+                  </span>
+                </div>
               </div>
             ) : null}
 
@@ -670,6 +706,37 @@ ${rowsHtml}
               </p>
             ) : null}
 
+            {jobState === "idle" ? (
+              <div className="passport-photo-guide">
+                <div className="passport-photo-guide-group">
+                  <span className="passport-photo-guide-label good">Good examples</span>
+                  <div className="passport-photo-guide-row">
+                    {goodPhotoExamples.map((example) => (
+                      <figure key={example.caption}>
+                        <span className="passport-photo-guide-thumb">
+                          <img src={example.src} alt={example.caption} onError={(event) => { event.currentTarget.style.display = "none"; }} />
+                        </span>
+                        <figcaption>{example.caption}</figcaption>
+                      </figure>
+                    ))}
+                  </div>
+                </div>
+                <div className="passport-photo-guide-group">
+                  <span className="passport-photo-guide-label avoid">Avoid</span>
+                  <div className="passport-photo-guide-row">
+                    {avoidPhotoExamples.map((example) => (
+                      <figure key={example.caption}>
+                        <span className="passport-photo-guide-thumb">
+                          <img src={example.src} alt={example.caption} onError={(event) => { event.currentTarget.style.display = "none"; }} />
+                        </span>
+                        <figcaption>{example.caption}</figcaption>
+                      </figure>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : null}
+
             {jobState === "not_found" && jobId !== null ? (
               <button className="passport-preview-button" type="button" onClick={retryCheck}>
                 <RefreshCw size={18} /> Retry
@@ -677,6 +744,7 @@ ${rowsHtml}
             ) : null}
           </article>
         </section>
+        )}
       </div>
 
       {isPreviewOpen && file ? (
@@ -697,6 +765,9 @@ ${rowsHtml}
             <div className="document-preview-actions">
               <button type="button" onClick={() => setIsPreviewOpen(false)}>
                 <X size={16} /> Close Preview
+              </button>
+              <button type="button" onClick={() => { setIsPreviewOpen(false); setIsCropOpen(true); }}>
+                <Crop size={16} /> Crop Photo
               </button>
               <button type="button" onClick={clearUpload}>
                 <Trash2 size={16} /> Remove File

@@ -31,7 +31,7 @@ const sections = [
   //   bullets: [
   //     "Service credit top-ups are non-refundable once the amount is credited to your RepetiGo Service Credits balance, except where required by law or in case of a duplicate/failed transaction that was incorrectly charged.",
   //     "Unused Service Credits balance can be used for future print and passport photo jobs at any time; it does not expire.",
-  //     "If a payment is deducted from your bank account or card but not credited to your Service Credits balance due to a technical error, contact billing@repetigo.com with your transaction reference within 7 days for reconciliation and refund.",
+  //     "If a payment is deducted from your bank account or card but not credited to your Service Credits balance due to a technical error, contact support@repetigo.com with your transaction reference within 7 days for reconciliation and refund.",
   //   ],
   // },
   {
@@ -63,7 +63,7 @@ const sections = [
   {
     id: "contact",
     title: "5. Contact for Refund Requests",
-    body: [`For any refund or cancellation request, email billing@repetigo.com or support@repetigo.com from your registered account email, or write to us at ${formattedAddress()}.`],
+    body: [`For any refund or cancellation request, email support@repetigo.com or support@repetigo.com from your registered account email, or write to us at ${formattedAddress()}.`],
   },
 ];
 
