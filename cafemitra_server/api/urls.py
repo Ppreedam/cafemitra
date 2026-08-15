@@ -57,6 +57,16 @@ urlpatterns = [
     re_path(r"^tools/enhance-background-image/?$", views.enhance_background_image),  # POST refine edges/remove color halo from an already-transparent PNG
     re_path(r"^tools/website-to-image/?$", views.website_to_image),  # POST screenshot a public URL via configured provider
     re_path(r"^tools/detect-faces/?$", views.detect_faces),  # POST return normalized face bounding boxes for an uploaded image
+    re_path(r"^tools/resume-builder-charge/?$", views.resume_builder_charge),  # POST gate+charge one resume PDF download for the given template (free until ToolPricing rows are configured)
+    re_path(r"^tools/resume-builder/save/?$", views.resume_builder_save),  # POST save/update a resume draft as a PrintOrder (free, no wallet charge)
+    re_path(r"^tools/resume-builder/saved/?$", views.resume_builder_saved_list),  # GET the caller's saved resumes
+    re_path(r"^tools/resume-builder/saved/(?P<order_id>[0-9]+)/delete/?$", views.resume_builder_delete),  # POST delete one saved resume
+    re_path(r"^tools/resume-builder/saved/(?P<order_id>[0-9]+)/mark-paid/?$", views.mark_resume_order_paid),  # POST owner confirms cash payment for a customer's resume order
+    re_path(r"^tools/biodata-maker-charge/?$", views.biodata_maker_charge),  # POST gate+charge one biodata PDF download for the given template (free until ToolPricing rows are configured)
+    re_path(r"^tools/biodata-maker/save/?$", views.biodata_maker_save),  # POST save/update a biodata draft as a PrintOrder (free, no wallet charge)
+    re_path(r"^tools/biodata-maker/saved/?$", views.biodata_maker_saved_list),  # GET the caller's saved biodatas
+    re_path(r"^tools/biodata-maker/saved/(?P<order_id>[0-9]+)/delete/?$", views.biodata_maker_delete),  # POST delete one saved biodata
+    re_path(r"^tools/biodata-maker/saved/(?P<order_id>[0-9]+)/mark-paid/?$", views.mark_biodata_order_paid),  # POST owner confirms cash payment for a customer's biodata order
 
     # --- Auth -----------------------------------------------------------
     re_path(r"^auth/register/?$", views.register_user),  # POST create account, sends email verification link
@@ -98,6 +108,8 @@ urlpatterns = [
     # --- Public Shop And Orders (anonymous, customer-facing) ---------------
     re_path(r"^public-shop/(?P<code>[^/]+)/?$", views.public_shop_by_code),  # GET shop profile + services by cafe code
     re_path(r"^public-shop/(?P<code>[^/]+)/orders/?$", views.public_print_order),  # POST create a print/passport-photo order for a shop
+    re_path(r"^public-shop/(?P<code>[^/]+)/resume-builder/save/?$", views.public_resume_order),  # POST anonymous customer create/update their own resume order for a shop
+    re_path(r"^public-shop/(?P<code>[^/]+)/biodata-maker/save/?$", views.public_biodata_order),  # POST anonymous customer create/update their own biodata order for a shop
     re_path(r"^public-orders/(?P<order_id>[0-9]+)/?$", views.public_order_status),  # GET current status of a public order
     re_path(r"^public-orders/(?P<order_id>[0-9]+)/check-upi-payment/?$", views.public_check_upi_payment),  # POST poll UPI collect status for an order
     re_path(r"^public-orders/(?P<order_id>[0-9]+)/razorpay/order/?$", views.public_create_razorpay_order),  # POST create a Razorpay order for online payment

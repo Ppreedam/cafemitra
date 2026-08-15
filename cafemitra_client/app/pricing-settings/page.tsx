@@ -431,11 +431,15 @@ export default function PricingSettingsPage() {
 const toolHrefByServiceKey: Record<string, string> = {
   auto_document_print: "/auto-print",
   passport_photo: "/passport-photo",
+  resume_builder: "/resume-builder",
+  biodata_maker: "/biodata-maker",
 };
 
 const toolIconByServiceKey: Record<string, LucideIcon> = {
   auto_document_print: Printer,
   passport_photo: IdCard,
+  resume_builder: FileText,
+  biodata_maker: Users,
 };
 
 function getServiceIcon(serviceKey: string) {

@@ -34,6 +34,21 @@ export type TestPrintResult = {
   printers?: string[];
 };
 
+export type PrintFileRequest = {
+  printer: string;
+  fileName: string;
+  pdfBase64: string;
+  paperSize?: string;
+  colorMode?: string;
+};
+
+export type PrintFileResult = {
+  message?: string;
+  printer?: string;
+  printedAt?: string;
+  printers?: string[];
+};
+
 export type PrinterPreset = {
   printer: string;
   paperSize: string;
@@ -55,6 +70,7 @@ const agentStatusEndpoints = ["http://127.0.0.1:8765/status"];
 const agentSettingsEndpoints = ["http://127.0.0.1:8765/settings"];
 const agentTestPrintEndpoints = ["http://127.0.0.1:8765/test-print"];
 const agentPosterPrintEndpoints = ["http://127.0.0.1:8765/poster-print"];
+const agentPrintFileEndpoints = ["http://127.0.0.1:8765/print-file"];
 const agentPrinterPresetsEndpoints = ["http://127.0.0.1:8765/printer-presets"];
 const agentDeletePrinterPresetEndpoints = ["http://127.0.0.1:8765/printer-presets/delete"];
 const agentRequestTimeoutMs = 5000;
@@ -90,6 +106,17 @@ export async function runAgentTestPrint(request: TestPrintRequest) {
 
 export async function runAgentPosterPrint(request: TestPrintRequest) {
   return fetchAgentEndpoint<TestPrintResult>(agentPosterPrintEndpoints, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  }, agentPrintRequestTimeoutMs);
+}
+
+/// Prints an arbitrary already-generated PDF (e.g. a Resume Builder download)
+/// directly on the shop's configured printer via the local desktop agent -
+/// no server-side PrintJob involved, unlike the QR-order queue.
+export async function runAgentPrintFile(request: PrintFileRequest) {
+  return fetchAgentEndpoint<PrintFileResult>(agentPrintFileEndpoints, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(request),
@@ -156,6 +183,7 @@ function getAgentFallbackMessage(init: RequestInit | undefined, endpoint: string
     return endpoint.includes("printer-presets") ? "Could not load printer settings." : "Agent health check failed.";
   }
   if (endpoint.includes("poster-print")) return "Could not print QR poster.";
+  if (endpoint.includes("print-file")) return "Could not print via PrintPilot.";
   if (endpoint.includes("test-print")) return "Could not run test print.";
   if (endpoint.includes("printer-presets/delete")) return "Could not delete printer setting.";
   if (endpoint.includes("printer-presets")) return "Could not save printer setting.";

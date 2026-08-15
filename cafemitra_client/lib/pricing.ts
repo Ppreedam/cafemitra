@@ -46,6 +46,36 @@ export const defaultPricingServices: PricingService[] = [
       priceItems: [{ id: "six_pcs", label: "6 pcs", rate: 30 }],
     },
   },
+  {
+    serviceKey: "resume_builder",
+    serviceName: "Resume Builder",
+    settings: {
+      paymentMode: "Online Payment",
+      priceItems: [
+        { id: "classic", label: "Classic template", rate: 15 },
+        { id: "modern", label: "Modern template", rate: 20 },
+        { id: "minimal", label: "Minimal template", rate: 15 },
+        { id: "elegant", label: "Elegant template", rate: 20 },
+        { id: "bold", label: "Bold template", rate: 20 },
+        { id: "sidebar", label: "Sidebar Photo template", rate: 25 },
+        { id: "sidebar-right", label: "Sidebar Photo (Right) template", rate: 25 },
+        { id: "ats", label: "ATS-Ultra template", rate: 15 },
+        { id: "timeline", label: "Timeline template", rate: 20 },
+      ],
+    },
+  },
+  {
+    serviceKey: "biodata_maker",
+    serviceName: "Biodata Maker",
+    settings: {
+      paymentMode: "Online Payment",
+      priceItems: [
+        { id: "classic", label: "Classic template", rate: 15 },
+        { id: "modern", label: "Modern template", rate: 20 },
+        { id: "simple", label: "Simple template", rate: 10 },
+      ],
+    },
+  },
 ];
 
 export async function fetchPricingServices() {

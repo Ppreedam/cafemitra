@@ -1,4 +1,4 @@
-import { ClipboardList, FileText, Home, IdCard, Image, Printer, type LucideIcon } from "lucide-react";
+import { ClipboardList, FileText, FileUser, Home, IdCard, Image, Printer, Users, type LucideIcon } from "lucide-react";
 import { pdfTools, pdfToolHref } from "./pdfToolsData";
 import { imageTools } from "./imageToolsData";
 
@@ -14,6 +14,8 @@ const coreServices: SearchableTool[] = [
   { name: "Orders", href: "/orders", icon: ClipboardList, group: "Core" },
   { name: "PrintPilot", href: "/auto-print", icon: Printer, group: "Services" },
   { name: "Passport Photo", href: "/passport-photo", icon: IdCard, group: "Services" },
+  { name: "Resume Builder", href: "/resume-builder", icon: FileUser, group: "Services" },
+  { name: "Biodata Maker", href: "/biodata-maker", icon: Users, group: "Services" },
 ];
 
 export const toolsCatalog: SearchableTool[] = [
