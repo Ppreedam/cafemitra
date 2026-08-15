@@ -7,10 +7,12 @@ import {
   CircleHelp,
   ClipboardList,
   FileText,
+  FileUser,
   Home,
   IdCard,
   Image,
   Printer,
+  Users,
   UserRound,
   type LucideIcon,
 } from "lucide-react";
@@ -46,6 +48,8 @@ const navGroups: NavGroup[] = [
       { name: "Passport Photo", icon: IdCard, href: "/passport-photo", match: ["/passport-photo"], serviceKey: "passport_photo" },
       { name: "PDF Tools", icon: FileText, href: "/pdf-tools", match: ["/pdf-tools"], serviceKey: "pdf_tools" },
       { name: "Image Tools", icon: Image, href: "/image-tools", match: ["/image-tools"], serviceKey: "image_tools" },
+      { name: "Resume Builder", icon: FileUser, href: "/resume-builder", match: ["/resume-builder"], serviceKey: "resume_builder" },
+      { name: "Biodata Maker", icon: Users, href: "/biodata-maker", match: ["/biodata-maker"], serviceKey: "biodata_maker" },
     ],
   },
 ];

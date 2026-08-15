@@ -204,6 +204,23 @@ export default function OrdersPage() {
     }
   }
 
+  async function markToolOrderPaid(orderId: number, endpoint: string) {
+    setMarkingPaidId(orderId);
+    setActionError("");
+    try {
+      const response = await apiFetch(endpoint, { method: "POST" });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.message || "Could not mark this order as paid.");
+      // The resume/biodata endpoints return their own summary shape, not
+      // public_order() - patch just paymentStatus rather than overwriting the whole row.
+      setOrders((current) => current.map((order) => (order.id === orderId ? { ...order, paymentStatus: result.paymentStatus } : order)));
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : "Could not mark this order as paid.");
+    } finally {
+      setMarkingPaidId(null);
+    }
+  }
+
   async function openCompare(order: Order) {
     // The list response omits the base64 photo payloads to keep /api/orders/
     // fast - fetch the single order here to get the actual image data.
@@ -370,6 +387,14 @@ export default function OrdersPage() {
                                 {order.fileName || "Document"}
                               </button>
                             ) : null
+                          ) : order.serviceKey === "resume_builder" ? (
+                            <Link href={`/resume-builder/build?savedId=${order.id}`} className="orders-print-link">
+                              <FileText size={14} /> Open
+                            </Link>
+                          ) : order.serviceKey === "biodata_maker" ? (
+                            <Link href={`/biodata-maker/build?savedId=${order.id}`} className="orders-print-link">
+                              <FileText size={14} /> Open
+                            </Link>
                           ) : order.fileUrl ? (
                             <a href={apiUrl(order.fileUrl)} target="_blank" rel="noreferrer">
                               {order.fileName || "Document"}
@@ -391,6 +416,24 @@ export default function OrdersPage() {
                               className="orders-mark-paid-link"
                               disabled={markingPaidId === order.id}
                               onClick={() => markOrderPaid(order.id)}
+                            >
+                              {markingPaidId === order.id ? "Marking..." : "Mark as Paid"}
+                            </button>
+                          ) : order.serviceKey === "resume_builder" && order.paymentMode === "Cash" && order.paymentStatus === "no_payment" ? (
+                            <button
+                              type="button"
+                              className="orders-mark-paid-link"
+                              disabled={markingPaidId === order.id}
+                              onClick={() => markToolOrderPaid(order.id, `/api/tools/resume-builder/saved/${order.id}/mark-paid/`)}
+                            >
+                              {markingPaidId === order.id ? "Marking..." : "Mark as Paid"}
+                            </button>
+                          ) : order.serviceKey === "biodata_maker" && order.paymentMode === "Cash" && order.paymentStatus === "no_payment" ? (
+                            <button
+                              type="button"
+                              className="orders-mark-paid-link"
+                              disabled={markingPaidId === order.id}
+                              onClick={() => markToolOrderPaid(order.id, `/api/tools/biodata-maker/saved/${order.id}/mark-paid/`)}
                             >
                               {markingPaidId === order.id ? "Marking..." : "Mark as Paid"}
                             </button>

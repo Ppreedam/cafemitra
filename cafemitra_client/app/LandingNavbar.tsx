@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 import {
   ArrowRight,
   Archive,
   Bot,
+  BookUser,
   ChevronDown,
   Crop,
   FileWarning,
@@ -16,6 +17,7 @@ import {
   FileOutput,
   FilePenLine,
   FileText,
+  FileUser,
   Files,
   IdCard,
   Menu,
@@ -30,11 +32,13 @@ import {
   ListOrdered,
   Presentation,
   ReceiptText,
+  Search,
   Shield,
   Users,
   X,
 } from "lucide-react";
 import { HomeHeaderActions } from "./HomeHeaderActions";
+import { ToolSearch } from "./ToolSearch";
 import { hasStoredSession } from "@/lib/api";
 import { releaseFlags } from "./release-flags";
 import { blogPosts } from "./blog-data";
@@ -48,6 +52,24 @@ const serviceMenu = [
     summary: "AI-powered print queue, counter workflow, and printer automation.",
     description: "Manage queues, shop terminals, uploads, billing, and print status from one calm dashboard.",
     metric: "Live queue",
+  },
+  {
+    name: "Resume Builder",
+    href: "/resume-builder",
+    icon: FileUser,
+    color: "#16a34a",
+    summary: "Build and print professional resumes with ready-made templates.",
+    description: "Pick a template, fill in details, and print a polished resume right from the counter.",
+    metric: "Resume templates",
+  },
+  {
+    name: "Biodata Maker",
+    href: "/biodata-maker",
+    icon: BookUser,
+    color: "#c026d3",
+    summary: "Build and print matrimonial or general biodata with ready-made templates.",
+    description: "Pick a template, fill in personal and family details, and print a clean biodata right from the counter.",
+    metric: "Biodata templates",
   },
   // {
   //   name: "Document AI",
@@ -155,6 +177,8 @@ export function LandingNavbar() {
   const [showNotice, setShowNotice] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchWrapRef = useRef<HTMLDivElement>(null);
   const isHomeActive = pathname === "/";
   const isServicesActive = pathname === "/print-automation";
   const isPdfToolsActive = pathname.startsWith("/pdf-tools");
@@ -168,7 +192,19 @@ export function LandingNavbar() {
 
   useEffect(() => {
     setIsMobileMenuOpen(false);
+    setIsSearchOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    if (!isSearchOpen) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (searchWrapRef.current && !searchWrapRef.current.contains(event.target as Node)) {
+        setIsSearchOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [isSearchOpen]);
 
   return (
     <header className="site-header">
@@ -218,6 +254,22 @@ export function LandingNavbar() {
           </Link>
         </nav>
         <div className="header-inner-right">
+          <div className="nav-search-wrap" ref={searchWrapRef}>
+            <button
+              type="button"
+              className="nav-search-toggle"
+              aria-label={isSearchOpen ? "Close search" : "Search tools"}
+              aria-expanded={isSearchOpen}
+              onClick={() => setIsSearchOpen((open) => !open)}
+            >
+              {isSearchOpen ? <X size={18} aria-hidden /> : <Search size={18} aria-hidden />}
+            </button>
+            {isSearchOpen ? (
+              <div className="nav-search-panel">
+                <ToolSearch />
+              </div>
+            ) : null}
+          </div>
           <HomeHeaderActions />
           <button
             type="button"

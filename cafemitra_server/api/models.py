@@ -231,6 +231,20 @@ class PrintOrder(models.Model):
     photo_error_message = models.TextField(blank=True, default="")
     photo_updated_at = models.DateTimeField(null=True, blank=True)
 
+    # resume_builder-specific: the full structured resume (name, sections,
+    # experience, etc.) as JSON, so a saved resume can be reopened and
+    # edited later - not just re-downloaded. Reusing PrintOrder (rather than
+    # a bespoke table) keeps this on the same wallet/order-history rails as
+    # every other tool, so it stays reusable for a future B2C flow (a cafe
+    # generating a resume for a walk-in customer) without a separate model.
+    resume_data = models.JSONField(null=True, blank=True)
+
+    # biodata_maker-specific: same reasoning as resume_data above - the full
+    # structured biodata (personal, family, astrology details) as JSON, on
+    # the same PrintOrder rails so it's reusable for both the owner's
+    # authenticated builder and a future B2C flow.
+    biodata_data = models.JSONField(null=True, blank=True)
+
     class Meta:
         ordering = ["-created_at"]
         indexes = [models.Index(fields=["user", "token_number"])]

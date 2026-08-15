@@ -77,6 +77,42 @@ DEFAULT_SERVICE_PRICING = {
             "priceItems": [{"id": "six_pcs", "label": "6 pcs", "rate": 30}],
         },
     },
+    "resume_builder": {
+        "serviceName": "Resume Builder",
+        "settings": {
+            "paymentMode": "Online Payment",
+            # One price item per resume template (RESUME_BUILDER_TEMPLATES) -
+            # what THIS shop charges its own walk-in customer for that
+            # template, separate from RepetiGo's own resume_builder_<template>
+            # ToolPricing fee charged to the shop's wallet.
+            "priceItems": [
+                {"id": "classic", "label": "Classic template", "rate": 15},
+                {"id": "modern", "label": "Modern template", "rate": 20},
+                {"id": "minimal", "label": "Minimal template", "rate": 15},
+                {"id": "elegant", "label": "Elegant template", "rate": 20},
+                {"id": "bold", "label": "Bold template", "rate": 20},
+                {"id": "sidebar", "label": "Sidebar Photo template", "rate": 25},
+                {"id": "sidebar-right", "label": "Sidebar Photo (Right) template", "rate": 25},
+                {"id": "ats", "label": "ATS-Ultra template", "rate": 15},
+                {"id": "timeline", "label": "Timeline template", "rate": 20},
+            ],
+        },
+    },
+    "biodata_maker": {
+        "serviceName": "Biodata Maker",
+        "settings": {
+            "paymentMode": "Online Payment",
+            # One price item per biodata template (BIODATA_MAKER_TEMPLATES) -
+            # what THIS shop charges its own walk-in customer for that
+            # template, separate from RepetiGo's own biodata_maker_<template>
+            # ToolPricing fee charged to the shop's wallet.
+            "priceItems": [
+                {"id": "classic", "label": "Classic template", "rate": 15},
+                {"id": "modern", "label": "Modern template", "rate": 20},
+                {"id": "simple", "label": "Simple template", "rate": 10},
+            ],
+        },
+    },
 }
 
 
@@ -241,6 +277,609 @@ def remove_image_background(request):
     response["Content-Disposition"] = f'attachment; filename="{base_name}-no-bg.png"'
     response["Cache-Control"] = "no-store"
     return response
+
+
+# Keep in sync with TemplateId in cafemitra_client/app/resume-builder/templates.ts.
+RESUME_BUILDER_TEMPLATES = {"classic", "modern", "minimal", "elegant", "bold", "sidebar", "sidebar-right", "ats", "timeline"}
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def resume_builder_charge(request):
+    """Gate + charge a resume PDF download. Called by the client right before
+    it generates the PDF (which happens entirely in the browser via pdf-lib -
+    there's no server-side file to build here). Each template (see
+    RESUME_BUILDER_TEMPLATES) is its own ToolPricing row
+    (resume_builder_<template>) so prices can differ per template from
+    Django admin without a code change. A tool with no row, is_billable=False,
+    or price 0 stays free.
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Please log in to download your resume."}, status=401)
+
+    body = parse_body(request)
+    template = body.get("template")
+    if template not in RESUME_BUILDER_TEMPLATES:
+        template = "classic"
+    tool_key = f"resume_builder_{template}"
+
+    allowed, limit_message = wallet_usage_gate(user, tool_key)
+    if not allowed:
+        return JsonResponse({"message": limit_message}, status=402)
+
+    charged, charge_message, _txn = charge_wallet_for_tool(user, tool_key)
+    if not charged:
+        return JsonResponse({"message": charge_message}, status=402)
+
+    return JsonResponse({"ok": True, "toolKey": tool_key})
+
+
+def resume_order_summary(order):
+    return {
+        "id": order.id,
+        "template": order.price_item_id,
+        "label": order.price_label or "Untitled resume",
+        "data": order.resume_data or {},
+        "createdAt": order.created_at.isoformat(),
+        "forCustomer": order.payment_mode in {"Cash", "Online"},
+        "paymentMode": order.payment_mode,
+        "paymentStatus": order.payment_status,
+        "paymentGateway": order.payment_gateway,
+        "gatewayOrderId": order.gateway_order_id,
+        "totalAmount": float(order.total_amount),
+        "customerPhone": order.customer_phone,
+    }
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def resume_builder_save(request):
+    """Save (or update) a resume draft as a PrintOrder row. Reusing PrintOrder
+    rather than a bespoke table means a saved resume already rides the same
+    order-history rails as every other tool.
+
+    Two modes, chosen by the client's `forCustomer` flag:
+    - Personal draft (default): free, no charge, `payment_mode="No Payment"`.
+    - For a walk-in customer: looks up this shop's own resume_builder
+      ServicePricing (what THEY charge their customer for that template -
+      separate from RepetiGo's resume_builder_<template> ToolPricing fee,
+      which is still charged separately via resume_builder_charge on
+      download/print). `paymentMode` from the client picks "Cash" (awaiting
+      the owner's Mark as Paid) or "Online" (awaiting Razorpay checkout via
+      the existing public_create_razorpay_order/public_verify_razorpay_payment
+      endpoints, which work off any PrintOrder id already).
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Please log in to save your resume."}, status=401)
+
+    body = parse_body(request)
+    data = body.get("data")
+    if not isinstance(data, dict):
+        return JsonResponse({"message": "No resume data received."}, status=400)
+
+    template = data.get("template")
+    if template not in RESUME_BUILDER_TEMPLATES:
+        template = "classic"
+    label = (str(data.get("fullName") or "").strip() or "Untitled resume")[:160]
+
+    for_customer = bool(body.get("forCustomer"))
+    customer_payment_mode = str(body.get("paymentMode", "")).strip().lower()
+
+    if for_customer:
+        ensure_service_pricing(user)
+        pricing = ServicePricing.objects.filter(user=user, service_key="resume_builder").first()
+        rate = pricing_rate(pricing.settings if pricing else {}, template, 1, Decimal("0.00"))
+        payment_mode = "Online" if customer_payment_mode == "online" else "Cash"
+        payment_status = PrintOrder.PAYMENT_PENDING if payment_mode == "Online" else PrintOrder.PAYMENT_NO_PAYMENT
+        payment_gateway = (active_payment_gateway()[0] or "") if payment_mode == "Online" else ""
+        customer_phone = str(data.get("phone") or "").strip()
+    else:
+        rate = Decimal("0.00")
+        payment_mode = "No Payment"
+        payment_status = PrintOrder.PAYMENT_NO_PAYMENT
+        payment_gateway = ""
+        customer_phone = ""
+
+    order = None
+    order_id = body.get("orderId")
+    if order_id:
+        order = PrintOrder.objects.filter(id=order_id, user=user, service_key="resume_builder").first()
+
+    if order:
+        order.resume_data = data
+        order.price_item_id = template
+        order.price_label = label
+        update_fields = ["resume_data", "price_item_id", "price_label"]
+        # Only a still-unpaid order can be re-priced/re-targeted - once a
+        # customer has actually paid, editing the resume shouldn't silently
+        # change what they were charged or who it was billed to.
+        if for_customer and order.payment_status != PrintOrder.PAYMENT_PAID:
+            order.rate = rate
+            order.total_amount = rate
+            order.payment_mode = payment_mode
+            order.payment_status = payment_status
+            order.payment_gateway = payment_gateway
+            order.customer_phone = customer_phone
+            update_fields += ["rate", "total_amount", "payment_mode", "payment_status", "payment_gateway", "customer_phone"]
+        order.save(update_fields=update_fields)
+    else:
+        token_number, token_id = next_order_token(user)
+        order = PrintOrder.objects.create(
+            user=user,
+            shop_code=cafe_code_for_user(user),
+            token_number=token_number,
+            token_id=token_id,
+            service_key="resume_builder",
+            service_name="Resume Builder",
+            price_item_id=template,
+            price_label=label,
+            rate=rate,
+            pages=1,
+            copies=1,
+            total_amount=rate,
+            payment_mode=payment_mode,
+            payment_status=payment_status,
+            payment_gateway=payment_gateway,
+            customer_phone=customer_phone,
+            # Not STATUS_QUEUED on purpose - that status (and PAYMENT_PENDING
+            # via public_verify_razorpay_payment) is what the desktop Print
+            # Agent's job poll would otherwise pick up (agent_jobs already
+            # excludes service_key="resume_builder" as a second guard). A
+            # saved/paid-for resume isn't a print job; only the separate
+            # "Print via PrintPilot" action ever queues physical printing.
+            status=PrintOrder.STATUS_PRINTED,
+            resume_data=data,
+        )
+
+    return JsonResponse(resume_order_summary(order))
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def mark_resume_order_paid(request, order_id):
+    """Owner confirms cash was collected for a customer's resume - mirrors
+    mark_passport_order_paid. Unlocks that order's clean (non-watermarked)
+    download for the customer.
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    order = PrintOrder.objects.filter(id=order_id, user=user, service_key="resume_builder").first()
+    if not order:
+        return JsonResponse({"message": "Order not found."}, status=404)
+    if order.payment_mode != "Cash" or order.payment_status != PrintOrder.PAYMENT_NO_PAYMENT:
+        return JsonResponse({"message": "Only unpaid cash resume orders can be marked as paid."}, status=400)
+
+    order.payment_status = PrintOrder.PAYMENT_PAID
+    order.paid_at = timezone.now()
+    order.save(update_fields=["payment_status", "paid_at"])
+    # RepetiGo's own per-template fee (separate from what the customer just
+    # paid the shop) is charged exactly once, right here - the moment the
+    # cash payment is actually confirmed, mirroring the online-payment path
+    # in public_verify_razorpay_payment. charge_wallet_for_tool/
+    # create_wallet_transaction dedupe on (user, order, kind), so a retried
+    # click can't double-charge.
+    charge_wallet_for_tool(order.user, f"resume_builder_{order.price_item_id}", order=order)
+    return JsonResponse(resume_order_summary(order))
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def public_resume_order(request, code):
+    """Anonymous equivalent of resume_builder_save's for_customer branch -
+    lets a walk-in customer at /s/<code> build and pay for their own resume
+    from their own phone, without a cafe login. Always for-customer (Cash or
+    Online); there's no "personal draft" concept here since there's no
+    account to save a draft against.
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = user_from_cafe_code(code)
+    if not user:
+        return JsonResponse({"message": "Cafe not found."}, status=404)
+
+    body = parse_body(request)
+    data = body.get("data")
+    if not isinstance(data, dict):
+        return JsonResponse({"message": "No resume data received."}, status=400)
+
+    template = data.get("template")
+    if template not in RESUME_BUILDER_TEMPLATES:
+        template = "classic"
+    label = (str(data.get("fullName") or "").strip() or "Untitled resume")[:160]
+
+    ensure_service_pricing(user)
+    pricing = ServicePricing.objects.filter(user=user, service_key="resume_builder").first()
+    rate = pricing_rate(pricing.settings if pricing else {}, template, 1, Decimal("0.00"))
+
+    allowed, gate_message = wallet_usage_gate(user, f"resume_builder_{template}")
+    if not allowed:
+        return JsonResponse({"message": gate_message}, status=402)
+
+    customer_payment_mode = str(body.get("paymentMode", "")).strip().lower()
+    payment_mode = "Online" if customer_payment_mode == "online" else "Cash"
+    payment_status = PrintOrder.PAYMENT_PENDING if payment_mode == "Online" else PrintOrder.PAYMENT_NO_PAYMENT
+    payment_gateway = (active_payment_gateway()[0] or "") if payment_mode == "Online" else ""
+    customer_phone = str(data.get("phone") or "").strip()
+
+    order = None
+    order_id = body.get("orderId")
+    if order_id:
+        # Scoped to this shop's own resume_builder orders that are already
+        # for-customer (Cash/Online) - a bare id can't touch a personal draft
+        # saved from the owner's authenticated dashboard.
+        order = PrintOrder.objects.filter(
+            id=order_id, user=user, service_key="resume_builder", payment_mode__in=["Cash", "Online"],
+        ).first()
+
+    if order:
+        if order.payment_status == PrintOrder.PAYMENT_PAID:
+            return JsonResponse({"message": "This resume has already been paid for."}, status=400)
+        order.resume_data = data
+        order.price_item_id = template
+        order.price_label = label
+        order.rate = rate
+        order.total_amount = rate
+        order.payment_mode = payment_mode
+        order.payment_status = payment_status
+        order.payment_gateway = payment_gateway
+        order.customer_phone = customer_phone
+        order.save(update_fields=[
+            "resume_data", "price_item_id", "price_label", "rate", "total_amount",
+            "payment_mode", "payment_status", "payment_gateway", "customer_phone",
+        ])
+    else:
+        token_number, token_id = next_order_token(user)
+        order = PrintOrder.objects.create(
+            user=user,
+            shop_code=cafe_code_for_user(user),
+            token_number=token_number,
+            token_id=token_id,
+            service_key="resume_builder",
+            service_name="Resume Builder",
+            price_item_id=template,
+            price_label=label,
+            rate=rate,
+            pages=1,
+            copies=1,
+            total_amount=rate,
+            payment_mode=payment_mode,
+            payment_status=payment_status,
+            payment_gateway=payment_gateway,
+            customer_phone=customer_phone,
+            status=PrintOrder.STATUS_PRINTED,
+            resume_data=data,
+        )
+
+    return JsonResponse(resume_order_summary(order))
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def resume_builder_saved_list(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Please log in to see your saved resumes."}, status=401)
+
+    orders = PrintOrder.objects.filter(user=user, service_key="resume_builder").order_by("-created_at")[:100]
+    return JsonResponse({"resumes": [resume_order_summary(order) for order in orders]})
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def resume_builder_delete(request, order_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Please log in."}, status=401)
+
+    deleted, _ = PrintOrder.objects.filter(id=order_id, user=user, service_key="resume_builder").delete()
+    if not deleted:
+        return JsonResponse({"message": "Resume not found."}, status=404)
+    return JsonResponse({"ok": True})
+
+
+# Keep in sync with BiodataTemplateId in cafemitra_client/app/biodata-maker/templates.ts.
+BIODATA_MAKER_TEMPLATES = {"classic", "modern", "simple"}
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def biodata_maker_charge(request):
+    """Gate + charge a biodata PDF download. Mirrors resume_builder_charge -
+    the PDF is built entirely client-side via pdf-lib, so this only gates and
+    charges RepetiGo's own per-template fee (biodata_maker_<template>).
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Please log in to download your biodata."}, status=401)
+
+    body = parse_body(request)
+    template = body.get("template")
+    if template not in BIODATA_MAKER_TEMPLATES:
+        template = "classic"
+    tool_key = f"biodata_maker_{template}"
+
+    allowed, limit_message = wallet_usage_gate(user, tool_key)
+    if not allowed:
+        return JsonResponse({"message": limit_message}, status=402)
+
+    charged, charge_message, _txn = charge_wallet_for_tool(user, tool_key)
+    if not charged:
+        return JsonResponse({"message": charge_message}, status=402)
+
+    return JsonResponse({"ok": True, "toolKey": tool_key})
+
+
+def biodata_order_summary(order):
+    return {
+        "id": order.id,
+        "template": order.price_item_id,
+        "label": order.price_label or "Untitled biodata",
+        "data": order.biodata_data or {},
+        "createdAt": order.created_at.isoformat(),
+        "forCustomer": order.payment_mode in {"Cash", "Online"},
+        "paymentMode": order.payment_mode,
+        "paymentStatus": order.payment_status,
+        "paymentGateway": order.payment_gateway,
+        "gatewayOrderId": order.gateway_order_id,
+        "totalAmount": float(order.total_amount),
+        "customerPhone": order.customer_phone,
+    }
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def biodata_maker_save(request):
+    """Save (or update) a biodata draft as a PrintOrder row. Mirrors
+    resume_builder_save - see that docstring for the personal-draft vs.
+    for-customer distinction.
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Please log in to save your biodata."}, status=401)
+
+    body = parse_body(request)
+    data = body.get("data")
+    if not isinstance(data, dict):
+        return JsonResponse({"message": "No biodata received."}, status=400)
+
+    template = data.get("template")
+    if template not in BIODATA_MAKER_TEMPLATES:
+        template = "classic"
+    label = (str(data.get("fullName") or "").strip() or "Untitled biodata")[:160]
+
+    for_customer = bool(body.get("forCustomer"))
+    customer_payment_mode = str(body.get("paymentMode", "")).strip().lower()
+
+    if for_customer:
+        ensure_service_pricing(user)
+        pricing = ServicePricing.objects.filter(user=user, service_key="biodata_maker").first()
+        rate = pricing_rate(pricing.settings if pricing else {}, template, 1, Decimal("0.00"))
+        payment_mode = "Online" if customer_payment_mode == "online" else "Cash"
+        payment_status = PrintOrder.PAYMENT_PENDING if payment_mode == "Online" else PrintOrder.PAYMENT_NO_PAYMENT
+        payment_gateway = (active_payment_gateway()[0] or "") if payment_mode == "Online" else ""
+        customer_phone = str(data.get("phone") or "").strip()
+    else:
+        rate = Decimal("0.00")
+        payment_mode = "No Payment"
+        payment_status = PrintOrder.PAYMENT_NO_PAYMENT
+        payment_gateway = ""
+        customer_phone = ""
+
+    order = None
+    order_id = body.get("orderId")
+    if order_id:
+        order = PrintOrder.objects.filter(id=order_id, user=user, service_key="biodata_maker").first()
+
+    if order:
+        order.biodata_data = data
+        order.price_item_id = template
+        order.price_label = label
+        update_fields = ["biodata_data", "price_item_id", "price_label"]
+        # Only a still-unpaid order can be re-priced/re-targeted - see
+        # resume_builder_save for why.
+        if for_customer and order.payment_status != PrintOrder.PAYMENT_PAID:
+            order.rate = rate
+            order.total_amount = rate
+            order.payment_mode = payment_mode
+            order.payment_status = payment_status
+            order.payment_gateway = payment_gateway
+            order.customer_phone = customer_phone
+            update_fields += ["rate", "total_amount", "payment_mode", "payment_status", "payment_gateway", "customer_phone"]
+        order.save(update_fields=update_fields)
+    else:
+        token_number, token_id = next_order_token(user)
+        order = PrintOrder.objects.create(
+            user=user,
+            shop_code=cafe_code_for_user(user),
+            token_number=token_number,
+            token_id=token_id,
+            service_key="biodata_maker",
+            service_name="Biodata Maker",
+            price_item_id=template,
+            price_label=label,
+            rate=rate,
+            pages=1,
+            copies=1,
+            total_amount=rate,
+            payment_mode=payment_mode,
+            payment_status=payment_status,
+            payment_gateway=payment_gateway,
+            customer_phone=customer_phone,
+            # Not STATUS_QUEUED on purpose - see resume_builder_save. Biodata
+            # orders are excluded from agent_jobs as a second guard.
+            status=PrintOrder.STATUS_PRINTED,
+            biodata_data=data,
+        )
+
+    return JsonResponse(biodata_order_summary(order))
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def mark_biodata_order_paid(request, order_id):
+    """Owner confirms cash was collected for a customer's biodata - mirrors
+    mark_resume_order_paid.
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    order = PrintOrder.objects.filter(id=order_id, user=user, service_key="biodata_maker").first()
+    if not order:
+        return JsonResponse({"message": "Order not found."}, status=404)
+    if order.payment_mode != "Cash" or order.payment_status != PrintOrder.PAYMENT_NO_PAYMENT:
+        return JsonResponse({"message": "Only unpaid cash biodata orders can be marked as paid."}, status=400)
+
+    order.payment_status = PrintOrder.PAYMENT_PAID
+    order.paid_at = timezone.now()
+    order.save(update_fields=["payment_status", "paid_at"])
+    charge_wallet_for_tool(order.user, f"biodata_maker_{order.price_item_id}", order=order)
+    return JsonResponse(biodata_order_summary(order))
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def public_biodata_order(request, code):
+    """Anonymous equivalent of biodata_maker_save's for_customer branch -
+    mirrors public_resume_order.
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = user_from_cafe_code(code)
+    if not user:
+        return JsonResponse({"message": "Cafe not found."}, status=404)
+
+    body = parse_body(request)
+    data = body.get("data")
+    if not isinstance(data, dict):
+        return JsonResponse({"message": "No biodata received."}, status=400)
+
+    template = data.get("template")
+    if template not in BIODATA_MAKER_TEMPLATES:
+        template = "classic"
+    label = (str(data.get("fullName") or "").strip() or "Untitled biodata")[:160]
+
+    ensure_service_pricing(user)
+    pricing = ServicePricing.objects.filter(user=user, service_key="biodata_maker").first()
+    rate = pricing_rate(pricing.settings if pricing else {}, template, 1, Decimal("0.00"))
+
+    allowed, gate_message = wallet_usage_gate(user, f"biodata_maker_{template}")
+    if not allowed:
+        return JsonResponse({"message": gate_message}, status=402)
+
+    customer_payment_mode = str(body.get("paymentMode", "")).strip().lower()
+    payment_mode = "Online" if customer_payment_mode == "online" else "Cash"
+    payment_status = PrintOrder.PAYMENT_PENDING if payment_mode == "Online" else PrintOrder.PAYMENT_NO_PAYMENT
+    payment_gateway = (active_payment_gateway()[0] or "") if payment_mode == "Online" else ""
+    customer_phone = str(data.get("phone") or "").strip()
+
+    order = None
+    order_id = body.get("orderId")
+    if order_id:
+        order = PrintOrder.objects.filter(
+            id=order_id, user=user, service_key="biodata_maker", payment_mode__in=["Cash", "Online"],
+        ).first()
+
+    if order:
+        if order.payment_status == PrintOrder.PAYMENT_PAID:
+            return JsonResponse({"message": "This biodata has already been paid for."}, status=400)
+        order.biodata_data = data
+        order.price_item_id = template
+        order.price_label = label
+        order.rate = rate
+        order.total_amount = rate
+        order.payment_mode = payment_mode
+        order.payment_status = payment_status
+        order.payment_gateway = payment_gateway
+        order.customer_phone = customer_phone
+        order.save(update_fields=[
+            "biodata_data", "price_item_id", "price_label", "rate", "total_amount",
+            "payment_mode", "payment_status", "payment_gateway", "customer_phone",
+        ])
+    else:
+        token_number, token_id = next_order_token(user)
+        order = PrintOrder.objects.create(
+            user=user,
+            shop_code=cafe_code_for_user(user),
+            token_number=token_number,
+            token_id=token_id,
+            service_key="biodata_maker",
+            service_name="Biodata Maker",
+            price_item_id=template,
+            price_label=label,
+            rate=rate,
+            pages=1,
+            copies=1,
+            total_amount=rate,
+            payment_mode=payment_mode,
+            payment_status=payment_status,
+            payment_gateway=payment_gateway,
+            customer_phone=customer_phone,
+            status=PrintOrder.STATUS_PRINTED,
+            biodata_data=data,
+        )
+
+    return JsonResponse(biodata_order_summary(order))
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def biodata_maker_saved_list(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Please log in to see your saved biodatas."}, status=401)
+
+    orders = PrintOrder.objects.filter(user=user, service_key="biodata_maker").order_by("-created_at")[:100]
+    return JsonResponse({"biodatas": [biodata_order_summary(order) for order in orders]})
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def biodata_maker_delete(request, order_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Please log in."}, status=401)
+
+    deleted, _ = PrintOrder.objects.filter(id=order_id, user=user, service_key="biodata_maker").delete()
+    if not deleted:
+        return JsonResponse({"message": "Biodata not found."}, status=404)
+    return JsonResponse({"ok": True})
 
 
 @csrf_exempt
@@ -2115,6 +2754,11 @@ def public_verify_razorpay_payment(request, order_id):
         order.paid_at = timezone.now()
         order.gateway_payment_id = payment_id
         order.save(update_fields=["payment_status", "status", "paid_at", "gateway_payment_id"])
+        if order.service_key == "resume_builder" and order.price_item_id:
+            # RepetiGo's per-template fee, charged the moment this customer's
+            # online payment actually clears - see the matching cash-path
+            # charge in mark_resume_order_paid.
+            charge_wallet_for_tool(order.user, f"resume_builder_{order.price_item_id}", order=order)
     return JsonResponse({"order": public_order(order)})
 
 
@@ -2781,7 +3425,11 @@ def agent_jobs(request):
 
     UserProfile.objects.filter(user=user).update(agent_last_seen_at=timezone.now())
 
-    jobs = PrintOrder.objects.filter(user=user).exclude(service_key="passport_photo").filter(
+    # resume_builder orders never enter the physical print queue - only the
+    # separate "Print via PrintPilot" flow (a direct agent call, not this
+    # queue) prints a resume. Excluding it here keeps a saved-but-unpaid
+    # (or even paid) resume draft from being picked up as a print job.
+    jobs = PrintOrder.objects.filter(user=user).exclude(service_key__in=["passport_photo", "resume_builder", "biodata_maker"]).filter(
         Q(status=PrintOrder.STATUS_QUEUED)
         | Q(status=PrintOrder.STATUS_AWAITING_APPROVAL, payment_status=PrintOrder.PAYMENT_CASH_COUNTER)
     ).order_by("created_at")[:20]

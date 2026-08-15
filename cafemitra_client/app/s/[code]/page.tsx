@@ -7,6 +7,8 @@ import { apiUrl } from "@/lib/api";
 import { calculatePriceItemRate, formatPriceItem, getAllowedPaymentModes, mergePricingDefaults, type PriceItem, type PricingService } from "@/lib/pricing";
 import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
 import { CropEditor, cropImage, loadImage, DEFAULT_CROP_RECT, type CropRect } from "../../CropEditor";
+import PublicResumeBuilder from "./PublicResumeBuilder";
+import PublicBiodataMaker from "./PublicBiodataMaker";
 
 type PublicShop = {
   code: string;
@@ -114,7 +116,12 @@ export default function CustomerScanPage() {
         return result;
       })
       .then((result: PublicShop) => {
-        const services = mergePricingDefaults(result.services);
+        // mergePricingDefaults backfills every known service (including ones
+        // the shop never exposed here, like resume_builder - that one is a
+        // cafe-staff-assisted flow, not a self-service upload) - keep only
+        // the services the backend actually returned for this shop.
+        const returnedKeys = new Set(result.services.map((service) => service.serviceKey));
+        const services = mergePricingDefaults(result.services).filter((service) => returnedKeys.has(service.serviceKey));
         setData({ ...result, services });
         setError("");
         setSelectedService(services[0]?.serviceKey || "auto_document_print");
@@ -818,17 +825,19 @@ export default function CustomerScanPage() {
 
       {isCafeOpen ? (
       <section className="customer-flow-grid">
-        <div className="customer-flow-guide" aria-label="Order steps">
-          <div className="customer-progress-summary">
-            <div>
-              <span>Step {activeStep} of {customerSteps.length}</span>
-              <strong>{progressPercent}% complete</strong>
-            </div>
-            <div className="customer-progress-track" aria-hidden="true">
-              <span style={{ width: `${progressPercent}%` }} />
+        {selectedService !== "resume_builder" && selectedService !== "biodata_maker" ? (
+          <div className="customer-flow-guide" aria-label="Order steps">
+            <div className="customer-progress-summary">
+              <div>
+                <span>Step {activeStep} of {customerSteps.length}</span>
+                <strong>{progressPercent}% complete</strong>
+              </div>
+              <div className="customer-progress-track" aria-hidden="true">
+                <span style={{ width: `${progressPercent}%` }} />
+              </div>
             </div>
           </div>
-        </div>
+        ) : null}
 
         {showServiceSelector ? (
           <article className={`customer-panel ${activeStep === 1 ? "is-guided" : ""}`}>
@@ -857,6 +866,12 @@ export default function CustomerScanPage() {
           </article>
         ) : null}
 
+        {selectedService === "resume_builder" ? (
+          <PublicResumeBuilder code={data.code} pricingService={activeService} stepNumber={showServiceSelector ? 2 : 1} />
+        ) : selectedService === "biodata_maker" ? (
+          <PublicBiodataMaker code={data.code} pricingService={activeService} stepNumber={showServiceSelector ? 2 : 1} />
+        ) : (
+        <>
         <article className={`customer-panel ${activeStep === (showServiceSelector ? 2 : 1) ? "is-guided" : ""}`}>
           <div className="customer-panel-head">
             <span>Step {showServiceSelector ? 2 : 1}</span>
@@ -1173,6 +1188,8 @@ export default function CustomerScanPage() {
             </button>
           )}
         </article>
+        </>
+        )}
       </section>
       ) : null}
 

@@ -17,6 +17,7 @@
     "docx": "^9.7.1",
     "gifenc": "^1.0.3",
     "heic2any": "^0.0.4",
+    "html2canvas": "^1.4.1",
     "imagetracerjs": "^1.2.6",
     "jszip": "^3.10.1",
     "lucide-react": "0.468.0",
