@@ -3,7 +3,9 @@ import json
 import hashlib
 import hmac
 import ipaddress
+import logging
 import mimetypes
+import os
 import re
 import secrets
 import socket
@@ -39,6 +41,8 @@ from cafemitra_server.product_setting import PAYMENT_GATEWAYS, active_payment_ga
 
 User = get_user_model()
 
+logger = logging.getLogger("django")
+
 ACCESS_TOKEN_TTL = timedelta(hours=1)
 REFRESH_TOKEN_TTL = timedelta(days=30)
 EMAIL_TOKEN_TTL = timedelta(hours=24)
@@ -60,7 +64,7 @@ UPI_PAYMENT_STATUS_URL = "https://otp.instadl.in/upi_payment/check_status"
 
 DEFAULT_SERVICE_PRICING = {
     "auto_document_print": {
-        "serviceName": "CafeMitra PrintPilot",
+        "serviceName": "RepetiGo PrintPilot",
         "settings": {
             "paymentMode": "Online Payment",
             "selectedPrinter": "",
@@ -1963,6 +1967,85 @@ def friendly_photo_error_message(message, fallback="Passport Size Photo generati
     return text
 
 
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_TIMEOUT = int(os.environ.get("GEMINI_TIMEOUT") or 60)
+GEMINI_IMAGE_MODEL = "gemini-2.5-flash-image"
+GEMINI_IMAGE_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_IMAGE_MODEL}:generateContent"
+
+
+def generate_passport_photo_with_gemini(prompt, image_bytes, content_type):
+    """Call the Gemini image API directly from the server, keyed off
+    GEMINI_API_KEY in .env. Returns (content_type, bytes) on success, or
+    (None, error_message) on failure - never raises."""
+    if not GEMINI_API_KEY:
+        return None, "Gemini fallback is not configured."
+
+    body = json.dumps({
+        "contents": [{
+            "parts": [
+                {"text": prompt},
+                {"inline_data": {"mime_type": content_type, "data": base64.b64encode(image_bytes).decode("ascii")}},
+            ],
+        }],
+        "generationConfig": {"responseModalities": ["IMAGE"]},
+    }).encode("utf-8")
+
+    request = urllib.request.Request(
+        GEMINI_IMAGE_API_URL,
+        data=body,
+        headers={"Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=GEMINI_TIMEOUT) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode("utf-8", errors="replace")
+        return None, f"Gemini API error: {detail[:200]}"
+    except (urllib.error.URLError, TimeoutError):
+        return None, "Gemini API is temporarily unavailable."
+    except Exception:
+        logger.exception("generate_passport_photo_with_gemini: unexpected failure calling Gemini")
+        return None, "Gemini API call failed unexpectedly."
+
+    candidates = payload.get("candidates") or []
+    parts = ((candidates[0].get("content") or {}) if candidates else {}).get("parts") or []
+    for part in parts:
+        inline = part.get("inlineData") or part.get("inline_data")
+        if inline and inline.get("data"):
+            result_type = inline.get("mimeType") or inline.get("mime_type") or "image/png"
+            return result_type, base64.b64decode(inline["data"])
+
+    return None, "Gemini did not return an image."
+
+
+def apply_gemini_fallback(order):
+    """Last resort when the desktop PrintPilot Agent fails to produce a
+    passport photo (offline, crashed, or timed out): generate it directly
+    from the server via the Gemini API so the customer still gets their
+    photo instead of a bare error. Mutates and saves `order` in place.
+    Returns True if the fallback produced a usable photo."""
+    if not order.original_filename:
+        return False
+
+    content_type, image_bytes = data_uri_to_bytes(order.original_filename)
+    result_type, result = generate_passport_photo_with_gemini(order.passport_prompt, image_bytes, content_type)
+    if not result_type:
+        logger.warning("Gemini fallback failed for passport order %s: %s", order.id, result)
+        return False
+
+    cleaned_bytes = remove_gemini_watermark(result, result_type)
+    encoded = base64.b64encode(cleaned_bytes).decode("ascii")
+
+    order.gemini_photo = f"data:{result_type};base64,{encoded}"
+    order.photo_status = PrintOrder.PHOTO_STATUS_DONE
+    order.photo_error_message = ""
+    order.photo_updated_at = timezone.now()
+    order.save(update_fields=["gemini_photo", "photo_status", "photo_error_message", "photo_updated_at"])
+    charge_wallet_for_tool(order.user, "passport_photo", quantity=1, order=order)
+    return True
+
+
 def pricing_rate(settings, price_item_id, pages, fallback_rate):
     price_items = settings.get("priceItems", []) if isinstance(settings, dict) else []
     selected_item = next((item for item in price_items if str(item.get("id", "")) == str(price_item_id)), None)
@@ -3715,6 +3798,8 @@ def check_passport_photo(request):
                 order.save(update_fields=["photo_status", "photo_error_message", "photo_updated_at"])
 
         if order.photo_status == PrintOrder.PHOTO_STATUS_FAILED:
+            if apply_gemini_fallback(order):
+                return JsonResponse({"found": True, "imageUrl": order.gemini_photo})
             fallback = f"{order.service_name or 'Passport Size Photo'} generation failed."
             return JsonResponse({"found": False, "message": friendly_photo_error_message(order.photo_error_message, fallback)}, status=200)
 
@@ -3785,6 +3870,7 @@ def complete_passport_job(request, job_id):
         order.photo_error_message = friendly_photo_error_message(request.POST.get("message", ""))
         order.photo_updated_at = timezone.now()
         order.save(update_fields=["photo_status", "photo_error_message", "photo_updated_at"])
+        apply_gemini_fallback(order)
         return JsonResponse(public_passport_job(order, request))
 
     final_image = request.FILES.get("final_image")
