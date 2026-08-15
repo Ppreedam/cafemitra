@@ -30,11 +30,8 @@ from django.views.decorators.http import require_http_methods
 
 from .background_remover.remove_background import BackgroundRemovalError, remove_background_bytes
 from .background_remover.passport_photo_processor import ProcessingError, enhance_transparent_bytes
-<<<<<<< Updated upstream
 from .background_remover.watermark_remover import remove_gemini_watermark
-from .models import AuthToken, ContactMessage, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
-=======
->>>>>>> Stashed changes
+# from .models import AuthToken, ContactMessage, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from .admin_roles import role_allows_section
 from .models import Agent, AuthToken, ContactMessage, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from cafemitra_server.product_setting import PAYMENT_GATEWAYS, active_payment_gateway
@@ -3511,15 +3508,12 @@ def agent_jobs(request):
 
     UserProfile.objects.filter(user=user).update(agent_last_seen_at=timezone.now())
 
-<<<<<<< Updated upstream
     # resume_builder orders never enter the physical print queue - only the
     # separate "Print via PrintPilot" flow (a direct agent call, not this
     # queue) prints a resume. Excluding it here keeps a saved-but-unpaid
     # (or even paid) resume draft from being picked up as a print job.
     jobs = PrintOrder.objects.filter(user=user).exclude(service_key__in=["passport_photo", "resume_builder", "biodata_maker"]).filter(
-=======
-    jobs = PrintOrder.objects.filter(user=user).exclude(service_key="passport_photo").filter(
->>>>>>> Stashed changes
+    # jobs = PrintOrder.objects.filter(user=user).exclude(service_key="passport_photo").filter(
         Q(status=PrintOrder.STATUS_QUEUED)
         | Q(status=PrintOrder.STATUS_AWAITING_APPROVAL, payment_status=PrintOrder.PAYMENT_CASH_COUNTER)
     ).order_by("created_at")[:20]
