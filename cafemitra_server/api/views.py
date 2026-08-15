@@ -61,7 +61,7 @@ UPI_PAYMENT_STATUS_URL = "https://otp.instadl.in/upi_payment/check_status"
 
 DEFAULT_SERVICE_PRICING = {
     "auto_document_print": {
-        "serviceName": "CafeMitra PrintPilot",
+        "serviceName": "RepetiGo PrintPilot",
         "settings": {
             "paymentMode": "Online Payment",
             "selectedPrinter": "",
