@@ -30,7 +30,7 @@ export function buildPassportPrompt(variation: string) {
   return `Create a professional government-compliant passport photo from the provided image.
 
 🚨 HIGHEST PRIORITY — PRESERVE THE EXACT SAME PERSON
-
+Any condition need image ! important.
 This is an IMAGE EDITING task only.
 This is NOT a text-to-image generation task.
 This is NOT a portrait recreation task.
@@ -51,6 +51,7 @@ Do NOT reinterpret the face.
 Do NOT synthesize missing facial details.
 
 Do NOT replace any part of the face.
+Any condition need image ! important.
 
 The output must be instantly recognizable as the exact same individual.
 

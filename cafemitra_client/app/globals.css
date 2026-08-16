@@ -8141,6 +8141,14 @@ img.profile-photo {
   background: rgba(233, 84, 106, 0.12);
 }
 
+.orders-table .order-status.failed {
+  display: inline-block;
+  max-width: 260px;
+  white-space: normal;
+  word-break: break-word;
+  line-height: 1.4;
+}
+
 .orders-pagination {
   display: grid;
   grid-template-columns: 1fr auto 1fr;

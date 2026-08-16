@@ -307,7 +307,12 @@ function Hero() {
             <Link className="ai-btn ai-btn-gradient" href="/register">
               Start Free Trial - No Credit Card <ArrowRight size={17} />
             </Link>
-            <a className="ai-btn ai-btn-light" href="#demo">
+            <a
+              className="ai-btn ai-btn-light"
+              href="https://youtu.be/TP76Eedq-aY?si=XL5VuES437B-o6XX"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               <Play size={17} /> Watch Demo (2 min)
             </a>
           </div>
