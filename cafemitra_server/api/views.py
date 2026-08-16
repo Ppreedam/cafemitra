@@ -3472,6 +3472,7 @@ def public_order_status(request, order_id):
     if not order:
         return JsonResponse({"message": "Order not found."}, status=404)
 
+    resolve_passport_photo(order)
     return JsonResponse({"order": public_order(order)})
 
 
@@ -3679,6 +3680,35 @@ def public_shop_by_code(request, code):
 PASSPORT_PHOTO_CHECK_MAX_RETRIES = 5
 PASSPORT_PHOTO_CHECK_RETRY_DELAY_SECONDS = 5
 PASSPORT_PHOTO_STALE_JOB_SECONDS = 60
+PASSPORT_PHOTO_FALLBACK_RETRY_SECONDS = 20
+
+
+def resolve_passport_photo(order):
+    """Detect a stale/offline PrintPilot Agent job and, on any passport-photo
+    failure (agent timeout or agent-reported failure), fall back to
+    generating the photo directly via the Gemini API. Mutates and saves
+    `order` in place as needed. Safe to call on every poll from any caller
+    (dashboard tool or public scan-to-print page) - retries the fallback at
+    most once every PASSPORT_PHOTO_FALLBACK_RETRY_SECONDS so a permanently
+    broken fallback doesn't get hammered on every poll."""
+    if order.service_key != "passport_photo" or order.gemini_photo:
+        return
+
+    just_failed = False
+    if order.photo_status in (PrintOrder.PHOTO_STATUS_PENDING, PrintOrder.PHOTO_STATUS_CLAIMED):
+        stale_seconds = (timezone.now() - order.photo_updated_at).total_seconds() if order.photo_updated_at else 0
+        if stale_seconds > PASSPORT_PHOTO_STALE_JOB_SECONDS:
+            order.photo_status = PrintOrder.PHOTO_STATUS_FAILED
+            order.photo_error_message = "The PrintPilot Agent did not respond in time. Please check that it is running and connected, then try again."
+            order.photo_updated_at = timezone.now()
+            order.save(update_fields=["photo_status", "photo_error_message", "photo_updated_at"])
+            just_failed = True
+
+    if order.photo_status == PrintOrder.PHOTO_STATUS_FAILED:
+        stale_seconds = (timezone.now() - order.photo_updated_at).total_seconds() if order.photo_updated_at else 0
+        if (just_failed or stale_seconds >= PASSPORT_PHOTO_FALLBACK_RETRY_SECONDS) and not apply_gemini_fallback(order):
+            order.photo_updated_at = timezone.now()
+            order.save(update_fields=["photo_updated_at"])
 
 
 @csrf_exempt
@@ -3780,20 +3810,11 @@ def check_passport_photo(request):
 
     for attempt in range(PASSPORT_PHOTO_CHECK_MAX_RETRIES):
         order.refresh_from_db()
+        resolve_passport_photo(order)
         if order.gemini_photo:
             return JsonResponse({"found": True, "imageUrl": order.gemini_photo})
 
-        if order.photo_status in (PrintOrder.PHOTO_STATUS_PENDING, PrintOrder.PHOTO_STATUS_CLAIMED):
-            stale_seconds = (timezone.now() - order.photo_updated_at).total_seconds() if order.photo_updated_at else 0
-            if stale_seconds > PASSPORT_PHOTO_STALE_JOB_SECONDS:
-                order.photo_status = PrintOrder.PHOTO_STATUS_FAILED
-                order.photo_error_message = "The PrintPilot Agent did not respond in time. Please check that it is running and connected, then try again."
-                order.photo_updated_at = timezone.now()
-                order.save(update_fields=["photo_status", "photo_error_message", "photo_updated_at"])
-
         if order.photo_status == PrintOrder.PHOTO_STATUS_FAILED:
-            if apply_gemini_fallback(order):
-                return JsonResponse({"found": True, "imageUrl": order.gemini_photo})
             fallback = f"{order.service_name or 'Passport Size Photo'} generation failed."
             return JsonResponse({"found": False, "message": friendly_photo_error_message(order.photo_error_message, fallback)}, status=200)
 
