@@ -16,6 +16,8 @@ import urllib.request
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 from django.contrib.auth import authenticate, get_user_model
 from django.conf import settings
 from django.core.mail import send_mail
@@ -2108,15 +2110,40 @@ def token_response(user, status=200):
     )
 
 
-def auth_user(request):
-    header = request.headers.get("Authorization", "")
-    key = header.replace("Bearer ", "", 1).strip()
+def user_for_token_key(key):
+    """Shared with api.consumers.AgentJobsConsumer (WebSocket auth) so the
+    HTTP and WebSocket paths validate the exact same opaque-token rules from
+    one place."""
     if not key:
         return None
     token = AuthToken.objects.select_related("user").filter(key=key).first()
     if token and token.access_expires_at and token.access_expires_at <= timezone.now():
         return None
     return token.user if token else None
+
+
+def auth_user(request):
+    header = request.headers.get("Authorization", "")
+    key = header.replace("Bearer ", "", 1).strip()
+    return user_for_token_key(key)
+
+
+def notify_agent_new_job(order):
+    """Best-effort 'wake up and poll now' push to the shop's connected
+    desktop Print Agent over WebSocket (see api/consumers.py). Redis/Channels
+    being unreachable must never break the caller - the agent's existing
+    HTTP poll is still the fallback, so failures here are logged and
+    swallowed rather than raised."""
+    try:
+        channel_layer = get_channel_layer()
+        if channel_layer is None:
+            return
+        async_to_sync(channel_layer.group_send)(
+            f"agent-jobs-{order.user_id}",
+            {"type": "job.available"},
+        )
+    except Exception:
+        logger.exception("notify_agent_new_job failed for order %s", order.id)
 
 
 def delete_user_files(user):
@@ -2781,6 +2808,16 @@ def public_print_order(request, code):
         photo_updated_at=timezone.now() if passport_prompt else None,
     )
 
+    # Mirrors agent_jobs()'s visibility filter - keep both in sync. Only
+    # these two branches are agent-pickup-ready immediately; the online-
+    # payment branch (STATUS_AWAITING_PAYMENT) isn't yet, so notifying there
+    # would just be a wasted wake-up.
+    if service_key not in ("passport_photo", "resume_builder", "biodata_maker") and (
+        order_status == PrintOrder.STATUS_QUEUED
+        or (order_status == PrintOrder.STATUS_AWAITING_APPROVAL and payment_status == PrintOrder.PAYMENT_CASH_COUNTER)
+    ):
+        notify_agent_new_job(order)
+
     return JsonResponse({"order": public_order(order)}, status=201)
 
 
@@ -2842,6 +2879,11 @@ def public_verify_razorpay_payment(request, order_id):
             # online payment actually clears - see the matching cash-path
             # charge in mark_resume_order_paid.
             charge_wallet_for_tool(order.user, f"resume_builder_{order.price_item_id}", order=order)
+        # resume_builder/biodata_maker/passport_photo never enter the
+        # agent's print queue (agent_jobs() excludes them) - skip the
+        # wake-up push for those so we don't fire a spurious notification.
+        if order.service_key not in ("passport_photo", "resume_builder", "biodata_maker"):
+            notify_agent_new_job(order)
     return JsonResponse({"order": public_order(order)})
 
 
@@ -2928,6 +2970,8 @@ def public_payu_callback(request, order_id):
         order.paid_at = timezone.now()
         order.gateway_payment_id = mihpayid
         order.save(update_fields=["payment_status", "status", "paid_at", "gateway_payment_id"])
+        if order.service_key not in ("passport_photo", "resume_builder", "biodata_maker"):
+            notify_agent_new_job(order)
         result = "success"
     else:
         result = "failure"
@@ -3001,6 +3045,8 @@ def public_phonepe_callback(request, order_id):
                     order.paid_at = timezone.now()
                     order.gateway_payment_id = str(status_payload.get("orderId") or order.gateway_order_id)
                     order.save(update_fields=["payment_status", "status", "paid_at", "gateway_payment_id"])
+                    if order.service_key not in ("passport_photo", "resume_builder", "biodata_maker"):
+                        notify_agent_new_job(order)
                     result = "success"
 
     return HttpResponseRedirect(f"{settings.FRONTEND_URL}/s/{order.shop_code}?order={order.id}&payment={result}")
@@ -3042,6 +3088,8 @@ def phonepe_webhook(request):
             order.paid_at = timezone.now()
             order.gateway_payment_id = str(payload.get("orderId") or merchant_order_id)
             order.save(update_fields=["payment_status", "status", "paid_at", "gateway_payment_id"])
+            if order.service_key not in ("passport_photo", "resume_builder", "biodata_maker"):
+                notify_agent_new_job(order)
         return JsonResponse({"message": "ok"})
 
     topup = WalletTopup.objects.filter(gateway_order_id=merchant_order_id, payment_gateway="phonepe").first() if merchant_order_id else None
@@ -3449,6 +3497,8 @@ def public_check_upi_payment(request, order_id):
         order.status = PrintOrder.STATUS_QUEUED
         order.paid_at = timezone.now()
         order.save(update_fields=["payment_status", "status", "paid_at"])
+        if order.service_key not in ("passport_photo", "resume_builder", "biodata_maker"):
+            notify_agent_new_job(order)
         return JsonResponse({"order": public_order(order), "payment": {"status": "paid"}})
 
     return JsonResponse({
