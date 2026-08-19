@@ -6,6 +6,18 @@ Yeh instructions **production VPS pe kisi bhi agent/operator ko de sakte ho** �
 
 **Best time to do this**: Low-traffic window, taaki agar kuch galat ho to turant revert kar sako bina zyada shops affect kiye.
 
+**Chosen approach**: **Option B** (§Step 5) — purana WSGI/gunicorn process bilkul touch nahi hota, sirf ek naya Daphne process alag port (8001) pe `/ws/` ke liye add hota hai. Kam se kam blast-radius, deploy fail ho to sirf naya process+nginx-block hatana padega.
+
+## Confirmed environment (Hostinger VPS, "Kodee" panel se verify kiya)
+
+| Cheez | Value |
+|---|---|
+| Repo path | `/root/repetigo/cafemitra` |
+| Django project path | `/root/repetigo/cafemitra/cafemitra_server` |
+| Virtualenv activate | `source /root/downloadera/downloadera_venv/bin/activate` |
+| Domain | `api.repetigo.com` |
+| Code pull status | ✅ Done (`git pull origin main`, merge clean, `050c401..a56039f`) |
+
 ---
 
 ## Step 0 — Pehle current setup samjho (skip mat karna)
@@ -31,15 +43,15 @@ Agar in me se koi bhi unclear ho, aage badhne se pehle confirm kar lo — agle s
 
 ---
 
-## Step 1 — Naya code lao
+## Step 1 — Naya code lao ✅ (already done)
 
 ```bash
-cd /path/to/cafemitra_server   # apna actual deployment path daalo
-git status                      # pehle confirm koi local uncommitted change to nahi hai
-git pull origin main            # ya jo bhi branch production pe deployed hai
+cd /root/repetigo/cafemitra
+git pull origin main
+source /root/downloadera/downloadera_venv/bin/activate
 ```
 
-Pull ke baad yeh files hone chahiye (naye/modified):
+Pull ho chuka hai (`050c401..a56039f`, "Merge made by the 'ort' strategy", 7 files changed). Yeh files hone chahiye (naye/modified) — confirm kar lo:
 - `cafemitra_server/asgi.py` — **naya**
 - `api/consumers.py` — **naya**
 - `api/routing.py` — **naya**
@@ -47,7 +59,7 @@ Pull ke baad yeh files hone chahiye (naye/modified):
 - `cafemitra_server/settings.py` — modified (`ASGI_APPLICATION`, `CHANNEL_LAYERS`, `INSTALLED_APPS` me `daphne`+`channels`)
 - `api/views.py` — modified (`notify_agent_new_job` helper + 6 call sites + `user_for_token_key` refactor)
 
-Agar yeh files pull ke baad nahi mile, **yahin ruk jao** — pehle confirm karo ki correct branch/commit pull hua hai.
+Agla step (venv me) dependencies install karna hai.
 
 ---
 
@@ -94,30 +106,28 @@ REDIS_URL=redis://<host>:<port>/0
 
 ---
 
-## Step 5 — Production process ko Daphne pe switch karo
+## Step 5 — Naya Daphne process chalao (sirf `/ws/` ke liye)
 
-**Do options hain — Option A recommended hai, Option B safer/lower-risk hai agar cutover ka risk lena nahi chahte.**
+**Chosen: Option B** — purana gunicorn/WSGI process **bilkul mat chhedo** (existing HTTP API waise hi chalta rehta hai). Sirf ek naya, halka Daphne process chalao dusre port (8001) pe, sirf WS traffic ke liye:
 
-### Option A (recommended): Single Daphne process, HTTP + WS dono
-
-Poora WSGI process (gunicorn) replace karo isse:
 ```bash
-daphne -b 127.0.0.1 -p 8000 cafemitra_server.asgi:application
+daphne -b 127.0.0.1 -p 8001 cafemitra_server.asgi:application
 ```
 
-Systemd service file banao/update karo (Step 0 me jo path mila tha, waha edit karo — ya naya banao agar tracked nahi tha):
+Systemd service banao taaki auto-restart ho aur reboot survive kare:
 
 ```ini
+# /etc/systemd/system/cafemitra-ws.service
 [Unit]
-Description=CafeMitra Django (Daphne ASGI)
+Description=CafeMitra WebSocket (Daphne ASGI, /ws/ only)
 After=network.target redis-server.service
 
 [Service]
 Type=simple
-User=<apna-deploy-user>
-WorkingDirectory=/path/to/cafemitra_server
-Environment="PATH=/path/to/venv/bin"
-ExecStart=/path/to/venv/bin/daphne -b 127.0.0.1 -p 8000 cafemitra_server.asgi:application
+User=root
+WorkingDirectory=/root/repetigo/cafemitra/cafemitra_server
+Environment="PATH=/root/downloadera/downloadera_venv/bin"
+ExecStart=/root/downloadera/downloadera_venv/bin/daphne -b 127.0.0.1 -p 8001 cafemitra_server.asgi:application
 Restart=on-failure
 RestartSec=5
 
@@ -127,19 +137,11 @@ WantedBy=multi-user.target
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl restart <service-name>
-sudo systemctl status <service-name>   # active (running) confirm karo
+sudo systemctl enable --now cafemitra-ws
+sudo systemctl status cafemitra-ws   # "active (running)" confirm karo
 ```
 
-### Option B (lower-risk): Purana WSGI process waise hi rakho, sirf `/ws/` ke liye alag process
-
-Purana gunicorn process **bilkul mat chhedo**. Sirf ek naya, halka Daphne process chalao dusre port pe, sirf WS ke liye:
-```bash
-daphne -b 127.0.0.1 -p 8001 cafemitra_server.asgi:application
-```
-(Same systemd-service pattern jaisa Option A me hai, bas port 8001 aur alag service-name jaise `cafemitra-ws.service`.)
-
-Nginx me sirf `/ws/` iss naye port pe route karo (Step 6 me `proxy_pass` port isi hisaab se set karna — 8000 ya 8001, jo bhi option chuna).
+> **Baad me (optional consolidation)**: jab WS production me kuch hafton stable chal jaaye, chaaho to purana gunicorn/WSGI process bhi isi Daphne process se replace kar sakte ho (ek hi process HTTP+WS dono serve kare, port 8000 pe) — abhi ke liye zaroori nahi, do-process setup hi safe aur sufficient hai.
 
 ---
 
@@ -158,7 +160,7 @@ map $http_upgrade $connection_upgrade {
 ```nginx
 # server {} block me, existing HTTP location ke saath, naya location add karo:
 location /ws/ {
-    proxy_pass http://127.0.0.1:8000;   # Option A: 8000 | Option B: 8001
+    proxy_pass http://127.0.0.1:8001;   # cafemitra-ws.service (Step 5)
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection $connection_upgrade;
@@ -174,7 +176,7 @@ location /ws/ {
 }
 ```
 
-Agar **Option A** chose kiya hai (single process), existing main `location /` block ka `proxy_pass` bhi same port (8000) pe point karta hona chahiye — confirm kar lo ki dono ek hi process ko hit kar rahe hain.
+Existing main `location /` block ka `proxy_pass` **isse touch mat karo** — wo purane gunicorn/WSGI port ko hi point karta rehta hai, sirf `/ws/` naya block hai.
 
 Test aur reload:
 ```bash
@@ -227,9 +229,9 @@ Backend deploy **poori tarah reversible** hai:
 # Nginx: /ws/ location aur map block hata do us config file se, phir:
 sudo nginx -t && sudo systemctl reload nginx
 
-# Process: Daphne band karo, purana gunicorn/WSGI service wapas start karo
-sudo systemctl stop <daphne-service-name>
-sudo systemctl start <purana-gunicorn-service-name>
+# Process: naya Daphne service band karo (purana gunicorn to touch hi nahi hua tha)
+sudo systemctl stop cafemitra-ws
+sudo systemctl disable cafemitra-ws
 
 # Code: agar zaroorat pade, git revert/checkout purane commit pe
 git log --oneline -5   # deploy se pehle wala commit hash dhoondo
@@ -253,3 +255,31 @@ Redis ko uninstall karne ki zaroorat nahi hai rollback ke liye — bas WS access
 | `api/views.py` | Modified | `notify_agent_new_job()` helper, 6 call sites, `user_for_token_key` refactor |
 
 Koi database migration nahi, koi naya environment-secret (Redis local hi hai) zaroori nahi, koi breaking change existing endpoints me nahi.
+
+---
+
+## Appendix — VPS-panel AI agent (Kodee) ke liye ready prompt
+
+Agar VPS pe koi built-in AI-agent panel hai (jaise Hostinger ka "Kodee"), yeh ek hi prompt copy-paste kar sakte ho — code pull + venv activate already ho chuka maan ke likha hai:
+
+```
+RepetiGo backend pe WebSocket feature deploy karna hai (code+venv ready hai). Yeh sab karo:
+
+- Redis install karo (fresh/modern, apt se): apt install -y redis-server && systemctl enable --now redis-server && redis-cli ping (PONG expect)
+
+- Python deps: pip install -r requirements-channels.txt
+
+- Production process: purana gunicorn/WSGI ko MAT CHHEDNA. Naya Daphne process alag port (8001) pe WS ke liye chalao, systemd service banao auto-restart ke saath: daphne -b 127.0.0.1 -p 8001 cafemitra_server.asgi:application
+
+- Nginx me /ws/ location add karo (api.repetigo.com config me) - upgrade-headers + 3600s timeout ke saath, proxy_pass 127.0.0.1:8001 pe
+
+- REDIS_URL .env me set karo sirf agar Redis default (127.0.0.1:6379) se alag jagah/port pe hai, warna skip
+
+- nginx -t && systemctl reload nginx
+
+- Verify karo: existing API pehle jaisa kaam kare + naya /ws/ route 404 na de
+
+Koi DB migration nahi chahiye.
+```
+
+(915 characters — kai VPS-panel agent-boxes ka 1000-char limit hota hai, isliye jaan-boojh kar compact rakha hai.)
