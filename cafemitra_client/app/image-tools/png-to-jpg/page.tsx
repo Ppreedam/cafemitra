@@ -4,248 +4,156 @@ import PngToJpgClient from "./PngToJpgClient";
 const pageUrl = "https://repetigo.com/image-tools/png-to-jpg";
 
 export const metadata: Metadata = {
-  title: "PNG to JPG Converter Online Free - India Govt Portals & More | RepetiGo",
+  title: "PNG to JPG Free - Convert & Batch, with Quality Control | RepetiGo",
   description:
-    "Convert PNG to JPG free online - for Indian government portals, WhatsApp, email. Batch convert multiple files. No sign-up, 100% browser-based - nothing is ever uploaded.",
+    "Free PNG to JPG converter - turn PNG images into JPG in your browser, with a quality slider. Batch-convert many files and download a ZIP. No upload, no watermark.",
   alternates: { canonical: pageUrl },
   openGraph: {
-    title: "PNG to JPG Converter Online Free - India Govt Portals & More | RepetiGo",
-    description: "Free PNG to JPG converter for Indian portal uploads. Batch convert multiple PNGs. No sign-up, nothing uploaded.",
+    title: "PNG to JPG Free - Convert & Batch, with Quality Control",
+    description: "Turn PNG images into JPG with a quality slider. Batch-convert many files to a ZIP. In your browser.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
     card: "summary_large_image",
-    title: "PNG to JPG Converter Free - RepetiGo",
-    description: "Convert PNG to JPG free, one file or a batch. No sign-up, 100% browser-based.",
+    title: "PNG to JPG Free - Convert & Batch",
+    description: "Free PNG→JPG. Quality slider, batch + ZIP, 100% in your browser.",
   },
   robots: { index: true, follow: true },
 };
 
-const content = String.raw`H1: PNG to JPG Converter Online Free. For Indian Portal Uploads, WhatsApp, and Smaller Files.
-RepetiGo's free PNG to JPG converter changes your PNG image files into JPG format in seconds. No software to install, no account needed. Upload one PNG or several at once, choose your quality setting, and download the JPG - your files are never uploaded to a server, since everything runs in your browser.
-Most Indian users need to convert PNG to JPG because government portals, banking applications, scholarship forms, and job portals require JPG format - and often reject PNG files entirely. PNG files from phone screenshots or graphic designs also tend to be much larger than the equivalent JPG, making them slow to upload or share.
+const content = String.raw`H1: PNG to JPG - Convert PNG to JPG in Your Browser.
 
-✓ Instant PNG to JPG Conversion   ✓ Batch Convert Multiple Files   ✓ Adjustable Quality   ✓ No Sign-Up   ✓ 100% Browser-Based - Nothing Uploaded
+RepetiGo's PNG to JPG converter turns PNG images into standard JPG files - free, fast, and entirely in your browser. Drop in one PNG or a whole batch, set the quality if you like, and download. You can convert a single file or bulk-convert many at once and grab them all as a ZIP. Because it all runs on your device, your images are never uploaded to a server, and there is no watermark.
+Converting PNG to JPG is usually about size: PNG is lossless and can be large, while JPG is much smaller and works everywhere, which makes it ideal for photos, uploads, and sharing. With a quality slider and a "size saved" readout on every file, you stay in control of the trade-off between file size and detail. It is the quick, reliable way to turn a heavy PNG into a lightweight JPG.
 
-[ Convert PNG to JPG Free - No Sign-Up → repetigo.com/image-tools/png-to-jpg ]
+✅ Free · No sign-up · No watermark   |   ✅ Quality slider (40–100%)   |   ✅ Batch + ZIP   |   ✅ 100% in your browser - nothing uploaded
 
-H2: PNG vs JPG - What's the Difference and When Should You Convert?
-PNG and JPG are the two most common image formats, and they work in fundamentally different ways. Understanding the difference helps you know when converting is the right choice - and when it is not.
+H2: Why Convert PNG to JPG?
+PNG is a lossless format, which keeps perfect quality but often produces large files - especially for photographs, which can be several times bigger as a PNG than as a JPG. JPG uses efficient lossy compression, so it makes much smaller files, and it is accepted absolutely everywhere: every website, every upload form, every device and app.
+So converting PNG to JPG is the right move whenever file size matters or something will not accept a PNG. A photo saved as a PNG can shrink dramatically as a JPG with no visible quality loss, which speeds up uploads and saves space. The one thing to keep in mind is transparency, covered just below - but for photos and solid images, PNG to JPG is a simple, high-value conversion.
 
-Attribute
-PNG
-JPG / JPEG
-Convert PNG → JPG When...
-File Size
-Large - often 5-20x bigger than the equivalent JPG for photos
-Small - efficient compression for photographs
-You need a smaller file for email, WhatsApp, or portal upload
-Compression
-Lossless - no data removed, full quality always preserved
-Lossy - some data removed to achieve a smaller size
-You need a smaller file and can accept a minor quality trade-off
-Transparency
-✓ Supports transparent backgrounds (alpha channel)
-✗ Cannot have transparency - becomes solid white
-Only if your PNG has no transparency, or losing it is acceptable
-Best For
-Logos, screenshots, graphics, images with text, anything needing transparency
-Photographs, ID photos, scanned documents, web display images
-Converting a PNG photo or screenshot to JPG for portal upload or sharing
-Portal Compatibility
-✗ Many Indian govt portals reject PNG
-✓ Accepted by all Indian portals universally
-Any Indian portal that says "JPG only" or rejects your PNG upload
-WhatsApp Behaviour
-Often sends as a document rather than a photo, depending on the app version
-Sends as a regular photo in the chat gallery
-Sharing via WhatsApp as a normal image rather than a document
+H2: How to Convert PNG to JPG in 3 Steps.
+Here is how to convert PNG to JPG with RepetiGo. It starts converting the moment you add a file.
 
-💡 You should NOT convert PNG to JPG when your PNG has a transparent background that you need to preserve - JPG will make transparent areas solid white. In that case, keep the PNG format. If you need to REMOVE a background entirely, use RepetiGo's Remove Background tool at /image-tools/background-remover instead.
+Step
+What You Do
+What Happens
+1. Upload your PNG(s)
+Drop or select one or more PNG files.
+Each converts to JPG at 90% quality automatically.
+2. Set quality (optional)
+Adjust the quality slider between 40% and 100%.
+Files re-convert; each card shows the size and % saved.
+3. Download
+Download each JPG, or grab them all as a ZIP.
+Files save with a .jpg extension, ready to use anywhere.
 
-H2: How to Convert PNG to JPG Online Free in 3 Steps.
-H3: Step 1 - Upload Your PNG File
-Click the Upload button or drag and drop your PNG file - or several PNG, WebP, GIF, or SVG files at once for batch conversion. There's no fixed file size cap - because everything runs on your own device, very large files just take a little longer. The tool works in Chrome, Safari, or Firefox on any device - Android phone, iPhone, Windows laptop, or Mac.
-H3: Step 2 - Choose Quality Settings
-As soon as you upload, RepetiGo converts your image automatically at a 90% starting quality. From there, drag the quality slider between 40% and 100% - higher keeps more detail, lower makes a smaller file:
-90-100% quality - recommended for professional use, client delivery, and high-quality printing. Virtually no visible difference from the original.
-65-85% quality - recommended for portal uploads, email attachments, and WhatsApp sharing. Files are noticeably smaller than the original PNG while still looking clear on screen.
-40-60% quality - for very small file sizes when a portal has a strict KB limit. Some quality reduction becomes visible if you look closely, but it's usually still acceptable for identity verification use.
-When you have more than one image uploaded, the same quality setting applies to every file in the batch.
-H3: Step 3 - Download Your JPG
-Click Convert at [quality]% to re-apply the current setting to every uploaded image, or just download the result that was generated automatically on upload. For a batch, click Download ZIP to get every converted JPG in one archive. Because nothing was ever uploaded, there's nothing left on any server once you're done. The output file name matches your original, with the extension changed to .jpg.
+🔒 The conversion happens in your browser on a canvas - your PNG files are never uploaded to RepetiGo or any server.
 
-[ Convert PNG to JPG Free Now → repetigo.com/image-tools/png-to-jpg ]
+H2: Set the JPG Quality.
+JPG lets you trade a little quality for a smaller file, and you control that with the quality slider - from 40% up to 100%, in small steps. The default is 90%, which keeps the image looking sharp while producing a sensible file size. Slide toward 100% for maximum detail, or lower it when a smaller file matters more. Each file card shows the converted size and the percentage saved, so you can see the trade-off instantly and pick the right balance.
+If you need to hit a specific file-size limit, lower the quality and watch the size readout; for an exact kilobyte target, convert here and then use the Compress Image tool for precise control. The high-quality smoothing keeps edges clean even at lower quality settings.
 
-H2: Why Indian Users Convert PNG to JPG.
-PNG to JPG conversion is one of the most common image tasks for Indian users specifically because of how Indian digital infrastructure works. Here are the most common reasons:
+H2: Transparent Areas Become White.
+Here is the one thing to know before converting: JPG cannot store transparency. If your PNG has a transparent background - many logos, icons, and graphics do - those transparent areas are filled with white in the JPG. So a logo on a transparent PNG will come out on a white background once it is a JPG. For photos and images with a solid background, which have no transparency, this makes no difference at all.
+If keeping the transparency matters - for a logo you will place on a coloured background, for instance - then JPG is not the right target, and you should keep the image as a PNG. Choosing the right format for the job avoids surprises: JPG for a smaller, flat image, and PNG when transparency needs to be preserved.
 
-Scenario
-Why PNG Fails
-How JPG Fixes It
-Government Portal Photo Upload (NTA, SSC, IBPS, Banking, Scholarships)
-Most Indian government portals specify JPG only. PNG uploads are rejected. iPhones save screenshots as PNG, and many phones save graphics as PNG by default.
-Convert PNG to JPG before uploading. JPG is universally accepted by all Indian portals, and the file also becomes smaller, which helps with KB size limits.
-WhatsApp Image Sharing
-Depending on the app and how the file is sent, PNG files can behave inconsistently compared to a standard photo share.
-Converting to JPG means the image behaves like a normal photo share - a familiar, predictable format for the recipient.
-Email Attachments
-PNG screenshots from phones, especially iPhones, can be 2-5MB each. Multiple screenshots in one email creates a large attachment.
-JPG equivalents of the same screenshots are typically a fraction of the size. Email delivers faster and uses less inbox storage.
-Print Shop Customer Files
-Customers often bring PNG logos or graphics saved from WhatsApp or downloaded online. Some older printing systems handle JPG more reliably than PNG.
-Convert the customer's PNG to JPG before printing. For logos with transparent backgrounds, a white-background JPG is typically acceptable for most print jobs.
-Professional Document Submission
-Job applications, bank KYC, insurance, and legal submissions often require a photo in JPG format specifically.
-Convert to JPG. Nearly all professional submission portals accept JPG. Use Compress Image afterward if the file still needs to be smaller.
-Storage and Sharing - Reducing File Size
-A PNG screenshot of a document is often several MB. The same image as JPG is usually a small fraction of that size, with no visible quality difference at normal viewing sizes.
-Convert PNG to JPG to reduce storage usage and make files easier to share by link or email.
+⚠️ Converting PNG → JPG removes transparency (it becomes white). If you need a transparent background kept, stay with PNG rather than converting to JPG.
 
-H2: PNG to JPG Conversion and Transparency - What You Need to Know.
-The most common confusion about PNG to JPG conversion is around transparency. This section explains it clearly so you can choose the right approach.
-PNG files can have transparent backgrounds - areas with "no colour," where whatever is behind the image shows through. JPG format does not support transparency at all; every pixel must have a colour. When you convert a PNG with a transparent background to JPG, RepetiGo fills those transparent areas with solid white before saving. This is correct, expected behaviour - not a bug.
+H2: How Much Smaller? The Size Saving.
+Every file shows a "size saved" percentage after conversion, so you can see the benefit immediately. Because PNG is lossless and JPG is compressed, a JPG is usually a good deal smaller than the same image as a PNG - and for photographs saved as PNG, the reduction can be dramatic, often cutting the file to a fraction of its original size with no visible quality loss. Simple graphics save less, but photos and detailed images save the most.
+Across a batch, those savings add up fast, which is why converting PNGs to JPGs is a common step before uploading or emailing a set of images. The per-file percentage lets you confirm exactly how much lighter each image gets, rather than relying on a general estimate.
 
-PNG Source
-After PNG → JPG Conversion
-Is This a Problem?
-What to Do Instead
-PNG with a white or solid-colour background
-Stays white or solid. Identical result.
-No - output looks the same
-Convert normally. No special handling needed.
-PNG with a transparent background (logo, icon, sticker)
-Transparent areas become white in the JPG output.
-Maybe - if you need transparency in the output, JPG cannot provide it
-Keep it as PNG. Or use Remove Background if you specifically want a transparent-background image.
-PNG photo (no transparency)
-No transparent areas exist. JPG output looks identical to the original.
-No - PNG photos convert perfectly
-Convert normally. The file will be significantly smaller.
+H2: How to Convert PNG to JPG on a Mac.
+On a Mac you can convert a PNG to JPG using the built-in Preview app: open the PNG, choose File → Export, and set the format to JPEG. That works for a single file. For several files, you can select them in Finder and use Quick Actions → Convert Image → JPEG. Those are the native options if you prefer not to use a website.
+That said, for a batch with a quality slider, a size-saved readout, and a single ZIP download, RepetiGo does it right in the browser on your Mac - no app to open, and the same tool works identically on Windows too. So whether you searched for how to convert PNG to JPG on Mac or just want the quickest route, adding your files here and downloading JPGs is the simplest way.
 
-★ If you're trying to ADD transparency to an image, JPG cannot help - JPG format cannot have transparency at all. To create a transparent-background image, remove the background first using Remove Background at /image-tools/background-remover to get a PNG with a transparent background, then keep it as PNG rather than converting to JPG.
+H2: It Also Handles WebP, GIF & SVG.
+Although it is called PNG to JPG, this tool also accepts a few other inputs and converts them to JPG the same way: WebP, GIF, and SVG. So if you have a mix of those alongside your PNGs, you can drop them all in together and get JPGs out. Transparent areas in any of them are filled with white, just as with PNG, since the output is always JPG.
+One honest exception: it does not reliably handle HEIC (the iPhone photo format). Most browsers other than Safari cannot decode a HEIC image at all, so a HEIC file usually fails with a "could not be opened" error here rather than converting. For iPhone HEIC photos, use the dedicated HEIC to JPG tool instead, which is built specifically to decode HEIC and is linked below. For PNG, WebP, GIF, and SVG, though, this tool has you covered.
 
-H2: Why Use RepetiGo's PNG to JPG Converter?
+💡 Also converts WebP, GIF, and SVG to JPG. For iPhone HEIC photos, use the HEIC to JPG tool - HEIC does not reliably convert here.
 
-Feature
-RepetiGo
-Adobe Express
-ILoveIMG
-Convertio
-Free to use
-✓ Always free
-✓ Free tier (limited)
-✓ Limited free
-✓ Limited free
-Sign-up required
-✓ Never
-✗ Account needed
-~ Optional
-~ Optional
-India portal context
-✓ India-specific guidance
-✗ None
-✗ None
-✗ None
-Batch convert multiple PNG files
-✓ Yes - one setting, all files
-~ Limited in free tier
-✓ Yes
-✓ Yes
-Adjustable quality (40-100%)
-✓ Yes
-~ Basic
-~ Basic
-✓ Yes
-Files ever leave your device?
-✗ Never - 100% browser-based
-✓ Yes - uploaded to their servers
-✓ Yes - uploaded to their servers
-✓ Yes - uploaded to their servers
-Works without account
-✓ Yes
-✗ No
-~ Optional
-~ Optional
-Transparent PNG handling
-✓ Clear explanation + white BG output
-~ Basic
-~ Basic
-~ Basic
+H2: Batch Convert Multiple Files (with ZIP Download).
+You are not limited to one file. Add as many images as you like - each appears on its own card with its filename, size, dimensions, converted JPG size, and percentage saved - and keep adding more. They all convert automatically, and you can download each JPG individually or grab the whole set as a single ZIP. It is the fast way to turn a folder of PNGs into lightweight JPGs in one go.
 
-H2: Your Files Are Safe. Always.
+✅ Real batch support: drop in many files, convert them all to JPG, and download individually or as one ZIP - all in your browser, nothing uploaded.
 
-Protection Layer
-What It Means in Practice
-🖥️ 100% Browser-Based Conversion
-Your PNG is converted using your own device's processing power via the browser's Canvas API. It is never uploaded to any server.
-🚫 Nothing Ever Leaves Your Device
-Because conversion happens locally, there is no upload, no transfer, and nothing on any server for us to store or delete.
-👁️ No Image Content Is Read
-RepetiGo's code cannot see, analyse, or extract what's in your image - it only re-encodes pixel data on your own device.
-🚫 No Account = No Data Profile
-No sign-up means no personal data, no file history, and no usage profile is ever created.
-🔒 Well Suited to ID Photos and Personal Documents
-Because nothing is transmitted anywhere, this is one of the safer ways to convert a sensitive scan or ID photo online.
+H2: Everything Runs in Your Browser.
+Like the rest of RepetiGo's image tools, this converter does all its work on your own device. Each PNG is decoded and re-saved as a JPG locally using the browser's canvas - nothing is uploaded, and no server touches your files. That keeps your images private, works on a weak connection, and is why the tool carries a "Files stay in your browser" badge. There is no watermark and no account wall; the JPGs you download are the full, clean files.
 
-[ Read Our Privacy Policy → /privacy-policy ]
+🔒 Client-side and private: your files stay on your device, nothing is uploaded, and no watermark is added.
 
-H2: PNG to JPG for Print Shops.
-Print shops regularly receive customer files in PNG format - logos downloaded from Google, images saved from WhatsApp, or graphic design files exported as PNG. Converting these to JPG is often part of the print preparation workflow, especially for older printers or RIP software that handle JPG more consistently than PNG.
-PrintPilot - RepetiGo's print shop software - can fold format conversion into the same automated workflow customers already use to upload documents via QR code, instead of a shop operator converting files by hand before every print job.
+H2: What This Tool Does Not Do.
+So you know whether it fits before you start, here is what this converter is not for - and where to go instead.
 
-[ Learn About PrintPilot → /products/printpilot/ ]
-[ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Convert PNG to JPG Now → repetigo.com/image-tools/png-to-jpg ]
+People often ask for…
+The honest answer
+Convert JPG back to PNG
+No - this goes PNG → JPG (use Convert from JPG for the reverse)
+Convert an iPhone HEIC to JPG
+No - HEIC does not reliably decode here (use the HEIC to JPG tool)
+Keep a transparent background
+No - JPG fills transparency white (stay with PNG)
+A fill colour other than white
+No - transparent areas become white only
+Convert PNG to PDF/WebP/ICO
+No - output is JPG (use the PNG Converter for those)
+Resize while converting
+No - convert here, then resize separately
+Keep an animated GIF moving
+No - only the first frame is converted
 
-H2: Common Questions About Converting PNG to JPG.
-H3: Q1: How do I convert PNG to JPG online free in India?
-Go to repetigo.com/image-tools/png-to-jpg, click Upload and select your PNG file or files. RepetiGo converts automatically at 90% quality. Drag the quality slider if you want a different balance of size and detail, then download the JPG - or Download ZIP for a batch. No account required, no software needed, and your file is never uploaded anywhere since everything runs in your browser. For Indian government portal uploads, check the portal's required file size limit after converting, and use Compress Image if the JPG is still too large.
-H3: Q2: Why does the Indian government portal reject my PNG file?
-Indian government portals (NTA, SSC, IBPS, scholarship portals, banking application portals) specify JPG or JPEG as the only accepted image format. PNG is a different format and is rejected regardless of the image's visual quality - the portal's upload validation checks the file extension and MIME type, and a .png file with an image/png type gets rejected outright. The fix: convert your PNG to JPG using RepetiGo's converter, then re-upload the .jpg file. The image looks the same - only the format changes.
-H3: Q3: Does converting PNG to JPG reduce quality?
-Yes, but usually not in a way that's visible in practical use. JPG uses lossy compression, which removes some image data. At 65-85% quality, the difference between the original PNG and the converted JPG is generally not visible on a phone screen or laptop display - you'd need to zoom in significantly to notice any softness. For identity photos and government portal submissions viewed at small sizes, that range is completely acceptable. For professional printing or archiving, use 90-100% quality to preserve more detail.
-H3: Q4: Does converting PNG to JPG make the file smaller?
-Yes, usually significantly. A PNG screenshot or graphic that's several MB commonly shrinks to a small fraction of that size as a JPG at 65-85% quality, since JPG uses a more efficient compression approach for photographs and removes data that's hard for the eye to detect. This is a big part of why government portals prefer JPG - smaller files upload faster and use less server storage.
-H3: Q5: What happens to transparency when I convert PNG to JPG?
-JPG format does not support transparency. When you convert a PNG with a transparent background, RepetiGo fills those transparent areas with solid white in the JPG output - this is the correct, expected behaviour, not an error. If your PNG has a white background already, the JPG looks identical to the original. If you need to keep transparency in your output, don't convert to JPG - keep the file as PNG instead.
-H3: Q6: How do I convert PNG to JPG on Mac?
-Using Mac Preview (built-in, free): open your PNG in Preview, go to File → Export, choose JPEG from the Format dropdown, adjust the Quality slider if needed, and click Save. In Finder on macOS Monterey and later: right-click the PNG → Quick Actions → Convert Image → JPEG - this also works on multiple selected files for a quick batch conversion. For a browser-based batch conversion with a shared quality setting across all files, use RepetiGo's converter in Safari instead.
-H3: Q7: How do I convert PNG to JPG on Windows?
-Using Microsoft Paint (built-in, free): open your PNG in Paint, go to File → Save As → JPEG picture, name the file, and click Save. Using the Photos app (Windows 10/11): open the PNG, click the three-dot menu → Edit & Create → Edit, then save a copy choosing JPEG as the format. For converting several PNG files at once with one shared quality setting, RepetiGo's browser-based batch converter in Chrome is faster than converting files one by one.
-H3: Q8: How do I convert PNG to JPG on iPhone?
-The most reliable method: open Safari on your iPhone, go to repetigo.com/image-tools/png-to-jpg, tap the upload area, select your PNG from the Photos app, adjust quality if needed, and download the JPG to your Files app. You can then select that downloaded JPG when uploading to a government portal directly from your phone.
-H3: Q9: Can I convert multiple PNG files to JPG at once?
-Yes. Upload several PNG (or WebP, GIF, SVG) files in one session - each is converted automatically and shown on its own card. The same quality setting applies to all of them; adjust the slider once and click Convert to re-apply it to every file. Use Download ZIP to get all the converted JPGs in a single archive - useful for converting a set of screenshots or images before uploading them to a portal.
-H3: Q10: Is it safe to upload my files to a free PNG to JPG converter?
-Yes - and more so than most alternatives, because there is no upload at all. RepetiGo's converter processes your image entirely inside your browser using your device's own processing power. The file never reaches any RepetiGo server, so there's nothing to intercept in transit and nothing for us to store, because we never receive the image in the first place. This makes it a reasonable choice even for sensitive documents like identity cards or financial records.
+H2: PNG to JPG - Frequently Asked Questions.
+H3: Is this PNG to JPG converter free?
+Yes - RepetiGo's PNG to JPG converter is completely free with no sign-up and no watermark. Because it converts in your browser rather than on a paid server, you can convert as many PNGs as you like to JPG, with a quality slider, individually or as a ZIP, at no cost. There is nothing to unlock.
+H3: How do I convert PNG to JPG?
+Drop your PNG files onto the tool and they convert to JPG automatically at 90% quality. Adjust the quality slider if you want, then download each JPG or grab them all as a ZIP. It works in any modern browser on any device, and your files are never uploaded to a server.
+H3: How do I convert PNG to JPG on a Mac?
+On a Mac you can use Preview (File → Export → JPEG) or select files in Finder and use Quick Actions → Convert Image → JPEG. Those are the built-in options. For a batch with a quality slider and a single ZIP download, RepetiGo does it in the browser on your Mac with no app to open - and it works the same on Windows.
+H3: Why did my transparent PNG get a white background?
+Because JPG cannot store transparency, so any transparent areas in the PNG are filled with white in the JPG. A logo on a transparent PNG will come out on a white background. For photos this makes no difference, but if you need to keep the transparency, do not convert to JPG - keep the image as a PNG instead.
+H3: How much smaller is a JPG than a PNG?
+It varies by image, but a JPG is usually a good deal smaller than the same image as a PNG, and for photographs the reduction can be dramatic - often a fraction of the original size with no visible quality loss. The tool shows the exact percentage saved for each file, so you can see the benefit for your specific images.
+H3: Can I convert several PNGs at once?
+Yes. Add as many files as you like and they all convert to JPG automatically, each on its own card showing the size saved. Download them individually or grab the whole set as a single ZIP. It is the quick way to turn a folder of PNGs into lightweight JPGs in one go, on any device.
+H3: Can it convert other formats, like WebP or GIF, to JPG?
+Yes - although it is called PNG to JPG, it also accepts WebP, GIF, and SVG and converts them to JPG the same way, filling any transparency with white. The one exception is HEIC (iPhone photos): most browsers other than Safari cannot decode HEIC, so it usually fails to open here; for those, use the dedicated HEIC to JPG tool, which is linked below.
+H3: Can it convert a JPG back to a PNG?
+No - this tool only goes one way, from PNG to JPG. Converting a JPG to a PNG is the opposite direction, handled by the Convert from JPG tool. Note that converting a JPG to PNG does not add transparency, since a JPG never had any - so PNG to JPG here simply makes a smaller, flat JPG.
+H3: What happens with an animated GIF?
+If you convert an animated GIF, only the first frame is turned into a JPG, since JPG is a still-image format. That is fine for grabbing a single still from an animation, but the movement is not preserved. For normal PNG, WebP, and SVG images this does not apply - it is only relevant for animated GIF input.
+H3: Are my files uploaded to a server?
+No. The converter runs entirely in your browser using the canvas, so your files never leave your device and nothing is sent to RepetiGo. That keeps your images private, works on a weak connection, and is why there is no watermark on your converted JPGs.
 
-H2: Related Image Conversion Tools.
-
+H2: Related Image Tools.
 Tool
 What It Does
 Link
-Image Format Converter
-Reverse direction - convert JPG to PNG or WebP
+Convert from JPG
+The reverse: JPG → PNG or WebP
 → /image-tools/convert-from-jpg
+HEIC to JPG
+iPhone HEIC → JPG (not handled here)
+→ /image-tools/heic-to-jpg
+WebP to JPG
+Dedicated WebP → JPG
+→ /image-tools/webp-to-jpg
+PNG Converter
+PNG → PDF/WebP/ICO/GIF/BMP
+→ /image-tools/png-converter
 Compress Image
-Reduce JPG file size to a KB target after conversion
+Shrink the JPG to a KB limit (batch + ZIP)
 → /image-tools/compress-image
-Remove Background
-Get a transparent-background PNG for logos and ID photos
-→ /image-tools/background-remover
-Resize Image
-Change image dimensions before or after format conversion
-→ /image-tools/resize-image
 All Image Tools
-Complete image tools suite
+The complete image tools suite
 → /image-tools
 
-[ Convert PNG to JPG Free - No Sign-Up → repetigo.com/image-tools/png-to-jpg ]
+[ Convert PNG to JPG Free - Batch + Quality → repetigo.com/image-tools/png-to-jpg ]
 [ Explore All Image Tools → repetigo.com/image-tools ]`;
 
-const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
+const faqSchemaQuestions = Array.from(content.matchAll(/H3: ([^\n]+\?)\n([\s\S]*?)(?=\nH3:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
 export default function PngToJpgPage() {
   return (
@@ -298,11 +206,8 @@ function StructuredSeoCopy({ content: source }: { content: string }) {
 }
 
 function getKnownTable(lines: string[]): SeoTableData | null {
-  if (lines[0] === "Attribute" && lines[1] === "PNG") return { headers: ["Attribute", "PNG", "JPG / JPEG", "Convert PNG → JPG When..."], rows: chunkRows(lines.slice(4), 4) };
-  if (lines[0] === "Scenario" && lines[1] === "Why PNG Fails") return { headers: ["Scenario", "Why PNG Fails", "How JPG Fixes It"], rows: chunkRows(lines.slice(3), 3) };
-  if (lines[0] === "PNG Source" && lines[1] === "After PNG → JPG Conversion") return { headers: ["PNG Source", "After PNG → JPG Conversion", "Is This a Problem?", "What to Do Instead"], rows: chunkRows(lines.slice(4), 4) };
-  if (lines[0] === "Feature" && lines[1] === "RepetiGo") return { headers: ["Feature", "RepetiGo", "Adobe Express", "ILoveIMG", "Convertio"], rows: chunkRows(lines.slice(5), 5) };
-  if (lines[0] === "Protection Layer" && lines[1] === "What It Means in Practice") return { headers: ["Protection Layer", "What It Means in Practice"], rows: chunkRows(lines.slice(2), 2) };
+  if (lines[0] === "Step" && lines[1] === "What You Do" && lines[2] === "What Happens") return { headers: ["Step", "What You Do", "What Happens"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "People often ask for…" || lines[0] === "People often ask for...") return { headers: ["People often ask for…", "The honest answer"], rows: chunkRows(lines.slice(2), 2) };
   if (lines[0] === "Tool" && lines[1] === "What It Does" && lines[2] === "Link") return { headers: ["Tool", "What It Does", "Link"], rows: chunkRows(lines.slice(3), 3) };
   return null;
 }
@@ -341,7 +246,7 @@ function renderTableCell(cell: string) {
 }
 
 function renderInlineMappedLinks(text: string) {
-  const parts = text.split(/(repetigo\.com\/(?:tools\/image\/[a-z-]*|pricing)\/?|\/image-tools\/[a-z-]*\/?|\/image-tools\/?|\/products\/printpilot\/?|\/privacy-policy\/?|\/pricing\/?)/g);
+  const parts = text.split(/(repetigo\.com\/(?:image-tools\/[a-z-]*|pricing)\/?|\/image-tools\/[a-z-]*\/?|\/image-tools\/?|\/products\/printpilot\/?|\/privacy-policy\/?|\/pricing\/?)/g);
   return parts.map((part, index) => {
     const href = mapSeoRoute(part.startsWith("repetigo.com") ? "https://" + part : part);
     if (!href) return part;
@@ -354,10 +259,11 @@ function mapSeoRoute(route: string) {
   const routeMap: Record<string, string> = {
     "/image-tools": "/image-tools",
     "/image-tools/png-to-jpg": "/image-tools/png-to-jpg",
-    "/image-tools/jpg-to-png": "/image-tools/convert-from-jpg",
+    "/image-tools/convert-from-jpg": "/image-tools/convert-from-jpg",
+    "/image-tools/heic-to-jpg": "/image-tools/heic-to-jpg",
+    "/image-tools/webp-to-jpg": "/image-tools/webp-to-jpg",
+    "/image-tools/png-converter": "/image-tools/png-converter",
     "/image-tools/compress-image": "/image-tools/compress-image",
-    "/image-tools/resize-image": "/image-tools/resize-image",
-    "/image-tools/background-remover": "/image-tools/background-remover",
     "/products/printpilot": "/print-automation",
     "/privacy-policy": "/privacy-policy",
     "/pricing": "/pricing",
@@ -369,10 +275,11 @@ function getRouteLabel(href: string) {
   const labels: Record<string, string> = {
     "/image-tools": "Explore All Image Tools",
     "/image-tools/png-to-jpg": "Open PNG to JPG",
-    "/image-tools/convert-from-jpg": "Open Image Format Converter",
+    "/image-tools/convert-from-jpg": "Open Convert from JPG",
+    "/image-tools/heic-to-jpg": "Open HEIC to JPG",
+    "/image-tools/webp-to-jpg": "Open WebP to JPG",
+    "/image-tools/png-converter": "Open PNG Converter",
     "/image-tools/compress-image": "Open Compress Image",
-    "/image-tools/resize-image": "Open Resize Image",
-    "/image-tools/background-remover": "Open Remove Background",
     "/print-automation": "Learn About PrintPilot",
     "/privacy-policy": "Read Privacy Policy",
     "/pricing": "Start Free Trial",
@@ -381,8 +288,8 @@ function getRouteLabel(href: string) {
 }
 
 function JsonLd() {
-  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo PNG to JPG Converter", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online PNG to JPG converter with adjustable quality and batch conversion. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl };
-  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert PNG to JPG Online Free", step: [{ "@type": "HowToStep", name: "Upload PNG", text: "Upload Your PNG File" }, { "@type": "HowToStep", name: "Choose Quality", text: "Choose Quality Settings" }, { "@type": "HowToStep", name: "Download", text: "Download Your JPG" }] };
+  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo PNG to JPG Converter", applicationCategory: "MultimediaApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free browser-based PNG to JPG converter with a quality slider and batch conversion to a ZIP; also accepts WebP, GIF, and SVG input. Runs 100% in the browser - no file is ever uploaded to a server.", url: pageUrl };
+  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to convert PNG to JPG", step: [{ "@type": "HowToStep", name: "Upload your PNG(s)", text: "Drop or select one or more PNG files." }, { "@type": "HowToStep", name: "Set quality (optional)", text: "Adjust the quality slider between 40% and 100%." }, { "@type": "HowToStep", name: "Download", text: "Download each JPG, or grab them all as a ZIP." }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
   const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "PNG to JPG", item: pageUrl }] };
 

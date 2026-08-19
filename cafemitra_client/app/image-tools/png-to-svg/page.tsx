@@ -4,218 +4,189 @@ import PngToSvgClient from "./PngToSvgClient";
 const pageUrl = "https://repetigo.com/image-tools/png-to-svg";
 
 export const metadata: Metadata = {
-  title: "PNG to SVG Converter Free Online - Vectorize Logos & Icons | RepetiGo",
+  title: "PNG to SVG Free - Real Vector Tracing for Logos & Cricut | RepetiGo",
   description:
-    "Convert PNG to SVG free online - vectorize logos, icons, and line art for infinite scaling. Batch convert multiple files. No sign-up, no watermark, 100% browser-based - nothing is ever uploaded.",
+    "Free PNG to SVG converter with real vector tracing - turn a PNG logo, icon or line art into a scalable SVG in your browser. 4 detail presets, great for Cricut. No upload.",
   alternates: { canonical: pageUrl },
   openGraph: {
-    title: "PNG to SVG Converter Free Online - Vectorize Logos & Icons | RepetiGo",
-    description: "Convert PNG to SVG free - real vector tracing for logos, icons, and line art. Batch convert. No sign-up, 100% browser-based.",
+    title: "PNG to SVG Free - Real Vector Tracing for Logos & Cricut",
+    description: "Turn a PNG logo, icon or line art into a scalable SVG with real vector tracing. 4 presets, great for Cricut.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
     card: "summary_large_image",
-    title: "PNG to SVG Converter Free - RepetiGo",
-    description: "Convert PNG to SVG free, one file or a batch. No sign-up, 100% browser-based.",
+    title: "PNG to SVG Free - Real Vector Tracing",
+    description: "Free PNG→SVG with real path tracing. 4 detail presets, great for logos & Cricut, in your browser.",
   },
   robots: { index: true, follow: true },
 };
 
-const content = String.raw`H1: PNG to SVG Converter Online Free. Vectorize PNG Logos, Icons, and Line Art - No Sign-Up.
-RepetiGo's free PNG to SVG converter traces your PNG image into a real vector SVG file - not just a PNG wrapped inside an SVG container. The converter reads the pixel data, groups it into flat colour regions, and draws actual vector paths around each shape, so the result is a genuine, editable, infinitely scalable SVG.
+const content = String.raw`H1: PNG to SVG - Convert a PNG to a Real, Scalable SVG.
+RepetiGo's PNG to SVG converter turns a PNG into a true, scalable SVG using real vector tracing - free and in your browser. It does not just wrap your image inside an SVG file; it traces the picture into actual vector paths, so the result scales up cleanly to any size, the way a real vector should. Upload one PNG or a batch, choose a detail level, and download an SVG made of genuine paths. Everything runs on your device, so nothing is uploaded.
+This is the tool you want for turning a logo, icon, or piece of line art into a vector you can resize infinitely - for large-format printing, crisp web graphics, or a Cricut cutting project. With four detail presets and a clear preview, you can pick the trace that suits your image. It is free, needs no sign-up, and adds no watermark.
 
-This is a true vectorization tool, which means it works best on the kind of images vector formats are meant for: logos, icons, line art, and graphics with flat, well-defined colour areas. It is not designed to vectorize photographs - a photo traced to SVG produces a large file with thousands of tiny paths trying to approximate photographic detail, and a JPG or PNG remains the right format for photos. For logos, icons, and simple graphics, though, converting to SVG means the image scales to any size - a poster, a hoarding, or a favicon - without ever pixelating.
+✅ Free · No sign-up · No watermark   |   ✅ Real vector tracing (scalable paths)   |   ✅ 4 detail presets   |   ✅ Batch + ZIP · 100% in your browser
 
-✓ Real Vector Tracing, Not a PNG Wrapper   ✓ Batch Convert   ✓ Adjustable Detail Level   ✓ No Sign-Up   ✓ 100% Browser-Based - Nothing Uploaded
+H2: What "PNG to SVG" Really Means - Real Vectorization.
+It is worth being precise, because not all "PNG to SVG" tools do the same thing. Some simply take your PNG and embed it, unchanged, inside an SVG file - the result has an .svg extension but is still the same fixed-pixel image, so it pixelates when you scale it up. That is not real vectorization.
+This tool does the real thing. It analyses the image and traces it into actual vector paths and shapes - bezier curves defined mathematically - so the SVG can scale to any size without losing sharpness. That is what makes an SVG genuinely useful: a logo traced to a true SVG stays crisp whether it is on a business card or a billboard. The difference matters, and this converter is built for the real, scalable kind.
 
-[ Convert PNG to SVG Free - No Sign-Up → repetigo.com/image-tools/png-to-svg ]
+✨ Real tracing, not a wrapper: your PNG becomes actual scalable vector paths - crisp at any size - not a fixed-pixel image with an .svg extension.
 
-H2: What Is SVG? And When Should You Convert PNG to SVG?
-SVG (Scalable Vector Graphics) stores an image as a set of mathematical shapes and paths, rather than a grid of pixels like PNG or JPG. Because a vector shape is defined by geometry, not pixels, it can be scaled up to any size - a mobile icon or a building-sized banner - with perfectly crisp edges. A PNG, by contrast, is a fixed grid of pixels: enlarge it enough and the pixels themselves become visible as blur or blockiness.
+H2: Best for Logos, Icons & Line Art - Not Photos.
+Vector tracing works by finding clean shapes and colour areas and redrawing them as paths, so it shines on images that are already made of clear, flat shapes: logos, icons, symbols, simple illustrations, and line art. On those, it produces a tidy, scalable SVG that looks great and often has a small file size.
+Photographs are a different story. A photo has thousands of subtle colours, gradients, and fine texture, none of which turn into clean vector paths - tracing one produces a huge, messy SVG that looks worse than the original and is not useful. The tool says so directly in its interface: best results come from flat-colour logos, icons, and line art, not photos. So bring a logo or a simple graphic, and this delivers; bring a photo, and vectorization is simply the wrong tool for the job.
 
-Converting a PNG to SVG only makes sense when the source image is suited to vector representation. A flat-colour logo, a simple icon, a hand-drawn line illustration, or a scanned signature traces cleanly into a small, crisp SVG. A photograph, a screenshot with gradients, or a complex illustration with thousands of colours traces into a large, messy SVG that offers little benefit over just keeping the PNG or JPG.
+H2: How to Convert PNG to SVG in 3 Steps.
+Here is how to convert PNG to SVG with RepetiGo. It traces automatically as soon as you add a file.
 
-H3: PNG vs SVG - Format Comparison
+Step
+What You Do
+What Happens
+1. Upload your PNG(s)
+Drop or select one or more PNG files.
+Each is traced to an SVG using the Balanced preset.
+2. Pick a detail level
+Choose Simple, Balanced, Detailed, or Line Art.
+Click Convert again to re-trace; the preview shows the SVG vs the PNG.
+3. Download
+Download each SVG, or grab them all as a ZIP.
+You get true, scalable vector SVG files.
 
-Feature
-PNG (Raster)
-SVG (Vector)
-Made of
-A fixed grid of pixels
-Mathematical paths and shapes
-Scaling
-Loses quality when enlarged - pixelates
-Scales to any size with no quality loss
-File size for logos/icons
-Larger than an equivalent simple SVG
-Very small for flat-colour graphics
-File size for photos
-Efficient for photographic detail
-Very large and impractical for photos
-Editability
-Not editable as shapes - pixel editing only
-Fully editable in Illustrator, Figma, Inkscape
-Browser support
-Universal
-Universal - all modern browsers render SVG directly
+🔒 The tracing happens in your browser - your PNG files are never uploaded to RepetiGo or any server.
+
+H2: The Four Detail Presets.
+Different images trace best at different detail levels, so the tool gives you four presets to choose from. Pick the one that matches your image, and re-trace so you can compare in the preview.
+
+Preset
 Best for
-Photos, screenshots, scanned documents
-Logos, icons, line art, illustrations, favicons
-When to convert PNG → SVG
--
-When you need the image to scale losslessly - print, signage, responsive web icons
+What it does
+Simple - Logos & Icons
+Flat logos, simple icons
+Fewer colours and paths, clean result
+Balanced (Recommended)
+Most images
+A good general-purpose trace (the default)
+Detailed
+Richer illustrations
+More paths and colours, finer detail
+Black & White - Line Art
+Sketches, outlines, line art
+A crisp two-tone trace
 
-💡 Quick test before converting: does your PNG have a small number of flat colours and clean edges (like a logo)? Convert to SVG. Does it have gradients, photographic detail, or hundreds of colours blending smoothly? Keep it as PNG or JPG - vectorizing it will not improve it.
+Balanced is the default and works well for most graphics. Drop to Simple for a very clean logo, go Detailed when you need to keep more nuance, or choose Line Art for black-and-white sketches and outlines. Switching presets clears the current result, so click Convert to SVG again to re-trace with the new setting - it only takes a moment to try a couple and keep the one that looks best.
 
-H2: How to Convert PNG to SVG Online Free in 3 Steps.
-H3: Step 1 - Upload Your PNG File
-Click Select PNG Images or drag and drop your .png file - or several PNG files at once for batch conversion. There's no fixed file size cap, because everything runs on your own device. The converter works in any browser on any device - Android, iPhone, Windows, Mac, Linux.
-H3: Step 2 - Choose a Detail Level and Convert
-As soon as you upload, RepetiGo traces your PNG automatically using the Balanced detail level. You can change the detail level at any point and every uploaded file re-traces to the new setting: Simple - Logos & Icons merges similar colours into fewer, cleaner shapes - ideal for flat logos. Balanced (Recommended) is a good default for most icons and simple graphics. Detailed keeps more of the original shapes, at the cost of a larger SVG file. Black & White - Line Art is built for scanned signatures, sketches, and single-colour line drawings.
-H3: Step 3 - Download Your SVG
-Click Download for a single file. For a batch, click Download ZIP to get every converted SVG in one archive. File names are preserved (logo.png → logo.svg). Because nothing was ever uploaded, there's nothing left on any server once you're done. Design workflow tip: the downloaded SVG opens directly in Adobe Illustrator (File → Open), Inkscape, Figma (drag and drop), or straight into an HTML page with an img tag - no further conversion needed.
+H2: PNG to SVG for Cricut & Cutting.
+If you use a Cricut or another cutting machine, you need real SVG cut paths - and that is exactly what this tool produces. A traced SVG is made of actual vector paths, which is what cutting software follows to cut your design. To prepare a PNG for Cricut, upload it, pick a detail level (Simple often works well for clean cut lines), and download the SVG to import into your cutting software.
+Because the tracing is real vectorization and not a wrapped image, the SVG will scale and cut cleanly rather than coming in as an un-cuttable raster. For the best cutting results, start from a clean, flat-colour design - a bold logo or a simple silhouette traces into crisp, cuttable paths, while a busy or photographic image will not. This makes it a genuinely useful free step in a Cricut workflow.
 
-[ Convert PNG to SVG Free Now → repetigo.com/image-tools/png-to-svg ]
+✂️ For Cricut: a traced SVG has real cut paths your cutting software can follow. Start from a clean, flat design; the Simple preset often gives the cleanest cut lines.
 
-H2: ★ Batch PNG to SVG Conversion.
-Icon sets, logo variations, and UI asset libraries usually exist as a folder of PNGs, not a single file. Vectorizing them one at a time is slow - especially when they all need the same detail level.
+H2: Colour or Black & White Line Art.
+The tool traces in colour by default - the Simple, Balanced, and Detailed presets all produce a colour SVG, reproducing the flat colours of your logo or graphic as separate vector shapes. So converting a PNG to SVG with colour is straightforward: just keep one of the colour presets. If you specifically want a two-tone result - for a stamp, a stencil, or clean line art - the Black & White Line Art preset traces the image into a crisp monochrome SVG instead. Between the four presets, you can get either a faithful colour vector or a clean line-art one from the same PNG.
 
-RepetiGo's batch PNG to SVG converter handles any number of files in one session:
-Upload all PNG files at once - drag a multi-file selection or Ctrl+Click (Windows) / Cmd+Click (Mac) to multi-select.
-Each file traces automatically at your chosen detail level as it's added.
-Change the detail level at any point to re-trace every file in the batch to the new setting.
-Click Download ZIP to get one archive containing all the traced SVG files, named identically to the originals.
+H2: Batch Convert Multiple PNGs (with ZIP).
+You are not limited to one file. Add as many PNGs as you like - each on its own card showing its size and the traced SVG size - pick a detail preset, and trace them all. Download each SVG individually or grab the whole set as a single ZIP. It is a quick way to vectorise a set of icons or logos in one go, with the same preset applied across the batch.
 
-💡 When batch converting a mixed set of PNGs, keep in mind that vectorization quality depends on the source image. An icon set with flat colours will trace beautifully in one batch. If you accidentally include a photo or a screenshot in the same batch, its SVG output will be large and messy - that's expected, since photos are not good vectorization candidates. Remove those files and keep them as PNG or JPG instead.
+✅ Real batch support: trace a whole set of PNGs to SVG at once and download them as one ZIP - all in your browser, nothing uploaded.
 
-H2: ★ Indian Use Cases - Who Converts PNG to SVG in India?
-As India's design, print, and web development industry grows, the need for scalable vector graphics comes up constantly - especially anywhere an image needs to be resized without losing quality.
+H2: Everything Runs in Your Browser.
+Like the rest of RepetiGo's image tools, the converter does all its work on your own device. Your PNG is traced to an SVG locally using the tracing engine loaded into your browser - nothing is uploaded, and no server processes your file. That keeps your designs private, works on a weak connection, and is why the tool carries a "Files stay in your browser" badge. There is no watermark and no account wall.
 
-H3: UI/UX Designers and Web Developers
-Indian designers and developers frequently receive a logo or icon as a PNG - from a client, a stock site, or a screenshot of another website - and need it as SVG to use in a Figma design, a React component, or a responsive website where the icon must look sharp on every screen size. Converting the PNG to SVG once means the same file works at 16px in a browser tab and at full width in a hero banner, without needing separate image exports for every size.
+🔒 Client-side and private: your PNG files stay on your device, nothing is uploaded, and no watermark is added.
 
-H3: Print Shops and Signage Businesses
-Indian print shops and signage businesses regularly enlarge a customer's logo for a banner, hoarding, vehicle wrap, or shop signboard. If the only file the customer has is a small PNG, enlarging it directly makes it blurry and pixelated at signage size. Converting the PNG to SVG first - when the logo is a flat-colour design - gives the print shop a file that scales cleanly to any size the job requires, in CorelDRAW, Illustrator, or the signage software's cutting plotter.
+H2: ★ Use Cases - Design, Print & Craft.
+Turning a PNG into a real SVG unlocks a lot across design, print, and craft.
 
-H3: Students and Freelancers Building Portfolios
-Design students and freelance developers on Upwork and Fiverr often need to convert a reference logo, icon, or hand-drawn sketch (scanned as PNG) into SVG for a portfolio piece, a presentation, or a client handover. A browser-based converter with no sign-up and no watermark is the fastest way to get a usable SVG without installing design software just to trace one image.
+Who
+What they convert
+Why
+Designers
+A raster logo → SVG
+A scalable vector for any size
+Print shops
+A logo PNG → SVG
+Sharp at banner and signage sizes
+Cricut / crafters
+A design PNG → SVG
+Real cut paths for the machine
+Web developers
+An icon PNG → SVG
+Crisp, lightweight vector icons
+Anyone with a flat logo
+PNG → SVG
+Future-proof, resolution-independent art
 
-H2: Why Use RepetiGo's PNG to SVG Converter?
+🇮🇳 Tip: for a clean trace, remove a busy background first at /image-tools/background-remover, then vectorise the isolated logo here.
 
-Feature
-RepetiGo
-Adobe Illustrator (Image Trace)
-Vector Magic
-Generic Online Converters
-Free to use
-✓ Always free
-✗ Paid subscription
-✗ Paid (free preview only)
-~ Varies, often limited
-Sign-up required
-✓ Never
-✗ Adobe account required
-✗ Account required
-~ Many require account
-Real vector tracing (not a PNG wrapper)
-✓ Yes - true path tracing
-✓ Yes
-✓ Yes
-~ Many just embed the PNG in an SVG tag
-Batch conversion
-✓ Yes - upload any number of files
-~ Manual per file
-~ Limited on free tier
-~ Varies
-Adjustable detail level
-✓ 4 presets, from Simple to Detailed
-✓ Extensive manual controls
-✓ Yes
-~ Rarely offered
-No watermark on output
-✓ Always
-✓ Yes
-✗ Watermarked on free tier
-~ Some add watermarks
-Files ever leave your device?
-✗ Never - 100% browser-based
-✓ Never - local software
-✓ Yes - uploaded to their servers
-✓ Yes - uploaded to their servers
+H2: What This Tool Does Not Do.
+So you know whether it fits before you start, here is what this converter is not for - and where to go instead.
 
-H2: Your Files Are Safe. Always.
+People often expect…
+The honest answer
+Vectorise a photograph
+No - tracing is for flat logos/icons/line art, not photos
+Fine-tune colours, smoothness, or paths
+No - you choose from four presets, not detailed settings
+A live preview as you change settings
+No - pick a preset and it re-traces
+Minify / optimise the SVG file
+No - there is no SVG optimisation step
+Convert an SVG back to PNG
+No - use the SVG Converter for the reverse
+Trace a JPG
+No - input is PNG (use the JPG Converter to trace a JPG)
 
-Protection Layer
-What It Means in Practice
-🖥️ 100% Browser-Based Conversion
-Your PNG is traced into an SVG using your own device's processing power via the browser. It is never uploaded to any server.
-🚫 Nothing Ever Leaves Your Device
-Because conversion happens locally, there is no upload, no transfer, and nothing on any server for us to store or delete.
-👁️ No Image Content Is Read
-RepetiGo's code cannot see, analyse, or extract what's in your image - it only traces pixel data into vector paths on your own device.
-🚫 No Account = No Data Profile
-No sign-up means no personal data, no file history, and no usage profile is ever created.
-🔒 Well Suited to Unreleased Logos and Client Work
-Because nothing is transmitted anywhere, this is one of the safer ways to vectorize a confidential brand asset or a client's unreleased logo online.
+H2: PNG to SVG - Frequently Asked Questions.
+H3: Is this PNG to SVG converter free?
+Yes - RepetiGo's PNG to SVG converter is completely free with no sign-up and no watermark. Because it traces in your browser rather than on a paid server, you can vectorise as many PNGs as you like, with all four detail presets and batch conversion with a ZIP, at no cost. There is nothing to unlock.
+H3: Does it really vectorise the PNG, or just wrap it in an SVG?
+It really vectorises. The tool traces your image into actual vector paths - bezier curves - rather than embedding the raster inside an SVG file. That means the result is a true, scalable SVG that stays crisp at any size, not a fixed-pixel image with an .svg extension. It is real vectorization, which is what makes the SVG genuinely useful.
+H3: Can I use this for Cricut?
+Yes. A traced SVG is made of real vector paths, which is exactly what Cricut and other cutting machines follow to cut a design. Upload your PNG, choose a detail preset (Simple often gives the cleanest cut lines), and download the SVG to import into your cutting software. Start from a clean, flat design for the best cutting result.
+H3: Which detail preset should I use?
+Balanced is the recommended default and works for most images. Use Simple for a very clean logo or icon, Detailed when you want to keep more nuance in a richer graphic, and Black & White Line Art for sketches and outlines. Switching presets clears the current result - click Convert to SVG again to re-trace with the new setting, so it's still quick to try a couple and keep the best.
+H3: Can it vectorise a photo?
+Not usefully. Vector tracing works on flat shapes and clear colour areas, so it is made for logos, icons, and line art. A photograph has too many subtle colours and gradients to become clean paths, so tracing one produces a huge, messy SVG. The tool says so directly: best results come from flat-colour logos, icons, and line art, not photos.
+H3: Can it make a colour SVG or only black and white?
+Both. The Simple, Balanced, and Detailed presets produce a colour SVG, reproducing your image's flat colours as separate vector shapes. The Black & White Line Art preset produces a crisp two-tone SVG instead, which is ideal for stencils, stamps, or line work. So you can get either a colour vector or a monochrome one from the same PNG.
+H3: Can I convert several PNGs at once?
+Yes. Add as many PNGs as you like, pick a detail preset, and trace them all - then download each SVG or grab the whole set as a single ZIP. Each file shows its original and traced sizes on its own card. It is a quick way to vectorise a set of icons or logos with the same preset in one go.
+H3: Can I fine-tune the trace settings?
+You choose from four detail presets rather than adjusting individual settings like colour count or smoothness. The presets cover the common cases - simple logos, balanced graphics, detailed art, and line art - but there are no advanced sliders for fine-grained control. For most logo and icon work, a preset gives a good result directly.
+H3: Can it convert an SVG back to a PNG?
+No - this tool goes one way, from PNG to SVG (tracing a raster into a vector). To go the other way and turn an SVG into a PNG or JPG, use the SVG Converter, which renders an SVG to a raster image. And to trace a JPG rather than a PNG, the JPG Converter offers SVG tracing too.
+H3: Are my PNG files uploaded to a server?
+No. The converter runs entirely in your browser using the tracing engine, so your PNG files never leave your device and nothing is sent to RepetiGo. That keeps your designs private, works on a weak connection, and is why there is no watermark on your converted SVGs.
 
-[ Read Our Privacy Policy → /privacy-policy ]
-
-H2: PNG to SVG for Print Shops and Signage.
-Enlarging a low-resolution customer logo is one of the most common print shop headaches - a PNG that looks fine on a visiting card turns blurry and blocky the moment it's scaled up for a banner or a shop signboard. When the logo is a flat-colour design, vectorizing it once solves the problem permanently: the resulting SVG scales to any output size the job requires without any loss of sharpness.
-For print shops handling a high volume of customer files - logos, icons, certificates - pairing manual tools like this with PrintPilot, RepetiGo's automated print shop software, keeps the rest of the print workflow - QR uploads, pricing, and the print queue - running without manual file handling for every order.
-
-[ Learn About PrintPilot → /products/printpilot/ ]
-[ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Convert PNG to SVG Now → repetigo.com/image-tools/png-to-svg ]
-
-H2: Common Questions About PNG to SVG Conversion.
-H3: Q1: Does Converting PNG to SVG Actually Create a Vector File, or Just Wrap the PNG?
-RepetiGo's converter creates a genuine vector file. It reads the PNG's pixel data, groups similar colours into regions, and traces the outline of each region into mathematical vector paths - the same fundamental process used by professional tools like Adobe Illustrator's Image Trace. This is different from tools that simply embed your PNG as a base64 image inside an SVG wrapper: that produces a technically valid .svg file, but it is still a raster image internally and will still pixelate when enlarged. You can tell the difference by opening the output in a vector editor like Illustrator or Inkscape - a real trace shows editable paths and shapes; a wrapped PNG shows a single embedded image object.
-H3: Q2: Can I Convert a Photo to SVG?
-Technically yes - the converter will process any PNG, including a photo. But the result is rarely useful. Photographs have smooth gradients and thousands of colours, which forces the tracer to generate an enormous number of tiny paths trying to approximate that detail. The output SVG file is typically much larger than the original PNG, renders slowly, and does not look meaningfully better than the source image. SVG is the right format for flat-colour graphics - logos, icons, line art - not photographs. For a photo, keep it as PNG or convert it to JPG for a smaller file instead.
-H3: Q3: Can I Just Rename .png to .svg to Convert It?
-No. Renaming a file from .png to .svg does not convert it - it only changes the file extension label. The file still contains raster pixel data internally, not vector path data, so software expecting an SVG will either fail to open it or display an error. To actually convert PNG to SVG, the pixel data has to be traced into vector paths by an algorithm - which is what RepetiGo's converter does. There is no shortcut that avoids the tracing step.
-H3: Q4: How Do I Batch Convert Multiple PNG Files to SVG?
-Go to repetigo.com/image-tools/png-to-svg. Click Select PNG Images and choose multiple files using Ctrl+Click (Windows) or Cmd+Click (Mac), or drag multiple files into the upload area at once. Each file traces automatically at your chosen detail level. Adjust the detail level at any time to re-trace every file in the batch. Click Download ZIP to get an archive containing all the SVG files, named identically to the originals. There's no file count limit per batch.
-H3: Q5: Why Is My Converted SVG File Larger Than the Original PNG?
-This happens when the source PNG has more visual complexity than the SVG format handles efficiently - gradients, noise, photographic detail, or a very large number of distinct colours. Each of those details becomes a separate vector path, and a large number of paths adds up to a larger file than the equivalent compressed PNG. This is expected behaviour, not an error: it's a sign that the source image is not a good candidate for vectorization. Simple, flat-colour logos and icons almost always produce a smaller SVG than the original PNG; complex or photographic images often produce a larger one. If your SVG comes out larger, try the Simple detail level to reduce the number of paths, or keep the image as PNG.
-H3: Q6: Does Converting PNG to SVG Lose Any Quality?
-The conversion is an approximation, not a lossless transformation - the tracer redraws your image as vector shapes rather than copying pixel data exactly, so very fine detail can be smoothed or simplified in the process, especially with photos or complex gradients. For the images SVG is meant for - flat-colour logos, icons, and line art - this approximation is usually visually indistinguishable from the original at normal viewing sizes, and the SVG can then be enlarged far beyond what the original PNG could support without pixelating. If you need pixel-perfect fidelity to the source image, keep it as PNG instead of converting.
-H3: Q7: What Is the Difference Between PNG to SVG and SVG to PNG?
-PNG to SVG (this page) traces a raster PNG image into vector paths, so the result scales without pixelating - useful for taking a logo you only have as a PNG and making it print- and web-ready at any size. SVG to PNG does the reverse: it renders a vector SVG file into a fixed-pixel PNG image, useful when you need a raster version of a vector graphic for a platform that doesn't accept SVG, like most social media image uploads. The two operations solve opposite problems, and RepetiGo's tools handle each direction separately.
-
-H2: More Free Image Tools from RepetiGo.
-
+H2: Related Image Tools.
 Tool
 What It Does
 Link
 SVG Converter
-Convert an SVG back into PNG or JPG at any size - the reverse direction
+The reverse: SVG → PNG or JPG
 → /image-tools/svg-converter
+JPG Converter
+Trace a JPG → SVG (and more)
+→ /image-tools/jpg-converter
 Remove Background
-Remove the background from a PNG before vectorizing a logo
+Clean up a logo before tracing
 → /image-tools/background-remover
-Compress Image
-Reduce PNG file size when you decide to keep it as a raster image
-→ /image-tools/compress-image
-Resize Image
-Resize a PNG before tracing, for faster and cleaner results
-→ /image-tools/resize-image
-PNG to JPG
-Convert PNG to JPG for photos and images that shouldn't be vectorized
-→ /image-tools/png-to-jpg
-Image Format Converter
-Convert JPG or WebP images to PNG or WebP output
-→ /image-tools/convert-from-jpg
+PNG Converter
+PNG → PDF/WebP/ICO/GIF/BMP
+→ /image-tools/png-converter
+Image Converter
+Convert between many image formats
+→ /image-tools/image-converter
 All Image Tools
-Complete free image tools suite
+The complete image tools suite
 → /image-tools
 
-[ Convert PNG to SVG Free - No Sign-Up → repetigo.com/image-tools/png-to-svg ]
+[ Convert PNG to SVG Free - Real Vector Tracing → repetigo.com/image-tools/png-to-svg ]
 [ Explore All Image Tools → repetigo.com/image-tools ]`;
 
-const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
+const faqSchemaQuestions = Array.from(content.matchAll(/H3: ([^\n]+\?)\n([\s\S]*?)(?=\nH3:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
 export default function PngToSvgPage() {
   return (
@@ -229,7 +200,7 @@ export default function PngToSvgPage() {
 }
 
 type SeoTableData = { headers: string[]; rows: string[][] };
-const CALLOUT_EMOJI = ["💡", "🇮🇳", "🔒", "🖨️", "📱", "✅", "⚠️", "🖥️", "🔁", "🔄", "★"];
+const CALLOUT_EMOJI = ["💡", "🇮🇳", "🔒", "🖨️", "📱", "✅", "⚠️", "🖥️", "🔁", "🔄", "★", "✨", "✂️"];
 
 function StructuredSeoCopy({ content: source }: { content: string }) {
   const blocks = source.replace(/(^|\n)(H[123]: [^\n]+)\n/g, "$1\n$2\n\n").split(/\n{2,}/).map((block) => block.trim()).filter(Boolean);
@@ -268,9 +239,10 @@ function StructuredSeoCopy({ content: source }: { content: string }) {
 }
 
 function getKnownTable(lines: string[]): SeoTableData | null {
-  if (lines[0] === "Feature" && lines[1] === "PNG (Raster)") return { headers: ["Feature", "PNG (Raster)", "SVG (Vector)"], rows: chunkRows(lines.slice(3), 3) };
-  if (lines[0] === "Feature" && lines[1] === "RepetiGo") return { headers: ["Feature", "RepetiGo", "Adobe Illustrator (Image Trace)", "Vector Magic", "Generic Online Converters"], rows: chunkRows(lines.slice(5), 5) };
-  if (lines[0] === "Protection Layer" && lines[1] === "What It Means in Practice") return { headers: ["Protection Layer", "What It Means in Practice"], rows: chunkRows(lines.slice(2), 2) };
+  if (lines[0] === "Step" && lines[1] === "What You Do" && lines[2] === "What Happens") return { headers: ["Step", "What You Do", "What Happens"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "Preset" && lines[1] === "Best for") return { headers: ["Preset", "Best for", "What it does"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "Who" && lines[1] === "What they convert") return { headers: ["Who", "What they convert", "Why"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "People often expect…" && lines[1] === "The honest answer") return { headers: ["People often expect…", "The honest answer"], rows: chunkRows(lines.slice(2), 2) };
   if (lines[0] === "Tool" && lines[1] === "What It Does" && lines[2] === "Link") return { headers: ["Tool", "What It Does", "Link"], rows: chunkRows(lines.slice(3), 3) };
   return null;
 }
@@ -309,7 +281,7 @@ function renderTableCell(cell: string) {
 }
 
 function renderInlineMappedLinks(text: string) {
-  const parts = text.split(/(repetigo\.com\/(?:image-tools\/[a-z-]*|pricing)\/?|\/image-tools\/[a-z-]*\/?|\/image-tools\/?|\/products\/printpilot\/?|\/privacy-policy\/?|\/pricing\/?)/g);
+  const parts = text.split(/(repetigo\.com\/(?:image-tools\/[a-z-]*|pricing)\/?|\/image-tools\/[a-z-]*\/?|\/image-tools\/?)/g);
   return parts.map((part, index) => {
     const href = mapSeoRoute(part.startsWith("repetigo.com") ? "https://" + part : part);
     if (!href) return part;
@@ -322,15 +294,11 @@ function mapSeoRoute(route: string) {
   const routeMap: Record<string, string> = {
     "/image-tools": "/image-tools",
     "/image-tools/png-to-svg": "/image-tools/png-to-svg",
-    "/image-tools/png-to-jpg": "/image-tools/png-to-jpg",
-    "/image-tools/convert-from-jpg": "/image-tools/convert-from-jpg",
-    "/image-tools/compress-image": "/image-tools/compress-image",
-    "/image-tools/resize-image": "/image-tools/resize-image",
-    "/image-tools/background-remover": "/image-tools/background-remover",
     "/image-tools/svg-converter": "/image-tools/svg-converter",
-    "/products/printpilot": "/print-automation",
-    "/privacy-policy": "/privacy-policy",
-    "/pricing": "/pricing",
+    "/image-tools/jpg-converter": "/image-tools/jpg-converter",
+    "/image-tools/background-remover": "/image-tools/background-remover",
+    "/image-tools/png-converter": "/image-tools/png-converter",
+    "/image-tools/image-converter": "/image-tools/image-converter",
   };
   return routeMap[cleanRoute] || (cleanRoute.startsWith("/image-tools") ? cleanRoute : "");
 }
@@ -340,21 +308,17 @@ function getRouteLabel(href: string) {
     "/image-tools": "Explore All Image Tools",
     "/image-tools/png-to-svg": "Open PNG to SVG",
     "/image-tools/svg-converter": "Open SVG Converter",
-    "/image-tools/png-to-jpg": "Open PNG to JPG",
-    "/image-tools/convert-from-jpg": "Open Image Format Converter",
-    "/image-tools/compress-image": "Open Compress Image",
-    "/image-tools/resize-image": "Open Resize Image",
+    "/image-tools/jpg-converter": "Open JPG Converter",
     "/image-tools/background-remover": "Open Remove Background",
-    "/print-automation": "Learn About PrintPilot",
-    "/privacy-policy": "Read Privacy Policy",
-    "/pricing": "Start Free Trial",
+    "/image-tools/png-converter": "Open PNG Converter",
+    "/image-tools/image-converter": "Open Image Converter",
   };
   return labels[href] || "Open Tool";
 }
 
 function JsonLd() {
-  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo PNG to SVG Converter", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online PNG to SVG converter with real vector tracing, adjustable detail level, and batch conversion. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl };
-  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert PNG to SVG Online Free", step: [{ "@type": "HowToStep", name: "Upload PNG", text: "Upload Your PNG File" }, { "@type": "HowToStep", name: "Convert", text: "Choose a Detail Level and Convert" }, { "@type": "HowToStep", name: "Download", text: "Download Your SVG" }] };
+  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo PNG to SVG", applicationCategory: "MultimediaApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online PNG to SVG converter with real vector tracing, four detail presets, and batch conversion with ZIP download. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl };
+  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert PNG to SVG", step: [{ "@type": "HowToStep", name: "Upload PNG", text: "Upload your PNG(s)" }, { "@type": "HowToStep", name: "Pick a detail level", text: "Pick a detail level" }, { "@type": "HowToStep", name: "Download", text: "Download" }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
   const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "PNG to SVG", item: pageUrl }] };
 

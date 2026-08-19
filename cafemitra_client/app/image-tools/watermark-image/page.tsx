@@ -4,253 +4,167 @@ import WatermarkImageClient from "./WatermarkImageClient";
 const pageUrl = "https://repetigo.com/image-tools/watermark-image";
 
 export const metadata: Metadata = {
-  title: "Add Watermark to Image Online Free India - Text, Logo, Batch | RepetiGo",
+  title: "Watermark Image Free - Add Text or Logo Watermarks | RepetiGo",
   description:
-    "Add watermark to image online free - protect certificates, photos, and documents with text or logo watermarks. Apply to multiple images at once. No sign-up, 100% browser-based.",
+    "Free tool to add a text or logo watermark to your images - drag to position, set opacity and rotation, and batch-watermark many photos at once. In your browser, no upload.",
   alternates: { canonical: pageUrl },
   openGraph: {
-    title: "Add Watermark to Image Online Free India - Text, Logo, Batch | RepetiGo",
-    description: "Free watermark tool for India - protect certificates, photos, documents. Text or logo watermark, applied to one image or several. No sign-up, nothing uploaded.",
+    title: "Watermark Image Free - Add Text or Logo Watermarks",
+    description: "Add a text or logo watermark to your images. Drag to position, set opacity, batch-watermark many photos.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Watermark Image Free - RepetiGo",
-    description: "Add a text or logo watermark to your images, free. No sign-up, 100% browser-based.",
+    title: "Watermark Image Free - Text & Logo",
+    description: "Free: add text/logo watermarks, drag to position, batch + ZIP, 100% in your browser.",
   },
   robots: { index: true, follow: true },
 };
 
-const content = String.raw`H1: Add Watermark to Image Online Free. Protect Certificates, Photos, and Documents - Text or Logo.
-RepetiGo's free image watermark tool lets you add a visible text or logo watermark to any photo, certificate, document scan, or graphic. Type your name, institution, or custom text, or upload your logo - drag it into position, set its opacity and rotation, and download the protected image. No software required, no account needed, and your image is never uploaded to a server.
-Adding a watermark to an image embeds a visible mark - your name, studio logo, "DRAFT," "CONFIDENTIAL," or any custom text - directly into the image file. Once embedded, it becomes a permanent part of the downloaded image, helping deter unauthorized copying, misuse, or falsification.
+const content = String.raw`H1: Watermark Image - Add a Text or Logo Watermark, Free.
+RepetiGo's watermark image tool lets you add a text or logo watermark to your photos - free and in your browser. Upload an image, add a text watermark, your own logo, or both, then drag each one into place and fine-tune its size, opacity, and angle. When it looks right, download it as a PNG or JPG. You can even apply the same watermark to a whole batch of images at once. Everything runs on your device, so your photos are never uploaded.
+It is built for protecting and branding your own work: photographers marking their photos, sellers branding product images, and creators adding a logo before posting online. With multiple layers, full styling control, and batch processing, it does the job properly without any sign-up or watermark of its own. To be clear, this tool adds a watermark to your image - it is not a watermark remover.
 
-✓ Text and Logo Watermarks (Combine Both)   ✓ Drag to Position, Any Rotation   ✓ Apply the Same Watermark to Multiple Images   ✓ No Sign-Up   ✓ No RepetiGo Branding on Your Output
+✅ Free · No sign-up · No watermark of its own   |   ✅ Text + logo layers   |   ✅ Drag, opacity, rotation   |   ✅ Batch + ZIP · 100% in your browser
 
-[ Add Watermark to Image Free - No Sign-Up → repetigo.com/image-tools/watermark-image ]
+H2: Why Watermark Your Images?
+A watermark is a simple, effective way to protect and brand your images. For photographers and artists, a discreet name or logo across a photo discourages others from using it without credit and marks it as yours wherever it travels online. For businesses and online sellers, a logo watermark on product shots reinforces the brand and helps stop images being lifted by competitors or copycat listings.
+Watermarking is also just good practice before posting anything publicly. Once an image is online it can be copied endlessly, and a watermark is your signature on it - a claim of authorship that stays with the file. This tool makes adding that mark quick and flexible, whether you want subtle text in a corner or a bold logo across the middle.
 
-H2: Why Add a Watermark to Your Image?
-A watermark serves as both a visible identification mark and a deterrent against unauthorized use. Different users add watermarks for different reasons - here are the most common:
+H2: How to Add a Watermark in 3 Steps.
+Here is how to watermark an image with RepetiGo. It is quick, and you can preview everything as you go.
 
-Reason
-What It Achieves
-Common In India
-Copyright Protection
-Clearly marks an image as your intellectual property, making unauthorized use or claims harder.
-Photographers, graphic designers, content creators, artists
-Certificate & Document Authentication
-A watermark on a digitally shared certificate or marksheet makes it harder to edit or falsify the document without disturbing the watermark.
-Colleges, coaching institutes, students sharing marksheets
-Proof / Draft Protection
-A "PROOF" or "DRAFT" watermark discourages a client from using a shared design proof before the final file is delivered and paid for.
-Print shops, graphic designers, freelancers
-Business Photo Branding
-Adding a studio name or logo to photos before sharing with clients ensures the studio is credited if the photos are shared further.
-Wedding/event photographers, portrait studios
-Product Image Protection
-Online sellers add their store name to product photos before listing, making the images less attractive to copy and relist.
-E-commerce sellers on Meesho, Flipkart, Amazon India
-Official Document Marking
-Businesses and offices mark documents as "CONFIDENTIAL," "FOR INTERNAL USE," or "COPY" before distributing them.
-Businesses, HR departments, government offices
+Step
+What You Do
+What Happens
+1. Upload your image
+Add the photo you want to watermark (JPG/PNG/WebP).
+It appears on the canvas, ready to mark.
+2. Add text or a logo
+Add a text layer, upload a logo, or both; style and drag them.
+Each layer previews live on the image.
+3. Download
+Download as PNG or JPG (or batch-apply and get a ZIP).
+Your watermarked image saves to your device.
 
-💡 A watermark is a deterrent, not an absolute lock - someone determined can still try to crop or edit around it. To maximise protection: drag the watermark across the centre of the image rather than tucking it in a corner, use 40-60% opacity so it's clearly visible without hiding the image entirely, and use a distinctive element like your logo rather than just plain text.
+🔒 Everything is rendered in your browser on a canvas - your images are never uploaded to RepetiGo or any server.
 
-H2: How to Add a Watermark to an Image Online Free in 3 Steps.
-H3: Step 1 - Upload Your Image
-Click Upload or drag and drop your image. Supported: JPG, PNG, WEBP. Upload one image to start - you'll design your watermark on it, and can apply the same watermark to more images afterward. The tool works in any browser - Chrome, Safari, Firefox - on phones, tablets, and computers.
-H3: Step 2 - Set Your Watermark (Text, Logo, or Both)
-Click Add Text or Add Image to place a watermark layer on your photo - you can add as many text and logo layers as you like and combine them:
-Text layer - type your name, studio name, website, or a notice like "DRAFT," "CONFIDENTIAL," or "PROOF." Choose font, size, bold/italic/underline, colour, opacity, and rotation - drag it anywhere on the image, diagonal placements are harder to crop out.
-Logo layer - upload your logo (a PNG with a transparent background gives the cleanest result). Drag it into position and adjust its size, opacity, and rotation independently from any text layers.
-India tip: for certificates and official documents, add your institution name as a diagonal text layer at 30-40% opacity, dragged across the centre. Visible enough to deter falsification without obscuring the document.
-H3: Step 3 - Download Your Watermarked Image
-Click Watermark Image (or Download Watermarked Image). The watermark is permanently drawn into the image on your device, and downloads as PNG or JPG - whichever you choose. If you want the same watermark on more photos, scroll down to Apply This Watermark to More Images, upload the rest, click Apply, and download them individually or all together as a ZIP.
+H2: Text and Logo Watermark Layers.
+The tool works in layers, so you can combine as many watermarks as you like on one image. Add a text layer to type your name, website, or a copyright line, and choose the font (Arial, Georgia, Verdana, Impact, or Courier New), the size, and the colour, with bold, italic, and underline toggles for the exact look you want. Add a logo layer by uploading your own logo or graphic to use as an image watermark - ideal for branding.
+Because layers are unlimited, you can, for example, put a logo in one corner and a copyright line along the bottom, styling each independently. Click directly on any layer in the image preview to select it, then adjust or delete it from the side panel. This is what makes it a proper image watermark creator rather than a one-line stamp: you build exactly the watermark your images need.
 
-[ Add Watermark Free Now → repetigo.com/image-tools/watermark-image ]
+H2: Position, Size, Opacity & Rotation.
+Each layer has its own controls, so you have full command over how the watermark looks. Drag any layer directly on the preview to position it exactly where you want. A size slider scales it (text from 10% up to 250%, a logo from 10% to 100%), an opacity slider (5–100%) lets you make the watermark bold or barely-there, and a rotation slider (−180° to 180°) can angle it - useful for a diagonal line of text across the image.
+Opacity is the key to a good watermark: high opacity for a strong, obvious mark, or low opacity for a subtle one that protects the image without dominating it. Because the render scales the text relative to the image, your watermark comes out at the right proportion whatever the image's resolution, so it looks consistent on both small and large photos.
 
-H2: Types of Watermarks - Text, Logo, and Combining Both.
-H3: Text Watermark
-A text layer embeds written text directly into the image. The most common text watermarks are:
-Name or studio name - "Rahul Photography," "Sharma Design Studio"
-Copyright notice - "© 2026 YourName" or "Copyright YourName"
-Handle or website - "@yourinsta," "yourwebsite.com"
-Status marks - "DRAFT," "PROOF," "CONFIDENTIAL," "FOR REVIEW ONLY," "COPY"
-Institution watermarks - college or institute name on certificates before digital sharing
-Best practice: rotate the text diagonally for stronger protection - a single horizontal line tucked in a corner is the easiest to crop out.
-H3: Logo Watermark
-A logo layer uses an image - your logo, signature, or custom graphic - as the watermark element. For the cleanest result, use a PNG logo with a transparent background rather than a JPG with a white box around it. If you only have a JPG logo on a white background, run it through Remove Background at /image-tools/background-remover first to get a transparent PNG, then upload that as your watermark logo. You can add a logo and one or more text layers on the same image at once.
-H3: Opacity and Position - Drag to Place It Yourself
-There are no fixed position presets - you drag each watermark layer directly on the image to wherever you want it, and each layer's opacity and rotation are independent sliders.
+💡 For a subtle mark, lower the opacity to around 20–40%; for strong protection, raise it and increase the size. Rotate a text layer for a diagonal watermark across the image.
 
-Opacity Level
-Visual Effect
-Best For
-10-20% (Very Light)
-Barely visible - appears as a faint ghost on the image
-Subtle branding on finished product photos; minimal distraction
-30-50% (Moderate)
-Clearly visible but image content still readable through it
-Certificate protection, professional photo proofing, document marking
-60-80% (Strong)
-Prominently visible - image content partially obscured
-Proof/draft protection where the client must not use the image before payment
-90-100% (Solid)
-Fully opaque - the watermark itself is completely solid
-Strong copyright notices, high-security proof locks
+H2: Batch-Watermark Many Images (with ZIP).
+If you have a set of photos to protect - a shoot, a product range, a portfolio - you do not need to watermark them one by one. Once your watermark looks right, use batch apply to stamp the exact same layer stack (text, logo, position, size, opacity, and rotation) onto a whole set of additional images at once. Each processed image gets its own thumbnail with an individual download, and you can grab them all as a single ZIP.
 
-Position Idea
-When to Use
-Centre, rotated diagonally
-Maximum protection - harder to crop out. Best for proofs, drafts, and high-protection needs.
-Bottom-right corner
-Subtle branding for finished photos shared with clients. Easy to crop, so use only on already-delivered work.
-Bottom-centre
-Credits on shared social media images - slightly harder to crop than a corner.
-Multiple layers across the image
-Add several copies of the same text or logo layer and drag each to a different spot for stronger, tile-like coverage.
+✅ Real batch support: design your watermark once, then apply it to a whole set of images and download them all as one ZIP - perfect for protecting a full shoot or product range.
 
-H2: Indian Use Cases for Image Watermarking.
-These are the watermarking needs specific to India - certificate protection, print shop proofing, and professional photography - that drive the most practical value:
+H2: Your Images Never Leave Your Device.
+This matters especially for watermarking, because you are often protecting work that has not been published yet. The entire tool runs on your own device using the browser's canvas - your images and your logo are never uploaded, and no server processes them. So your unpublished photos stay completely private while you mark them, which is exactly how it should be. There is no watermark of the tool's own added, and no account wall.
 
-Use Case
-The India Context
-Recommended Watermark
-Certificate & Marksheet Protection
-Students share certificate scans over WhatsApp for admissions or jobs. Unprotected scans are sometimes edited to falsify grades.
-Institution name and year as a diagonal text layer, 30-40% opacity, e.g. "XYZ University - Not for Reproduction"
-Coaching Institute Study Materials
-Coaching institutes share notes and practice papers digitally, which sometimes get redistributed beyond enrolled students.
-Institute logo in a corner at 20-30% opacity, or a diagonal "For Enrolled Students Only" text layer
-Wedding/Event Photography Proofs
-Wedding photographers share WhatsApp proofs before final delivery; without a watermark, some clients print directly from the proof.
-"PROOF - [Studio Name]" or the studio logo, dragged to centre, rotated diagonally, 50-60% opacity
-Print Shop Design Approval
-Print shops and freelance designers share proofs for approval before the client pays for the final file.
-"PROOF ONLY - NOT FOR PRINT" text, diagonal, 60% opacity, or the studio logo repeated as several layers
-Online Product Photos
-Sellers on Meesho, Flipkart, or Instagram share product photos that competitors sometimes copy.
-Shop name or handle in a corner, 25-35% opacity, for minimal visual distraction
-Government & Business Documents
-Documents shared digitally before final approval need marking to prevent premature circulation.
-"DRAFT" or "CONFIDENTIAL" text, diagonal, 40-50% opacity, prominent position
+🔒 Client-side and private: your photos and logo stay on your device, nothing is uploaded, and the tool adds no mark of its own.
 
-H2: Why Use RepetiGo's Watermark Tool?
+H2: One Positioned Watermark, Not a Tiled Pattern.
+One thing to know so the result matches your expectation: this tool places your watermark at a position (or several positions, if you add multiple layers) on the image. It does not create a tiled, repeating diagonal pattern that covers the entire image edge to edge. If you want a single clear watermark - a logo in the corner, a name across the middle, a copyright line along the bottom - that is exactly what it does, and you can add several layers for more coverage.
+If your goal is specifically the all-over repeating pattern some stock sites use, that particular mode is not available here; you would place individual watermark layers instead. For the vast majority of watermarking - branding, crediting, and protecting your photos - a well-placed watermark or two does the job, and the layer system gives you the flexibility to arrange them how you like.
 
-Feature
-RepetiGo
-Canva
-iLoveIMG
-Adobe Express
-Free to use
-✓ Always free
-✓ Free tier
-✓ Limited free
-✓ Free tier
-Sign-up required
-✓ Never
-✗ Account required
-~ Optional
-✗ Account required
-No RepetiGo branding added to your output
-✓ Clean output - only your watermark
-✓ No added watermark (Pro)
-✓ Clean output
-✓ Clean output
-India document/certificate guidance
-✓ Certificate, proof, DRAFT guidance
-✗ None
-✗ None
-✗ None
-Apply the same watermark to more images
-✓ Yes - one design, many images
-~ Limited (template-based)
-✓ Yes
-~ Limited
-Combine text and logo watermarks freely
-✓ Yes - unlimited layers
-✓ Yes
-~ Limited
-✓ Yes
-Files ever leave your device?
-✗ Never - 100% browser-based
-✓ Yes - uploaded to their servers
-✓ Yes - uploaded to their servers
-✓ Yes - uploaded to their servers
+H2: ★ Use Cases - Photographers, Sellers & Creators.
+A flexible watermark tool earns its place across photography, e-commerce, and content work.
 
-H2: Your Images Are Safe. Always.
+Who
+What they watermark
+Why
+Photographers
+Photos before sharing
+Credit and protect their work online
+Online sellers
+Product images
+Brand shots and deter image theft
+Designers
+Portfolio pieces
+Mark work shared with clients
+Content creators
+Images for social
+Add a logo or handle for recognition
+Small businesses
+Marketing images
+Consistent branding across a set (batch)
 
-Protection Layer
-What It Means in Practice
-🖥️ 100% Browser-Based Watermarking
-Your image is watermarked using your own device's processing power via the browser's Canvas API. It is never uploaded to any server.
-🚫 Nothing Ever Leaves Your Device
-Because watermarking happens locally, there is no upload, no transfer, and nothing on any server for us to store or delete.
-👁️ No Image Content Is Read
-RepetiGo's code cannot see, analyse, or extract what's in your photo - it only draws your watermark layers onto the image on your own device.
-🚫 No Account = No Data Profile
-No sign-up means no personal data, no file history, and no usage profile is ever created.
-🔒 Well Suited to Certificates and Sensitive Documents
-Because nothing is transmitted anywhere, this is one of the safer ways to watermark a certificate or confidential document online.
+🇮🇳 Tip: watermark a whole product range in one batch, then compress the set at /image-tools/compress-image before uploading to your store or marketplace.
 
-[ Read Our Privacy Policy → /privacy-policy ]
+H2: What This Tool Does Not Do.
+So you know whether it fits before you start, here is what this tool is not for - and where to go instead.
 
-H2: Watermarking for Print Shops.
-Print shops share design proofs, ID card prints, photo proofs, and certificate designs with customers before final payment. Without a watermark on the proof, some customers print directly from the proof and don't pay for the final file. A clear "PROOF ONLY - NOT FOR PRINT" watermark is standard practice to prevent this.
-PrintPilot - RepetiGo's print shop software - can fold proof watermarking into the same automated workflow customers already use to upload documents via QR code, instead of a shop owner watermarking every proof by hand.
+People often ask for…
+The honest answer
+Remove a watermark from an image
+No - this tool adds watermarks, it does not remove them
+A tiled / repeating diagonal pattern
+No - it places positioned watermarks, not an all-over pattern
+Watermark a PDF, video, or Word file
+No - it watermarks images (JPG/PNG/WebP) only
+Save a watermark design for next time
+No - the design is for the current session
+Blend modes or a text shadow/outline
+No - opacity, colour, and rotation are the controls
+Snap-to-corner or alignment guides
+No - position layers by dragging them freely
 
-[ Learn About PrintPilot → /products/printpilot/ ]
-[ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Add Watermark Now → repetigo.com/image-tools/watermark-image ]
+H2: Watermark Image - Frequently Asked Questions.
+H3: Is this watermark tool free?
+Yes - RepetiGo's watermark image tool is completely free with no sign-up, and it adds no watermark of its own to your images. Because it runs in your browser rather than on a paid server, you can add text and logo watermarks, use unlimited layers, and batch-process images at no cost. There is nothing to unlock.
+H3: How do I add a watermark to an image?
+Upload your image, then add a text layer, a logo layer, or both. Style the text (font, size, colour, bold/italic/underline) or upload your logo, drag each into place, and adjust opacity and rotation. When it looks right, download as PNG or JPG. You can preview everything live on the image as you work.
+H3: Can I use my own logo as a watermark?
+Yes. Add an image layer and upload your logo or graphic to use it as a watermark. You can position it by dragging, scale it, set its opacity, and rotate it, just like a text layer. Combining a logo in one corner with a text credit elsewhere is a common, effective way to brand and protect an image.
+H3: Can I watermark many images at once?
+Yes. Design your watermark on one image, then use batch apply to stamp the exact same layer stack - text, logo, position, size, opacity, and rotation - onto a whole set of additional images. Each result has its own download, and you can grab them all as a single ZIP. It is ideal for protecting a full shoot or product range.
+H3: Can it make a repeating, all-over watermark pattern?
+No - it places your watermark at a position (or several, if you add multiple layers), rather than tiling a repeating diagonal pattern across the whole image. For a clear logo, name, or copyright line, that is exactly what you want; if you specifically need the all-over stock-site pattern, that mode is not available here.
+H3: Does it remove watermarks?
+No - this tool adds watermarks to your images; it does not remove them. It is designed to help you protect and brand your own work by placing a text or logo mark on it. If you are looking to take a watermark off an image, that is a different kind of task and not what this tool does.
+H3: How do I make the watermark subtle or bold?
+Use the opacity slider, which runs from 5% to 100%. Lower it to around 20–40% for a subtle watermark that protects the image without dominating it, or raise it for a strong, obvious mark. Combine opacity with the size slider and rotation to get exactly the balance of visibility and protection you want.
+H3: What image formats can I use and save?
+You can upload a JPG, PNG, or WebP as your base image, and download the watermarked result as a PNG or JPG. Choose PNG if you want to keep the highest quality or any transparency in the output, or JPG for a smaller file - for example when preparing images for a website or marketplace.
+H3: Are my images uploaded to a server?
+No. The tool runs entirely in your browser using the canvas, so your images and your logo never leave your device and nothing is sent to RepetiGo. That is especially important for watermarking, since you are often protecting work that has not been published yet - it stays completely private while you mark it.
+H3: Does it add its own watermark or a sign-up wall?
+No to both. RepetiGo does not stamp its own watermark on your images and does not require an account. The only watermark on your image is the one you add yourself. You get the full, clean result to download, free, which is the whole point of a tool meant to protect your work.
 
-H2: Common Questions About Adding Watermarks to Images.
-H3: Q1: How do I add a watermark to an image online free in India?
-Go to repetigo.com/image-tools/watermark-image, upload your JPG, PNG, or WEBP image. Click Add Text (type your text, then adjust font, colour, opacity, and rotation) or Add Image (upload your logo). Drag the watermark to wherever you want it on the photo. Click Watermark Image to download the result as PNG or JPG. No account required, no RepetiGo branding added to your output, and your image is never uploaded anywhere since everything runs in your browser.
-H3: Q2: How do I watermark a certificate or marksheet to prevent falsification?
-Upload your certificate scan. Click Add Text and type your institution name or a notice like "XYZ College - Not for Reproduction." Set the rotation slider to around 45° for a diagonal look, and opacity to 30-40% - clearly visible without obscuring the certificate content. Drag it across the centre of the image. Download. The diagonal watermark makes it noticeably harder to edit the certificate content without disturbing it. For stronger protection, add a second or third copy of the same text layer and drag each to a different part of the image.
-H3: Q3: How do I watermark my photos to protect my copyright?
-Upload your photo. Click Add Image and upload your studio logo (a PNG with a transparent background gives the cleanest result), or click Add Text and type your name or studio. For a finished photo being delivered to a client, drag the watermark to a bottom corner and set opacity around 20-30% - subtle but present. For a proof not yet paid for, drag it across the centre, rotate it diagonally, and set opacity to 50-60% - clearly visible. Download. The watermark is permanently drawn into the downloaded image.
-H3: Q4: What opacity should I use for a watermark?
-It depends on the purpose. For subtle branding on delivered photos: 15-25% - barely visible but present. For certificate protection and professional proofing: 30-50% - clearly visible but the image content still readable through it. For strong proof/draft protection: 60-80% - prominently visible, partially obscures the image. For a maximum copyright lock: close to 100% - the watermark itself becomes fully solid. The most common setting for Indian professional use (certificates, proofs, photo sharing) is 30-50%.
-H3: Q5: How do I add a watermark to an image without Photoshop?
-Use RepetiGo's browser-based watermark tool at /image-tools/watermark-image - no Photoshop, no software installation, no subscription. Upload your image, add your text or logo, drag it into place, set opacity, download. If you have a set of photos that all need the same watermark - an entire wedding album, for example - design the watermark once on your first photo, then upload the rest under "Apply This Watermark to More Images" to stamp all of them the same way in one pass.
-H3: Q6: How do I add a watermark in Canva?
-In Canva: create a design, upload your image, add a Text element with your watermark text or upload your logo as an element, adjust the element's opacity in its settings, and position it over the image before downloading as JPG or PNG. Canva's free tier limits some export options. For watermarking a standalone image file without building a design from scratch, RepetiGo's dedicated tool is more direct - upload the image, add your watermark, download.
-H3: Q7: How do I add a watermark in Microsoft Word?
-Word has a built-in watermark feature, but it applies to Word documents, not standalone image files: go to the Design tab, click Watermark, and choose a preset ("DRAFT," "CONFIDENTIAL," "DO NOT COPY") or Custom Watermark for your own text or picture watermark, then Apply. This watermarks the document background, not a JPG or PNG file. To watermark a standalone image file, use RepetiGo's watermark tool at /image-tools/watermark-image instead.
-H3: Q8: Can I add a watermark to multiple images at once?
-Yes. Design your watermark - text, logo, or both - on your first uploaded image exactly the way you want it. Then, in the "Apply This Watermark to More Images" section below the main editor, upload the rest of your photos and click Apply. The same layers, positions, and opacity are stamped onto every image you added, and you can download each one individually or all together as a ZIP archive. This is useful for wedding photographers watermarking a full event gallery, print shops adding "PROOF" marks to several designs, or businesses marking a batch of product photos.
-H3: Q9: Does the free watermark tool add RepetiGo's own watermark to my image?
-No. RepetiGo's watermark tool does not add any tool branding, logo, or watermark to your output image. The only watermark in your downloaded image is the one you created - your text, your logo, your settings.
-H3: Q10: Can your tool remove watermarks from images?
-No. RepetiGo's watermark tool is for adding watermarks to images you own - not for removing watermarks from images. Removing watermarks from stock photo services (Getty Images, Shutterstock, iStock, Freepik) without a licence is copyright infringement. RepetiGo does not provide, facilitate, or assist with removing watermarks from copyrighted images under any circumstances. If you need a specific stock image, purchase a licence from the stock service; if you need copyright-free images, use a royalty-free source instead.
-
-H2: More Free Image Tools from RepetiGo.
-
+H2: Related Image Tools.
 Tool
 What It Does
 Link
-Remove Background
-Make a PNG logo background transparent before using it as a watermark
-→ /image-tools/background-remover
-Crop Image
-Crop and frame images before adding a watermark
-→ /image-tools/crop-image
-Resize Image
-Resize images to a standard size before watermarking a batch
-→ /image-tools/resize-image
 Compress Image
-Reduce the watermarked image's file size for email or portal upload
+Shrink the watermarked image (batch + ZIP)
 → /image-tools/compress-image
+Resize Image
+Resize before sharing online
+→ /image-tools/resize-image
+Crop Image
+Crop before watermarking
+→ /image-tools/crop-image
+Convert to JPG
+Convert the final image to JPG
+→ /image-tools/convert-to-jpg
+Meme Generator
+Add caption text to an image
+→ /image-tools/meme-generator
 All Image Tools
-Complete image tools suite
+The complete image tools suite
 → /image-tools
 
-[ Add Watermark Free - No Sign-Up → repetigo.com/image-tools/watermark-image ]
+[ Watermark Your Images Free - Text + Logo → repetigo.com/image-tools/watermark-image ]
 [ Explore All Image Tools → repetigo.com/image-tools ]`;
 
-const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
+const faqSchemaQuestions = Array.from(content.matchAll(/H3: ([^\n]+\?)\n([\s\S]*?)(?=\nH3:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
 export default function WatermarkImagePage() {
   return (
@@ -303,12 +217,9 @@ function StructuredSeoCopy({ content: source }: { content: string }) {
 }
 
 function getKnownTable(lines: string[]): SeoTableData | null {
-  if (lines[0] === "Reason" && lines[1] === "What It Achieves") return { headers: ["Reason", "What It Achieves", "Common In India"], rows: chunkRows(lines.slice(3), 3) };
-  if (lines[0] === "Opacity Level" && lines[1] === "Visual Effect") return { headers: ["Opacity Level", "Visual Effect", "Best For"], rows: chunkRows(lines.slice(3), 3) };
-  if (lines[0] === "Position Idea" && lines[1] === "When to Use") return { headers: ["Position Idea", "When to Use"], rows: chunkRows(lines.slice(2), 2) };
-  if (lines[0] === "Use Case" && lines[1] === "The India Context") return { headers: ["Use Case", "The India Context", "Recommended Watermark"], rows: chunkRows(lines.slice(3), 3) };
-  if (lines[0] === "Feature" && lines[1] === "RepetiGo") return { headers: ["Feature", "RepetiGo", "Canva", "iLoveIMG", "Adobe Express"], rows: chunkRows(lines.slice(5), 5) };
-  if (lines[0] === "Protection Layer" && lines[1] === "What It Means in Practice") return { headers: ["Protection Layer", "What It Means in Practice"], rows: chunkRows(lines.slice(2), 2) };
+  if (lines[0] === "Step" && lines[1] === "What You Do" && lines[2] === "What Happens") return { headers: ["Step", "What You Do", "What Happens"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "Who" && lines[1] === "What they watermark") return { headers: ["Who", "What they watermark", "Why"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "People often ask for…" && lines[1] === "The honest answer") return { headers: ["People often ask for…", "The honest answer"], rows: chunkRows(lines.slice(2), 2) };
   if (lines[0] === "Tool" && lines[1] === "What It Does" && lines[2] === "Link") return { headers: ["Tool", "What It Does", "Link"], rows: chunkRows(lines.slice(3), 3) };
   return null;
 }
@@ -347,7 +258,7 @@ function renderTableCell(cell: string) {
 }
 
 function renderInlineMappedLinks(text: string) {
-  const parts = text.split(/(repetigo\.com\/(?:tools\/image\/[a-z-]*|pricing)\/?|\/image-tools\/[a-z-]*\/?|\/image-tools\/?|\/products\/printpilot\/?|\/privacy-policy\/?|\/pricing\/?)/g);
+  const parts = text.split(/(repetigo\.com\/(?:image-tools\/[a-z-]*|pricing)\/?|\/image-tools\/[a-z-]*\/?|\/image-tools\/?)/g);
   return parts.map((part, index) => {
     const href = mapSeoRoute(part.startsWith("repetigo.com") ? "https://" + part : part);
     if (!href) return part;
@@ -360,13 +271,11 @@ function mapSeoRoute(route: string) {
   const routeMap: Record<string, string> = {
     "/image-tools": "/image-tools",
     "/image-tools/watermark-image": "/image-tools/watermark-image",
-    "/image-tools/background-remover": "/image-tools/background-remover",
-    "/image-tools/crop-image": "/image-tools/crop-image",
-    "/image-tools/resize-image": "/image-tools/resize-image",
     "/image-tools/compress-image": "/image-tools/compress-image",
-    "/products/printpilot": "/print-automation",
-    "/privacy-policy": "/privacy-policy",
-    "/pricing": "/pricing",
+    "/image-tools/resize-image": "/image-tools/resize-image",
+    "/image-tools/crop-image": "/image-tools/crop-image",
+    "/image-tools/convert-to-jpg": "/image-tools/convert-to-jpg",
+    "/image-tools/meme-generator": "/image-tools/meme-generator",
   };
   return routeMap[cleanRoute] || (cleanRoute.startsWith("/image-tools") ? cleanRoute : "");
 }
@@ -375,20 +284,18 @@ function getRouteLabel(href: string) {
   const labels: Record<string, string> = {
     "/image-tools": "Explore All Image Tools",
     "/image-tools/watermark-image": "Open Watermark Image",
-    "/image-tools/background-remover": "Open Remove Background",
-    "/image-tools/crop-image": "Open Crop Image",
-    "/image-tools/resize-image": "Open Resize Image",
     "/image-tools/compress-image": "Open Compress Image",
-    "/print-automation": "Learn About PrintPilot",
-    "/privacy-policy": "Read Privacy Policy",
-    "/pricing": "Start Free Trial",
+    "/image-tools/resize-image": "Open Resize Image",
+    "/image-tools/crop-image": "Open Crop Image",
+    "/image-tools/convert-to-jpg": "Open Convert to JPG",
+    "/image-tools/meme-generator": "Open Meme Generator",
   };
   return labels[href] || "Open Tool";
 }
 
 function JsonLd() {
-  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Watermark Image", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online image watermark tool - add text or logo watermarks and apply the same watermark to multiple images. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl };
-  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Add a Watermark to an Image Online Free", step: [{ "@type": "HowToStep", name: "Upload Image", text: "Upload Your Image" }, { "@type": "HowToStep", name: "Set Watermark", text: "Set Your Watermark - Text, Logo, or Both" }, { "@type": "HowToStep", name: "Download", text: "Download Your Watermarked Image" }] };
+  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Watermark Image", applicationCategory: "MultimediaApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online tool to add a text or logo watermark to images, with drag positioning, opacity and rotation control, and batch watermarking with ZIP download. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl };
+  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Add a Watermark to an Image", step: [{ "@type": "HowToStep", name: "Upload your image", text: "Upload your image" }, { "@type": "HowToStep", name: "Add text or a logo", text: "Add text or a logo" }, { "@type": "HowToStep", name: "Download", text: "Download" }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
   const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "Watermark Image", item: pageUrl }] };
 

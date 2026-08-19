@@ -4,276 +4,164 @@ import WebpToPngClient from "./WebpToPngClient";
 const pageUrl = "https://repetigo.com/image-tools/webp-to-png";
 
 export const metadata: Metadata = {
-  title: "WebP to PNG Converter Free Online - Keeps Transparency | RepetiGo",
+  title: "WebP to PNG Free - Lossless Converter, Transparency Kept | RepetiGo",
   description:
-    "Convert WebP to PNG free online - transparent backgrounds preserved. Perfect for logos, icons, UI elements. No sign-up, no watermark, 100% browser-based - nothing is ever uploaded.",
+    "Free WebP to PNG converter - turn WebP images into lossless PNG in your browser, with transparency fully preserved. Batch-convert and download a ZIP. No upload.",
   alternates: { canonical: pageUrl },
   openGraph: {
-    title: "WebP to PNG Converter Free Online - Keeps Transparency | RepetiGo",
-    description: "Convert WebP to PNG free - preserves transparent backgrounds. For logos, icons, UI elements. No sign-up, 100% browser-based.",
+    title: "WebP to PNG Free - Lossless Converter, Transparency Kept",
+    description: "Turn WebP images into lossless PNG in your browser, transparency preserved. Batch + ZIP.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
     card: "summary_large_image",
-    title: "WebP to PNG Converter Free - RepetiGo",
-    description: "Convert WebP to PNG free, transparency preserved. No sign-up, 100% browser-based.",
+    title: "WebP to PNG Free - Lossless Converter",
+    description: "Free WebP→PNG. Lossless, transparency kept, batch + ZIP, 100% in your browser.",
   },
   robots: { index: true, follow: true },
 };
 
-const content = String.raw`H1: WebP to PNG Converter Online Free. Transparent Backgrounds Preserved - For Logos, Icons, and Design Assets.
-RepetiGo's free WebP to PNG converter transforms any .webp image file into a PNG with full transparency preservation. Upload a single WebP file or an entire batch - each file converts automatically and delivers a PNG with its alpha channel intact: transparent backgrounds stay transparent, semi-transparent areas are preserved exactly, and no quality is lost because PNG uses lossless compression.
+const content = String.raw`H1: WebP to PNG - Convert WebP to Lossless PNG in Your Browser.
 
-The reason most users choose WebP to PNG over WebP to JPG is transparency. JPG cannot store transparent pixels - converting a WebP logo or icon with a transparent background to JPG produces an ugly white box around it. PNG is the right format for transparent images, and this converter correctly handles that use case.
+RepetiGo's WebP to PNG converter turns WebP images into standard PNG files - free, lossless, and entirely in your browser. Drop in one WebP or a whole batch, and each converts to a PNG automatically, with transparency fully preserved. There are no settings to choose and nothing to configure: you get a clean, lossless PNG every time. And because it all runs on your device, your files are never uploaded to a server.
+WebP is everywhere on the modern web because it makes small files, but it is not accepted everywhere - plenty of apps, older programs, and platforms still want a PNG. This tool is the quick fix: convert WebP to PNG and your image works in the places WebP does not. Whether you saved a WebP from a website and cannot open it, or need a PNG for editing, this does it in a couple of seconds.
 
-✓ Transparent Backgrounds Preserved   ✓ Lossless Quality (Zero Degradation)   ✓ Batch Convert   ✓ No Sign-Up   ✓ 100% Browser-Based - Nothing Uploaded
+✅ Free · No sign-up · No watermark   ✅ Lossless PNG · transparency preserved   ✅ No settings - just convert   ✅ Batch + ZIP · 100% in your browser
 
-[ Convert WebP to PNG Free - No Sign-Up → repetigo.com/image-tools/webp-to-png ]
+H2: Why Convert WebP to PNG?
+WebP is Google's modern image format, designed to make web pages faster with smaller files. That is great for websites, but it creates a common headache: when you save a WebP image from the web, many programs and platforms will not open or accept it. Older photo editors, some document tools, certain upload forms, and various apps simply do not support the .webp extension yet.
+PNG, by contrast, is universally supported and, importantly, lossless - it keeps full image quality and supports transparency. Converting WebP to PNG gives you an image that works everywhere and is ready to edit, upload, or reuse, with no quality loss. It is the reliable way to turn a web-optimised WebP into a standard image the rest of your tools understand.
 
-H2: What Is the Difference Between WebP, PNG, and JPG - and When Does Transparency Matter?
-Understanding why you would choose PNG over JPG as the output format for a WebP conversion requires understanding how these three formats handle transparency:
+H2: How to Convert WebP to PNG in 3 Steps.
+Here is how to convert WebP to PNG with RepetiGo. It is genuinely a two-second job because there is nothing to set up.
 
-H3: WebP vs PNG vs JPG - Format Comparison
+Step
+What You Do
+What Happens
+1. Upload your WebP(s)
+Drop or select one or more .webp files.
+Each converts to a lossless PNG automatically.
+2. Check the result
+See each file's PNG size and dimensions on its card.
+Open the preview to compare WebP and PNG side by side.
+3. Download
+Download each PNG, or grab them all as a ZIP.
+Files save with a .png extension, transparency intact.
 
-Feature
-WebP
-PNG
-JPG
-Transparency (alpha channel)
-✓ Supported - WebP can store transparent pixels
-✓ Supported - full alpha channel (per-pixel transparency)
-✗ Not supported - transparent pixels become white or black
-Compression
-Lossy or lossless - configurable
-Lossless only - no quality loss ever
-Lossy only - some quality is always discarded
-File size
-Smallest - 25-35% smaller than JPG, similar to PNG
-Larger than WebP and JPG - due to lossless compression
-Smaller than PNG, larger than WebP
-Browser/software support
-Modern browsers only - not supported in older software
-Universal - all browsers, all software, all design tools
-Universal - all devices and software
-Best for
-Website images (performance-optimised)
-Logos, icons, UI elements, screenshots, design assets with transparency
-Photos, portal uploads, printing, general sharing
-When converting from WebP
--
-When the image has transparency (logos, icons, cutouts)
-When the image is a photo (no transparency needed)
+🔒 The conversion happens in your browser on a canvas - your WebP files are never uploaded to RepetiGo or any server.
 
-💡 The rule for choosing between WebP to PNG and WebP to JPG: does the image have a transparent background? If yes, convert to PNG - transparency preserved. If no, convert to JPG for a smaller file that's more compatible for sharing and printing.
+H2: Lossless and Transparent - Exactly What You Get.
+Two things make this conversion reliable. First, it is lossless: the PNG is created without any quality-reducing compression, so your image looks exactly as it did as a WebP, with no artefacts introduced. PNG is a lossless format by nature, and the tool uses it that way - there is no quality setting to get wrong.
+Second, transparency is fully preserved. If your WebP has a transparent background - many web graphics and logos do - the PNG keeps that transparency exactly, alpha channel and all. So a logo on a transparent WebP becomes a PNG that still sits cleanly on any background, with no white box appearing behind it. That faithful transparency is one of the main reasons to choose PNG as the target format.
 
-H2: How to Convert WebP to PNG Online Free in 3 Steps.
-H3: Step 1 - Upload Your WebP File
-Click Select WebP Images or drag and drop your .webp file - or several WebP files at once for batch conversion. There's no fixed file size cap, because everything runs on your own device. The converter accepts standard .webp files as well as animated .webp files - for an animated WebP, the first frame is exported as a static PNG.
-H3: Step 2 - Convert to PNG
-As soon as you upload, RepetiGo converts your WebP image automatically. The WebP pixel data is read including the full alpha channel, and each pixel is re-encoded in PNG format with its exact RGBA values (Red, Green, Blue, Alpha) preserved. PNG uses lossless compression - the output PNG file contains exactly the same pixel data as the WebP source. No quality is lost, no visual changes occur, and there's no quality slider to configure. For fully opaque WebP images, the output is a lossless PNG with a solid background. For WebP images with transparency, the output is a transparent PNG.
-H3: Step 3 - Download Your PNG
-Click Download for a single file. For a batch, click Download ZIP to get every converted PNG in one archive. File names are preserved (logo.webp → logo.png). Because nothing was ever uploaded, there's nothing left on any server once you're done. Design workflow tip: download your transparent PNG and import it directly into Figma (drag and drop), Canva (upload), Adobe Photoshop (File → Place Embedded), Adobe Illustrator (File → Place), or CorelDRAW (File → Import) - the transparent background imports correctly in all these tools.
+✨ Lossless PNG output with the WebP's transparency carried over exactly - your image is preserved faithfully, ready to edit or place anywhere.
 
-[ Convert WebP to PNG Free Now → repetigo.com/image-tools/webp-to-png ]
+H2: No Settings to Fiddle With.
+Some converters bury a simple job under a pile of options. This one does the opposite: there is nothing to configure. You do not pick a quality level, a compression setting, or a format - the tool converts every WebP to a lossless PNG automatically the moment you add it. The interface even says so plainly, because for WebP-to-PNG there genuinely is nothing to decide.
+That simplicity is the point. PNG is lossless, so a quality slider would be meaningless, and the conversion is a faithful one-to-one change of container. You add files, they become PNGs, you download them. It makes converting a folder of WebP images fast and foolproof, with no wrong settings to worry about.
 
-H2: Transparent PNG: When to Choose WebP to PNG Over WebP to JPG.
-The most important decision when converting a WebP image is not how to convert it - it is which format to convert it to. Here is the exact guide:
+H2: Batch Convert Multiple WebP Files (with ZIP Download).
+You are not limited to one file. Add as many WebP images as you like - each appears on its own card with its filename, original size, dimensions, and the converted PNG size - and you can keep adding more. They all convert automatically, and you can download each PNG individually or grab the whole set as a single ZIP file. It is the fast way to clear a folder of WebP downloads in one go.
 
-Situation
-Image Type
-Convert to
-Why
-Logo or brand icon downloaded from a website in Chrome
-Typically transparent background
-PNG
-JPG destroys transparency - a white box appears around the logo
-Product cutout image (background removed)
-Transparent background
-PNG
-Preserves the cutout edges exactly - no white halo or box
-UI element (button, icon, illustration)
-Often transparent
-PNG
-Design tools expect transparent PNGs for UI asset import
-Product photo (actual photograph)
-No transparency
-JPG
-Smaller file size, universal compatibility, suitable for printing and portal upload
-Screenshot of a webpage
-No transparency (screenshots are opaque)
-JPG
-Smaller file size, no transparency needed
-WhatsApp sticker image
-Transparent background
-PNG
-Stickers need transparent backgrounds - JPG breaks them
-Watermark image
-Transparent or semi-transparent
-PNG
-Semi-transparency in watermarks requires an alpha channel
-Social media graphic with text overlay
-No transparency (typically)
-JPG or PNG
-JPG if the background is solid and size matters; PNG if the text needs crisp rendering
+✅ Real batch support: drop in many WebP files, they all convert to lossless PNG, and you download individually or as one ZIP - all in your browser.
 
-If you are unsure whether your WebP image has transparency: convert to PNG. PNG handles both transparent and non-transparent images correctly. You can always convert a PNG to JPG later if you need a smaller file - but you cannot recover transparency that was lost in a JPG conversion.
+H2: Everything Runs in Your Browser.
+Like the rest of RepetiGo's image tools, this converter does all its work on your own device. Each WebP is decoded and re-saved as a PNG locally using the browser's canvas - nothing is uploaded, and no server touches your files. That keeps your images private, works on a weak connection, and is why the tool carries a "Files stay in your browser" badge. There is no watermark and no account wall; the PNGs you download are the full, clean files.
 
-H2: ★ Batch WebP to PNG Conversion.
-Designers and developers often need to convert an entire set of WebP assets - a full icon set, a brand asset library, a website image folder, or a batch of downloaded images - to PNG at once.
+🔒 Client-side and private: your WebP files stay on your device, nothing is uploaded, and no watermark is added.
 
-RepetiGo's batch WebP to PNG converter handles any number of files in one session:
-Upload all WebP files at once - drag a multi-file selection or Ctrl+Click (Windows) / Cmd+Click (Mac) to multi-select.
-Each file converts automatically as it's added - no quality setting to choose, since PNG is always lossless.
-Download a single zip archive containing all the PNG files.
-Extract the zip - all PNGs named identically to the original WebP files, transparent backgrounds preserved in every one.
+H2: ★ Use Cases - Saved WebP Images & Editing.
+Converting WebP to PNG comes up constantly once you notice how much of the web uses WebP.
 
-💡 When batch converting a set of WebP assets that includes both transparent images (icons, logos) and opaque images (photos), the correct approach is to batch-convert the entire set to PNG. All opaque images will produce valid PNGs. All transparent images will produce transparent PNGs. You can then decide which individual PNGs to additionally convert to JPG for size reduction.
+Scenario
+Problem
+How to fix it here
+Saved a WebP from a website
+A program won't open the .webp
+Convert WebP → PNG, then open it
+Need to edit a web image
+Editor does not support WebP
+Convert to PNG and edit freely
+Upload form rejects WebP
+Only PNG/JPG accepted
+Convert WebP → PNG and upload
+Transparent web graphic
+Need the transparency kept
+Convert → PNG preserves the alpha
+A folder of WebP downloads
+Too many to do one by one
+Batch-convert and download a ZIP
 
-H2: ★ Indian Use Cases - Who Converts WebP to PNG in India?
-India has a rapidly growing creative and technology workforce - UI designers, graphic designers, web developers, digital marketers, and freelancers who regularly work with image assets. For all of them, the WebP to PNG converter is a daily-use tool:
+🇮🇳 Tip: if you need a JPG rather than a PNG, use /image-tools/convert-to-jpg (WebP → JPG). To shrink the PNG afterwards, compress it at /image-tools/compress-image.
 
-H3: UI/UX Designers and Figma/Adobe Users
-India's UI/UX design community is one of the fastest-growing in the world, with millions of designers working in Figma, Adobe XD, Sketch, and Photoshop. When a designer downloads a UI component, icon, or logo from a website in Chrome, it frequently arrives as a .webp file. Design tools require PNG for transparent asset import. The workflow: Chrome download → WebP received → RepetiGo convert to PNG → import into Figma, Photoshop, or Illustrator with transparency intact. This is a daily operation for active designers.
+H2: What This Tool Does Not Do.
+So you know whether it fits before you start, here is what this converter is not for - and where to go instead.
 
-H3: Freelancers Creating Logos and Branding Assets
-Millions of Indian freelancers on Upwork, Fiverr, and Toptal deliver logo files, brand identity kits, and marketing assets to international clients. When a client provides a reference logo or existing brand asset downloaded from their website in WebP format, the freelancer needs a transparent PNG to work with it in their design software, recreate elements, or use it as a reference for a new design. Converting WebP to PNG free without sign-up using a browser tool is the fastest workflow - no account, no credit limits, no watermark on the output.
+People often ask for…
+The honest answer
+Convert PNG back to WebP
+No - this goes WebP → PNG, not the reverse
+Convert WebP to JPG
+No - the output is PNG (use the Convert to JPG tool for JPG)
+A quality or compression setting
+No - PNG is lossless; there is nothing to set
+Resize while converting
+No - convert here, then resize separately
+Choose 8-bit vs 16-bit or a colour profile
+No - a standard lossless PNG is produced
+Keep an animated WebP moving
+No - only the first frame is converted
 
-H3: Print Shops Handling Logo and Icon Requests
-Indian print shops regularly receive logo files from business customers for printing on visiting cards, banners, and certificates. When a customer provides their company logo in WebP format downloaded from their own website, the print shop needs a transparent PNG to overlay the logo on the card background without a white box appearing around it. The WebP to PNG converter is the first step before placing the logo in the print layout in CorelDRAW or Photoshop.
+H2: WebP to PNG - Frequently Asked Questions.
+H3: Is this WebP to PNG converter free?
+Yes - RepetiGo's WebP to PNG converter is completely free with no sign-up and no watermark. Because it converts in your browser rather than on a paid server, you can convert as many WebP files as you like to lossless PNG, individually or as a ZIP, at no cost. There is nothing to unlock.
+H3: How do I convert WebP to PNG?
+Just drop your WebP files onto the tool and they convert to PNG automatically - there are no settings to choose. Each file shows its converted PNG size, and you can download them individually or as a ZIP. It works in any modern browser on any device, and your files are never uploaded.
+H3: Is the PNG lossless?
+Yes. PNG is a lossless format, and the tool converts to it without any quality-reducing compression, so your image looks exactly as it did as a WebP with no artefacts. That is why there is no quality slider - for a lossless PNG there is nothing to adjust; you always get a faithful, full-quality result.
+H3: Does it keep the transparency?
+Yes - transparency is fully preserved. If your WebP has a transparent background, the PNG keeps it exactly, alpha channel and all, so a logo or graphic still sits cleanly on any background with no white box behind it. Faithful transparency is one of the main reasons to convert a WebP to PNG.
+H3: How do I save a WebP as a PNG?
+Add the WebP to this tool and it immediately produces a PNG you can download - that is the simplest way to save a WebP as a PNG. Unlike right-clicking a web image, which often only offers to save it as WebP again, this actually converts the file to a true PNG, losslessly and with transparency intact.
+H3: Can I convert several WebP files at once?
+Yes. Add as many WebP files as you like and they all convert to PNG automatically, each on its own card. Download them individually or grab the whole set as a single ZIP. It is the quickest way to handle a folder of WebP images you have saved from the web.
+H3: Can it convert PNG to WebP instead?
+No - this tool only goes one way, from WebP to PNG. Converting PNG to WebP is the opposite direction and a different job. If you need to create WebP files, a dedicated PNG-to-WebP or general image converter is the right choice; this one is focused on turning WebP into a standard, editable PNG.
+H3: Can I get a JPG instead of a PNG?
+Not here - this tool outputs PNG, which keeps transparency and is lossless. If you specifically need a JPG (for a smaller file or a portal that wants JPG), use the Convert to JPG tool, which accepts WebP among other formats. For most WebP conversions where quality and transparency matter, PNG is the better target.
+H3: What happens with an animated WebP?
+A WebP can be animated, but PNG is a still-image format, so only the first frame of an animated WebP is converted to a PNG. That is perfect for grabbing a single still from an animation, but if you need to keep the animation, converting to a static PNG is not the right move for that file.
+H3: Are my WebP files uploaded to a server?
+No. The converter runs entirely in your browser using the canvas, so your WebP files never leave your device and nothing is sent to RepetiGo. That keeps your images private, works on a weak connection, and is why there is no watermark on your converted PNGs.
 
-India Use Case
-Source File
-Why PNG Not JPG
-Output Use
-UI/UX designer importing icon into Figma
-WebP icon downloaded from icon library
-JPG converts a transparent icon to a white box. PNG imports transparent in Figma.
-Figma/Adobe XD UI design
-Freelancer recreating client logo
-WebP logo from client's website
-Logo needs a transparent background to place on different backgrounds
-Photoshop, Illustrator, Canva design work
-Print shop - visiting card with logo
-WebP company logo from customer
-Transparent PNG overlays on the card background without a white box
-CorelDRAW, Photoshop print layout
-Web developer optimising site assets
-WebP icons from a design library
-PNG used in code for guaranteed transparency support in all browsers
-HTML/CSS img tags
-Content creator - YouTube thumbnail
-WebP sticker/overlay downloaded
-Transparent PNG overlay on thumbnail background
-Canva, Photoshop thumbnail design
-E-commerce - product image with transparent background
-WebP product cutout
-Transparent PNG on Flipkart/Amazon white background template
-Product listing upload
-
-H2: Why Use RepetiGo's WebP to PNG Converter?
-
-Feature
-RepetiGo
-Squoosh (Google)
-Online Converters
-Design Tool (Figma/PS)
-Free to use
-✓ Always free
-✓ Free
-✓ Most free
-~ Subscription often needed
-Sign-up required
-✓ Never
-✓ No account
-~ Many require account
-✗ Account required
-Transparency preserved
-✓ Full alpha channel
-✓ Yes
-~ Varies
-✓ Yes
-Lossless PNG output
-✓ Always - zero quality loss
-✓ Yes
-~ Varies
-✓ Yes
-Batch conversion
-✓ Yes - upload any number of files
-✗ One file at a time
-~ Limited
-~ Varies
-India use case guidance
-✓ Figma, Canva, CorelDRAW workflow
-✗ None
-✗ None
-✗ Not a converter
-No watermark on output
-✓ Clean PNG - always
-✓ Local processing
-~ Some add watermarks
-✓ No watermark
-Files ever leave your device?
-✗ Never - 100% browser-based
-✓ Never - local
-✓ Yes - uploaded to their servers
-✓ Never - local
-
-H2: Your Files Are Safe. Always.
-
-Protection Layer
-What It Means in Practice
-🖥️ 100% Browser-Based Conversion
-Your WebP image is decoded and converted using your own device's processing power via the browser. It is never uploaded to any server.
-🚫 Nothing Ever Leaves Your Device
-Because conversion happens locally, there is no upload, no transfer, and nothing on any server for us to store or delete.
-👁️ No Image Content Is Read
-RepetiGo's code cannot see, analyse, or extract what's in your image - it only re-encodes pixel data on your own device.
-🚫 No Account = No Data Profile
-No sign-up means no personal data, no file history, and no usage profile is ever created.
-🔒 Well Suited to Logos, Brand Assets, and Client Files
-Because nothing is transmitted anywhere, this is one of the safer ways to convert an unreleased logo, brand asset, or client file online.
-
-[ Read Our Privacy Policy → /privacy-policy ]
-
-H2: Common Questions About WebP to PNG Conversion.
-H3: Q5: Can I Just Rename .webp to .png to Convert It?
-No. Renaming a file from .webp to .png does not convert it. The file extension is a label - the actual file content is still encoded in WebP format. If you rename a .webp file to .png and try to open it in software that doesn't support WebP, it will either fail to open or display a broken image error. The format has not changed - only the name tag has. To actually convert WebP to PNG, you need a converter that reads the WebP pixel data (including the alpha channel for transparency) and re-encodes it in PNG format. This is what RepetiGo's converter does - it processes the actual image data, not just the filename.
-H3: Q6: How Do I Batch Convert Multiple WebP Files to PNG?
-To batch convert WebP to PNG using RepetiGo: go to repetigo.com/image-tools/webp-to-png. Click Select WebP Images and choose multiple files using Ctrl+Click (Windows) or Cmd+Click (Mac), or drag multiple files into the upload area at once. Each file converts automatically - there's no quality setting to choose, since PNG conversion is always lossless. Click Download ZIP to get a zip archive containing all the PNG files, named identically to the originals. Transparent backgrounds are preserved in every converted file automatically - no individual checking required. There is no file count limit per batch.
-H3: Q7: Does Converting WebP to PNG Lose Quality?
-No - converting WebP to PNG does not lose any quality. PNG is a lossless image format. Lossless means the compression algorithm used by PNG is fully reversible - the decompressed pixel data is bit-for-bit identical to the original. When RepetiGo converts a WebP file to PNG, every pixel's colour values (Red, Green, Blue) and transparency value (Alpha) are preserved exactly in the PNG output. This is different from converting to JPG, which uses lossy compression and discards some image data to achieve a smaller file. WebP to PNG conversion is quality-neutral: the visual appearance of the PNG output is identical to the WebP source. The trade-off is file size - PNG files are typically 10-30% larger than the equivalent WebP file because PNG's lossless compression is less efficient than WebP's lossless compression.
-H3: Q8: What Is the Difference Between WebP to PNG and WebP to JPG?
-The key difference is transparency support and quality loss. Convert WebP to PNG when the image has a transparent background - logo, icon, UI element, product cutout, sticker - since PNG preserves the full alpha channel with zero quality loss, and PNG is the required format for design workflows in Figma, Canva, Photoshop, and similar tools. Convert WebP to JPG when the image is a photograph or any image without transparency - product photo, portrait, landscape, document scan - since JPG produces a smaller file size, universal compatibility for printing and sharing, and is accepted by all Indian government portals (Aadhaar, NTA, IRCTC). If you are unsure, convert to PNG - you can always convert a PNG to JPG later, but you cannot recover transparency once it is lost in a JPG conversion.
-
-H2: More Free Image Tools from RepetiGo.
-
+H2: Related Image Tools.
 Tool
 What It Does
 Link
-WebP to JPG
-Convert WebP to JPG for photos, printing, portal uploads, and universal compatibility
-→ /image-tools/webp-to-jpg
-JPG to PNG
-Convert JPG to PNG for transparency support - same transparency reason, different source format
+Convert to JPG
+Need a JPG? Convert WebP (and more) → JPG
+→ /image-tools/convert-to-jpg
+Convert from JPG
+Convert a JPG → PNG or WebP
 → /image-tools/convert-from-jpg
-PNG to JPG
-Convert PNG to JPG for smaller file size when transparency is not needed
-→ /image-tools/png-to-jpg
-Remove Background
-Remove background from an image for a clean transparent cutout
-→ /image-tools/background-remover
+Image Converter
+Convert between many image formats
+→ /image-tools/image-converter
 Compress Image
-Reduce PNG file size after conversion for web or email use
+Shrink the converted PNG (batch + ZIP)
 → /image-tools/compress-image
+Resize Image
+Resize the converted PNG
+→ /image-tools/resize-image
 All Image Tools
-Complete free image tools suite
+The complete image tools suite
 → /image-tools
 
-[ Convert WebP to PNG Free - No Sign-Up → repetigo.com/image-tools/webp-to-png ]
+[ Convert WebP to PNG Free - Lossless + Batch → repetigo.com/image-tools/webp-to-png ]
 [ Explore All Image Tools → repetigo.com/image-tools ]`;
 
-const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
+const faqSchemaQuestions = Array.from(content.matchAll(/H3: ([^\n]+\?)\n([\s\S]*?)(?=\nH3:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
 export default function WebpToPngPage() {
   return (
@@ -287,7 +175,7 @@ export default function WebpToPngPage() {
 }
 
 type SeoTableData = { headers: string[]; rows: string[][] };
-const CALLOUT_EMOJI = ["💡", "🇮🇳", "🔒", "🖨️", "📱", "✅", "⚠️", "🖥️", "🔁", "🔄", "★"];
+const CALLOUT_EMOJI = ["💡", "🇮🇳", "🔒", "🖨️", "📱", "✅", "⚠️", "🖥️", "🔁", "🔄", "★", "✨"];
 
 function StructuredSeoCopy({ content: source }: { content: string }) {
   const blocks = source.replace(/(^|\n)(H[123]: [^\n]+)\n/g, "$1\n$2\n\n").split(/\n{2,}/).map((block) => block.trim()).filter(Boolean);
@@ -326,11 +214,9 @@ function StructuredSeoCopy({ content: source }: { content: string }) {
 }
 
 function getKnownTable(lines: string[]): SeoTableData | null {
-  if (lines[0] === "Feature" && lines[1] === "WebP") return { headers: ["Feature", "WebP", "PNG", "JPG"], rows: chunkRows(lines.slice(4), 4) };
-  if (lines[0] === "Situation" && lines[1] === "Image Type") return { headers: ["Situation", "Image Type", "Convert to", "Why"], rows: chunkRows(lines.slice(4), 4) };
-  if (lines[0] === "India Use Case" && lines[1] === "Source File") return { headers: ["India Use Case", "Source File", "Why PNG Not JPG", "Output Use"], rows: chunkRows(lines.slice(4), 4) };
-  if (lines[0] === "Feature" && lines[1] === "RepetiGo") return { headers: ["Feature", "RepetiGo", "Squoosh (Google)", "Online Converters", "Design Tool (Figma/PS)"], rows: chunkRows(lines.slice(5), 5) };
-  if (lines[0] === "Protection Layer" && lines[1] === "What It Means in Practice") return { headers: ["Protection Layer", "What It Means in Practice"], rows: chunkRows(lines.slice(2), 2) };
+  if (lines[0] === "Step" && lines[1] === "What You Do" && lines[2] === "What Happens") return { headers: ["Step", "What You Do", "What Happens"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "Scenario" && lines[1] === "Problem") return { headers: ["Scenario", "Problem", "How to fix it here"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "People often ask for…" || lines[0] === "People often ask for...") return { headers: ["People often ask for…", "The honest answer"], rows: chunkRows(lines.slice(2), 2) };
   if (lines[0] === "Tool" && lines[1] === "What It Does" && lines[2] === "Link") return { headers: ["Tool", "What It Does", "Link"], rows: chunkRows(lines.slice(3), 3) };
   return null;
 }
@@ -382,11 +268,11 @@ function mapSeoRoute(route: string) {
   const routeMap: Record<string, string> = {
     "/image-tools": "/image-tools",
     "/image-tools/webp-to-png": "/image-tools/webp-to-png",
-    "/image-tools/webp-to-jpg": "/image-tools/webp-to-jpg",
-    "/image-tools/png-to-jpg": "/image-tools/png-to-jpg",
+    "/image-tools/convert-to-jpg": "/image-tools/convert-to-jpg",
     "/image-tools/convert-from-jpg": "/image-tools/convert-from-jpg",
+    "/image-tools/image-converter": "/image-tools/image-converter",
     "/image-tools/compress-image": "/image-tools/compress-image",
-    "/image-tools/background-remover": "/image-tools/background-remover",
+    "/image-tools/resize-image": "/image-tools/resize-image",
     "/products/printpilot": "/print-automation",
     "/privacy-policy": "/privacy-policy",
     "/pricing": "/pricing",
@@ -398,11 +284,11 @@ function getRouteLabel(href: string) {
   const labels: Record<string, string> = {
     "/image-tools": "Explore All Image Tools",
     "/image-tools/webp-to-png": "Open WebP to PNG",
-    "/image-tools/webp-to-jpg": "Open WebP to JPG",
-    "/image-tools/png-to-jpg": "Open PNG to JPG",
-    "/image-tools/convert-from-jpg": "Open Image Format Converter",
+    "/image-tools/convert-to-jpg": "Open Convert to JPG",
+    "/image-tools/convert-from-jpg": "Open Convert from JPG",
+    "/image-tools/image-converter": "Open Image Converter",
     "/image-tools/compress-image": "Open Compress Image",
-    "/image-tools/background-remover": "Open Remove Background",
+    "/image-tools/resize-image": "Open Resize Image",
     "/print-automation": "Learn About PrintPilot",
     "/privacy-policy": "Read Privacy Policy",
     "/pricing": "Start Free Trial",
@@ -411,8 +297,8 @@ function getRouteLabel(href: string) {
 }
 
 function JsonLd() {
-  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo WebP to PNG Converter", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online WebP to PNG converter with full transparency preservation and batch conversion. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl };
-  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert WebP to PNG Online Free", step: [{ "@type": "HowToStep", name: "Upload WebP", text: "Upload Your WebP File" }, { "@type": "HowToStep", name: "Convert", text: "Convert to PNG" }, { "@type": "HowToStep", name: "Download", text: "Download Your PNG" }] };
+  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo WebP to PNG Converter", applicationCategory: "MultimediaApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free browser-based WebP to PNG converter - lossless output with transparency fully preserved, no settings to configure, and batch conversion to a ZIP. Runs 100% in the browser - no file is ever uploaded to a server.", url: pageUrl };
+  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to convert WebP to PNG", step: [{ "@type": "HowToStep", name: "Upload your WebP(s)", text: "Drop or select one or more .webp files." }, { "@type": "HowToStep", name: "Check the result", text: "See each file's PNG size and dimensions on its card." }, { "@type": "HowToStep", name: "Download", text: "Download each PNG, or grab them all as a ZIP." }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
   const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "WebP to PNG", item: pageUrl }] };
 

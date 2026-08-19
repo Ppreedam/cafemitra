@@ -1,462 +1,364 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { DashboardShell } from "../../DashboardShell";
 import WebsiteToImageClient from "./WebsiteToImageClient";
 
 const pageUrl = "https://repetigo.com/image-tools/website-to-image";
 
 export const metadata: Metadata = {
-  title: "Website to JPG Converter Free Online - Screenshot Any URL | RepetiGo",
+  title: "Website to Image Free - Full Page Screenshot Tool | RepetiGo",
   description:
-    "Convert any website URL to a JPG screenshot online free. Full-page or viewport capture. No browser extension, no sign-up, no watermark. India use cases: OG preview, portfolio, competitive analysis. Files auto-deleted 60 min.",
+    "Free website-to-image tool - capture a full-page or viewport screenshot of any URL as a JPG or PNG. Choose desktop, tablet or mobile width. No sign-up.",
   alternates: { canonical: pageUrl },
   openGraph: {
-    title: "Website to JPG Converter Free Online - Screenshot Any URL | RepetiGo",
-    description:
-      "Convert any URL to a full-page JPG screenshot. Free, no sign-up, no watermark. OG preview, portfolio, competitive analysis. Auto-deleted 60 min.",
+    title: "Website to Image Free - Full Page Screenshot Tool",
+    description: "Capture a full-page or viewport screenshot of any URL as a JPG or PNG. Desktop, tablet, mobile.",
     type: "website",
     url: pageUrl,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Website to Image Free - Full Page Screenshot",
+    description: "Free full-page website screenshots. Viewport or full page, device widths, JPG/PNG output.",
   },
   robots: { index: true, follow: true },
 };
 
-const faqSchemaQuestions = [
-  [
-    "Can I screenshot a paywalled or login-required website?",
-    "No. RepetiGo loads the URL as a fresh anonymous browser session with no cookies, stored login credentials, or session data. Login pages, paywalls, members-only pages, and corporate intranets show their gate, not the protected content.",
-  ],
-  [
-    "What is the best resolution and quality for a website JPG screenshot?",
-    "For most uses, desktop 1280px at quality 90 is clear and reasonably sized. For print output, use 1920px at quality 100. For mobile comparison, use 390px or 375px at quality 90.",
-  ],
-  [
-    "How do I convert a website to JPG using Python, Puppeteer, or Playwright?",
-    "Developers can automate screenshots with Python Playwright or Node.js Puppeteer by launching a headless browser, loading the URL, setting a viewport, and saving a full-page JPEG screenshot.",
-  ],
-  [
-    "What is the difference between Website to JPG and HTML to Image?",
-    "Website to JPG captures a live public URL after loading CSS, JavaScript, fonts, and images. HTML to Image renders pasted HTML/CSS code without loading a live URL.",
-  ],
-];
+const content = String.raw`H1: Website to Image - Capture a Full-Page Screenshot of Any URL.
+
+RepetiGo's website to image tool captures a screenshot of any public web page and gives you a downloadable image. Paste a URL, choose whether you want the full page or just the visible viewport, pick a device width, and download the result as a JPG or PNG. It is the fast, free way to turn a live website into an image - no browser extension, no sign-up, no watermark.
+Unlike a manual screenshot that only grabs what is on screen, this tool can capture the entire page from top to bottom in one image - ideal for a full page screenshot of a long article, a landing page, or a design you want to save. You control the width too, so you can capture a desktop, tablet, or mobile view of the same page. It is a proper website screenshot tool that does the scrolling and stitching for you.
+
+✓ Free · No sign-up · No watermark   ✓ Full page or viewport   ✓ Desktop / tablet / mobile widths   ✓ JPG or PNG output
+
+H2: How to Capture a Website as an Image in 3 Steps.
+Here is how to screenshot a website with RepetiGo. All you need is the URL.
+
+Step
+What You Do
+What Happens
+1. Enter the URL
+Paste a public website URL and press Enter or the button.
+The tool loads the page on our server and starts capturing.
+2. Set mode & width
+Choose full page or viewport, a device width, and JPG/PNG.
+For JPG you can pick a quality preset; a spinner shows progress.
+3. Download
+Preview the screenshot inline and download it.
+It saves as {site}-full-page.jpg or {site}-viewport.png.
+
+ℹ️ This tool loads the page on RepetiGo's server to capture it (see "How It Works" below). Login-only, paywalled, private, and local URLs cannot be captured.
+
+H2: Full Page vs Viewport - Which Capture Mode?
+The mode dropdown decides how much of the page you get. Full page captures the entire web page from top to bottom as one tall image - everything you would see if you scrolled all the way down. Viewport captures only the visible area, as if you took a single screenshot without scrolling, at the chosen width and a standard height.
+
+Mode
+What you get
+Best for
+Full page
+The whole page, top to bottom, stitched into one image
+Articles, landing pages, whole-design captures
+Viewport
+Only the visible above-the-fold area
+Hero sections, previews, above-the-fold checks
+
+Full page is the reason most people use a tool like this - capturing a long page in one image is exactly what a manual screenshot cannot do. Use viewport when you only want the top of the page, the part a visitor sees first.
+
+H2: Choose a Device Width - Desktop, Tablet & Mobile.
+The same page looks different at different screen widths, so you can pick the browser width before capturing. This lets you grab a desktop, tablet, or mobile version of a responsive site.
+
+Preset
+Width
+Represents
+Desktop
+1280px
+Standard desktop view
+Wide desktop (default)
+1440px
+Large desktop monitors
+Full HD
+1920px
+Full-width, high-resolution capture
+Tablet
+768px
+Tablet / iPad-width layout
+Mobile
+390px / 375px
+Phone-width responsive layout
+
+If you are checking how a site looks on a phone, choose Mobile and capture - you get the responsive mobile layout, not a squeezed desktop page. For a crisp, wide capture, Full HD at 1920px gives the most detail. Wide desktop (1440px) is the default and suits most captures.
+
+H2: JPG or PNG Output (and JPG Quality).
+Choose the output format to suit your need. JPG makes a smaller file, which is handy for a long full-page capture that would otherwise be heavy; PNG gives the best quality and crisp text, at a larger size. When you pick JPG, you also get a quality preset: Compressed (70%) for the smallest file, High (90%) for a strong balance, or Maximum (100%) for the best JPG quality.
+As a rule of thumb: use PNG when text sharpness matters (documentation, design review) and JPG when file size matters (sharing a long page, emailing a capture). If a JPG full-page screenshot is still large, you can shrink it further with the Compress Image tool linked below.
+
+H2: How It Works - Server-Side Capture.
+It is worth being clear about how this tool works, because it is different from most of RepetiGo's image tools. To take a real screenshot of a live web page, the tool sends your URL to RepetiGo's server, which loads the page in a real browser environment and captures it, then returns the image to you. This is server-side capture - it is the only way to render a live page's actual layout, styles, and images faithfully.
+That means, unlike the client-side tools on RepetiGo, this one does send the URL you enter to our server to do the rendering. The URL is a public web address rather than a personal file, but it is honest to be clear that the capture happens on the server, not in your browser. For full details on how RepetiGo handles requests, see the security policy linked below. If you need a purely local, in-browser tool that never sends anything to a server, that is a different kind of tool - this one has to render the page to screenshot it.
+
+ℹ️ Server-side by necessity: your URL is sent to RepetiGo's server, which loads and captures the page. That is how a live screenshot works - see the security policy for details.
+
+H2: What It Cannot Capture - Login, Paywalled & Local Pages.
+A screenshot tool can only capture what a fresh, logged-out visitor would see, so a few kinds of pages are off-limits - and the tool tells you when it hits one. Pages behind a login, paywalled articles, private or internal pages, and local URLs (like localhost or an internal IP) cannot be captured, because the server cannot reach or authenticate into them. If you try one, you will get a clear error rather than a broken image.
+Two more honest notes on what to expect. First, very JavaScript-heavy or lazy-loading pages may not be fully rendered, because the tool captures the page as it loads without a custom wait time - some late-loading content might be missing. Second, cookie notices and ad banners can appear in the screenshot, since the tool does not auto-dismiss pop-ups. For most standard public pages, though, the capture is clean and complete.
+
+⚠️ Cannot capture: login-only, paywalled, private/internal, or local (localhost/IP) pages. Heads-up: JS-heavy/lazy content may not fully load, and cookie/ad banners can appear.
+
+H2: Website to Image vs HTML to Image.
+RepetiGo has two related tools that are easy to confuse, so here is the difference. This Website to Image tool takes a live URL and captures a real, full visual screenshot of the rendered page - layout, colours, images, and all - using server-side rendering. The HTML to Image tool is different: it takes an HTML file you upload and renders only its readable text to a PNG, locally in your browser, without running any of the file's code.
+
+Website to Image
+HTML to Image
+Input
+A live website URL
+An uploaded .html file
+Output
+Full visual screenshot
+Readable text as an image
+Rendering
+Server-side (real page)
+Client-side, text only
+Use it for
+Capturing a real web page
+Safely reading an HTML file's text
+
+So: use this tool for a real screenshot of a page on the web; use HTML to Image when you have an HTML file and want a safe, local text snapshot of it.
+
+H2: ★ Use Cases - Proposals, Archives & Responsive Previews.
+Capturing a web page as an image is useful across a lot of everyday work.
+
+Who
+What they capture
+Why
+Freelancers & agencies
+A client's current site for a proposal
+Show the "before" in a redesign pitch
+Designers & developers
+Desktop vs mobile views of a page
+Check and share responsive layouts
+Marketers
+Landing pages and competitor pages
+Archive a page as it looked on a date
+Students & researchers
+A web page as a source
+Save a visual record of a page
+Anyone sharing a page
+A full page as one image
+Send a page on chat without a link
+
+🇮🇳 Tip: capturing a long page as full-page JPG keeps the file manageable; if it is still heavy for WhatsApp or email, compress it at /image-tools/compress-image or crop to the key section at /image-tools/crop-image.
+
+H2: What This Tool Does Not Do.
+So you know whether it fits before you start, here is what this tool is not built for - and where to go instead.
+
+People often ask for…
+The honest answer
+Capture many URLs at once
+No - one URL at a time (no batch or ZIP)
+Screenshot just one element/section
+No - full page or viewport only
+Wait for lazy-loaded / JS content
+No - no custom wait-time control
+Hide cookie or ad banners
+No - pop-ups are not auto-dismissed
+Capture a login/paywalled page
+No - only public, reachable pages
+Export as PDF, or add annotations
+No - image output only (annotate with other tools)
+A device-frame mockup around it
+No - the raw screenshot is what you get
+
+H2: Website to Image - Frequently Asked Questions.
+H3: Is this website screenshot tool free?
+Yes - RepetiGo's website to image tool is free with no sign-up and no watermark. Paste a public URL, choose full page or viewport, a device width, and JPG or PNG, and download the screenshot at no cost. It captures one URL at a time.
+H3: How do I take a full-page screenshot of a website?
+Paste the website's URL, choose "full page" as the capture mode, pick a device width and format, and press capture. The tool loads the page on our server, scrolls and stitches the entire page into one tall image, and lets you download it as a JPG or PNG. That captures the whole page top to bottom, which a manual screenshot cannot do.
+H3: What is the difference between full page and viewport?
+Full page captures the entire web page from top to bottom as one image - everything you would see if you scrolled all the way down. Viewport captures only the visible above-the-fold area at the chosen width. Use full page for a whole article or landing page, and viewport when you just want the top section a visitor sees first.
+H3: Can I capture a mobile view of a site?
+Yes. Choose the Mobile width preset (390/375px) before capturing and you get the site's responsive mobile layout, not a shrunk desktop page. There are also Tablet (768px), Desktop (1280px), Wide desktop (1440px, the default), and Full HD (1920px) presets, so you can capture the same page at several widths.
+H3: Why can't it capture a page behind a login or paywall?
+Because the tool captures what a fresh, logged-out visitor sees, and it cannot log in or get past a paywall. Login-only, paywalled, private or internal, and local (localhost/IP) pages are blocked, and you will get a clear error instead of a broken image. Only public, reachable pages can be captured.
+H3: Does my URL get sent to a server?
+Yes. Unlike RepetiGo's client-side tools, this one has to load the page to screenshot it, so the URL you enter is sent to our server, which renders the page in a real browser and returns the image. The URL is a public web address rather than a personal file; for full details on how requests are handled, see the security policy.
+H3: Why is some content missing or a cookie banner showing?
+Very JavaScript-heavy or lazy-loading pages may not fully render, because the tool captures the page as it loads without a custom wait time, so late-loading content can be missing. Cookie notices and ad banners can also appear, since pop-ups are not auto-dismissed. For most standard public pages the capture is clean; for tricky pages, try again or capture the viewport.
+H3: Should I choose JPG or PNG?
+Choose PNG for the sharpest text and best quality, which suits documentation and design review; choose JPG for a smaller file, which helps with a long full-page capture you want to share. With JPG you can pick a quality preset - Compressed (70%), High (90%), or Maximum (100%). A big JPG can be shrunk further with the Compress Image tool.
+H3: Can I capture several websites at once?
+No - the tool captures one URL at a time; there is no batch or multi-URL mode and no ZIP download. Capture a page, download it, then enter the next URL. It also captures the full page or viewport rather than a single selected element, so it is focused on whole-page screenshots.
+H3: Is this the same as the HTML to Image tool?
+No. This Website to Image tool takes a live URL and captures a real visual screenshot of the rendered page using server-side rendering. The HTML to Image tool takes an uploaded HTML file and renders only its readable text to a PNG, locally in your browser. Use this one for a real screenshot of a web page, and HTML to Image for a safe text snapshot of an HTML file.
+
+H2: Related Image Tools.
+Tool
+What It Does
+Link
+HTML to Image
+Render an HTML file's text to a PNG (local)
+→ /image-tools/html-to-image
+Compress Image
+Shrink a large full-page screenshot
+→ /image-tools/compress-image
+Crop Image
+Crop the screenshot to one section
+→ /image-tools/crop-image
+Resize Image
+Resize the screenshot
+→ /image-tools/resize-image
+Photo Editor
+Annotate the screenshot with text
+→ /image-tools/photo-editor
+All Image Tools
+The complete image tools suite
+→ /image-tools
+
+[ Capture a Website as an Image - Free → repetigo.com/image-tools/website-to-image ]
+[ Explore All Image Tools → repetigo.com/image-tools ]`;
+
+const faqSchemaQuestions = Array.from(content.matchAll(/H3: ([^\n]+\?)\n([\s\S]*?)(?=\nH3:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
 export default function WebsiteToImagePage() {
   return (
     <DashboardShell activePath="/image-tools">
       <div className="dashboard website-image-page">
-        <div className="compress-heading">
-          <div>
-            <span className="auto-print-kicker">Free Image Tool</span>
-            <h1>Website to JPG Free Online. Screenshot Any URL - Full Page or Viewport, No Extension, No Sign-Up.</h1>
-            <p>
-              Convert a public website URL into a high-quality JPG screenshot for OG preview checks, portfolios, competitive research,
-              evidence capture, and print shop jobs.
-            </p>
-          </div>
-          <span>Auto-deleted 60 min</span>
-        </div>
-
-        <WebsiteToImageClient />
-
-        <article className="tool-seo-content compress-pdf-seo" id="website-to-jpg-guide">
-          <section className="tool-seo-hero">
-            <span className="tool-seo-kicker">Website to JPG</span>
-            <h2>Website to JPG Free Online. Screenshot Any URL - Full Page or Viewport, No Extension, No Sign-Up.</h2>
-            <p>
-              RepetiGo's free website to JPG converter takes any public URL and returns it as a high-quality JPG screenshot - without requiring a
-              browser extension, a desktop application, or an account. Enter the URL, choose your capture settings (full-page or viewport, desktop
-              or mobile view), and download the screenshot. The tool runs a headless browser on our servers to load and render the page exactly as
-              a real visitor would see it, then captures and delivers the result as a JPG image.
-            </p>
-            <p>
-              This tool is used for a range of practical tasks in India: digital agencies screenshotting completed website builds before client
-              handover, freelancers capturing portfolio screenshots, developers checking how a URL will appear when shared on WhatsApp (OG preview
-              validation), e-commerce sellers screenshotting competitor pages for analysis, and print shops capturing webpage content as a printable
-              JPG for customers. All screenshots are permanently deleted from our servers within 60 minutes.
-            </p>
-            <div className="tool-seo-badges">
-              <span>Full-page or viewport capture</span>
-              <span>Desktop / mobile / tablet view</span>
-              <span>No extension</span>
-              <span>No sign-up</span>
-              <span>Auto-deleted 60 min</span>
-            </div>
-            <SeoLink href="/image-tools/website-to-image">Screenshot Website as JPG Free</SeoLink>
-          </section>
-
-          <section>
-            <h2>What Is a Website to JPG Converter? (And How Is It Different from a Browser Screenshot?)</h2>
-            <p>
-              A website to JPG converter is a server-side screenshot tool. You provide a URL - the tool's server loads that URL in a headless
-              browser (a browser without a visible interface), renders the full page including all CSS, JavaScript, fonts, and images, and captures
-              the result as a JPG image. This is different from pressing Print Screen or using your browser's built-in screenshot in several
-              important ways:
-            </p>
-            <Table
-              headers={["Aspect", "Browser Screenshot (Print Screen / Ctrl+Shift+S)", "Website to JPG Converter (RepetiGo)"]}
-              rows={[
-                ["What you capture", "Only what's visible on your screen at that moment - the viewport", "The entire page - including content below the fold, full-page height"],
-                ["Device view", "Only your current device's screen size", "Any device: desktop (1280px, 1440px, 1920px), mobile (375px, 390px), tablet (768px)"],
-                ["Works on any device", "Limited - phone screenshots are phone-sized only", "Yes - capture a mobile view from desktop or vice versa"],
-                ["No account or extension needed", "Yes - always built-in", "Yes - no extension, works in any browser"],
-                ["Captures full page (scroll)", "Not natively in most browsers", "Full-page mode captures the entire scrollable page as one image"],
-                ["Use on mobile for desktop screenshot", "Not possible - phone screen only", "Yes - enter URL on phone, get desktop-width screenshot"],
-              ]}
-            />
-            <p>
-              A website to JPG converter is sometimes called a "screenshot website as jpg" tool, a "url to jpg converter", or a "webpage to jpg"
-              tool - all describe the same operation: a server loads the URL and delivers the rendered result as a JPG file.
-            </p>
-          </section>
-
-          <section>
-            <h2>How to Convert a Website to JPG Online Free in 3 Steps.</h2>
-            <div className="tool-seo-step-grid">
-              <div>
-                <h3>Step 1 - Enter the URL</h3>
-                <p>
-                  Type or paste the full URL into the input field - include the https:// prefix. The URL must be a publicly accessible web page. The
-                  tool cannot access pages that require login, session tokens, cookies from a previous visit, or a VPN. For pages that require
-                  authentication, the screenshot will show the login page or access-denied screen - not the protected content. If you are
-                  screenshotting a page that is only accessible on a corporate network, use your browser's built-in screenshot tool instead.
-                </p>
-              </div>
-              <div>
-                <h3>Step 2 - Choose Your Capture Settings</h3>
-                <p>
-                  Capture Mode - Full Page captures the entire scrollable page as a single JPG, from the top header to the bottom footer. Viewport
-                  Only captures what a visitor sees on first load without scrolling. Choose desktop, wide desktop, mobile, or tablet width. Use High
-                  quality for most uses, Maximum for print-ready output, or Compressed for easier sharing.
-                </p>
-                <p>
-                  India OG preview tip: for checking how your URL will appear when shared on WhatsApp or LinkedIn, use Viewport mode at Desktop
-                  1200px width and Image Quality High. This approximates how link preview scrapers render the page.
-                </p>
-              </div>
-              <div>
-                <h3>Step 3 - Download Your JPG Screenshot</h3>
-                <p>
-                  Click Capture. The server loads the URL, renders the page (typically 3-10 seconds depending on page complexity), and delivers the
-                  JPG screenshot. Click Download JPG to save the file. For batch capture of multiple URLs, enter each URL on a new line - the tool
-                  captures all simultaneously and delivers a zip archive. Your screenshot is permanently deleted from our servers within 60 minutes
-                  of download.
-                </p>
-              </div>
-            </div>
-            <SeoLink href="/image-tools/website-to-image">Screenshot Website Free Now</SeoLink>
-          </section>
-
-          <section>
-            <h2>Website to JPG Features - What the Capture Tool Includes.</h2>
-            <div className="tool-seo-use-grid">
-              <div>
-                <h3>Full-Page Screenshot vs Viewport Capture</h3>
-                <p>
-                  Full-page mode is the feature that distinguishes a server-side website-to-JPG converter from a simple browser screenshot. When you
-                  press Print Screen or use your browser's screenshot shortcut, you capture only the pixels currently visible on your screen. A
-                  website to JPG converter with full-page mode scrolls through the entire page programmatically, stitching each section together into
-                  a single continuous JPG from top to bottom. This is how you get a screenshot of a 20,000-pixel-tall page in a single image without
-                  manually scrolling and stitching screenshots.
-                </p>
-              </div>
-              <div>
-                <h3>Device Emulation - Desktop, Mobile, and Tablet Views</h3>
-                <p>
-                  Indian website developers and agencies frequently need to capture screenshots at specific device widths - to show a client how
-                  their site looks on mobile, to compare desktop vs mobile layouts, or to capture a competitor's mobile experience. The device
-                  emulation feature sets the viewport width before capture, so you can get an accurate mobile screenshot from a desktop computer or
-                  a desktop-width screenshot from a mobile phone. Available widths: 375px (iPhone SE), 390px (iPhone 14), 768px (iPad), 1280px
-                  (standard desktop), 1440px (large desktop), 1920px (wide desktop).
-                </p>
-              </div>
-            </div>
-          </section>
-
-          <section>
-            <h2>Indian Use Cases - Why Convert Websites to JPG?</h2>
-            <p>The most practical use cases for a website-to-JPG tool in India span digital agencies, freelancers, developers, and print shops:</p>
-            <div className="tool-seo-use-grid">
-              <div>
-                <h3>OG Preview Validation - How Your URL Looks on WhatsApp and LinkedIn</h3>
-                <p>
-                  When you share a URL on WhatsApp, LinkedIn, or Twitter, these platforms scrape the page's Open Graph metadata - the og:title,
-                  og:description, and og:image tags - to generate a preview card. If these tags are missing, incorrect, or pointing to the wrong
-                  image, the preview looks broken or unprofessional. The website-to-JPG converter captures the page exactly as a fresh anonymous
-                  visitor sees it - which is what the OG scraper sees. By comparing the screenshot to the expected preview, developers can verify the
-                  OG implementation before the URL goes live.
-                </p>
-                <p>
-                  India developer tip: after deploying a new page or updating OG tags, use the website-to-JPG tool to verify the page renders
-                  correctly in a fresh anonymous session before sharing the URL with stakeholders or clients.
-                </p>
-              </div>
-              <div>
-                <h3>Freelancer and Agency Portfolio Screenshots</h3>
-                <p>
-                  Indian freelancers and digital agencies screenshot completed website builds for their design and development portfolios on Behance,
-                  Dribbble, LinkedIn, and client proposals. Rather than asking the client to take a screenshot (which may be the wrong device width,
-                  missing full-page content, or inconsistent quality), a full-page screenshot from the tool delivers a clean, consistent portfolio
-                  image at exactly the right device width. For agencies, this is a standard deliverable step before handing over completed builds.
-                </p>
-              </div>
-              <div>
-                <h3>Competitive Analysis and Research Screenshots</h3>
-                <p>
-                  E-commerce sellers, digital marketers, and business analysts in India regularly monitor competitor websites - pricing pages,
-                  product listings, promotional banners, and landing page structures. Screenshotting competitor pages at a specific moment provides a
-                  timestamped record of their positioning. The batch URL mode captures multiple competitor pages simultaneously, delivering a zip of
-                  comparison screenshots in a single operation.
-                </p>
-              </div>
-              <div>
-                <h3>Evidence and Webpage Archiving</h3>
-                <p>
-                  Journalists, researchers, legal teams, and compliance officers frequently need to capture webpage content as verifiable evidence
-                  before it may be edited or removed. The website-to-JPG screenshot provides a visual record of a page's content at a specific point
-                  in time. For legal admissibility, the screenshot should be combined with metadata (URL, date, time) - which the tool embeds in the
-                  JPG EXIF data automatically.
-                </p>
-              </div>
-              <div>
-                <h3>Print Shop - Print a Webpage for a Customer</h3>
-                <p>
-                  A customer walks into a print shop with a URL and asks for a printout of that webpage - a news article, a government notice, a
-                  property listing, a court order. The print shop uses the website-to-JPG tool to capture the full-page screenshot, then prints the
-                  JPG. For print-quality output, use Maximum quality setting and the widest desktop viewport (1920px). The resulting JPG can be
-                  printed at A4 or letter size without significant quality loss.
-                </p>
-                <p>
-                  For print shops that regularly handle this kind of request, PrintPilot - RepetiGo's automated print shop software - integrates
-                  webpage capture into the customer order workflow: the customer provides the URL via QR code, PrintPilot captures the screenshot and
-                  routes it to the print queue.
-                </p>
-              </div>
-            </div>
-            <div className="tool-seo-badges">
-              <SeoLink href="/pricing">Try PrintPilot Free</SeoLink>
-              <SeoLink href="/image-tools/website-to-image">Or Screenshot a Website Now</SeoLink>
-            </div>
-          </section>
-
-          <section>
-            <h2>Why Use RepetiGo's Website to JPG Converter?</h2>
-            <Table
-              headers={["Feature", "RepetiGo", "Browser Screenshot", "URL2PNG (Paid)", "Screenshotone API"]}
-              rows={[
-                ["Free to use", "Always free", "Built-in free", "Paid subscription", "Paid credits"],
-                ["Sign-up required", "Never", "No account", "Account required", "Account required"],
-                ["Full-page capture", "Yes", "Not natively", "Yes", "Yes"],
-                ["Device emulation", "Desktop/Mobile/Tablet", "Current device only", "Yes", "Yes"],
-                ["No browser extension", "Yes - works in any browser", "Yes", "Yes", "Yes (API)"],
-                ["India use case guidance", "OG preview, portfolio, print shop", "None", "None", "None"],
-                ["Batch URL capture", "Multiple URLs simultaneously", "One at a time", "API batch", "API batch"],
-                ["File auto-deleted", "60 minutes", "N/A (local file)", "Varies", "N/A (local)"],
-              ]}
-            />
-          </section>
-
-          <section>
-            <h2>Your Screenshots Are Safe. Always.</h2>
-            <Table
-              headers={["Protection Layer", "What It Means"]}
-              rows={[
-                ["HTTPS Connection", "The server loads the URL and delivers the JPG over an encrypted HTTPS connection."],
-                ["Anonymous Session", "The headless browser loads the URL with no cookies, no session data, and no stored credentials - a fresh anonymous visit."],
-                ["Auto-Deleted 60 Min", "Your screenshot JPG is permanently deleted from our servers within 60 minutes of download."],
-                ["No Content Indexing", "Page content captured during screenshot is not stored, indexed, or used for any purpose beyond delivering the JPG to you."],
-                ["No Account = No History", "No profile, no screenshot history, no usage tracking."],
-              ]}
-            />
-            <SeoLink href="/privacy-policy">Read our Privacy Policy</SeoLink>
-          </section>
-
-          <section>
-            <h2>Common Questions About Website to JPG Conversion.</h2>
-            <div className="tool-seo-faq-list">
-              <details open>
-                <summary>Q5: Can I Screenshot a Paywalled or Login-Required Website?</summary>
-                <p>
-                  No. RepetiGo's website-to-JPG tool loads the URL as a fresh anonymous browser session - with no cookies, no stored login
-                  credentials, and no session data from a previous visit. If the URL requires authentication (a login page, a paywall, a members-only
-                  area, a corporate intranet), the tool will capture a screenshot of the login page or access gate - not the protected content behind
-                  it. This is an intentional and correct behavior: the tool captures exactly what an anonymous visitor sees, which is also what
-                  search engine crawlers, OG scrapers, and link preview generators see. If you need to screenshot a page that requires login, use your
-                  browser's built-in screenshot tool while logged in, then save the result as a JPG.
-                </p>
-              </details>
-              <details>
-                <summary>Q6: What Is the Best Resolution and Quality for a Website JPG Screenshot?</summary>
-                <p>
-                  For most uses: Desktop 1280px width at Quality 90 produces screenshots that are clear, reasonably sized, and suitable for
-                  presentations, portfolios, and documentation. For print output: use 1920px width at Quality 100 - this produces the highest pixel
-                  density for A4 printing. For mobile comparison: use 390px (iPhone 14) or 375px (iPhone SE) width at Quality 90. For full-page
-                  screenshots of long articles: the file size can be large (3-15MB for a 10,000+ pixel tall page). If you need to share the
-                  screenshot via WhatsApp or email, use Quality 70 to reduce file size without visible quality loss at typical viewing sizes.
-                </p>
-              </details>
-              <details>
-                <summary>Q7: How to Convert a Website to JPG Using Python, Puppeteer, or Playwright</summary>
-                <p>For developers who need to automate website-to-JPG capture in code:</p>
-                <h3>Python using Playwright:</h3>
-                <pre><code>{`from playwright.sync_api import sync_playwright
-
-with sync_playwright() as p:
-    browser = p.chromium.launch()
-    page = browser.new_page()
-    page.goto("https://example.com")
-    page.screenshot(path="screenshot.jpg", full_page=True)
-    browser.close()
-
-print("Screenshot saved as screenshot.jpg")`}</code></pre>
-                <h3>Node.js using Puppeteer:</h3>
-                <pre><code>{`const puppeteer = require("puppeteer");
-
-(async () => {
-  const browser = await puppeteer.launch();
-  const page = await browser.newPage();
-
-  await page.setViewport({ width: 1280, height: 800 });
-  await page.goto("https://example.com", { waitUntil: "networkidle2" });
-
-  await page.screenshot({
-    path: "screenshot.jpg",
-    fullPage: true,
-    type: "jpeg",
-    quality: 90
-  });
-
-  await browser.close();
-  console.log("Screenshot saved");
-})();`}</code></pre>
-                <p>
-                  For production web apps needing serverless URL-to-JPG conversion without managing browser infrastructure, RepetiGo's API accepts
-                  URLs and returns JPG screenshots - zero Puppeteer setup required. Contact support@repetigo.com for API access.
-                </p>
-              </details>
-              <details>
-                <summary>Q8: What Is the Difference Between Website to JPG and HTML to Image?</summary>
-                <p>
-                  They appear similar but serve completely different use cases. Website to JPG (this tool) takes a live, publicly accessible URL and
-                  captures a real screenshot of how that page looks in a browser. It loads the URL, executes JavaScript, applies CSS, loads fonts and
-                  images, and screenshots the result. It requires a public URL - the page must be live on the internet. HTML to image takes pasted
-                  HTML and CSS code and renders it to an image - without loading a URL. It is used by developers generating certificate templates,
-                  invoice layouts, email templates, or social cards from code. No live URL is needed. Use website to JPG for screenshots of live
-                  websites, OG preview checking, portfolio captures, and competitive analysis. Use HTML to image for rendering HTML/CSS code to
-                  image, certificate generation, invoice screenshots, and code-driven image generation.
-                </p>
-              </details>
-            </div>
-          </section>
-
-          <section>
-            <h2>More Free Image Tools from RepetiGo.</h2>
-            <Table
-              headers={["Tool", "What It Does", "Link"]}
-              rows={[
-                ["HTML to Image", "Convert pasted HTML/CSS code to a PNG or JPG - for certificates, invoices, email templates", "/image-tools/html-to-image|Open HTML to Image"],
-                ["Photo Editor", "Edit, crop, and annotate your screenshot after capturing", "/image-tools/photo-editor|Open Photo Editor"],
-                ["Compress Image", "Reduce the JPG screenshot file size for sharing or email", "/image-tools/compress-image|Compress Screenshot"],
-                ["Resize Image", "Resize the screenshot to specific dimensions for presentations or documents", "/image-tools/resize-image|Resize Screenshot"],
-                ["Watermark Image", "Add a watermark or annotation to your screenshot before sharing", "/image-tools/watermark-image|Add Watermark"],
-                ["All Image Tools", "Complete free image tools suite", "/image-tools|Explore Image Tools"],
-              ]}
-            />
-            <div className="tool-seo-badges">
-              <SeoLink href="/image-tools/website-to-image">Screenshot Website as JPG Free</SeoLink>
-              <SeoLink href="/image-tools">Explore All Image Tools</SeoLink>
-            </div>
-          </section>
-        </article>
         <JsonLd />
+        <article className="tool-seo-content compress-pdf-seo" id="website-to-image-guide">
+          <StructuredSeoCopy content={content} />
+        </article>
+        <WebsiteToImageClient />
       </div>
     </DashboardShell>
   );
 }
 
-function Table({ headers, rows }: { headers: string[]; rows: string[][] }) {
+type SeoTableData = { headers: string[]; rows: string[][] };
+const CALLOUT_EMOJI = ["💡", "🇮🇳", "🔒", "🖨️", "📱", "✅", "⚠️", "🖥️", "🔁", "🔄", "★", "ℹ️"];
+
+function StructuredSeoCopy({ content: source }: { content: string }) {
+  const blocks = source.replace(/(^|\n)(H[123]: [^\n]+)\n/g, "$1\n$2\n\n").split(/\n{2,}/).map((block) => block.trim()).filter(Boolean);
+  return (
+    <>
+      {blocks.map((block, index) => {
+        const lines = block.split("\n").map((line) => line.trim()).filter(Boolean);
+        const first = lines[0];
+        if (first.startsWith("H1: ")) return <h1 key={index}>{first.slice(4)}</h1>;
+        if (first.startsWith("H2: ")) return <h2 key={index}>{first.slice(4)}</h2>;
+        if (first.startsWith("H3: ")) {
+          const heading = first.slice(4);
+          const body = lines.slice(1);
+          return (
+            <section className="tool-seo-copy-block" key={index}>
+              <h3>{heading}</h3>
+              {body.map((line) => <p key={line}>{renderInlineMappedLinks(line)}</p>)}
+            </section>
+          );
+        }
+        const table = getKnownTable(lines);
+        if (table) return <SeoTable key={index} {...table} />;
+        if (first.startsWith("✓ ")) {
+          return <div className="tool-seo-badges" key={index}>{first.split(/\s{2,}/).map((item) => <span key={item}>{item}</span>)}</div>;
+        }
+        if (lines.length && lines.every((line) => line.startsWith("[ ") && line.endsWith(" ]"))) {
+          return <div className="tool-seo-cta-stack" key={index}>{lines.map((line) => <CtaLine key={line} text={line} />)}</div>;
+        }
+        if (CALLOUT_EMOJI.some((emoji) => first.startsWith(emoji))) {
+          return <aside className="tool-seo-callout" key={index}>{lines.map((line) => <p key={line}>{renderInlineMappedLinks(line)}</p>)}</aside>;
+        }
+        return <div className="tool-seo-copy-paragraph" key={index}>{lines.map((line) => <p key={line}>{renderInlineMappedLinks(line)}</p>)}</div>;
+      })}
+    </>
+  );
+}
+
+function getKnownTable(lines: string[]): SeoTableData | null {
+  if (lines[0] === "Step" && lines[1] === "What You Do" && lines[2] === "What Happens") return { headers: ["Step", "What You Do", "What Happens"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "Mode" && lines[1] === "What you get") return { headers: ["Mode", "What you get", "Best for"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "Preset" && lines[1] === "Width") return { headers: ["Preset", "Width", "Represents"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "Website to Image" && lines[1] === "HTML to Image") return { headers: ["", "Website to Image", "HTML to Image"], rows: chunkRows(lines.slice(2), 3) };
+  if (lines[0] === "Who" && lines[1] === "What they capture") return { headers: ["Who", "What they capture", "Why"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "People often ask for…" || lines[0] === "People often ask for...") return { headers: ["People often ask for…", "The honest answer"], rows: chunkRows(lines.slice(2), 2) };
+  if (lines[0] === "Tool" && lines[1] === "What It Does" && lines[2] === "Link") return { headers: ["Tool", "What It Does", "Link"], rows: chunkRows(lines.slice(3), 3) };
+  return null;
+}
+
+function chunkRows(values: string[], size: number) {
+  const rows: string[][] = [];
+  for (let index = 0; index < values.length; index += size) rows.push(values.slice(index, index + size));
+  return rows;
+}
+
+function SeoTable({ headers, rows }: SeoTableData) {
   return (
     <div className="tool-seo-table-wrap">
       <table>
-        <thead>
-          <tr>{headers.map((header) => <th key={header}>{header}</th>)}</tr>
-        </thead>
+        <thead><tr>{headers.map((header) => <th key={header}>{header}</th>)}</tr></thead>
         <tbody>
-          {rows.map((row) => (
-            <tr key={row.join("|")}>
-              {row.map((cell) => (
-                <td key={cell}>{renderTableCell(cell)}</td>
-              ))}
-            </tr>
-          ))}
+          {rows.map((row) => <tr key={row.join("|")}>{row.map((cell, index) => <td key={cell + "-" + index}>{renderTableCell(cell)}</td>)}</tr>)}
         </tbody>
       </table>
     </div>
   );
 }
 
-function renderTableCell(cell: string) {
-  if (!cell.startsWith("/")) return cell;
-  const [href, label = "Open Tool"] = cell.split("|");
-  return (
-    <Link className="tool-table-cta" href={href}>
-      {label}
-    </Link>
-  );
+function CtaLine({ text }: { text: string }) {
+  const inner = text.slice(2, -2);
+  const [, label = inner, href = ""] = inner.match(/^(.*?)\s*(?:→)\s*(.+)$/) || [];
+  const mappedHref = mapSeoRoute(href || "");
+  return <a className="tool-seo-inline-cta" href={mappedHref || "#website-to-image-guide"}>{label}{mappedHref ? <span>{"→"}</span> : null}</a>;
 }
 
-function SeoLink({ href, children }: { href: string; children: React.ReactNode }) {
-  return (
-    <Link className="tool-seo-inline-cta" href={href}>
-      {children}
-      <span>{"->"}</span>
-    </Link>
-  );
+function renderTableCell(cell: string) {
+  const cleaned = cell.replace(/^→\s*/, "").trim();
+  const href = mapSeoRoute(cleaned);
+  if (!href) return renderInlineMappedLinks(cell);
+  return <a className="tool-seo-table-link" href={href}>{getRouteLabel(href)}</a>;
+}
+
+function renderInlineMappedLinks(text: string) {
+  const parts = text.split(/(repetigo\.com\/(?:image-tools\/[a-z-]*|pricing)\/?|\/image-tools\/[a-z-]*\/?|\/image-tools\/?|\/privacy-policy\/?|\/pricing\/?)/g);
+  return parts.map((part, index) => {
+    const href = mapSeoRoute(part.startsWith("repetigo.com") ? "https://" + part : part);
+    if (!href) return part;
+    return <a href={href} key={part + "-" + index}>{getRouteLabel(href)}</a>;
+  });
+}
+
+function mapSeoRoute(route: string) {
+  const cleanRoute = route.trim().replace(/^(https?:\/\/)?(www\.)?repetigo\.com/i, "").replace(/\/$/, "");
+  const routeMap: Record<string, string> = {
+    "/image-tools": "/image-tools",
+    "/image-tools/website-to-image": "/image-tools/website-to-image",
+    "/image-tools/html-to-image": "/image-tools/html-to-image",
+    "/image-tools/compress-image": "/image-tools/compress-image",
+    "/image-tools/crop-image": "/image-tools/crop-image",
+    "/image-tools/resize-image": "/image-tools/resize-image",
+    "/image-tools/photo-editor": "/image-tools/photo-editor",
+    "/privacy-policy": "/privacy-policy",
+    "/pricing": "/pricing",
+  };
+  return routeMap[cleanRoute] || (cleanRoute.startsWith("/image-tools") ? cleanRoute : "");
+}
+
+function getRouteLabel(href: string) {
+  const labels: Record<string, string> = {
+    "/image-tools": "Explore All Image Tools",
+    "/image-tools/website-to-image": "Open Website to Image",
+    "/image-tools/html-to-image": "Open HTML to Image",
+    "/image-tools/compress-image": "Open Compress Image",
+    "/image-tools/crop-image": "Open Crop Image",
+    "/image-tools/resize-image": "Open Resize Image",
+    "/image-tools/photo-editor": "Open Photo Editor",
+    "/privacy-policy": "Read Privacy Policy",
+    "/pricing": "Start Free Trial",
+  };
+  return labels[href] || "Open Tool";
 }
 
 function JsonLd() {
-  const softwareApplication = {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    name: "RepetiGo Website to JPG Converter",
-    applicationCategory: "UtilitiesApplication",
-    operatingSystem: "Web",
-    offers: { "@type": "Offer", price: "0", priceCurrency: "INR" },
-    description: "Free online website to JPG converter for full-page and viewport screenshots of public URLs.",
-    url: pageUrl,
-  };
-  const howTo = {
-    "@context": "https://schema.org",
-    "@type": "HowTo",
-    name: "How to Convert a Website to JPG Online Free",
-    step: [
-      { "@type": "HowToStep", name: "Enter the URL", text: "Type or paste the full public URL into the input field." },
-      { "@type": "HowToStep", name: "Choose capture settings", text: "Select full-page or viewport capture, device width, and image quality." },
-      { "@type": "HowToStep", name: "Download your JPG screenshot", text: "Capture the webpage and download the generated JPG screenshot." },
-    ],
-  };
-  const faqPage = {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    mainEntity: faqSchemaQuestions.map(([question, answer]) => ({
-      "@type": "Question",
-      name: question,
-      acceptedAnswer: { "@type": "Answer", text: answer },
-    })),
-  };
-  const breadcrumb = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      { "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" },
-      { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" },
-      { "@type": "ListItem", position: 3, name: "Website to JPG", item: pageUrl },
-    ],
-  };
+  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Website to Image", applicationCategory: "MultimediaApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free website-to-image tool that captures a full-page or viewport screenshot of a public URL as a JPG or PNG, with desktop, tablet, and mobile width presets. The URL is sent to RepetiGo's server, which renders and captures the page.", url: pageUrl };
+  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to capture a website as an image", step: [{ "@type": "HowToStep", name: "Enter the URL", text: "Paste a public website URL and press Enter or the button." }, { "@type": "HowToStep", name: "Set mode & width", text: "Choose full page or viewport, a device width, and JPG/PNG." }, { "@type": "HowToStep", name: "Download", text: "Preview the screenshot inline and download it." }] };
+  const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
+  const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "Website to Image", item: pageUrl }] };
 
-  return (
-    <>
-      {[softwareApplication, howTo, faqPage, breadcrumb].map((schema) => (
-        <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />
-      ))}
-    </>
-  );
+  return <>{[softwareApplication, howTo, faqPage, breadcrumb].map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>;
 }

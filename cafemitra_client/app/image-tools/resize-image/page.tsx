@@ -4,330 +4,212 @@ import ResizeImageClient from "./ResizeImageClient";
 const pageUrl = "https://repetigo.com/image-tools/resize-image";
 
 export const metadata: Metadata = {
-  title: "Resize Image Online Free India - Exact Pixels, Social Media Sizes | RepetiGo",
+  title: "Resize Image Free - Image Resizer by Size, %, or Social | RepetiGo",
   description:
-    "Resize image online free - change dimensions in pixels, resize for Instagram, Facebook, YouTube, or Indian document photos. No sign-up. 100% browser-based, nothing uploaded.",
+    "Free image resizer - resize an image by exact pixels, percentage, or a social-media preset. Lock the aspect ratio and export WebP or PNG. Runs in your browser.",
   alternates: { canonical: pageUrl },
   openGraph: {
-    title: "Resize Image Online Free India - Exact Pixels, Social Media Sizes | RepetiGo",
-    description: "Free image resizer - resize for Instagram, Facebook, YouTube, or enter exact pixel dimensions for government forms. No sign-up, nothing uploaded.",
+    title: "Resize Image Free - Image Resizer by Size, %, or Social",
+    description: "Resize by exact pixels, percentage, or a social preset. Lock aspect ratio, export WebP or PNG.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Resize Image Free Online - RepetiGo",
-    description: "Resize images to exact pixels or social media presets, free. No sign-up, 100% browser-based.",
+    title: "Resize Image Free - Image Resizer",
+    description: "Free image resizer. By size, %, or social preset. Aspect-lock, WebP/PNG, 100% in your browser.",
   },
   robots: { index: true, follow: true },
 };
 
-const content = String.raw`H1: Resize Image Online Free. Change Dimensions in Pixels, or Choose a Preset for Instagram, Facebook, or YouTube.
-RepetiGo's free image resizer lets you change the dimensions of any photo or image to whatever size you need. Enter exact pixel dimensions, choose a percentage of the original size, or pick from built-in presets for Instagram, Facebook, and YouTube. No software required. No account needed. Your image is never uploaded to a server - resizing happens entirely in your browser.
-The resize image online free tool accepts JPG, PNG, and WEBP files and works on any device with a browser - phone, tablet, laptop, or desktop. The output downloads as WebP or PNG - if you need a JPG for a government portal upload, run the result through the Convert to JPG tool afterward.
+const content = String.raw`H1: Resize Image Free - Image Resizer by Size, Percentage or Social Preset.
 
-✓ Enter Exact Pixel Dimensions   ✓ Instagram, Facebook, YouTube Presets   ✓ Aspect Ratio Lock   ✓ No Sign-Up   ✓ 100% Browser-Based - Nothing Uploaded
+RepetiGo's resize image tool is a free, browser-based image resizer that changes the dimensions of a JPG, PNG, or WebP picture in three ways: by exact size in pixels, by percentage, or with a ready-made social-media preset. Upload one image, pick how you want to resize it, and download the result. Because it runs entirely in your browser, your image never leaves your device - nothing is uploaded to a server.
+Whether you need an exact 512×512 icon, a photo scaled to 50%, or an image sized perfectly for an Instagram post, this free image resizer handles it. Lock the aspect ratio so nothing stretches, choose WebP for a smaller file or PNG to stay lossless, and even aim for a target file size in kilobytes. It is a fast, no-sign-up way to resize an image without installing anything.
 
-[ Resize Image Free - No Sign-Up → repetigo.com/image-tools/resize-image ]
+✓ Free · No sign-up · No watermark   ✓ By size, %, or social preset   ✓ Lock aspect ratio · WebP/PNG   ✓ 100% in your browser - nothing uploaded
 
-H2: What Does Resizing an Image Do?
-Resizing an image changes its dimensions - the width and height, measured in pixels. When you resize an image, you are making it physically larger or smaller. A 4000×3000 pixel photo resized to 400×300 pixels becomes 10 times smaller in each dimension and roughly 100 times smaller in file size, since file size is broadly proportional to the number of pixels.
-Resizing is different from cropping (which cuts off parts of the image), compressing (which reduces file size while keeping the same dimensions), and upscaling (which uses AI to intelligently increase image size). These are four separate operations that serve different purposes. The right tool depends on what you need:
+H2: How to Resize an Image in 3 Steps.
+Here is how to resize an image with RepetiGo. Pick a mode, set your target, and download - the whole thing takes seconds.
 
-Operation
-What It Does
-When to Use
-RepetiGo Tool
-Resize
-Changes width and height in pixels - scales the entire image up or down
-Making an image fit specific portal dimensions, social media requirements, or print sizes
-This page - Resize Image
-Crop
-Cuts away the edges - keeps only the selected area
-Creating a square crop for a profile photo, or removing unwanted background areas
-Crop Image → /image-tools/crop-image
-Compress
-Reduces file size while keeping the same pixel dimensions
-Making an image small enough to upload to a government portal with a KB size limit
-Compress Image → /image-tools/compress-image
-AI Upscale
-Increases image size using AI to add detail intelligently
-Making a small or low-resolution image larger without visible pixelation
-AI Image Upscaler → /image-tools/ai-upscale-image
+Step
+What You Do
+What Happens
+1. Upload your image
+Click or drag-and-drop a JPG, PNG, or WebP file.
+A live preview appears with the current dimensions and size.
+2. Choose a mode & target
+By Size (pixels), As Percentage (10–200%), or a Social Media preset.
+Lock the aspect ratio if you want height to follow width automatically.
+3. Download
+Pick WebP or PNG, set quality if needed, and download.
+The footer shows the final width × height and file size.
 
-💡 For most Indian government portal uploads, you typically need resize (correct pixel dimensions), then Convert to JPG at /image-tools/convert-to-jpg (since this resizer outputs WebP or PNG, not JPG), then compress if the file is still over the portal's KB limit at /image-tools/compress-image.
+🔒 Every resize happens in your browser using the Canvas engine - your image is never uploaded to RepetiGo or any server.
 
-H2: How to Resize an Image Online Free in 3 Steps.
-Every resize follows the same simple process. No account required, no daily limit.
-H3: Step 1 - Upload Your Image
-Click the Upload button or drag and drop your image. Supported formats: JPG/JPEG, PNG, WEBP. There is no fixed file size cap - because everything runs on your own device, a very large image simply takes a little longer to process. This tool works with one image at a time. Upload works on any device - Android phone, iPhone, Windows laptop, Mac, or Chromebook - from your browser, with no app to install.
-H3: Step 2 - Enter Your Target Size or Choose a Preset
-You have three ways to set your target size:
-By Size - enter the width and height in pixels. Enable Lock Aspect Ratio to automatically calculate the other dimension without distorting the image. If you turn Lock Aspect Ratio off and enter dimensions with a different ratio than the original, the image is stretched to fit exactly - there is no padding or white-border option, so leave the lock on unless you specifically want that stretched look.
-As Percentage - drag the scale slider from 10% to 200% of the original. Under 100% makes the image smaller with no quality loss. Over 100% stretches the existing pixels rather than adding new detail - for enlarging with genuinely added detail instead, use the AI Image Upscaler at /image-tools/ai-upscale-image.
-Social Media - five built-in one-click presets: Instagram Post (1080×1080), Instagram Story (1080×1920), Facebook Post (1200×630), LinkedIn Post (1200×627), and YouTube Thumbnail (1280×720). Selecting one fills in the width and height automatically.
-In Export Settings, choose WebP (smaller file, adjustable quality) or PNG (lossless, no quality slider) as your output format, and optionally set a Target File Size in KB - the tool will step down the WebP quality until it fits, when possible.
+H2: Three Ways to Resize: By Size, Percentage & Social Media.
+Different jobs call for different ways to resize, so the tool gives you three modes you can switch between at any time.
 
-H3: Step 3 - Download Your Resized Image
-Click Resize. Processing happens on your own device in under a second for most images. Download the result. The output is always WebP or PNG - if your form or portal specifically requires a JPG (most Indian government portals do), open the result in Convert to JPG at /image-tools/convert-to-jpg before uploading.
+Mode
+What it does
+Use it when
+By Size
+Enter an exact width and height in pixels
+You need a precise size (e.g. 413×531 or 512×512)
+As Percentage
+Scale from 10% up to 200% with a slider
+You just want it "half the size" or "double"
+Social Media
+Pick a ready-made platform preset
+You are posting to Instagram, Facebook, LinkedIn or YouTube
 
-[ Resize Image Free Now → repetigo.com/image-tools/resize-image ]
+By Size is the most precise - type the exact pixels you need. As Percentage is the quickest way to shrink a photo proportionally. And the Social Media presets set the right dimensions for you in one click, which we cover in detail below.
 
-H2: Image Size Reference - India Documents & Social Media.
-The tool has five built-in one-click presets for social media, listed below. For Indian document photos and every other platform size, enter the width and height manually using the By Size tab and Lock Aspect Ratio - the reference numbers below are commonly cited specs, but government portals do update their requirements from time to time, so always confirm against the current form before submitting.
-H3: Indian Document Photo Sizes (Enter Manually)
-Document / Form
-Commonly Cited Size
-Pixels (approx.)
-Notes
-Indian Passport (Passport Seva, current ICAO format)
-35 mm × 45 mm
-630 × 810 px
-JPEG under 250 KB. Resize, then Convert to JPG, then Compress if needed.
-Voter ID / EPIC Online Upload (NVSP)
-Portal-specified, commonly around 200×230 px
-200 × 230 px
-10-200 KB JPEG. Figures vary slightly by state portal - confirm on the form.
-PAN Card Application
-Commonly cited as 25 mm × 35 mm (some forms cite 35×45mm - check your form)
-350 × 350 px minimum
-20-200 KB JPEG. Confirm the exact spec on your NSDL/UTIITSL form.
-NEET / NTA Postcard Photo
-4 cm × 6 cm (postcard), no fixed pixel mandate
-No official pixel requirement
-10-200 KB JPG - the KB limit matters more than an exact pixel count here.
-State Govt. Scholarship Portal
-Varies by state and scheme
-Varies by portal
-Always check the specific portal's stated requirement before resizing.
+H2: Lock Aspect Ratio - Resize Without Stretching.
+The single most useful option is the Lock aspect ratio toggle. With it on, changing the width automatically adjusts the height (and vice versa) so your image keeps its proportions - it shrinks or grows evenly, with no stretching or squashing. This is exactly what people mean when they want to resize an image for Instagram without cropping or distorting it: lock the ratio and scale it down proportionally.
+Turn the lock off only when you deliberately need a specific width and height that do not match the original ratio - for example forcing an image to an exact 1200×627 box. Just know that unlocking and entering mismatched dimensions will stretch the image, because this tool scales to the size you set rather than cropping to fit. If you need to change the shape by cutting rather than stretching, use the Crop Image tool linked below.
 
-H3: Social Media Platform Sizes
-Platform
-Image Type
-Recommended Size
-Preset in Tool?
-Instagram
-Feed Post (Square)
-1080 × 1080 px
-✓ One-click preset
-Instagram
-Story / Reel
-1080 × 1920 px
-✓ One-click preset
-Instagram
-Profile Photo
-320 × 320 px
-Enter manually
-Facebook
-Post
-1200 × 630 px
-✓ One-click preset
-Facebook
-Cover Photo
-851 × 315 px
-Enter manually
-Facebook
-Profile Photo
-170 × 170 px
-Enter manually
-YouTube
-Thumbnail
-1280 × 720 px
-✓ One-click preset
-YouTube
-Channel Banner
-2560 × 1440 px
-Enter manually
-LinkedIn
-Post Image
-1200 × 627 px
-✓ One-click preset
-LinkedIn
-Profile Photo
-400 × 400 px
-Enter manually
-WhatsApp
-Profile Photo
-500 × 500 px
-Enter manually
-Twitter/X
-Profile Photo
-400 × 400 px
-Enter manually
+💡 Rule: keep Lock aspect ratio ON for photos so they never distort. Turn it OFF only when a platform demands an exact non-proportional size.
 
-🇮🇳 India is one of the world's largest social media markets - Instagram and WhatsApp each have hundreds of millions of Indian users, and YouTube is the most-used video platform in the country. The five sizes marked as one-click presets above are built directly into RepetiGo's resize tool; everything else in this table is a widely-cited reference size you can type into the Width and Height fields yourself.
+H2: Resize to Exact Pixels (512×512, 72×72 and Any Size).
+When you need a precise pixel size, use By Size mode and type the numbers. This is the fastest way to hit common exact dimensions - a 512×512 app icon, a 72×72 avatar, a 1024×1024 image, or any custom size a form or platform demands. Enter the width and height, and the tool resizes to exactly that.
+For square targets like 512×512 or 72×72, turn Lock aspect ratio off if your source is not already square, so the tool produces the exact square you asked for. If keeping the proportions matters more than hitting the exact box, leave the lock on and match one dimension. Either way, the result footer confirms the final width × height before you download.
 
-H2: Resize Image Without Losing Quality - What Actually Happens.
-The honest answer depends on which direction you are resizing:
-Resizing DOWN (making an image smaller in pixels) - no quality loss. When you go from 4000×3000 pixels to 400×300 pixels, you are removing most of the pixels, but the remaining pixels are resampled together and the result looks sharp and clear at the new, smaller size.
-Resizing UP (making an image larger in pixels) using this tool's As Percentage slider above 100% - causes pixelation. The tool duplicates and interpolates existing pixels to fill the larger canvas rather than inventing new detail, which creates a blurry or softer result the further above 100% you go. This is a mathematical limitation of resizing without AI, not a bug.
-For genuine quality-preserving enlargement, use RepetiGo's AI Image Upscaler instead at /image-tools/ai-upscale-image. It sends your image to a trained AI model that predicts and adds realistic new detail, producing a noticeably sharper result than stretching pixels with this resize tool.
+H2: Resize to a Target File Size in KB.
+Sometimes the limit is not the dimensions but the file size - a portal that only accepts images under a certain number of kilobytes. RepetiGo has an optional target file size field for exactly this: enter a size in KB and the tool progressively lowers the quality to bring the file close to your target while resizing. It is how you resize an image to 20KB or resize an image to 100KB for a strict upload limit.
+One important detail so it works for you: the target-size option applies to WebP output, not PNG, because PNG is lossless and cannot be squeezed to an arbitrary size the same way. So if you are aiming for a specific KB limit, choose WebP as the output format. If you need pure compression at the current dimensions instead of resizing, the dedicated Compress Image tool is the better fit and is linked below.
 
-Resize Direction
-Quality Result
-Pixelation?
-Recommended Tool
-Downsizing - making smaller (e.g. 4000px → 400px)
-Excellent - proportional reduction
-✗ No - always sharp
-This Resize Image tool
-Same size - no dimension change
-Identical - no change
-✗ No
-Not applicable
-Upsizing via this tool's percentage slider (e.g. 400px → 1200px)
-Degraded - pixels stretched, not invented
-✓ Yes - visibly softer the larger you go
-Not recommended above roughly 110-120%
-Upsizing via the AI Image Upscaler
-Good to excellent - AI adds detail
-✗ Minimal
-AI Image Upscaler → /image-tools/ai-upscale-image
+📊 To hit a KB limit: choose WebP output, enter your target in the KB field, and the quality auto-adjusts toward it. For strict exam/portal limits, combine a smaller pixel size with WebP.
 
-★ Resizing for Instagram or Facebook? Downsizing a large photo to 1080×1080 or 1200×630 always looks sharp - no quality concern. Trying to make a small 200×200 photo fit a YouTube banner (2560×1440)? That will look soft with this resizer - use the AI Image Upscaler first, then resize.
+H2: Social Media Sizes - Instagram, Facebook, LinkedIn & YouTube.
+Getting a post to the right size is a one-click job with the Social Media mode. Select a platform and the width and height are set for you:
 
-H2: Who Uses RepetiGo's Free Image Resizer?
+Preset
+Dimensions
+For
+Instagram Post
+1080 × 1080
+Square feed posts
+Instagram Story
+1080 × 1920
+Vertical stories & reels covers
+Facebook Post
+1200 × 630
+Shared link/image posts
+LinkedIn Post
+1200 × 627
+Feed posts
+YouTube Thumbnail
+1280 × 720
+Video thumbnails
 
-User
-What They Resize
-Most Used Feature
-Students
-Passport-style photos for exam applications and college admissions, resized to the correct pixel dimensions before converting to JPG.
-Manual pixel entry with Lock Aspect Ratio for ID-style photos.
-Job Seekers
-Resume profile photos and LinkedIn profile photos to exact portal dimensions.
-LinkedIn Post preset, and pixel-exact entry for other application portals.
-Social Media Creators
-Profile photos, thumbnails, and post images resized to exact platform specifications.
-The five one-click social presets - Instagram, Facebook, LinkedIn, YouTube.
-Government Form Applicants
-Aadhaar, Voter ID, PAN, and passport application photos resized toward the portal's stated dimensions.
-Manual entry with Lock Aspect Ratio, then Convert to JPG, then Compress.
-Print Shop Owners
-Resizing a customer's photo to print-ready dimensions before printing, one photo at a time.
-Exact pixel entry for standard print sizes.
-Developers & Designers
-Resizing images for web use, app UI, or banner ads to an exact spec.
-Pixel-exact entry, percentage resize, and WebP/PNG output.
+These five presets cover the most common posts. For sizes that are not in the list - a YouTube banner (2560×1440) or a Facebook cover - use By Size mode and type the exact dimensions; the presets handle posts and thumbnails, and By Size handles everything else. Keep Lock aspect ratio in mind: fitting a non-square photo into a square Instagram post proportionally means matching one side and accepting some empty space rather than stretching.
 
-H2: Why Use RepetiGo's Image Resizer?
+H2: ★ Indian Use Cases - ID & Exam Photo Dimensions.
+Resizing to an exact pixel size is one of the most common document tasks in India, because government portals and exam bodies specify precise photo dimensions and reject anything that does not match.
 
-Feature
-RepetiGo
-Adobe Express
-Canva
-iloveimg
-Free to use
-✓ Always free
-✓ Free tier (limited)
-✓ Free tier (limited)
-✓ Limited free
-Sign-up required
-✓ Never
-✗ Account required
-✗ Account required
-~ Optional
-Social media presets
-✓ 5 one-click presets
-✓ Many platforms
-✓ Many platforms
-✓ Some
-Exact pixel dimensions
-✓ Width + Height input
-✓ Yes
-✓ Yes
-✓ Yes
-Aspect ratio lock
-✓ Yes
-✓ Yes
-✓ Yes
-~ Limited
-Files ever leave your device?
-✗ Never - 100% browser-based
-✓ Yes - uploaded to their servers
-✓ Yes - uploaded to their servers
-✓ Yes - uploaded to their servers
-Works without account
-✓ Yes
-✗ No
-✗ No
-~ Optional
+Portal / Use
+Typical dimensions
+Workflow
+Passport Seva photo
+413 × 531 px
+By Size → 413×531 → export
+NTA exam photo (NEET/JEE)
+Set px + under KB limit
+By Size + WebP target KB
+Aadhaar / UIDAI update
+Portal-specified px
+By Size → exact px
+PAN application photo
+Specified px size
+By Size → exact px
+Signature image
+Portal-specified px
+By Size → exact px
 
-H2: Your Images Are Safe. Always.
+🇮🇳 Full ID-photo workflow: (1) White background at /image-tools/background-remover. (2) Resize to the exact px here (e.g. 413×531 for passport). (3) Hit the KB limit with WebP output, or compress at /image-tools/compress-image. All free and linked below.
 
-Protection Layer
-What It Means in Practice
-🖥️ 100% Browser-Based Resizing
-Your image is resized using your own device's processing power via the browser's Canvas API. It is never uploaded to any server.
-🚫 Nothing Ever Leaves Your Device
-Because resizing happens locally, there is no upload, no transfer, and nothing on any server for us to store or delete.
-👁️ No Image Content Is Read
-RepetiGo's code cannot see, analyse, or extract what's in your photo - it only reads pixel dimensions and re-encodes the image on your own device.
-🚫 No Account = No Data Profile
-No sign-up means no personal data, no file history, and no usage profile is ever created.
-🔒 Well Suited to Aadhaar, PAN, and ID Photos
-Because nothing is transmitted anywhere, this is one of the safer ways to resize an identity document photo online.
+H2: How to Resize an Image in Paint, Photoshop, Illustrator, InDesign, Mac & iPhone.
+If you would rather use software you already have, here are the standard routes - and where the browser tool is quicker.
+How to resize an image in Paint: open the image → Home tab → Resize → choose Pixels, tick "Maintain aspect ratio," enter the new width or height → OK → Save As. It is the simplest desktop option on Windows. In Photoshop (ps how to resize image): Image → Image Size → set width/height (keep the link icon on for proportional) → OK. In Photopea, the free browser Photoshop clone, it is the same Image → Image Size menu.
+In Illustrator, select the object → use the Transform panel (W/H) or Object → Transform → Scale. In InDesign, select the frame → set W/H in the Control panel, holding Shift to keep proportions. On a Mac, open the image in Preview → Tools → Adjust Size → enter dimensions → keep "Scale proportionally" ticked. On an iPhone, there is no built-in resizer, so people use a web tool - RepetiGo runs in Safari with nothing to install, which is the easiest way to resize an image on the phone itself.
 
-[ Read Our Privacy Policy → /privacy-policy ]
+H2: Will Resizing Reduce Image Quality?
+It depends on the direction. Making an image smaller (downsizing) keeps it looking sharp - you are removing pixels the screen did not need, so quality holds up well. That is why resizing down for a portal, an email, or the web is safe and common. Choosing PNG output keeps it lossless; WebP gives a smaller file at a quality you control with the slider.
+Making an image larger than its original size is where quality drops. Because resizing only scales the pixels you already have (it does not invent new detail), pushing past 100% can make a photo look soft or pixelated. If you specifically need a bigger, cleaner image, that is a job for upscaling, not resizing - the Upscale Image tool adds detail as it enlarges. So to resize an image without pixelation, resize down freely, and enlarge with the upscaler rather than the resizer.
 
-H2: Image Resizing for Print Shops - The Automated Way.
-Print shop owners regularly need to resize customer photos before printing - a WhatsApp photo may be 1080×1080, but the print order is for a 4R (4×6 inch at 300 DPI = 1200×1800 pixels) photo. Resizing manually for every customer adds minutes to every job.
-PrintPilot - RepetiGo's print shop software - can fold correct-dimension resizing into the same automated workflow customers already use to upload documents via QR code, instead of a shop owner resizing every photo by hand before it reaches the print queue.
+H2: Everything Runs in Your Browser - Nothing Uploaded.
+RepetiGo resizes your image on your own device using the browser's Canvas engine. Your picture is never sent to a server, which keeps private photos private, works even on a weak connection, and is why the tool carries a "Files stay in your browser" badge. There is no account wall and no watermark - the resized image you download is the full, clean file.
 
-[ Learn About PrintPilot → /products/printpilot/ ]
-[ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Resize an Image Now → repetigo.com/image-tools/resize-image ]
+🔒 Client-side means private: your image stays on your device, nothing is uploaded, and no watermark is added - good for ID photos and personal pictures.
 
-H2: Common Questions About Resizing Images Online Free.
-H3: Q1: How do I resize an image online for free in India?
-Go to repetigo.com/image-tools/resize-image, upload your JPG, PNG, or WEBP image, then enter your target dimensions in pixels, choose a percentage, or select one of the five built-in social media presets. Click Resize and download. No account is required, no software is needed, and there is no daily limit. Since the tool runs entirely in your browser, your image is never uploaded anywhere.
-H3: Q2: How do I resize a photo for an Indian government form or passport?
-This tool doesn't have a one-click "Indian Passport" preset - enter the dimensions manually. For the current Passport Seva format, that's commonly cited as 630×810 pixels (35×45mm) with the file under 250 KB in JPEG. Enter those pixel values with Lock Aspect Ratio on, resize, then use Convert to JPG at /image-tools/convert-to-jpg (since this tool outputs WebP or PNG, not JPG), and finally Compress Image at /image-tools/compress-image if the file is still over the portal's KB limit. Government photo specs do change from time to time, so confirm the exact figure on the form you're submitting.
-H3: Q3: How do I resize an image without cropping or distorting it?
-Enable Lock Aspect Ratio before entering your target dimensions. With it on, entering the width automatically calculates the correct height (and vice versa) to maintain the original proportions, and the entire image is scaled with nothing cut off. If you turn Lock Aspect Ratio off and enter a width and height with a different ratio than the original, the image is stretched to fit exactly - this tool doesn't have a white-border or padding option, so keep the lock on unless you intentionally want a stretched result.
-H3: Q4: What is the difference between resize, crop, and compress?
-Resize changes the pixel dimensions of the entire image, scaling it up or down. Crop removes the edges, keeping only the selected central area. Compress reduces file size in KB while keeping the same pixel dimensions. They are three separate operations, each with its own RepetiGo tool: Resize Image (this page), Crop Image at /image-tools/crop-image, and Compress Image at /image-tools/compress-image.
-H3: Q5: Can I resize an image to a specific KB size like 20KB or 100KB?
-This tool has an optional Target File Size (KB) field in Export Settings - set it, and if your output format is WebP, the tool automatically steps down the quality until the file fits your target, where possible. This option isn't available for PNG output, since PNG has no quality setting to adjust. If you need a precise KB target on a JPG specifically, resize here first, then fine-tune with the Compress Image tool at /image-tools/compress-image.
-H3: Q6: How do I resize an image in Canva?
-In Canva: open your design, go to File → Resize (the Magic Resize feature), enter your target dimensions, and click Resize. Canva's free tier limits resizing to the current design's dimensions, and Magic Resize for standalone images requires a Canva Pro subscription. For resizing a standalone image file (JPG, PNG, WEBP) without a Canva subscription, RepetiGo's resize tool is simpler - upload the file, enter dimensions, download. No account required, no subscription needed.
-H3: Q7: How do I resize an image on iPhone?
-The built-in Photos app lets you crop (Edit → Crop icon) but doesn't resize to exact pixel dimensions. For exact pixel dimensions on iPhone, open Safari, go to repetigo.com/image-tools/resize-image, upload the photo from your Camera Roll, enter your target dimensions, and download - the file saves to your Files app or Photos. This is useful for resizing before uploading directly to a government portal from your phone.
-H3: Q8: How do I resize an image in Photoshop or GIMP?
-In Photoshop: go to Image → Image Size, enter your target width and height, ensure Constrain Proportions is checked, choose Bicubic (for downsizing) or Bicubic Smoother (for upsizing) from the Resample dropdown, and click OK. In GIMP (free, open-source): go to Image → Scale Image, enter target width and height, set interpolation to Cubic or Sinc for best quality, click Scale Image, then File → Export As to save. For quick resizing without installing software, RepetiGo's browser-based tool does the same core operation with no installation required.
-H3: Q9: Can I resize multiple images at once?
-Not on this tool - it processes one image at a time: upload, resize, download, then start over for the next one. If you regularly need to resize many customer photos in a print shop setting, PrintPilot's automated workflow (linked above) handles that at scale; for occasional multi-image needs on this page, repeat the upload-resize-download cycle for each file.
-H3: Q10: Is it safe to upload my photo or ID image to a free online resizer?
-Yes - and more so than most alternatives, because there is no upload at all. RepetiGo's resize tool processes your image entirely inside your browser using your device's own processing power. The file never reaches any RepetiGo server, so there's nothing to intercept in transit and nothing for us to store, because we never receive the image in the first place.
+H2: What This Image Resizer Does Not Do.
+So you know whether it fits before you start, here is what this resizer is not built for - and where to go instead.
 
-H2: More Free Image Tools from RepetiGo.
+People often ask for…
+The honest answer
+Bulk / batch resizing
+No - one image at a time (no multi-file, no ZIP)
+Resize by DPI / print size (inches, cm)
+No - it resizes in pixels only, not by DPI
+JPG output
+No - output is WebP or PNG (convert afterwards if you need JPG)
+Crop-to-fit a different shape
+No - it scales; use the Crop tool to change shape by cutting
+Enlarge with added detail
+No - resizing scales pixels; use the Upscale tool to add detail
+A target KB on PNG output
+No - the KB target works on WebP output only
 
+H2: Resize Image - Frequently Asked Questions.
+H3: Is this image resizer free?
+Yes - RepetiGo's resize image tool is completely free with no sign-up and no watermark. Because it resizes in your browser rather than on a paid server, there is nothing to unlock: resize by pixels, percentage, or a social preset, lock the aspect ratio, and export as WebP or PNG at no cost.
+H3: How do I resize an image to exact pixels like 512×512?
+Use By Size mode and type the width and height - for example 512 and 512. If your source is not already square, turn off Lock aspect ratio so the tool produces the exact square you asked for. The result footer confirms the final dimensions before you download. The same steps work for any exact size, like 72×72 or 1024×1024.
+H3: How do I resize an image without stretching or cropping?
+Turn on Lock aspect ratio. With it on, changing one dimension adjusts the other automatically, so the image scales proportionally with no stretching. This is how you resize for Instagram or any platform without distorting the picture. If you need to change the actual shape, crop it with the Crop Image tool rather than resizing.
+H3: How do I resize an image to a target KB size?
+Choose WebP as the output format and enter your limit in the target file size field - the tool lowers the quality progressively to bring the file close to that KB target. This is how you resize an image to 20KB or 100KB for a strict upload. Note the KB target works for WebP output, not PNG, because PNG is lossless.
+H3: Can I resize several images at once?
+No - this tool resizes one image at a time; there is no batch or ZIP option here. Resize an image, download it, then start over with the next. If you need to shrink the file size of many images, the Compress Image tool supports multiple files and a ZIP download.
+H3: How do I resize an image in Paint?
+In MS Paint, open the image, click Resize on the Home tab, choose Pixels, tick "Maintain aspect ratio," enter a new width or height, and click OK, then Save As. It is the simplest option on Windows. If you would rather not open Paint, RepetiGo resizes in the browser with the same proportional control and a live preview.
+H3: Which output format should I choose - WebP or PNG?
+Choose WebP for a smaller file, with a quality slider from 40% to 100% and the option to hit a KB target. Choose PNG when you need lossless quality or must keep transparency. This tool exports WebP or PNG; if a portal specifically needs a JPG, convert the result afterwards with the convert tools.
+H3: Will resizing reduce the quality?
+Making an image smaller keeps it sharp, because you are only removing pixels - so resizing down for the web, email, or a portal is safe. Making it larger than the original can look soft or pixelated, because resizing does not add new detail. To enlarge cleanly, use the Upscale Image tool, which reconstructs detail as it grows the image.
+H3: Can I resize for Instagram, Facebook or YouTube?
+Yes. Switch to Social Media mode and pick a preset: Instagram Post (1080×1080), Instagram Story (1080×1920), Facebook Post (1200×630), LinkedIn Post (1200×627), or YouTube Thumbnail (1280×720). The dimensions are set for you. For sizes not in the list, like a YouTube banner, use By Size and type the exact pixels.
+H3: Is my image uploaded to a server?
+No. The resizer runs entirely in your browser using the Canvas engine, so your image never leaves your device - nothing is sent to RepetiGo. That keeps ID photos and personal pictures private, works on a weak connection, and is why there is no watermark on your resized image.
+
+H2: Related Image Tools.
 Tool
 What It Does
 Link
-Convert to JPG
-Convert the WebP or PNG output from this tool into JPG for portal uploads
-→ /image-tools/convert-to-jpg
 Compress Image
-Reduce file size to fit a portal's KB limit after resizing
+Pure file-size compression (supports batch + ZIP)
 → /image-tools/compress-image
 Crop Image
-Remove edges and frame ID photos correctly - use before or after resizing
+Change the shape by cutting, not scaling
 → /image-tools/crop-image
-AI Image Upscaler
-AI-powered enlargement - for making small images larger without visible softness
-→ /image-tools/ai-upscale-image
+Upscale Image
+Enlarge with added detail (2×/4×)
+→ /image-tools/upscale-image
 Remove Background
-Clean plain background for ID or passport photos - combine with resize
+White ID background before resizing
 → /image-tools/background-remover
+Convert from JPG
+Change format before or after resizing
+→ /image-tools/convert-from-jpg
 All Image Tools
-Complete free image tools suite
+The complete image tools suite
 → /image-tools
 
-[ Resize Image Free - No Sign-Up → repetigo.com/image-tools/resize-image ]
+[ Resize an Image Free - No Upload → repetigo.com/image-tools/resize-image ]
 [ Explore All Image Tools → repetigo.com/image-tools ]`;
 
-const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
+const faqSchemaQuestions = Array.from(content.matchAll(/H3: ([^\n]+\?)\n([\s\S]*?)(?=\nH3:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
 export default function ResizeImagePage() {
   return (
@@ -341,7 +223,7 @@ export default function ResizeImagePage() {
 }
 
 type SeoTableData = { headers: string[]; rows: string[][] };
-const CALLOUT_EMOJI = ["💡", "🇮🇳", "🔒", "🖨️", "📱", "✅", "⚠️", "🖥️", "🔁", "🔄", "★"];
+const CALLOUT_EMOJI = ["💡", "🇮🇳", "🔒", "🖨️", "📱", "✅", "⚠️", "🖥️", "🔁", "🔄", "★", "📊"];
 
 function StructuredSeoCopy({ content: source }: { content: string }) {
   const blocks = source.replace(/(^|\n)(H[123]: [^\n]+)\n/g, "$1\n$2\n\n").split(/\n{2,}/).map((block) => block.trim()).filter(Boolean);
@@ -380,13 +262,11 @@ function StructuredSeoCopy({ content: source }: { content: string }) {
 }
 
 function getKnownTable(lines: string[]): SeoTableData | null {
-  if (lines[0] === "Operation" && lines[1] === "What It Does" && lines[2] === "When to Use") return { headers: ["Operation", "What It Does", "When to Use", "RepetiGo Tool"], rows: chunkRows(lines.slice(4), 4) };
-  if (lines[0] === "Document / Form" && lines[1] === "Commonly Cited Size") return { headers: ["Document / Form", "Commonly Cited Size", "Pixels (approx.)", "Notes"], rows: chunkRows(lines.slice(4), 4) };
-  if (lines[0] === "Platform" && lines[1] === "Image Type") return { headers: ["Platform", "Image Type", "Recommended Size", "Preset in Tool?"], rows: chunkRows(lines.slice(4), 4) };
-  if (lines[0] === "Resize Direction" && lines[1] === "Quality Result") return { headers: ["Resize Direction", "Quality Result", "Pixelation?", "Recommended Tool"], rows: chunkRows(lines.slice(4), 4) };
-  if (lines[0] === "User" && lines[1] === "What They Resize") return { headers: ["User", "What They Resize", "Most Used Feature"], rows: chunkRows(lines.slice(3), 3) };
-  if (lines[0] === "Feature" && lines[1] === "RepetiGo") return { headers: ["Feature", "RepetiGo", "Adobe Express", "Canva", "iloveimg"], rows: chunkRows(lines.slice(5), 5) };
-  if (lines[0] === "Protection Layer" && lines[1] === "What It Means in Practice") return { headers: ["Protection Layer", "What It Means in Practice"], rows: chunkRows(lines.slice(2), 2) };
+  if (lines[0] === "Step" && lines[1] === "What You Do" && lines[2] === "What Happens") return { headers: ["Step", "What You Do", "What Happens"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "Mode" && lines[1] === "What it does") return { headers: ["Mode", "What it does", "Use it when"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "Preset" && lines[1] === "Dimensions") return { headers: ["Preset", "Dimensions", "For"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "Portal / Use" && lines[1] === "Typical dimensions") return { headers: ["Portal / Use", "Typical dimensions", "Workflow"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "People often ask for…" || lines[0] === "People often ask for...") return { headers: ["People often ask for…", "The honest answer"], rows: chunkRows(lines.slice(2), 2) };
   if (lines[0] === "Tool" && lines[1] === "What It Does" && lines[2] === "Link") return { headers: ["Tool", "What It Does", "Link"], rows: chunkRows(lines.slice(3), 3) };
   return null;
 }
@@ -425,7 +305,7 @@ function renderTableCell(cell: string) {
 }
 
 function renderInlineMappedLinks(text: string) {
-  const parts = text.split(/(repetigo\.com\/(?:tools\/image\/[a-z-]*|pricing)\/?|\/image-tools\/[a-z-]*\/?|\/image-tools\/?|\/products\/printpilot\/?|\/privacy-policy\/?|\/pricing\/?)/g);
+  const parts = text.split(/(repetigo\.com\/(?:image-tools\/[a-z-]*|pricing)\/?|\/image-tools\/[a-z-]*\/?|\/image-tools\/?|\/products\/printpilot\/?|\/privacy-policy\/?|\/pricing\/?)/g);
   return parts.map((part, index) => {
     const href = mapSeoRoute(part.startsWith("repetigo.com") ? "https://" + part : part);
     if (!href) return part;
@@ -440,10 +320,9 @@ function mapSeoRoute(route: string) {
     "/image-tools/resize-image": "/image-tools/resize-image",
     "/image-tools/crop-image": "/image-tools/crop-image",
     "/image-tools/compress-image": "/image-tools/compress-image",
-    "/image-tools/upscale-image": "/image-tools/ai-upscale-image",
-    "/image-tools/ai-upscale-image": "/image-tools/ai-upscale-image",
+    "/image-tools/upscale-image": "/image-tools/upscale-image",
     "/image-tools/background-remover": "/image-tools/background-remover",
-    "/image-tools/convert-to-jpg": "/image-tools/convert-to-jpg",
+    "/image-tools/convert-from-jpg": "/image-tools/convert-from-jpg",
     "/products/printpilot": "/print-automation",
     "/privacy-policy": "/privacy-policy",
     "/pricing": "/pricing",
@@ -457,9 +336,9 @@ function getRouteLabel(href: string) {
     "/image-tools/resize-image": "Open Resize Image",
     "/image-tools/crop-image": "Open Crop Image",
     "/image-tools/compress-image": "Open Compress Image",
-    "/image-tools/ai-upscale-image": "Open AI Image Upscaler",
+    "/image-tools/upscale-image": "Open Upscale Image",
     "/image-tools/background-remover": "Open Remove Background",
-    "/image-tools/convert-to-jpg": "Open Convert to JPG",
+    "/image-tools/convert-from-jpg": "Open Convert from JPG",
     "/print-automation": "Learn About PrintPilot",
     "/privacy-policy": "Read Privacy Policy",
     "/pricing": "Start Free Trial",
@@ -468,8 +347,8 @@ function getRouteLabel(href: string) {
 }
 
 function JsonLd() {
-  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Resize Image", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online image resizer - change pixel dimensions or use a social media preset. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl };
-  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Resize an Image Online Free", step: [{ "@type": "HowToStep", name: "Upload Image", text: "Upload Your Image" }, { "@type": "HowToStep", name: "Choose Size", text: "Enter Your Target Size or Choose a Preset" }, { "@type": "HowToStep", name: "Download", text: "Download Your Resized Image" }] };
+  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Resize Image", applicationCategory: "MultimediaApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free browser-based image resizer - resize by exact pixels, percentage, or a social-media preset, with an aspect-ratio lock and WebP/PNG export. Runs 100% in the browser - no file is ever uploaded to a server.", url: pageUrl };
+  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to resize an image", step: [{ "@type": "HowToStep", name: "Upload your image", text: "Click or drag-and-drop a JPG, PNG, or WebP file." }, { "@type": "HowToStep", name: "Choose a mode & target", text: "By Size (pixels), As Percentage (10–200%), or a Social Media preset." }, { "@type": "HowToStep", name: "Download", text: "Pick WebP or PNG, set quality if needed, and download." }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
   const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "Resize Image", item: pageUrl }] };
 
