@@ -1,0 +1,9 @@
+# New dependencies for the WebSocket instant job-pickup feature
+# (see api/consumers.py, api/routing.py, cafemitra_server/asgi.py).
+# Versions captured from `pip install channels daphne channels_redis redis`
+# on the dev machine. Not a full project requirements.txt - none exists
+# in this repo today (see PRINT_AGENT_API.md / API_UPDATES.md for context).
+channels==4.3.2
+daphne==4.0.0
+channels_redis==4.3.0
+redis==8.1.0

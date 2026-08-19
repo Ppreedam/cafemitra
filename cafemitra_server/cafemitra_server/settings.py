@@ -38,6 +38,7 @@ if DEBUG and "*" not in ALLOWED_HOSTS:
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 INSTALLED_APPS = [
+    "daphne",  # must be first so `manage.py runserver` auto-detects ASGI/Channels in dev
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -46,6 +47,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "api",
     "corsheaders",
+    "channels",
 ]
 
 MIDDLEWARE = [
@@ -77,6 +79,28 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "cafemitra_server.wsgi.application"
+ASGI_APPLICATION = "cafemitra_server.asgi.application"
+
+# Channel layer for the Print Agent's WebSocket "new job available" push
+# (see api/consumers.py) - Redis so group_send() reaches a connection held
+# by any worker process, not just the one handling the HTTP request that
+# triggered it.
+REDIS_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            # socket_timeout MUST be None (or > channels_redis's own
+            # brpop_timeout, default 5s) - redis-py defaults socket_timeout
+            # to 5s too, which races the server-side BZPOPMIN's 5s blocking
+            # window and randomly kills otherwise-healthy idle WebSocket
+            # connections with a client-side TimeoutError. Reproduced and
+            # confirmed live during testing (connections were dying ~5s
+            # after connecting with no activity) - do not remove this.
+            "hosts": [{"address": REDIS_URL, "socket_timeout": None}],
+        },
+    },
+}
 
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 
