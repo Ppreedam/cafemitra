@@ -141,7 +141,7 @@ namespace Print_Agent
             softwareVersion.Name = "softwareVersion";
             softwareVersion.Size = new Size(15, 17);
             softwareVersion.TabIndex = 1;
-            softwareVersion.Text = "8";
+            softwareVersion.Text = "9";
             softwareVersion.Visible = false;
             // 
             // pnlTopBarBorder

@@ -933,8 +933,7 @@ namespace Print_Agent
         {
             // Pull the current API base URL before anything else touches
             // the network, so login/polling/etc. all target the right host.
-            // TEMP-DISABLED FOR LOCAL WS LIVE TEST - reverted right after. Do not commit.
-            // await ApiBaseUrlProvider.RefreshBaseUrl(_config, _configPath, LogStatus);
+            await ApiBaseUrlProvider.RefreshBaseUrl(_config, _configPath, LogStatus);
 
             // Check for an update before doing anything else. If one is
             // needed, Updater.exe is already launched by this point - it
