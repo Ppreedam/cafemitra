@@ -4,217 +4,188 @@ import AiUpscaleImageClient from "./AiUpscaleImageClient";
 const pageUrl = "https://repetigo.com/image-tools/ai-upscale-image";
 
 export const metadata: Metadata = {
-  title: "AI Image Upscaler Free India - Enlarge Blurry Scans & Old Photos | RepetiGo",
+  title: "AI Image Upscaler Free - Enhance & Enlarge Photos to 4× | RepetiGo",
   description:
-    "Free AI image upscaler for India - enlarge blurry scans, old marksheets, and low-res photos with genuine AI-added detail. 2x/4x. No sign-up. Built for document and print shop use.",
+    "Free AI image upscaler - enhance and enlarge blurry, low-res or pixelated photos up to 4× with AI. Prefer on-device? Switch to the standard upscaler in one click.",
   alternates: { canonical: pageUrl },
   openGraph: {
-    title: "AI Image Upscaler Free India - Enlarge Blurry Scans & Old Photos | RepetiGo",
-    description: "Free AI-powered image upscaler - enlarge blurry scans, marksheets, and old photos with real AI-added detail. No sign-up. Built for India document and print shop workflows.",
+    title: "AI Image Upscaler Free - Enhance & Enlarge Photos to 4×",
+    description: "Enhance blurry, low-res or pixelated photos up to 4× with AI. On-device standard mode available.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
     card: "summary_large_image",
-    title: "AI Image Upscaler Free - RepetiGo",
-    description: "AI-powered upscaling for blurry scans and old photos. 2x/4x, no sign-up, built for India.",
+    title: "AI Image Upscaler Free - Enhance & Enlarge to 4×",
+    description: "Free AI image upscaler. 2×/4×, WebP/PNG/JPG, auto-deleted from our servers, standard fallback.",
   },
   robots: { index: true, follow: true },
 };
 
-const content = String.raw`H1: AI Image Upscaler - Enlarge Blurry Scans and Old Photos with Real AI Detail.
-RepetiGo's AI Image Upscaler sends your photo to a trained AI model that predicts and adds realistic detail as it enlarges the image - not just stretched pixels. Upload a blurry scan, an old certificate photo, or a low-resolution ID photo, choose 2x or 4x, and download a genuinely sharper result.
-This is a separate, slower cousin of RepetiGo's free Upscale Image tool at /image-tools/upscale-image. That tool is instant and never leaves your browser, which is perfect for images that are just a bit small. This AI-powered tool takes 10-60 seconds because your image is sent to our configured AI provider for processing - worth it specifically when the source is genuinely blurry, heavily compressed, or very old.
+const content = String.raw`H1: AI Image Upscaler - Enhance and Enlarge Your Photos Free with AI.
 
-✓ Real AI-Added Detail   ✓ 2x and 4x Upscaling   ✓ JPG, PNG, WebP up to 15 MB   ✓ No Sign-Up
+RepetiGo's AI image upscaler is a free tool that uses artificial intelligence to enlarge a photo 2× or 4× while reconstructing detail - so a small, soft, or low-resolution picture comes out larger and noticeably clearer. Add an image, click AI Upscale, and download the enhanced version. It is built for the pictures a plain resize cannot save: blurry photos, pixelated images, small WhatsApp shots, and low-res artwork.
+The difference from a standard enlarger is what happens under the hood. A normal upscaler just stretches pixels; this ai upscale image tool sends your photo to an AI model that predicts and rebuilds fine detail, which is why edges and textures look sharper at a bigger size. It is a free ai image upscaler with no sign-up and no watermark - and if you would rather keep everything on your own device, one click switches to the standard on-device upscaler instead.
 
-[ Try the AI Image Upscaler Free → repetigo.com/image-tools/ai-upscale-image ]
+✓ Free · No sign-up · No watermark   ✓ AI enhance + enlarge 2× / 4×   ✓ WebP, PNG or JPG output   ✓ Auto-deleted from our servers · on-device fallback available
 
-H2: What Is AI Image Upscaling - and How Is It Different from a Basic Resize?
-A basic resize (or RepetiGo's own instant Upscale Image tool) makes an image larger by duplicating or smoothly interpolating the pixels that already exist. Nothing new is added - the image is bigger, but any blur or softness in the original is still there, just at a larger size.
-AI upscaling works differently. Your image is sent to an AI model trained on a large set of images, which analyses the content and predicts what additional detail plausibly belongs at the larger size - sharper edges, more defined textures, clearer facial features. The result is a larger image that looks genuinely sharper, not just bigger.
-★ RepetiGo's AI Image Upscaler is built for document and print shop workflows - blurry scanned marksheets, old certificate photos, and low-resolution ID photos that need enlarging for official use - rather than general creative photo art. If you're after creative photography upscaling at the absolute highest quality, desktop tools like Topaz Gigapixel are built specifically for that; this tool is built for the documents and everyday photos people in India actually need to enlarge.
+H2: How to Upscale an Image With AI in 3 Steps.
+Here is how to upscale an image with AI on RepetiGo. AI mode is on by default, and a quick standard preview appears the moment you add a file so you see something immediately.
 
-Method
+Step
+What You Do
 What Happens
-Result
-Best For
-Basic Resize / RepetiGo Upscale Image
-Pixels duplicated or smoothly interpolated - no new detail
-Bigger, but blur or softness in the original stays
-Reasonably clear images that just need to be larger - instant, free → /image-tools/upscale-image
-AI Image Upscaler (this tool)
-AI model predicts and adds plausible new detail
-Noticeably sharper, particularly on scans and faces
-Blurry scans, old photos, heavily compressed images
-Photo Editor (brightness/contrast)
-Sharpens contrast and clarity - no size change
-Clearer at the same dimensions
-The image is already big enough, just looks flat
+1. Add your image
+Click or drag-and-drop a JPG, PNG, or WebP file (up to 15 MB).
+A fast 2× preview generates on your device right away, before any AI runs.
+2. Set scale & format, click AI Upscale
+Choose 2× or 4×, pick WebP/PNG/JPG, then press AI Upscale.
+Your image is sent to the AI model, enhanced, and returned - the panel shows old vs new dimensions and size.
+3. Download
+Download once the transformed image is ready.
+It saves with a "-2x-ai-upscaled" or "-4x-ai-upscaled" suffix in your chosen format.
 
-H2: How to Use the AI Image Upscaler in 3 Steps.
-H3: Step 1 - Upload Your Image
-Click Select Images or drag and drop your file. Supported formats: JPG, PNG, and WebP, up to 15 MB per image. You can upload more than one image and switch between them, though each is sent for AI processing and downloaded individually.
-H3: Step 2 - Turn On AI Mode and Choose Your Settings
-AI mode is on by default on this page. Choose 2x (doubles width and height) or 4x (quadruples both), and pick your output format - WebP, PNG, or JPG. If you ever want the instant, free, no-upload version instead, toggle AI mode off to switch to the standard upscaler, or go to /image-tools/upscale-image directly.
-H3: Step 3 - Download Your AI-Upscaled Image
-Click AI Upscale. Your image is sent to our configured AI provider, processed, and returned - this typically takes 10-60 seconds depending on file size and scale. Click Download to save the result.
+💡 Want to stay fully on your device? Click the toggle to switch off AI mode and use the free standard upscaler instead - same 2×/4×, processed in your browser.
 
-[ Upscale an Image with AI Now → repetigo.com/image-tools/ai-upscale-image ]
+H2: What Makes AI Upscaling Different From Standard Upscaling?
+Both make an image bigger, but they do it in very different ways. Standard upscaling uses maths to fill in new pixels by averaging the ones around them - fast and private, but it cannot add detail that was not already there, so a blurry photo just becomes a bigger blurry photo. AI image upscaling uses a model trained on millions of images to predict what the missing detail should look like, so it can rebuild sharper edges, cleaner text, and finer texture.
+In plain terms: for a photo that is already sharp and just needs to be larger, standard upscaling is enough. For a photo that is soft, pixelated, or low-resolution, AI upscaling gives a clearly better result because it reconstructs detail rather than just stretching. That is the whole reason this tool defaults to AI - it is the mode most people need when they reach for an image upscaler ai in the first place.
 
-H2: Indian Use Cases for AI Image Upscaling.
+Standard Upscaling
+AI Upscaling
+How it works
+Averages nearby pixels (interpolation)
+AI model predicts and rebuilds detail
+Best for
+Already-sharp images that just need size
+Blurry, pixelated, or low-res images
+Where it runs
+Your browser (on-device)
+RepetiGo server (auto-deleted after)
+Detail
+Cannot add new detail
+Reconstructs plausible detail
+
+H2: AI Mode vs Standard Mode - When to Use Each.
+This tool gives you both engines and lets you switch between them with one toggle. AI mode is the default and the reason to use this page: it produces the best result on difficult photos. Standard mode is the same on-device upscaler as the standard Upscale Image tool - it never uploads your image, which makes it the right choice when privacy matters more than squeezing out extra detail.
+A simple way to decide: use AI mode for a low-quality photo you want to genuinely improve, and use standard mode for a private or official image, or when you just need a quick enlargement of an already-clear picture. You can try one, look at the side-by-side comparison, and switch to the other if you prefer the result.
+
+🔒 Handling an Aadhaar, PAN, or exam photo? Switch off AI mode. The standard upscaler keeps the image on your device, while AI mode uploads it to the server for processing.
+
+H2: Is the AI Image Upscaler Private? What Happens to Your Photo.
+Here is the honest answer, because AI upscaling and privacy pull in different directions. To enhance your photo, AI mode has to send it to RepetiGo's server, where the AI model does the work - that is simply how server-side AI functions, and no browser-only tool can do the same reconstruction. So in AI mode, your image is uploaded.
+What RepetiGo does about that: the transfer uses HTTPS, the image is processed in a temporary session, and - as the tool's badge states - it is auto-deleted from our servers after processing. Your image is not linked to an account and is not used to train the model. If you would rather your photo never leave your device at all, use the standard on-device mode instead. That is the genuinely private option; AI mode trades a server round-trip for better quality.
+
+🔒 Two honest options: AI mode = uploaded, enhanced, then auto-deleted from our servers. Standard mode = stays in your browser, nothing uploaded. Choose based on whether quality or privacy matters more for that specific image.
+
+H2: What the AI Upscaler Is Good At (and What It Can't Do).
+Being clear about the limits is the fastest way to get a good result. Here is where the AI upscaler genuinely helps, and where no upscaler - AI included - can work miracles.
+
+The AI upscaler IS good at
+What no upscaler can do
+Enlarging low-resolution photos with cleaner detail
+Invent detail a blurry photo never captured
+Sharpening mildly soft or pixelated images
+Fully rebuild a badly out-of-focus shot
+Cleaning up compressed or small web images
+Read text that is unreadable in the original
+Enlarging anime and illustration crisply
+Replace a face that is not visible in the source
+
+So an ai upscale pixelated image job works well, and an anime image upscaler use case looks great because line-art enlarges cleanly. But a photo that is extremely blurry or tiny will come out bigger and better, not perfect. One thing to set expectations on: this tool enhances and enlarges - it does not have a separate face-restoration mode, a scratch-removal preset, or an old-photo colouriser. It is a general AI upscaler, and it applies the same enhancement to the whole image.
+
+📊 Best-result checklist: start from the sharpest copy you have · try 2× before 4× · use the side-by-side panel to compare · if AI over-smooths a detailed photo, switch to standard mode and compare.
+
+H2: Can You AI-Upscale an Image to 4K?
+Yes - choose 4× and most Full HD or smaller photos reach a 4K resolution, now with AI-reconstructed detail rather than a simple stretch. A 1920×1080 image becomes 7680×4320 at 4×, comfortably covering a true 4K (3840×2160) target. For a low-res source, AI mode is the better route to a usable 4K image because it rebuilds detail as it enlarges.
+Two honest limits apply. The tool offers 2× and 4× only - there is no 8× and no custom multiplier, so genuine 8K from a small source is not something it claims to do. And the standard fallback rejects an output larger than 48 megapixels; if you hit that, use 2× or crop first. Remember that AI can rebuild plausible detail, but it cannot recover information the camera never captured - a sharp source scales to 4K beautifully, a very poor one improves but stays imperfect.
+
+H2: ★ Indian Use Cases - Print Shops, Old Photos & Low-Res Pictures.
+AI upscaling is a real money-saver at an Indian print shop or cyber cafe. A customer brings a small, soft WhatsApp photo and wants an A4 print or a frame; an old scanned photograph needs enlarging; a supplier sends a low-resolution product image. A plain enlargement gives a blocky print - AI upscaling gives a result worth charging for.
+
 Scenario
-The Problem
-How AI Upscaling Helps
-Old Scanned Marksheets & Certificates
-A scan from the 1990s-2000s was done at low resolution - too blurry to read clearly on screen and too small to print legibly at A4.
-AI upscaling enlarges the file and adds plausible sharpening to text and borders, producing a noticeably more legible result than a plain resize.
-Low-Resolution ID Photos for Official Submission
-An old ID photo is only available as a very small, soft JPG, and a portal requires a larger minimum size.
-AI upscaling meets the size requirement while also sharpening facial features, which matters for identity verification.
-Print Shop - Customer Photo Too Small and Soft
-A customer wants a WhatsApp-sized, slightly blurry photo printed at a much larger size, with no better original available.
-AI upscaling produces a visibly better result than a direct resize - not full studio quality, but a meaningful improvement for a standard print job.
-Digitising Old Family Photographs
-Printed photos from the 1970s-1990s were scanned at low resolution by a local shop, leaving the digital copy small and soft.
-The AI model adds plausible detail based on patterns learned from similar photographs - faces, textures, and edges come out looking clearer.
+Problem
+How AI upscaling helps
+Print a small WhatsApp photo big
+Low resolution prints blocky
+AI-upscale 4× to rebuild detail before printing
+Enlarge an old scanned photo
+Scan is small and soft
+AI mode enhances detail while enlarging
+Low-res product image for a flyer
+Supplier image too small and soft
+AI-upscale to a usable, cleaner size
+Pixelated logo for a banner
+Logo blocky at large size
+AI-upscale, keep PNG for transparency
+Anime / poster artwork
+Small source looks jagged enlarged
+AI-upscale line-art crisply
 
-H2: AI Upscale vs the Free Standard Upscaler - Which Should You Use?
-★ Use this AI tool when the source image is small AND genuinely blurry or heavily compressed, and the extra 10-60 second wait is worth a sharper result. Use the free standard Upscale Image tool at /image-tools/upscale-image when you want an instant result and your source is reasonably clear - nothing is uploaded there, and it never involves a wait.
-For a scan that's already a usable size but just looks flat or low-contrast rather than genuinely blurry, try adjusting brightness, contrast, and blur in Photo Editor at /image-tools/photo-editor - no upload, no size change, just clearer.
+🇮🇳 Print-shop workflow: AI-upscale the image here → check the side-by-side dimensions → if the file is heavy, compress it at /image-tools/compress-image → send to the printer. For a private ID photo, switch to standard mode so it stays on the shop computer.
 
-H2: 4K Output - What You Can Realistically Expect.
-'4K' output means reaching 3840×2160 pixels. A 4x AI upscale from a 960×540 source, or a 2x upscale from a 1920×1080 source, both reach that pixel count. What the result actually looks like depends heavily on your source image:
+H2: AI Upscaling vs Photoshop.
+If you own Photoshop, it has its own AI-style enlargement - here is how they compare, and why a free browser tool is often the quicker choice.
+H3: Photoshop Super Resolution
+To ai upscale image in photoshop: open the file in Camera Raw (or right-click → Enhance), tick Super Resolution, and Photoshop doubles the dimensions using its AI model; or use Image → Image Size with "Preserve Details 2.0". It is a strong result - this is the photoshop upscale image ai route many designers use - but it needs a paid licence and a capable computer. RepetiGo's AI upscaler gives a comparable enhancement in the browser for free, with no install.
+H3: Can ChatGPT AI-Upscale Images?
+Not reliably. ChatGPT can generate new images, but it does not faithfully upscale your existing photo - it may recreate something similar rather than enlarge your actual file, and detail can drift from the original. For a true enhancement of your own image, a dedicated ai image upscaler like RepetiGo is the right tool: it keeps your picture and rebuilds its detail at a larger size.
+H3: Working With Several Images
+You can load several images and switch between them using the thumbnail strip, adding more at any time. Be clear on one point, though: the tool AI-upscales the image you are currently viewing - it processes them one at a time, not all at once, and there is no ZIP download. Upscale and download each image, then move to the next in the strip.
 
-Source Quality
-AI Upscale Result
-Realistic Use
-Good quality (sharp 1080p photo, well-exposed)
-Excellent - detail is preserved and genuinely enhanced
-Large-format printing, professional display
-Medium quality (720p, slight blur or compression)
-Good - the AI compensates for softness and compression
-Standard printing and everyday screen viewing
-Low quality (heavily compressed or very blurry)
-Improved but limited - larger and clearer than a plain resize, but source limits remain visible
-Acceptable for identity checks and casual sharing, not high-quality print
+H2: Which Is the Best AI Image Upscaler?
+"Best" depends on what you are upscaling and what you value. Paid desktop tools can edge ahead on the very hardest photos, but for the everyday jobs most people and print shops face - enlarging a low-res photo, sharpening a pixelated image, making a small picture printable - a free browser tool that runs an AI model is the practical best ai image upscaler: no install, no subscription, no watermark, and a standard on-device fallback when privacy matters.
+The honest way to judge any AI upscaler, including this one, is to test it on your own image and compare the before and after. RepetiGo makes that easy with the side-by-side panel: run AI mode, look at the result, and if you prefer the standard output for a particular photo, switch and compare. That is more reliable than any ranking, because results vary by the image you feed it.
 
-The honest limitation: AI upscaling cannot recover detail that was never captured in the original photo. It makes an informed, learned prediction about what should be there - it does not recover the original data. For legal, medical, or forensic use, always work from the highest-quality original available rather than an upscaled copy.
+H2: AI Image Upscaler - Frequently Asked Questions.
+H3: Is this AI image upscaler free?
+Yes - RepetiGo's ai image upscaler is free with no sign-up and no watermark. Both the AI mode, which sends your image to a server for enhancement, and the standard on-device fallback are free to use. You can AI-upscale images 2× or 4×, choose your output format, and download without creating an account.
+H3: What is the difference between AI and standard upscaling?
+Standard upscaling enlarges an image by averaging nearby pixels - fast and on-device, but it cannot add detail, so a blurry photo just gets bigger. AI upscaling sends the image to a model that predicts and rebuilds missing detail, so soft, pixelated, or low-res photos come out clearer. Use AI mode for difficult photos and standard mode for already-sharp or private images.
+H3: Does the AI upscaler upload my photo?
+In AI mode, yes - your image is sent over HTTPS to RepetiGo's server so the AI model can enhance it, and, as the tool's badge states, it is auto-deleted from the servers after processing. It is not linked to an account or used to train the model. If you do not want your image uploaded at all, switch off AI mode to use the standard upscaler, which runs entirely in your browser.
+H3: Can AI upscale a blurry or pixelated photo?
+Yes, within limits. AI upscaling rebuilds detail, so a mildly blurry or pixelated image comes out noticeably cleaner at a larger size - an ai upscale pixelated image job is exactly what this tool is built for. But no AI can recover detail the camera never captured: a severely blurry or very tiny photo will be bigger and better, not perfect. Start from the sharpest copy you have.
+H3: Can I AI-upscale an image to 4K?
+Yes. Choose 4× and most Full HD or smaller images reach a 4K resolution with AI-reconstructed detail - a 1920×1080 image becomes 7680×4320 at 4×. The tool offers 2× and 4× only, so it does not claim 8K, and the standard fallback caps output at 48 megapixels. For a low-res source, AI mode gives the best route to a usable 4K image.
+H3: Does it have a face-restoration or old-photo mode?
+No. RepetiGo's AI upscaler enhances and enlarges the whole image; it does not have a separate face-restoration pass, a scratch-removal preset, or an old-photo colouriser. It will still improve an old or low-res photo by rebuilding general detail as it enlarges, but if you need dedicated portrait restoration or colourising, that is a different kind of tool.
+H3: Can I upscale anime or artwork with AI?
+Yes. An anime image upscaler use case works well because line-art and flat colour enlarge cleanly, and AI reconstructs crisp edges. Keep PNG or WebP as the output to preserve any transparency. For very detailed artwork, compare the AI and standard results using the side-by-side panel and pick the one you prefer.
+H3: Can I AI-upscale several images at once?
+You can load several images and switch between them with the thumbnail strip, but the tool upscales the image you are currently viewing - one at a time, with no single "AI-upscale all" button and no ZIP download. Upscale and download each image, then move to the next. For a private image in the batch, switch that one to standard mode.
+H3: Which output format should I choose?
+Pick WebP for the smallest web-ready file, PNG for logos or anything needing a transparent background, and JPG for photos and portal uploads. Choosing JPG adds a white background if your image was transparent, because JPG cannot store transparency. You can change format afterwards with the convert tools if a portal needs a specific type.
+H3: Which is the best AI image upscaler?
+The best one is whichever gives the cleanest result on your specific image - results vary by photo, so testing beats any ranking. For everyday jobs like enlarging low-res or pixelated photos, a free browser AI upscaler with a standard on-device fallback covers most needs without an install, a subscription, or a watermark. Run AI mode, compare the before and after, and switch to standard if you prefer it.
 
-H2: Why Use RepetiGo's AI Image Upscaler?
-Feature
-RepetiGo AI Upscaler
-Topaz Gigapixel
-Canva AI Upscaler
-Adobe Express
-Free to use
-✓ Always free
-✗ Paid desktop software
-✓ Free tier, limited
-✓ Free tier, limited
-Sign-up required
-✓ Never
-✗ Purchase required
-✗ Account required
-✗ Account required
-Document / scan optimised
-✓ Yes - built for marksheets, certificates, ID photos
-~ Photography-focused
-~ General purpose
-~ General purpose
-Works without installing software
-✓ Yes - browser only
-✗ Requires a desktop app
-✓ Yes
-✓ Yes
-India-specific document guidance
-✓ Yes - this page
-✗ None
-✗ None
-✗ None
-PrintPilot integration
-✓ Native, automatic workflow
-✗ None
-✗ None
-✗ None
-
-RepetiGo's AI Image Upscaler doesn't try to compete with Topaz Gigapixel for the absolute best creative-photography upscaling - it's built specifically for the documents and everyday photos people in India need to enlarge, for free, without an account.
-
-H2: Your Images and This AI Tool - What Actually Happens.
-Protection Layer
-What It Means in Practice
-🔒 HTTPS Encrypted Transfer
-Your image travels encrypted from your device to our server, and from our server to the configured AI provider. It cannot be read in transit.
-🔁 Relayed, Not Stored on RepetiGo's Servers
-Our server passes your image straight through to the AI provider and returns the result - it is not saved to disk on RepetiGo's own infrastructure.
-🚫 No Account = No Data Profile
-No sign-up means no personal data, no file history, and no usage profile tied to you.
-👁️ Used Only to Generate Your Result
-Your image is sent for the sole purpose of producing your upscaled output, not for any other purpose on RepetiGo's side.
-⚠️ Third-Party Processing Involved
-Because this tool relays to an external AI provider to do the actual upscaling, treat it the same as any cloud AI service: fine for everyday photos and documents, but if a file is extremely sensitive, our instant, upload-free standard Upscale Image tool is the more private choice.
-
-[ Read Our Privacy Policy → /privacy-policy ]
-
-H2: AI Image Upscaling for Print Shops - The Automated Way.
-Print shop owners regularly get customer photos that are both small and genuinely blurry - an old passport photo photocopy, a heavily compressed WhatsApp image, a scan from a cheap photocopier. A plain resize on these looks worse, not better.
-PrintPilot - RepetiGo's print shop software - can route a job into AI upscaling automatically as part of the same QR-code upload workflow customers already use, so a shop owner doesn't have to manually decide between tools for every low-quality photo that comes in.
-
-🖨️ Typical low-res photo workflow: Upload → AI upscale to a usable resolution → crop to the print ratio → send to the printer. PrintPilot can automate this end-to-end; this standalone page handles the AI upscaling step manually for one-off jobs.
-
-[ Learn About PrintPilot → /products/printpilot/ ]
-[ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Try the AI Image Upscaler Now → repetigo.com/image-tools/ai-upscale-image ]
-
-H2: Common Questions About AI Image Upscaling.
-H3: Q1: How do I use the AI image upscaler for free in India?
-Go to repetigo.com/image-tools/ai-upscale-image, upload your JPG, PNG, or WebP image (up to 15 MB), choose 2x or 4x, and click AI Upscale. Your image is sent to our configured AI provider, processed in roughly 10-60 seconds, and returned as a sharper, larger file. No account is required, and there's no charge.
-H3: Q2: Can this AI upscaler fix a blurry scanned marksheet or old certificate for printing?
-Yes - this is one of the main use cases this tool is built for. Upload the scan, choose 2x for a reasonable-quality original or 4x for a very small or soft scan, and let the AI model add detail. The result will be noticeably clearer than a plain resize, though very old or extremely blurry scans still have real limits - the AI is making an informed prediction, not recovering lost information.
-H3: Q3: How is this different from RepetiGo's free Upscale Image tool?
-The free Upscale Image tool at /image-tools/upscale-image runs entirely in your browser, is instant, and never uploads your file - but it only smoothly enlarges the pixels you already have. This AI Image Upscaler sends your photo to a trained AI model that adds genuinely new, predicted detail, which produces a sharper result on blurry or low-quality sources - at the cost of a short wait and an upload.
-H3: Q4: Can I reach 4K resolution with real detail using this tool?
-Yes, in terms of both pixel count and visible quality: a 1920×1080 source at 2x, or a 960×540 source at 4x, both reach 3840×2160 (4K). Because this tool uses genuine AI upscaling rather than plain resampling, a reasonably good source will hold up well at 4K; a very low-quality source will look better than a plain resize but still show some of its original limitations.
-H3: Q5: How does this compare to Topaz Gigapixel or Canva's AI upscaler?
-Topaz Gigapixel is paid desktop software aimed at professional and creative photography upscaling at the highest possible quality. Canva's AI upscaler sits inside Canva's design platform and requires an account. RepetiGo's AI Image Upscaler is free, requires no account, and is built specifically around Indian document and print-shop use cases - old scans, marksheets, and ID photos - rather than general creative photo editing.
-H3: Q6: How do I upscale an image with AI in Photoshop?
-In Adobe Photoshop (CC 2018 and later): open your image, go to Image → Image Size, tick Resample, and choose "Preserve Details 2.0" from the dropdown - this is Photoshop's own AI-based upscaling method. Enter your target size, adjust Noise Reduction if needed, click OK, then File → Save As. If you don't have Photoshop, RepetiGo's AI Image Upscaler gives you a comparable AI-based result directly in your browser, with no software to install.
-H3: Q7: Is this the best free AI image upscaler?
-It depends on what you're upscaling. For pure creative photography at the highest possible quality, paid desktop tools like Topaz Gigapixel are generally considered the gold standard by photographers. Among free, no-sign-up, browser-based options, RepetiGo's AI Image Upscaler is purpose-built for documents, scans, and everyday photos rather than creative art - which is exactly the use case most people searching from India actually have.
-H3: Q8: Can I AI-upscale multiple images at once?
-You can upload several images in one session and switch between them, but each one needs its own AI Upscale click and its own download - there's no single action that AI-processes or downloads a whole batch together on this tool.
-H3: Q9: Is it safe to send an old family photo or a personal document to this AI tool?
-Your image is encrypted in transit and relayed straight through to our configured AI provider to generate your result - RepetiGo's own server does not save a copy. That said, because this tool does send your file to an external AI service to do the actual upscaling, it isn't zero-upload the way RepetiGo's standard Upscale Image tool is. For everyday photos and documents this is a normal, reasonable trade-off for a sharper result; for an extremely sensitive file, use the standard tool instead.
-H3: Q10: What happens if the AI upscaler is temporarily unavailable?
-If our AI provider is briefly unreachable or not configured, this tool will show an error instead of a result. In that case, use the free standard Upscale Image tool at /image-tools/upscale-image, which runs entirely in your browser and doesn't depend on any external service.
-
-H2: More Free Image Tools from RepetiGo.
+H2: Related Image Tools.
 Tool
 What It Does
 Link
-Upscale Image
-Instant, free, browser-only enlargement - no upload
+Upscale Image (standard)
+On-device 2×/4× upscaler - nothing uploaded
 → /image-tools/upscale-image
-Photo Editor
-Adjust brightness, contrast, and blur without changing size
-→ /image-tools/photo-editor
-Resize Image
-Change image dimensions up or down by pixels or percentage
-→ /image-tools/resize-image
 Compress Image
-Reduce file size after upscaling if the output is too large
+Shrink the file size of your AI-upscaled image
 → /image-tools/compress-image
+Resize Image
+Change dimensions without adding new detail
+→ /image-tools/resize-image
 Remove Background
-Remove the background from an upscaled ID photo
+Isolate the subject, then AI-upscale
 → /image-tools/background-remover
+Convert from JPG
+Change format before or after upscaling
+→ /image-tools/convert-from-jpg
 All Image Tools
-Complete free image tools suite
+The complete image tools suite
 → /image-tools
 
-[ Try the AI Image Upscaler Free → repetigo.com/image-tools/ai-upscale-image ]
+[ AI-Upscale Images Free - Enhance to 2× / 4× → repetigo.com/image-tools/ai-upscale-image ]
 [ Explore All Image Tools → repetigo.com/image-tools ]`;
 
-const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
+const faqSchemaQuestions = Array.from(content.matchAll(/H3: ([^\n]+\?)\n([\s\S]*?)(?=\nH3:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
 export default function AiUpscaleImagePage() {
   return (
@@ -228,7 +199,7 @@ export default function AiUpscaleImagePage() {
 }
 
 type SeoTableData = { headers: string[]; rows: string[][] };
-const CALLOUT_EMOJI = ["💡", "🇮🇳", "🔒", "🖨️", "📱", "✅", "⚠️", "🖥️", "🔁", "★"];
+const CALLOUT_EMOJI = ["💡", "🇮🇳", "🔒", "🖨️", "📱", "✅", "⚠️", "🖥️", "🔁", "★", "📊"];
 
 function StructuredSeoCopy({ content: source }: { content: string }) {
   const blocks = source.replace(/(^|\n)(H[123]: [^\n]+)\n/g, "$1\n$2\n\n").split(/\n{2,}/).map((block) => block.trim()).filter(Boolean);
@@ -267,11 +238,10 @@ function StructuredSeoCopy({ content: source }: { content: string }) {
 }
 
 function getKnownTable(lines: string[]): SeoTableData | null {
-  if (lines[0] === "Method" && lines[1] === "What Happens") return { headers: ["Method", "What Happens", "Result", "Best For"], rows: chunkRows(lines.slice(4), 4) };
-  if (lines[0] === "Scenario" && lines[1] === "The Problem") return { headers: ["Scenario", "The Problem", "How AI Upscaling Helps"], rows: chunkRows(lines.slice(3), 3) };
-  if (lines[0] === "Source Quality" && lines[1] === "AI Upscale Result") return { headers: ["Source Quality", "AI Upscale Result", "Realistic Use"], rows: chunkRows(lines.slice(3), 3) };
-  if (lines[0] === "Feature" && lines[1] === "RepetiGo AI Upscaler") return { headers: ["Feature", "RepetiGo AI Upscaler", "Topaz Gigapixel", "Canva AI Upscaler", "Adobe Express"], rows: chunkRows(lines.slice(5), 5) };
-  if (lines[0] === "Protection Layer" && lines[1] === "What It Means in Practice") return { headers: ["Protection Layer", "What It Means in Practice"], rows: chunkRows(lines.slice(2), 2) };
+  if (lines[0] === "Step" && lines[1] === "What You Do" && lines[2] === "What Happens") return { headers: ["Step", "What You Do", "What Happens"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "Standard Upscaling" && lines[1] === "AI Upscaling") return { headers: ["", "Standard Upscaling", "AI Upscaling"], rows: chunkRows(lines.slice(2), 3) };
+  if (lines[0] === "The AI upscaler IS good at") return { headers: ["The AI upscaler IS good at", "What no upscaler can do"], rows: chunkRows(lines.slice(2), 2) };
+  if (lines[0] === "Scenario" && lines[1] === "Problem") return { headers: ["Scenario", "Problem", "How AI upscaling helps"], rows: chunkRows(lines.slice(3), 3) };
   if (lines[0] === "Tool" && lines[1] === "What It Does" && lines[2] === "Link") return { headers: ["Tool", "What It Does", "Link"], rows: chunkRows(lines.slice(3), 3) };
   return null;
 }
@@ -310,7 +280,7 @@ function renderTableCell(cell: string) {
 }
 
 function renderInlineMappedLinks(text: string) {
-  const parts = text.split(/(repetigo\.com\/(?:tools\/image\/[a-z-]*|pricing)\/?|\/image-tools\/[a-z-]*\/?|\/image-tools\/?|\/products\/printpilot\/?|\/privacy-policy\/?|\/pricing\/?)/g);
+  const parts = text.split(/(repetigo\.com\/(?:image-tools\/[a-z-]*|pricing)\/?|\/image-tools\/[a-z-]*\/?|\/image-tools\/?|\/products\/printpilot\/?|\/privacy-policy\/?|\/pricing\/?)/g);
   return parts.map((part, index) => {
     const href = mapSeoRoute(part.startsWith("repetigo.com") ? "https://" + part : part);
     if (!href) return part;
@@ -326,6 +296,7 @@ function mapSeoRoute(route: string) {
     "/image-tools/upscale-image": "/image-tools/upscale-image",
     "/image-tools/resize-image": "/image-tools/resize-image",
     "/image-tools/compress-image": "/image-tools/compress-image",
+    "/image-tools/convert-from-jpg": "/image-tools/convert-from-jpg",
     "/image-tools/background-remover": "/image-tools/background-remover",
     "/image-tools/photo-editor": "/image-tools/photo-editor",
     "/products/printpilot": "/print-automation",
@@ -342,6 +313,7 @@ function getRouteLabel(href: string) {
     "/image-tools/upscale-image": "Open Upscale Image",
     "/image-tools/resize-image": "Open Resize Image",
     "/image-tools/compress-image": "Open Compress Image",
+    "/image-tools/convert-from-jpg": "Open Convert from JPG",
     "/image-tools/background-remover": "Open Remove Background",
     "/image-tools/photo-editor": "Open Photo Editor",
     "/print-automation": "Learn About PrintPilot",
@@ -352,8 +324,8 @@ function getRouteLabel(href: string) {
 }
 
 function JsonLd() {
-  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo AI Image Upscaler", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free AI-powered image upscaler - enlarge blurry scans, old photos, and low-resolution images with genuine AI-added detail. Built for document and print shop workflows in India.", url: pageUrl };
-  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Use the AI Image Upscaler", step: [{ "@type": "HowToStep", name: "Upload Image", text: "Upload Your Image" }, { "@type": "HowToStep", name: "Choose Settings", text: "Turn On AI Mode and Choose Your Settings" }, { "@type": "HowToStep", name: "Download", text: "Download Your AI-Upscaled Image" }] };
+  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo AI Image Upscaler", applicationCategory: "MultimediaApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free AI image upscaler - enhance and enlarge photos 2x or 4x with AI-reconstructed detail. Image is uploaded for AI processing then auto-deleted from our servers; a standard on-device fallback is available for private photos.", url: pageUrl };
+  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to upscale an image with AI", step: [{ "@type": "HowToStep", name: "Add your image", text: "Click or drag-and-drop a JPG, PNG, or WebP file (up to 15 MB)." }, { "@type": "HowToStep", name: "Set scale & format, click AI Upscale", text: "Choose 2x or 4x, pick WebP/PNG/JPG, then press AI Upscale." }, { "@type": "HowToStep", name: "Download", text: "Download once the transformed image is ready." }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
   const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "AI Image Upscaler", item: pageUrl }] };
 

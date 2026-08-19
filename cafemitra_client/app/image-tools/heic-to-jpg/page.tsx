@@ -4,290 +4,174 @@ import HeicToJpgClient from "./HeicToJpgClient";
 const pageUrl = "https://repetigo.com/image-tools/heic-to-jpg";
 
 export const metadata: Metadata = {
-  title: "HEIC to JPG Converter Free Online India - Windows, Mac & Batch | RepetiGo",
+  title: "HEIC to JPG Free - Convert iPhone Photos in Your Browser | RepetiGo",
   description:
-    "Convert HEIC to JPG free online - works on Windows, Mac, iPhone, and Android. Batch convert multiple HEIC files at once. No sign-up, no watermark, 100% browser-based - nothing is ever uploaded.",
+    "Free HEIC to JPG converter - turn iPhone HEIC photos into JPG in your browser. Batch-convert and download a ZIP. Your photos never leave your device. No sign-up.",
   alternates: { canonical: pageUrl },
   openGraph: {
-    title: "HEIC to JPG Converter Free Online - Windows, Mac & Batch | RepetiGo",
-    description: "Convert HEIC to JPG free - Windows, Mac, iPhone, Android. Batch convert. No sign-up. 100% browser-based - nothing uploaded.",
+    title: "HEIC to JPG Free - Convert iPhone Photos in Your Browser",
+    description: "Turn iPhone HEIC photos into JPG in your browser. Batch-convert to a ZIP. Photos never leave your device.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
     card: "summary_large_image",
-    title: "HEIC to JPG Converter Free - RepetiGo",
-    description: "Convert HEIC to JPG free, one file or a batch. No sign-up, 100% browser-based.",
+    title: "HEIC to JPG Free - iPhone Photo Converter",
+    description: "Free HEIC→JPG. Batch + ZIP, quality slider, 100% in your browser - HEIC never leaves your device.",
   },
   robots: { index: true, follow: true },
 };
 
-const content = String.raw`H1: HEIC to JPG Converter Online Free. Convert iPhone Photos on Windows, Mac, Android - Single or Batch.
-RepetiGo's free HEIC to JPG converter turns any .heic image file into a universally compatible JPG in seconds. HEIC is Apple's default photo format for iPhone and iPad - while it produces smaller files than JPG, it can't be opened on Windows computers without a special codec, can't be printed on most print shop equipment, and is rejected by every Indian government portal. Upload a single HEIC file or drop an entire batch at once - the converter decodes and converts each one automatically and delivers JPG files ready for printing, portal upload, WhatsApp sharing, or any standard use.
+const content = String.raw`H1: HEIC to JPG - Convert iPhone Photos to JPG Free in Your Browser.
 
-No sign-up, no watermark, and your files are never uploaded anywhere - conversion runs entirely inside your browser on your own device. The converter works on any device - Android phone, iPhone, Windows PC, Mac, or Linux - in any browser, without app installation.
+RepetiGo's HEIC to JPG converter turns Apple's HEIC (and HEIF) photos into standard JPG images - free, in your browser, with nothing uploaded to a server. Drop in one photo or a whole batch of iPhone HEIC files, and they convert automatically. Download each JPG on its own or grab them all as a ZIP. It is the fastest way to make iPhone photos work everywhere a HEIC gets rejected.
+The best part is where the conversion happens: entirely on your own device. Your HEIC files never leave your computer or phone, which matters because iPhone photos often carry location data. So this is a private, no-sign-up, no-watermark way to convert HEIC to JPG - and because it handles many files at once, clearing a whole camera roll of HEICs takes moments.
 
-✓ Works on Windows, Mac, iPhone & Android   ✓ Batch Convert Multiple Files   ✓ No Sign-Up   ✓ No Watermark   ✓ 100% Browser-Based - Nothing Uploaded
+✅ Free · No sign-up · No watermark   ✅ Batch HEIC/HEIF → JPG + ZIP   ✅ Quality slider   ✅ 100% in your browser - your HEIC files never leave your device
 
-[ Convert HEIC to JPG Free - No Sign-Up → repetigo.com/image-tools/heic-to-jpg ]
+H2: What Is HEIC, and Why Convert It to JPG?
+HEIC (High Efficiency Image Container) is the photo format iPhones and iPads have used by default since iOS 11. It stores a photo at high quality in about half the file size of a JPG, which is great for saving space on your phone. The catch is compatibility: many websites, government and exam portals, older apps, Windows PCs, and Android phones do not accept or display HEIC files.
+That is why converting HEIC to JPG is so common. JPG is the universal image format that works everywhere - every browser, every portal, every device. When a form rejects your iPhone photo, or a HEIC will not open on a PC, converting it to JPG fixes it instantly. You keep the photo; you just put it in a format the rest of the world can read.
 
-H2: What Is HEIC? (And Why Can't Windows or Android Open It?)
-HEIC stands for High Efficiency Image Container. It is the default photo format for iPhone and iPad since Apple introduced it with iOS 11 in 2017. HEIC uses the HEVC (H.265) compression codec to produce image files that are approximately 40-50% smaller than equivalent JPG files at the same visual quality. This is why iPhones can store twice as many photos - they take up half the space.
+H2: How to Convert HEIC to JPG in 3 Steps.
+Here is how to convert HEIC to JPG with RepetiGo. It starts working the moment you add your files.
 
-The compatibility problem: HEIC is an Apple-proprietary format. It was not adopted by other platform manufacturers or open-source software ecosystems. Windows 10 and 11 cannot open HEIC files by default without installing a Microsoft Store codec extension. Most Android devices cannot natively open HEIC files. Print shop RIP software, ID card printers, older versions of Photoshop, MS Office, and essentially all Indian government portals either do not support HEIC or explicitly reject it. The result: millions of Indian iPhone users face compatibility errors every day.
+Step
+What You Do
+What Happens
+1. Add your HEIC photos
+Drop or select one or more HEIC/HEIF files.
+Each converts to JPG automatically at 90% quality.
+2. Adjust quality (optional)
+Set the quality slider between 40% and 100%.
+Files re-convert instantly; each card shows the new size.
+3. Download
+Download each JPG, or grab them all as a ZIP.
+Files save with a .jpg extension, ready to use anywhere.
 
-H3: HEIC vs JPG - Format Comparison
+🔒 The decoding and conversion happen in your browser using the heic2any engine - your original HEIC files are never uploaded.
 
-Feature
-HEIC (iPhone Default)
-JPG (Universal Format)
-File size
-40-50% smaller than JPG at same quality
-Larger - baseline
-Created by
-Apple (2017)
-JPEG Committee (1992)
-Windows support
-✗ Not supported natively - needs Microsoft Store codec
-✓ Universal - opens on all Windows versions
-Android support
-✗ Most Android phones cannot open HEIC
-✓ Universal
-Print shop software
-✗ Most RIP/ID card software rejects HEIC
-✓ Universal
-Indian government portals
-✗ Rejected (Aadhaar, NTA, IRCTC, passport)
-✓ Accepted by all portals
-WhatsApp sharing
-⚠️ Recipients on Android/Windows may see "can't open"
-✓ Opens on all devices
-When to use
-Keeping photos on your iPhone for storage efficiency
-Sharing, printing, portal uploads, any use outside Apple ecosystem
+H2: Convert HEIC to JPG on Mac, Windows, iPhone & Android.
+RepetiGo works the same in any modern browser, so the steps above cover every device. But if you would rather use a built-in option, here is how each platform handles it - and where the browser tool is simpler, especially for a batch.
+H3: Mac
+On a Mac you can convert HEIC to JPG in Preview: open the HEIC, then File → Export, and choose JPEG as the format. For several files, select them in Finder, right-click → Quick Actions → Convert Image, and pick JPEG. That is the native route; for a large batch with a quality slider and a single ZIP, RepetiGo does it in the browser without opening any app. This is the quick answer to how to change HEIC to JPG on Mac.
+H3: Windows
+Windows does not open HEIC out of the box unless you install Apple's HEIF/HEVC extensions from the Microsoft Store. Once installed, you can open a HEIC in Photos and Save As a JPG, one at a time. Because that is fiddly and per-file, most people find a browser converter easier on Windows - RepetiGo converts HEIC to JPG on Windows with no extensions and handles many files at once.
+H3: iPhone
+On an iPhone you can stop the problem at the source: Settings → Camera → Formats → Most Compatible makes the camera shoot JPG instead of HEIC going forward. For photos you already have, sharing or emailing them often converts to JPG automatically, but that is inconsistent. To reliably convert existing HEIC photos on the phone, open RepetiGo in Safari, add the photos, and download JPGs - it runs right in the mobile browser.
+H3: Android
+Android phones generally cannot open HEIC files received from iPhone users. The simplest fix is a browser converter: open RepetiGo in Chrome on your Android phone, add the HEIC files, and download JPGs - no app to install. That covers how to convert HEIC to JPG on Android, including HEICs someone AirDropped or messaged to you.
 
-💡 If you have a .heic file on your device that you can't open, share, or upload - you don't need to change your iPhone settings. Just convert the existing HEIC file to JPG using RepetiGo. If you want all future iPhone photos to save as JPG automatically, see the iPhone settings section below.
+H2: Batch Convert HEIC to JPG (with ZIP Download).
+Converting one photo at a time is slow when you have a camera roll full of HEICs, so this tool is built for batches. Add as many HEIC files as you like - each gets its own card showing the original size, a converted thumbnail, the dimensions, and the new JPG size - and you can keep adding more. Convert them all, then download each individually or grab the whole set as a single ZIP file.
+This is what makes it a proper batch convert HEIC to JPG tool rather than a one-file gimmick. And because one corrupt file only shows its own error without stopping the rest, a big batch converts reliably even if the odd photo has a problem. For a folder of iPhone photos headed to a PC or a portal, bulk conversion plus a ZIP download is a real time-saver.
 
-H2: How to Convert HEIC to JPG Online Free in 3 Steps.
-H3: Step 1 - Upload Your HEIC File
-Click Select HEIC Photos or drag and drop your .heic file - or several HEIC files at once for batch conversion. Both .heic and .heif extensions are accepted, since they're the same format. There's no fixed file size cap, because everything runs on your own device. The converter works in any browser on any device - Chrome, Safari, Firefox, Edge.
-H3: Step 2 - Convert to JPG
-As soon as you upload, RepetiGo decodes and converts your HEIC photo automatically at a 90% starting quality. Quality 90 (default) produces visually identical results to the HEIC original at a reasonable file size. Quality 100 preserves maximum detail - use for print-quality output or portal photos where a larger file size is acceptable. Quality 40-80 reduces file size significantly - use when the portal has a strict KB limit. For batch conversion, the same quality setting applies to all files, and each one is decoded and converted automatically as it's added - there's no need to wait for the whole batch before reviewing results.
-H3: Step 3 - Download Your JPG
-For single files, click Download. For a batch, click Download ZIP to get every converted JPG in one archive. File names are preserved (photo.heic → photo.jpg). Because nothing was ever uploaded, there's nothing left on any server once you're done - the decoding and conversion happened entirely on your own device. For portal uploads, check the file size after conversion - if the JPG exceeds the portal's KB limit, use the Compress Image tool at /image-tools/compress-image to reduce it.
+✅ Real batch support: add a whole camera roll of HEICs, convert them all to JPG, and download individually or as one ZIP - all in your browser. One bad file won't break the batch.
 
-[ Convert HEIC to JPG Free Now → repetigo.com/image-tools/heic-to-jpg ]
+H2: Why You Cannot Preview a HEIC Before Converting.
+You might notice the tool does not show a preview of your original HEIC file before it converts - only the converted JPG. That is not a bug; it is a browser limitation. Apart from Safari, web browsers cannot display HEIC files at all, so there is genuinely no way to show you the original HEIC as an image on most devices. The tool is honest about this: the preview modal marks the "original HEIC" side as unavailable and shows you the converted JPG instead.
+In practice this does not matter, because the conversion is faithful - the JPG you see and download is your photo, just in a readable format. It is also the reason converting is useful in the first place: if your browser could show the HEIC, the portal or app probably could too. So take the missing HEIC preview as confirmation of exactly why you need the JPG.
 
-H2: ★ Batch HEIC to JPG - Convert Multiple Files at Once.
-The most common HEIC conversion scenario is not a single file - it's an entire camera roll of iPhone photos, a folder of images from a photo shoot, or a batch of customer photos received at a print shop. Converting them one by one is impractical.
+H2: Your Photos Never Leave Your Device.
+This is the most important thing about how RepetiGo handles your photos, and it sets the tool apart from many HEIC converters. The entire conversion - decoding the HEIC and encoding the JPG - happens on your own device using the heic2any engine loaded into your browser. Your original HEIC files are never uploaded to a server. Nothing is sent anywhere.
+That matters more than it might sound, because iPhone HEIC photos frequently contain location (GPS) data and personal moments you may not want passing through someone else's server. With a client-side converter, that risk simply does not exist - the files stay with you. It also means the tool works on a weak connection and carries no watermark or account wall. Private by design is the honest description.
 
-RepetiGo's batch HEIC to JPG converter handles any number of files in one session:
-Upload all HEIC files at once - drag a multi-file selection or Ctrl+Click (Windows) / Cmd+Click (Mac) to multi-select.
-Each file is decoded and converted automatically as it's added, at your chosen quality setting.
-Adjust the quality slider at any point to re-convert every file in the batch to the new setting.
-Click Download ZIP to get one archive containing all the converted JPG files, named to match the originals.
+🔒 Fully client-side: your HEIC files never leave your device, nothing is uploaded, and there is no watermark - ideal for personal iPhone photos that carry location data.
 
-Who Uses Batch Conversion
-Typical Batch Size
-India Context
-Print shops receiving iPhone photos from customers
-5–50 HEIC files per day
-Customer forwards 10 passport-size photos via WhatsApp. All are HEIC. Print operator batch-converts before ID card print job.
-Photo studios using iPhone cameras
-50–200 files per shoot
-Wedding, event, or portrait studio on iPhone. Batch converts entire shoot to JPG for client delivery and editing.
-Students submitting application photos
-3–10 HEIC files
-Coaching institute requires JPG for ID card and portal registration. Students batch-convert their iPhone camera photos.
-Government document processing centres
-10–100 files per day
-CSC centres and cyber cafes batch-convert HEIC Aadhaar/ID photos received from iPhone users to JPG before portal upload.
-E-commerce sellers
-50–500 product photos
-Sellers photographing products on iPhone need JPG for Flipkart/Amazon/Meesho uploads which may not accept HEIC.
+H2: ★ Indian Use Cases - iPhone Photos for Portals.
+For iPhone users in India, HEIC-to-JPG conversion is a constant need, because government and exam portals almost always demand JPG and reject HEIC outright.
 
-H2: ★ Indian Use Cases - HEIC in India's iPhone + Print Shop Ecosystem.
-India has one of the world's fastest-growing iPhone user bases. As iPhones penetrate urban India's professional and student demographic - the same people who visit print shops and upload to government portals - the HEIC compatibility problem has become a daily operational issue:
-
-H3: Print Shops Receiving iPhone HEIC Photos via WhatsApp
-Print shops and cyber cafes across India receive customer photos via WhatsApp. iPhone users' photos arrive as .heic files - the shop's CorelDRAW, older Photoshop, ID card printing software, or RIP system cannot open them. The customer is waiting. The operator needs a fast solution that doesn't require software installation. RepetiGo's browser-based batch converter: upload all received HEIC photos, batch-convert, download JPGs, continue the print job. Zero software installation, zero cost.
-For print shops with automated customer upload workflows, PrintPilot - RepetiGo's print shop software - can be paired with this converter so customers' photos are ready in JPG before they even reach the print queue, without a shop operator manually handling format conversion for every job.
-
-H3: Government Portal Uploads - Aadhaar, NTA, IRCTC Reject HEIC
-
-Indian Portal
-Format Accepted
-HEIC Accepted?
-Recommended Conversion Action
-Aadhaar Update Portal
-JPG, PNG, max 50KB
-✗ Rejected
-Convert HEIC → JPG → Compress to under 50KB if needed
-NTA (NEET/JEE/CUET)
-JPG only, 10-50KB
-✗ Rejected
-Convert HEIC → JPG → Compress to under 50KB
-Passport Application
-JPG, max 200KB
-✗ Not accepted
-Convert HEIC → JPG. Check size.
-IRCTC Photo Upload
-JPG, max 50KB
-✗ Rejected
-Convert HEIC → JPG → Compress
-Digilocker Document
-JPG, PNG, PDF
-✗ Not accepted
+Scenario
+Problem
+How to fix it here
+Passport Seva / Visa photo
+Portal rejects the iPhone HEIC
+Convert HEIC → JPG, then resize/compress
+NTA exam photo (NEET/JEE)
+Only JPG/JPEG accepted
+Convert → resize → compress to the KB limit
+UIDAI / Aadhaar update
+HEIC not accepted
 Convert HEIC → JPG
-Bank KYC
-JPG, PNG, max 200KB
-~ Varies - use JPG for safety
+Bank KYC upload
+iPhone photo won't upload
 Convert HEIC → JPG
+Sharing to an Android user
+They cannot open the HEIC
+Batch-convert and send JPGs (ZIP)
 
-Workflow: iPhone photo → HEIC file → Upload to RepetiGo → Convert to JPG → check size → if over limit: Compress Image tool → Upload to portal. The complete portal-ready workflow is free at repetigo.com.
+🇮🇳 Full iPhone-photo workflow for a portal: convert the HEIC to JPG here → resize to the required pixels at /image-tools/resize-image → compress to the KB limit at /image-tools/compress-image. All free and linked below.
 
-H3: Photo Studios and Photographers on iPhone
-Professional and semi-professional photographers in India increasingly use iPhone cameras for portrait, ID, and event photography. iPhone output in HEIC format creates a delivery problem: clients on Windows or Android can't open the files, editing software may not support HEIC, and print vendors require JPG. Batch converting the entire shoot output from HEIC to JPG before delivery or editing is now a standard post-shoot step.
+H2: Set the JPG Quality.
+You control the output quality with a slider from 40% to 100%. The default is 90%, which keeps the photo looking sharp while producing a sensible file size - right for most uses. Slide it up toward 100% for maximum detail and a larger file, or down toward 40% for a smaller file when size matters more than fine detail. Changing the slider re-converts everything instantly, and each card shows the resulting JPG size, so you can see the trade-off as you go. If you need to hit a specific kilobyte limit for a portal, convert here and then use the Compress Image tool for precise control.
 
-H2: How to Convert HEIC to JPG on Different Devices.
-H3: How to Convert HEIC to JPG on Windows (Without Downloading Software)
-Windows 10 and 11 do not natively support HEIC. There are two approaches:
-Option 1 - Browser-based (fastest, no install): Go to repetigo.com/image-tools/heic-to-jpg in your Chrome or Edge browser. Upload the HEIC file. It converts automatically. Download the JPG. Works on Windows 10 and 11 without any installation.
-Option 2 - Microsoft Store codec (if you want Windows Photos to open HEIC natively): Open Microsoft Store → search "HEIF Image Extensions" → Install (free, published by Microsoft). After installing, Windows Photos and other Windows apps can open HEIC files directly. You can then right-click a HEIC file in File Explorer → Open with → Paint → Save As → JPEG to convert one at a time.
-Fastest Windows option for non-technical users: use RepetiGo in the browser. No codec, no installation, works the same on Windows 10 and Windows 11.
+H2: What This Tool Does Not Do.
+So you know whether it fits before you start, here is what this converter is not built for - and where to go instead.
 
-H3: How to Convert HEIC to JPG on Mac (Using Preview App)
-macOS natively supports HEIC - Preview (built-in on all Macs) can open HEIC files directly. Converting a single file: open the HEIC file in Preview (double-click, or right-click → Open With → Preview). Click File in the menu bar → Export As. In the Format dropdown, select JPEG. Adjust quality if needed, then click Save - your JPG is saved to the same folder as the original.
-Converting multiple HEIC files at once on Mac (batch): select all HEIC files in Finder → right-click → Quick Actions → Convert Image. In the popup, select JPEG as the format and choose quality, then click Convert to JPEG - all files convert in place. For very large batches (hundreds of files), a browser-based batch converter like RepetiGo is faster than the Quick Actions menu, which processes files one at a time.
+People often ask for…
+The honest answer
+Convert HEIC to PNG
+No - the output is JPG (use the Convert to JPG tool family for other formats)
+Keep or strip GPS/EXIF with a toggle
+No - there is no metadata keep/strip control here
+Preview the original HEIC first
+No - browsers (except Safari) cannot display HEIC
+Pick a frame from a Live Photo
+No - one frame is extracted from a HEIC sequence
+Convert JPG back to HEIC
+No - this converts HEIC → JPG, not the reverse
+Auto-rotate every photo perfectly
+No - some may need a manual rotate afterwards
 
-H3: How to Stop iPhone from Saving Photos as HEIC
-If you want all future iPhone photos to save as JPG instead of HEIC, change this setting: Settings → Camera → Formats → Most Compatible. This saves all new photos as JPG (larger files, fully compatible with all devices). For photos already saved as HEIC in your camera roll, this setting doesn't convert them - you'll need to convert them separately. Note: "Most Compatible" also affects video recording format, switching from HEVC to H.264.
-When sharing HEIC photos from your iPhone to a non-Apple device, iOS often converts to JPG automatically if you use the Photos app share sheet. But this only applies when sharing through the share sheet - it does not apply when AirDropping to another iPhone or when connecting via USB.
+H2: HEIC to JPG - Frequently Asked Questions.
+H3: Is this HEIC to JPG converter free?
+Yes - RepetiGo's HEIC to JPG converter is completely free with no sign-up and no watermark. Because it converts in your browser rather than on a paid server, you can convert as many HEIC files as you like, adjust the quality, and download individually or as a ZIP at no cost.
+H3: How do I convert HEIC to JPG?
+Drop your HEIC (or HEIF) files onto the tool and they convert to JPG automatically at 90% quality. Adjust the quality slider if you want, then download each JPG or grab them all as a ZIP. It works in any modern browser on Mac, Windows, iPhone, or Android, and your original files are never uploaded.
+H3: How do I convert HEIC to JPG on Windows?
+Windows does not open HEIC unless you install Apple's HEIF/HEVC extensions, and even then you convert one file at a time. The easier route is a browser converter: open RepetiGo, add your HEIC files, and download JPGs - no extensions to install, and you can convert many photos at once with a single ZIP download.
+H3: How do I convert HEIC to JPG on a Mac?
+On a Mac you can use Preview (File → Export → JPEG) or select files in Finder and use Quick Actions → Convert Image → JPEG. That is the built-in way. For a large batch with a quality setting and one ZIP download, RepetiGo does it in the browser without opening an app - handy when you have a lot of photos.
+H3: Can I convert several HEIC files at once?
+Yes. Add as many HEIC files as you like and they all convert to JPG, each on its own card. Download them individually or as a single ZIP. One corrupt file only shows its own error without stopping the rest, so large batches convert reliably. It is built for clearing a whole camera roll quickly.
+H3: Why can't I see a preview of my HEIC file?
+Because web browsers other than Safari cannot display HEIC files at all - so there is no way to show the original HEIC as an image on most devices. The tool shows the converted JPG instead and marks the original HEIC side as unavailable. The JPG is a faithful copy of your photo, so nothing is lost.
+H3: Are my photos uploaded to a server?
+No. The whole conversion happens in your browser using the heic2any engine, so your original HEIC files never leave your device and nothing is sent to RepetiGo. That is especially important for iPhone photos, which often carry location data - with a client-side converter, that data stays with you.
+H3: Can it convert HEIC to PNG instead of JPG?
+No - this tool outputs JPG, which is the format almost every portal and app expects. If you specifically need a different format, convert to JPG here first, then use the relevant converter. For most needs, JPG is exactly what makes an iPhone HEIC usable everywhere.
+H3: What happens to a Live Photo or HEIC sequence?
+A HEIC sequence (like a Live Photo or burst) contains several frames, and the tool extracts a single frame and converts it to a JPG. You cannot choose which frame here - it takes one representative frame. For a normal still HEIC, this makes no difference; it is only relevant for multi-frame HEIC files.
+H3: Do I need to change my iPhone camera settings?
+Not necessarily, but you can. To stop new photos being HEIC, go to Settings → Camera → Formats → Most Compatible, and the camera will shoot JPG from then on. For the HEIC photos you already have, convert them here. Many people leave the camera on HEIC to save space and just convert when a JPG is needed.
 
-H3: How to Convert HEIC to JPG on Android
-Android devices cannot natively open HEIC files. The simplest solution is browser-based: open Chrome on your Android phone → go to repetigo.com/image-tools/heic-to-jpg → tap Select HEIC Photos → choose the HEIC file from your Files app or Downloads folder → it converts automatically → download the JPG. The JPG saves to your Downloads folder and can be opened in your Gallery, attached to emails, or sent via WhatsApp. For Android users who regularly receive HEIC files from iPhone contacts, bookmarking RepetiGo's HEIC converter in Chrome is the most convenient setup.
-
-H2: Why Use RepetiGo's HEIC to JPG Converter?
-
-Feature
-RepetiGo
-macOS Preview
-Windows HEIF Codec
-iMazing (Paid)
-Free to use
-✓ Always free
-✓ Built-in (Mac only)
-✓ Free codec install
-✗ Paid subscription
-Works on Windows
-✓ Yes
-✗ Mac only
-✓ After codec install
-✓ Windows app
-Works on Android/any device
-✓ Yes - any browser
-✗ Mac only
-✗ Windows only
-✗ Desktop only
-Batch conversion
-✓ Yes - upload any number of files
-~ Quick Actions (one at a time)
-~ Scripting required
-✓ Yes
-No software install
-✓ Browser-based
-✓ Built-in
-✗ Requires install
-✗ Requires install
-India portal guidance
-✓ Aadhaar, NTA, IRCTC specs
-✗ None
-✗ None
-✗ None
-No sign-up required
-✓ Never
-✓ No account
-✓ No account
-✗ Account required
-Files ever leave your device?
-✗ Never - 100% browser-based
-✓ Never - local
-✓ Never - local
-✓ Never - local
-
-H2: Your Files Are Safe. Always.
-
-Protection Layer
-What It Means in Practice
-🖥️ 100% Browser-Based Conversion
-Your HEIC photo is decoded and converted using your own device's processing power via the browser. It is never uploaded to any server.
-🚫 Nothing Ever Leaves Your Device
-Because conversion happens locally, there is no upload, no transfer, and nothing on any server for us to store or delete.
-👁️ No Image Content Is Read
-RepetiGo's code cannot see, analyse, or extract what's in your photo - it only decodes and re-encodes pixel data on your own device.
-🚫 No Account = No Data Profile
-No sign-up means no personal data, no file history, and no usage profile is ever created.
-🔒 Well Suited to ID Photos and Personal Documents
-Because nothing is transmitted anywhere, this is one of the safer ways to convert a sensitive photo, ID scan, or personal document online.
-
-[ Read Our Privacy Policy → /privacy-policy ]
-
-H2: HEIC Conversion for Print Shops - The PrintPilot Connection.
-HEIC files from iPhone customers are one of the most common format problems in Indian print shops. Customers share photos from their iPhone camera roll via WhatsApp - the HEIC format arrives and the shop's equipment can't use it. Manual conversion is a 2-3 minute interruption on every job. For a busy print shop handling 30-50 jobs a day, this adds up to hours of manual work weekly.
-PrintPilot - RepetiGo's automated print shop software - lets customers upload documents via QR code and routes them straight to the print queue. Pairing it with this HEIC to JPG converter means a shop operator can clear a customer's HEIC photos into print-ready JPGs in seconds, without leaving the browser or installing anything on the shop's print PC.
-The standalone HEIC to JPG converter on this page handles one-off and walk-in jobs. For a fully automated customer upload and print queue, PrintPilot is the solution.
-
-[ Learn About PrintPilot → /products/printpilot/ ]
-[ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Convert HEIC to JPG Now → repetigo.com/image-tools/heic-to-jpg ]
-
-H2: Common Questions About HEIC to JPG Conversion.
-H3: Q5: How Do I Open or Convert HEIC Files on Windows 10 or Windows 11?
-The fastest way to convert HEIC to JPG on Windows without downloading any software: open Chrome or Edge browser on your Windows PC → go to repetigo.com/image-tools/heic-to-jpg → upload the HEIC file → it converts automatically → download the JPG. Done in under 30 seconds. If you want to open HEIC files natively in Windows Photos and File Explorer without converting: open Microsoft Store → search "HEIF Image Extensions" → Install (free, by Microsoft). After installing, Windows can open .heic files directly. Windows 11 users: the codec works identically - search Microsoft Store for "HEIF Image Extensions" and install. For converting HEIC to JPG on Windows 11 without the codec: the same browser method above works - Chrome or Edge → RepetiGo → automatic conversion.
-H3: Q6: How Do I Convert HEIC to JPG on Mac?
-macOS natively supports HEIC, so the simplest method uses Preview (built-in): open the HEIC file in Preview → File menu → Export As → Format: JPEG → Save. For batch conversion on Mac using the Quick Actions method: select multiple HEIC files in Finder → right-click → Quick Actions → Convert Image → JPEG → Convert to JPEG. These steps work identically on MacBook Air, MacBook Pro, and any other Mac model. For large batches (100+ files), the Quick Actions method processes files one at a time and can be slow - RepetiGo's browser-based batch converter decodes each file automatically as it's added and is faster for large batches.
-H3: Q7: How Do I Stop My iPhone from Saving Photos as HEIC?
-Go to iPhone Settings → Camera → Formats → tap Most Compatible. All future photos will be saved as JPG (JPEG) instead of HEIC. Note: this only applies to new photos taken after the setting change - it does not convert existing HEIC photos in your camera roll. To convert existing HEIC files already on your phone: use RepetiGo in Safari or Chrome on your iPhone to convert them, or transfer them to your computer first. When sharing iPhone photos via WhatsApp or Messages to Android or Windows users, iOS often converts HEIC to JPG automatically during the share process - so recipients usually see JPG even if the original on your phone is HEIC. The conversion is not automatic for every sharing method (AirDrop to iPhone sends HEIC, USB connection sends the original format).
-H3: Q8: How Do I Batch Convert Multiple HEIC Files to JPG at Once?
-To batch convert HEIC to JPG using RepetiGo: go to repetigo.com/image-tools/heic-to-jpg. Click Select HEIC Photos and choose multiple HEIC files using Ctrl+Click (Windows) or Cmd+Click (Mac), or drag several files into the upload area at once. Each file decodes and converts automatically at your chosen quality (90 recommended). Click Download ZIP to get an archive containing all the JPG files, named to match the originals. There's no file count limit - upload as many HEIC files as you have. This batch method covers mass converting, bulk converting, and converting multiple HEIC files to JPG in one session - all referring to the same operation.
-H3: Q9: Does Converting HEIC to JPG Reduce Image Quality?
-At output quality settings of 90 and above, converting HEIC to JPG produces results that are visually indistinguishable from the original at standard viewing sizes. HEIC and JPG are both lossy formats - both achieve file size reduction by discarding some image data. HEIC achieves better compression efficiency (same visual quality at a smaller file size). When you convert HEIC to JPG at quality 90, you get a JPG that looks the same as the HEIC source when viewed on screen or printed at standard sizes. At quality 100 (maximum), there is no measurable quality loss. For portal photo uploads where a specific KB limit applies, use quality 70-85 and compare the visual result before uploading. For print-quality output (ID cards, photo prints), always use quality 90-100.
-H3: Q10: Is There a HEIC to JPG Converter Without AI Processing?
-Yes. RepetiGo's HEIC to JPG converter is a standard format conversion tool - it decodes the pixel data from the HEIC file and re-encodes it in JPEG format using conventional image compression. No neural networks, no AI image processing, no content generation. The conversion is deterministic: the same HEIC file at the same quality setting always produces the same JPG output. This matters for official documents (ID photos, Aadhaar photos, passport photos) where you need the output to be an accurate representation of the original without any AI-introduced changes to the image. This is what "document-safe" conversion means - the pixels in the JPG output are an accurate re-encoding of the HEIC source, nothing more.
-H3: Q11: What Is the Difference Between HEIC to JPG and JPG to HEIC?
-HEIC to JPG (this page) converts Apple's HEIC format into the universally compatible JPG - for sharing, printing, portal uploads, and use on Windows/Android devices where HEIC is not supported. JPG to HEIC does the reverse: converting a JPG into HEIC format. JPG to HEIC is primarily useful for iPhone users who want to store photos in the more storage-efficient HEIC format, or for developers working within Apple ecosystems. It's a much rarer use case - the HEIC to JPG direction is more common because the compatibility problem (HEIC being unreadable outside Apple devices) is encountered far more often than the storage-efficiency benefit of HEIC.
-
-H2: More Free Image Tools from RepetiGo.
-
+H2: Related Image Tools.
 Tool
 What It Does
 Link
-WebP to JPG
-Convert WebP images to JPG - for browser downloads that save as .webp
-→ /image-tools/webp-to-jpg
-PNG to JPG
-Convert PNG to JPG for smaller files and wider compatibility
-→ /image-tools/png-to-jpg
-JPG to PNG
-Convert JPG to PNG for transparency support
-→ /image-tools/convert-from-jpg
-Compress Image
-Reduce JPG file size after HEIC conversion - for portal KB limits
-→ /image-tools/compress-image
+Convert to JPG
+Convert WebP/PNG/SVG/BMP/GIF → JPG too
+→ /image-tools/convert-to-jpg
 Resize Image
-Resize the converted JPG to portal pixel dimensions
+Resize the JPG to portal dimensions
 → /image-tools/resize-image
+Compress Image
+Compress the JPG to a KB limit (batch + ZIP)
+→ /image-tools/compress-image
+Crop Image
+Crop the converted photo
+→ /image-tools/crop-image
 Remove Background
-Remove background from ID photos after HEIC to JPG conversion
+White ID background after converting
 → /image-tools/background-remover
 All Image Tools
-Complete free image tools suite
+The complete image tools suite
 → /image-tools
 
-[ Convert HEIC to JPG Free - No Sign-Up → repetigo.com/image-tools/heic-to-jpg ]
+[ Convert HEIC to JPG Free - Batch + ZIP → repetigo.com/image-tools/heic-to-jpg ]
 [ Explore All Image Tools → repetigo.com/image-tools ]`;
 
-const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
+const faqSchemaQuestions = Array.from(content.matchAll(/H3: ([^\n]+\?)\n([\s\S]*?)(?=\nH3:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
 export default function HeicToJpgPage() {
   return (
@@ -340,11 +224,9 @@ function StructuredSeoCopy({ content: source }: { content: string }) {
 }
 
 function getKnownTable(lines: string[]): SeoTableData | null {
-  if (lines[0] === "Feature" && lines[1] === "HEIC (iPhone Default)") return { headers: ["Feature", "HEIC (iPhone Default)", "JPG (Universal Format)"], rows: chunkRows(lines.slice(3), 3) };
-  if (lines[0] === "Who Uses Batch Conversion" && lines[1] === "Typical Batch Size") return { headers: ["Who Uses Batch Conversion", "Typical Batch Size", "India Context"], rows: chunkRows(lines.slice(3), 3) };
-  if (lines[0] === "Indian Portal" && lines[1] === "Format Accepted") return { headers: ["Indian Portal", "Format Accepted", "HEIC Accepted?", "Recommended Conversion Action"], rows: chunkRows(lines.slice(4), 4) };
-  if (lines[0] === "Feature" && lines[1] === "RepetiGo") return { headers: ["Feature", "RepetiGo", "macOS Preview", "Windows HEIF Codec", "iMazing (Paid)"], rows: chunkRows(lines.slice(5), 5) };
-  if (lines[0] === "Protection Layer" && lines[1] === "What It Means in Practice") return { headers: ["Protection Layer", "What It Means in Practice"], rows: chunkRows(lines.slice(2), 2) };
+  if (lines[0] === "Step" && lines[1] === "What You Do" && lines[2] === "What Happens") return { headers: ["Step", "What You Do", "What Happens"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "Scenario" && lines[1] === "Problem") return { headers: ["Scenario", "Problem", "How to fix it here"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "People often ask for…" || lines[0] === "People often ask for...") return { headers: ["People often ask for…", "The honest answer"], rows: chunkRows(lines.slice(2), 2) };
   if (lines[0] === "Tool" && lines[1] === "What It Does" && lines[2] === "Link") return { headers: ["Tool", "What It Does", "Link"], rows: chunkRows(lines.slice(3), 3) };
   return null;
 }
@@ -396,11 +278,10 @@ function mapSeoRoute(route: string) {
   const routeMap: Record<string, string> = {
     "/image-tools": "/image-tools",
     "/image-tools/heic-to-jpg": "/image-tools/heic-to-jpg",
-    "/image-tools/webp-to-jpg": "/image-tools/webp-to-jpg",
-    "/image-tools/png-to-jpg": "/image-tools/png-to-jpg",
-    "/image-tools/convert-from-jpg": "/image-tools/convert-from-jpg",
-    "/image-tools/compress-image": "/image-tools/compress-image",
+    "/image-tools/convert-to-jpg": "/image-tools/convert-to-jpg",
     "/image-tools/resize-image": "/image-tools/resize-image",
+    "/image-tools/compress-image": "/image-tools/compress-image",
+    "/image-tools/crop-image": "/image-tools/crop-image",
     "/image-tools/background-remover": "/image-tools/background-remover",
     "/products/printpilot": "/print-automation",
     "/privacy-policy": "/privacy-policy",
@@ -413,11 +294,10 @@ function getRouteLabel(href: string) {
   const labels: Record<string, string> = {
     "/image-tools": "Explore All Image Tools",
     "/image-tools/heic-to-jpg": "Open HEIC to JPG",
-    "/image-tools/webp-to-jpg": "Open WebP to JPG",
-    "/image-tools/png-to-jpg": "Open PNG to JPG",
-    "/image-tools/convert-from-jpg": "Open Image Format Converter",
-    "/image-tools/compress-image": "Open Compress Image",
+    "/image-tools/convert-to-jpg": "Open Convert to JPG",
     "/image-tools/resize-image": "Open Resize Image",
+    "/image-tools/compress-image": "Open Compress Image",
+    "/image-tools/crop-image": "Open Crop Image",
     "/image-tools/background-remover": "Open Remove Background",
     "/print-automation": "Learn About PrintPilot",
     "/privacy-policy": "Read Privacy Policy",
@@ -427,8 +307,8 @@ function getRouteLabel(href: string) {
 }
 
 function JsonLd() {
-  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo HEIC to JPG Converter", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online HEIC to JPG converter with adjustable quality and batch conversion. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl };
-  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert HEIC to JPG Online Free", step: [{ "@type": "HowToStep", name: "Upload HEIC", text: "Upload Your HEIC File" }, { "@type": "HowToStep", name: "Convert", text: "Convert to JPG" }, { "@type": "HowToStep", name: "Download", text: "Download Your JPG" }] };
+  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo HEIC to JPG Converter", applicationCategory: "MultimediaApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free browser-based HEIC/HEIF to JPG converter with a quality slider and batch conversion to a ZIP. Runs 100% in the browser using the heic2any engine - HEIC files are never uploaded to a server.", url: pageUrl };
+  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to convert HEIC to JPG", step: [{ "@type": "HowToStep", name: "Add your HEIC photos", text: "Drop or select one or more HEIC/HEIF files." }, { "@type": "HowToStep", name: "Adjust quality (optional)", text: "Set the quality slider between 40% and 100%." }, { "@type": "HowToStep", name: "Download", text: "Download each JPG, or grab them all as a ZIP." }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
   const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "HEIC to JPG", item: pageUrl }] };
 

@@ -4,232 +4,165 @@ import BlurFaceClient from "./BlurFaceClient";
 const pageUrl = "https://repetigo.com/image-tools/blur-face";
 
 export const metadata: Metadata = {
-  title: "Blur Face Online Free India - Hide Faces in Photos Instantly | RepetiGo",
+  title: "Blur Face Free - Auto-Detect & Blur Faces in Photos | RepetiGo",
   description:
-    "Blur face in photo online free - protect privacy, comply with India's DPDP Act. Automatic face detection plus manual selection. No sign-up. Never stored on our servers.",
+    "Free tool to blur faces in a photo - it auto-detects faces, and you can add custom blur areas too. Adjust blur strength and download. Faces detected, then discarded.",
   alternates: { canonical: pageUrl },
   openGraph: {
-    title: "Blur Face Online Free - Hide Faces in Photos Instantly | RepetiGo",
-    description: "Free face blur tool - hide faces in photos for privacy, DPDP compliance, WhatsApp safety. Automatic detection, no sign-up.",
+    title: "Blur Face Free - Auto-Detect & Blur Faces in Photos",
+    description: "Auto-detect and blur faces in a photo, or add custom blur areas. Adjust strength and download.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Blur Face Online Free India | RepetiGo",
-    description: "Free face blur tool. No sign-up. India privacy + DPDP Act.",
+    title: "Blur Face Free - Auto Face Blur for Photos",
+    description: "Free: auto-detect & blur faces in a photo, custom blur areas, adjustable strength.",
   },
   robots: { index: true, follow: true },
 };
 
-const content = String.raw`H1: Blur Face Online Free. Protect Privacy in Any Photo - Automatic Face Detection, Blurred in Seconds.
-RepetiGo's blur face tool is a free, browser-based tool that detects and blurs faces in photos in seconds. Upload any JPG, PNG, or WEBP image - automatic detection finds faces for you, or you can draw a selection box around any area you want to blur - a face, an ID number, a licence plate, or anything else. Choose your blur strength, and download the protected photo. No sign-up, no app download.
-Whether you need to blur faces in photos before posting on social media, protect the identity of minors in a school group photo, redact faces from news images, or hide personal details from an Aadhaar or ID card before sharing - this face blur tool handles it in seconds on any device: Android phone, iPhone, laptop, or desktop computer.
+const content = String.raw`H1: Blur Face - Automatically Blur Faces in a Photo, Free.
+RepetiGo's blur face tool automatically detects and blurs faces in a photo - free, and with no watermark. Upload an image, and it finds the faces and blurs them for you; you can adjust how strong the blur is, add your own blur areas for anything the detector misses, and download the result. It is the quick way to protect people's identities in a picture before you share it. Whether you need to blur a face in a picture for privacy, cover a bystander, or hide a child's face on social media, this does it in seconds.
+It works on a single photo at a time and gives you both automatic and manual control: let it find faces on its own, or drag your own blur boxes exactly where you want them. The blurring itself happens in your browser, and your image is used only to detect faces and then discarded - more on that below.
 
-✓ Automatic Face Detection   ✓ Manual Selection for Any Area   ✓ Adjustable Blur Strength   ✓ No Sign-Up   ✓ Blurred Photo Never Leaves Your Browser
+✅ Free · No sign-up · No watermark   |   ✅ Automatic face detection   |   ✅ Custom blur areas + adjustable strength   |   ✅ Image discarded after detection
 
-[ Blur Face Free - No Sign-Up → repetigo.com/image-tools/blur-face ]
+H2: Why Blur Faces in a Photo?
+Sharing photos online often means capturing people who did not agree to appear - bystanders in the background, other people's children, or strangers in a public place. Blurring their faces is a simple, respectful way to protect their privacy before you post. It is increasingly expected on social media, in blog posts, and in any image shared publicly, and in some contexts it is a genuine safeguarding step.
+There are practical reasons too. Journalists and researchers blur faces to protect sources and subjects; parents blur their children's faces before posting; and anyone sharing a group photo may want to hide the identity of people who would rather not be recognised. Whatever the reason, adding a blur over a face is the standard way to keep a photo shareable while respecting the people in it - and this tool makes that fast and free.
 
-H2: What Is a Face Blur Tool? (And Why Should You Use One?)
-A face blur tool is an image editing tool that obscures human faces in a photo so the person can no longer be identified. RepetiGo's tool applies a Gaussian blur - a smooth, out-of-focus softening effect - over the selected area, with adjustable strength so you can make it as subtle or as strong as you need.
-Blurring a face is different from deleting someone from a photo. The photo stays intact - the content, context, and setting are all preserved. Only the identifying facial features are hidden. This makes face blur tools useful in situations where you want to share or publish a photo but need to protect the identity of one or more people in it.
-The most common reasons people blur faces in photos:
+H2: How to Blur a Face in 3 Steps.
+Here is how to blur a face in a picture with RepetiGo. The automatic detection does most of the work.
 
-Reason
-Who Uses It
-Example
-Protect the identity of a minor
-Parents, teachers, school photographers, event organizers
-Blurring children's faces in school event photos before posting on social media or WhatsApp groups
-Protect a witness, victim, or whistleblower
-Journalists, NGOs, legal professionals, HR teams
-Blurring a witness's face in a news photo or case documentation before sharing or publishing
-Comply with consent requirements
-Content creators, marketers, event photographers
-Blurring attendees who did not consent to being photographed before the event photo goes live
-Redact personal ID document details
-Business owners, HR departments, print shops, cyber cafes
-Blurring the face and ID number on an Aadhaar or PAN card before sharing a preview with a customer
-Protect anonymity on social media
-WhatsApp group admins, Instagram users, anyone posting group photos
-Blurring faces of friends who did not want to appear in a social media post
-News and documentary ethics
-Journalists, content producers, documentary makers
-Standard practice in Indian and global journalism to hide identities of people not cleared for publication
+Step
+What You Do
+What Happens
+1. Upload your photo
+Add the image (JPG/PNG/WebP).
+It detects faces automatically and marks them to blur.
+2. Adjust or add areas
+Set the blur strength; add custom blur boxes if needed.
+The preview updates so you can see the result.
+3. Download
+Download the blurred image.
+It saves as a PNG with the faces blurred.
 
-H2: How to Blur a Face in a Photo Online Free in 3 Steps.
-You do not need any design software, experience, or account to blur faces in photos using RepetiGo. Here is how it works:
-H3: Step 1 - Upload Your Photo
-Click Upload or drag and drop your photo. Supported formats: JPG, PNG, WEBP, up to 15 MB. This tool works with one photo at a time. It works on any browser - Chrome, Safari, Firefox - on Android, iPhone, Windows, or Mac. No app installation required.
-H3: Step 2 - Let Automatic Detection Find Faces, or Draw Your Own
-As soon as you upload, Automatic Detection runs and outlines every face it finds - a Recommended setting balances accuracy for most photos, or switch to Low or High detection if faces are missed or over-detected in a tricky photo. Each detected face becomes its own adjustable box - drag to reposition, drag the corner to resize, or click the trash icon to remove one you don't want blurred.
-Switch to Customised Detection to draw your own box anywhere on the photo instead - useful for an ID number, a licence plate, or a face the automatic pass missed. Click Add Blur Area at any time, in either mode, to add another box.
-Blur Strength: the slider runs from 6px to 50px - low values give a light softening, high values make the area completely unrecognisable. For privacy-critical use like ID documents, use a high strength.
-India tip: when blurring an Aadhaar card or PAN card before sharing with a print shop or customer, switch to Customised Detection and draw boxes over both the photo and the ID number, then use a high blur strength so neither can be read.
-H3: Step 3 - Download Your Photo with the Face Blurred
-Click Download Blurred Image (or Blur Face). The blur is rendered directly onto the image on your own device and downloads as a PNG file. Only the coordinates needed to detect faces were ever sent anywhere - the actual blurred image you download is generated and stays entirely in your browser.
+💡 If a face is missed or you want to blur something else, switch to a custom blur area and drag a box over it - you are not limited to the auto-detected faces.
 
-[ Blur Face Free Now → repetigo.com/image-tools/blur-face ]
+H2: Automatic Face Detection.
+The tool's main feature is that it finds faces for you. When you upload a photo, it automatically detects the faces in it and marks each one to be blurred, so often you can simply download the result. If you need it to be more or less aggressive, three sensitivity levels - Low, Recommended, and High - let you tune how eagerly it looks for faces; changing the level re-runs the detection. Recommended suits most photos, while High can help catch smaller or partly-hidden faces.
+If no face is confidently found - or the detection service is briefly unavailable - the tool does not leave you stuck. It applies a suggested blur area based on the photo's orientation and tells you what happened, so you can adjust it or add your own boxes. That fallback means you always have something to start from, even on a tricky image where automatic detection is uncertain.
 
-H2: Why Blur Faces in Photos? Indian Use Cases.
-In India, face blurring in photos has specific practical relevance - from protecting children in school events, to complying with India's Digital Personal Data Protection Act 2023, to preventing ID fraud. Here are the most common scenarios:
+H2: Custom Blur Areas - Blur Anything.
+Automatic detection handles faces, but sometimes you need to blur something it will not find on its own - a face it missed, a name badge, a license plate, a house number, a screen, or a document in shot. For those, switch to a custom blur area: click "Add blur area", then drag the box into place and use its handle to resize it over whatever you want hidden. You can add as many boxes as you need and delete any of them with the corner button.
+This makes the tool useful well beyond faces. While the automatic detection is face-focused, the manual boxes let you blur any sensitive detail in a photo before sharing it. Combine the two - let it blur the faces automatically, then add a couple of custom boxes for anything else - and you can clean up a picture for privacy in moments.
 
-Indian Use Case
-The Problem
-How Face Blurring Helps
-WhatsApp Group Photo Sharing
-School parents, office groups, and family groups share photos on WhatsApp. Not everyone in the photo has consented to be identified and shared. Once on WhatsApp, the image can be forwarded to thousands of unknown people.
-Blur the faces of people who did not consent before sharing in the WhatsApp group. The photo memory is preserved; the privacy risk is eliminated.
-School Event Photos Published Online
-Schools publish event photos on websites, Facebook, and Instagram. Photos include minors who ideally should not be identifiable in publicly accessible content.
-Blur student faces before posting on any public platform. Schools can still share memories of events without exposing minors to public identification.
-Aadhaar / PAN Card Sharing with Print Shops
-A customer shares their Aadhaar card scan with a print shop via WhatsApp to get it printed. The shop owner now holds a copy of the customer's biometric ID document - a privacy risk worth minimising.
-Blur the customer's face and ID number on the Aadhaar scan before it's stored anywhere. RepetiGo's PrintPilot platform can build this into a print shop's workflow; this standalone tool handles one-off jobs.
-Journalism & News Photography
-Indian journalists photograph protest scenes, crime scenes, accident sites, and court proceedings where individuals' identities must be protected.
-Blur all non-consenting faces before publishing the photo in print, online, or on social media - standard practice for responsible journalism.
-Student Certificates and ID Cards
-Coaching institutes and colleges generate student ID cards or certificates shared digitally for review before final delivery.
-Blur faces on any copy shared for review purposes. Official versions are delivered only after payment and authorization.
-Government Form Document Redaction
-Government offices, CSC centres, and businesses process Aadhaar, voter ID, and PAN documents and sometimes need working copies for internal reference.
-Blur the face and sensitive fields on any internally retained copy, in line with the principle of data minimization.
+🔒 Custom boxes blur anything: license plates, ID cards, name badges, house numbers, screens. Auto-detection covers faces; manual boxes cover the rest.
 
-🇮🇳 India's Digital Personal Data Protection (DPDP) Act 2023 requires consent before collecting, processing, or sharing personal data, including photographs of identifiable individuals. Blurring faces before sharing photos in non-consensual contexts is a practical, low-friction way to reduce that risk for everyday digital communication.
+H2: Blur Strength & Selective Blurring.
+You control how heavy the blur is with a strength slider, from a light 6-pixel softening up to a strong 50-pixel blur that makes a face completely unrecognisable. Lower settings keep a hint of the shape while obscuring identity; higher settings hide it entirely. Choose based on how much you need to conceal.
+Importantly, only the areas you blur are affected - the rest of the photo stays perfectly sharp. The tool does this cleverly: it makes a fully-blurred copy of the image behind the scenes and then shows only the selected regions from that copy over the otherwise-sharp original, with padding so there are no ugly edges around each blurred patch. The result is a clean photo where the faces (and any custom areas) are smoothly blurred and everything else is untouched.
 
-H2: What Kind of Blur Does This Tool Use?
-RepetiGo's blur face tool uses Gaussian blur - a smooth, natural-looking softening effect, applied over each selected area at a strength you control from 6px to 50px. It does not currently offer a pixelated "mosaic" style block blur or a solid black-box redaction - if you specifically need one of those looks, use a general photo editor's pixelate filter instead and cover the same area.
-For most privacy use cases in India - sharing Aadhaar scans, WhatsApp photos, school events - a high Gaussian blur strength makes a face unrecognisable while still looking like a normal, natural photo rather than an obviously edited one.
+H2: How Your Image Is Handled.
+It is worth being clear and honest about privacy, because this tool works a little differently from some of RepetiGo's others. To find faces automatically, your image is sent to a detection service, which returns the positions of the faces - and your image is then discarded, not stored. The actual blurring happens in your browser, on your device. So your photo is used only for the moment of face detection and is not kept afterwards.
+In other words, the automatic detection needs to look at the image once to locate faces, but nothing is retained, and the blurred result is produced locally on your device. If you would rather not use automatic detection at all, you can rely on custom blur areas, which you position yourself. Either way, the finished image is downloaded straight to your device with no watermark and no account required.
 
-H2: Why Use RepetiGo's Blur Face Tool?
+ℹ️ Honest note: to detect faces automatically, your image is sent to a detection service and then discarded (not stored). The blurring itself happens in your browser. This differs from RepetiGo's fully on-device tools.
 
-Feature
-RepetiGo
-YouCam Perfect
-Snapseed (Phone)
-Adobe Express
-Free to use
-✓ Always free
-✓ Free tier
-✓ Free
-✓ Free tier
-Sign-up required
-✓ Never
-✗ Account required
-✓ No account
-✗ Account required
-Works on any device in browser
-✓ Yes - no app install
-✗ App download required
-✗ App download required
-~ Web version (limited)
-Automatic face detection
-✓ Yes
-✓ Yes
-~ Basic
-✓ Yes
-Manual selection for any area, not just faces
-✓ Yes - blur anything
-~ Limited
-✗ Limited
-✓ Yes
-India DPDP + Aadhaar guidance
-✓ Yes - India-specific
-✗ None
-✗ None
-✗ None
-Blurred output image ever uploaded?
-✗ Never - stays in your browser
-✓ Yes - uploaded to their servers
-N/A - local app
-✓ Yes - uploaded to their servers
-No watermark on output
-✓ Clean output - never
-~ Free tier adds watermark
-✓ No watermark
-✓ No watermark
+H2: ★ Use Cases - Social, Privacy & Sharing.
+Blurring faces comes up constantly once you start sharing photos responsibly.
 
-H2: Your Photos Are Safe. Always.
-Uploading a personal photo to any online tool involves trust. Here is exactly how RepetiGo handles it:
+Scenario
+Why blur
+How
+Posting a group or crowd photo
+Protect bystanders' privacy
+Auto-detect blurs everyone
+Sharing a photo with children
+Hide kids' faces
+Auto-detect + adjust strength
+Journalism / research
+Protect sources and subjects
+Blur faces + custom boxes
+Selling something online
+Hide a license plate or address
+Custom blur area over the detail
+Screenshots to share
+Hide names or a face on screen
+Custom blur boxes
 
-Protection Layer
-What It Means in Practice
-🔒 HTTPS Transfer for Face Detection
-Your photo travels to our face-detection service over an encrypted HTTPS connection for the brief moment it takes to locate faces. It cannot be intercepted in transit.
-👁️ Processed in Memory Only - Never Written to Disk
-Our face-detection service reads your photo, calculates where the faces are, and returns only a list of coordinates. The image itself is never saved to a file or database on our servers.
-🖥️ The Blurred Image Is Built Entirely in Your Browser
-Once we send back face coordinates, the actual blurring happens on your own device using the original file already in your browser. The final, blurred image is never uploaded anywhere.
-🚫 Not Used for AI Training
-Your photos are never used to train our face-detection model or for any purpose beyond returning face coordinates for this one request.
-🔒 No Account = No Profile
-Because no account is created, there is no user profile, no history, and no record of which photos you uploaded.
+🇮🇳 Tip: blur faces for privacy, then resize and compress for the platform at /image-tools/resize-image and /image-tools/compress-image before posting.
 
-Read our full Privacy Policy → /privacy-policy
+H2: What This Tool Does Not Do.
+So you know whether it fits before you start, here is what this tool is not for - and where to go instead.
 
-H2: RepetiGo and the DPDP Act 2023 - Face Blurring for Privacy Compliance.
-India's Digital Personal Data Protection Act 2023 (DPDP Act) came into effect under the Ministry of Electronics and Information Technology (MeitY). It establishes consent requirements for collecting, processing, and sharing personal data - which includes photographs of identifiable individuals.
-Under the DPDP Act, sharing a photograph of someone without their consent - including sharing it on WhatsApp, posting it on social media, or using it in business communications - may raise questions about processing personal data without consent. This is relevant to situations like:
-Schools sharing student photos publicly without explicit parental consent.
-Businesses retaining customer ID photos (Aadhaar, PAN) beyond the immediate transaction.
-Print shops, cyber cafes, and CSC centres storing customer document scans after printing.
-WhatsApp group admins sharing photos of group members without each member's consent.
-Employers sharing employee photos without documented consent.
-Face blurring is a practical, low-effort way to reduce the data protection risk of sharing photos: if the individuals in a photo are no longer identifiable, it substantially reduces the personal-data concerns around sharing that image. Blurring before sharing is one of the simplest forms of data minimization available to individuals and small businesses.
+People often ask for…
+The honest answer
+Blur faces in a video
+No - this works on static photos, not video
+Blur many photos at once
+No - it processes one image at a time
+Pixelate / mosaic instead of blur
+No - it applies a Gaussian blur, not pixelation
+Cover a face with a black box or emoji
+No - it blurs; it does not place a solid cover
+Un-blur or restore a blurred face
+No - it adds blur; it cannot remove it
+Blur the background, keep the face sharp
+No - this blurs faces/areas, not backgrounds
+Save as JPG or WebP
+No - the download is a PNG
 
-⚠️ This page provides general information about the DPDP Act and face blurring. It is not legal advice. For specific compliance questions, consult a qualified legal professional familiar with India's digital privacy regulations.
+H2: Blur Face - Frequently Asked Questions.
+H3: Is this blur face tool free?
+Yes - RepetiGo's blur face tool is completely free with no sign-up and no watermark. You can automatically detect and blur faces, add custom blur areas, adjust the blur strength, and download the result at no cost. There is nothing to unlock, and the finished image has no mark added to it.
+H3: How do I blur a face in a picture?
+Upload your photo and the tool automatically detects the faces and marks them to blur. Adjust the blur strength if you like, add custom blur boxes for anything it missed, and download the result as a PNG. In most cases the automatic detection does the work, so blurring a face takes just a few seconds.
+H3: Does it detect faces automatically?
+Yes - when you upload a photo it automatically finds the faces and prepares to blur them. You can set the sensitivity to Low, Recommended, or High to control how eagerly it detects, and if it is unsure or cannot find a face, it suggests a blur area and lets you adjust it or add your own. Recommended works well for most photos.
+H3: Can I blur something other than a face?
+Yes. Alongside automatic face detection, you can add custom blur areas: click "Add blur area" and drag a box over anything you want to hide - a license plate, a name badge, a house number, a screen, or a document. You can add as many boxes as you need, so you can clean up any sensitive detail, not just faces.
+H3: Can it blur faces in a video?
+No - this tool works on static photos, not video. It blurs faces (and any custom areas) in a single image and downloads a still picture. If you need to blur faces across a moving video, that is a different kind of tool; this one is focused on photos.
+H3: How strong can the blur be?
+You control it with a strength slider from 6 pixels up to 50 pixels. A light blur softens a face while keeping its shape; a strong blur makes it completely unrecognisable. Only the areas you blur are affected - the rest of the photo stays sharp - so you can conceal identities cleanly without degrading the whole image.
+H3: Is my photo uploaded or stored?
+To detect faces automatically, your image is sent to a detection service and then discarded - it is not stored. The blurring itself happens in your browser on your device. So your photo is used only for the moment of detection and nothing is kept. If you prefer, you can skip automatic detection and use custom blur areas, which you position yourself.
+H3: Can I un-blur or restore a face later?
+No - the tool adds a blur to protect privacy, and that is a one-way change in the downloaded image; it cannot remove a blur or restore a face. Keep your original photo if you might need the un-blurred version later. The blurred PNG you download is meant for sharing safely.
+H3: Can I blur several photos at once?
+Not currently - the tool processes one image at a time rather than a batch. Blur one photo, download it, then upload the next. For most privacy tasks - a single photo before posting - that is exactly what is needed; there is no multi-file or ZIP option here.
+H3: What format is the download?
+The blurred image downloads as a PNG, which keeps the quality high. If you need a JPG or WebP for a smaller file or a specific platform, you can convert the downloaded PNG afterwards using RepetiGo's Convert to JPG or Image Converter tools, which are free and linked from the image tools hub.
 
-H2: Face Blur Tool for Print Shops - The RepetiGo Connection.
-If you run a print shop, cyber cafe, or CSC centre in India, you receive customer documents every day - Aadhaar cards, PAN cards, passport photos, certificates, medical reports. These documents contain photos and sensitive personal data, and unnecessarily retaining unredacted copies adds risk under the DPDP Act.
-The standalone blur face tool on this page handles individual, manual cases well. For print shops processing many documents daily, RepetiGo's PrintPilot platform is designed to help build privacy-conscious handling into the same QR-code upload workflow customers already use, reducing how much a shop operator needs to manually redact by hand.
-
-[ Learn About PrintPilot → /products/printpilot/ ]
-[ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Blur a Face Now → repetigo.com/image-tools/blur-face ]
-
-H2: Common Questions About Face Blurring Online.
-H3: Q1: How Do I Blur a Face in a Picture?
-Go to repetigo.com/image-tools/blur-face and click Upload. Select your JPG, PNG, or WEBP photo. Automatic detection outlines any faces it finds within a few seconds - or switch to Customised Detection and draw a box over the face yourself. Adjust the blur strength slider (6-50px). Click Download Blurred Image. The photo downloads as a PNG with the face permanently blurred. No account or sign-up required.
-H3: Q2: How to Blur Faces in a Photo on iPhone (Free)
-There are two ways to blur faces in photos on iPhone - one built into the phone, one faster in your browser. Built-in iPhone method (Markup): open the Photos app, select your photo, tap Edit, tap the three-dot menu, choose Markup, select the Pen tool, and draw over the face - this draws lines on top of the face rather than a proper blur, so the result looks drawn-on rather than naturally softened. Browser method (RepetiGo): open Safari on your iPhone, go to repetigo.com/image-tools/blur-face, tap Upload, select the photo from your Camera Roll, let automatic detection find the face, adjust the blur, and download the result to your Files app. This gives a natural-looking blur in under a minute and works on any iPhone model.
-H3: Q3: How to Blur Faces in Photos Without Photoshop
-You don't need Photoshop to blur faces in photos. RepetiGo's browser-based tool gives you automatic face detection plus adjustable Gaussian blur without any software installation. In Photoshop, for reference, you'd use Select → Subject, then Filter → Blur Gallery → Field Blur or Iris Blur, position the blur on the face, adjust the intensity, and export - and you'd need an active Adobe Creative Cloud subscription to do it. RepetiGo's method - upload, detect, adjust strength, download - takes about 20-30 seconds and is free with no software or subscription required.
-H3: Q4: Can I Blur Multiple Faces in One Photo?
-Yes. Automatic Detection finds every face it can in an uploaded group photo and creates a separate adjustable box for each one - you can leave all of them blurred, or click the trash icon on any specific box to leave that person unblurred (for example, the one person who consented to appear). For faces the detector misses - very small, partially obscured, or in poor lighting - switch to Customised Detection and draw a box over them manually. All boxes blur together in a single download.
-H3: Q5: Can I Blur Faces in a Video with This Tool?
-No - RepetiGo's blur face tool works on still photos (JPG, PNG, WEBP), not video files. Video face blurring needs frame-by-frame tracking, which is a different kind of tool. For blurring faces in videos, YouTube Studio has a built-in blur-faces feature under Editor → Blur faces if you're uploading to YouTube, and mobile apps like CapCut have a face-blur effect for Android and iPhone. For photo face blur in India - Aadhaar scans, group photos, news images, social sharing - RepetiGo's browser-based tool handles the image formats instantly.
-H3: Q6: Is It Safe to Upload My Photos to a Free Face Blur Tool?
-Your photo is sent to RepetiGo's face-detection service over an encrypted HTTPS connection so it can locate faces - that service processes the image in memory only and never writes it to disk, returning just a list of coordinates. The actual blurring, and the final protected image you download, happens entirely on your own device and is never uploaded anywhere. Your photo is never used to train any AI model, and no account means no history of what you've uploaded is kept. For extremely sensitive images where you'd rather avoid any upload at all - even a brief one for detection - use Customised Detection to draw the blur box yourself instead of relying on automatic detection.
-
-H2: More Free Image Tools from RepetiGo.
-
+H2: Related Image Tools.
 Tool
 What It Does
 Link
-Remove Background
-Remove background from ID photos - combine with face blur for fuller Aadhaar/PAN redaction
-→ /image-tools/background-remover
 Compress Image
-Reduce file size after blurring for portal upload or WhatsApp sharing
+Shrink the blurred photo before sharing
 → /image-tools/compress-image
-Crop Image
-Crop and frame the photo before blurring
-→ /image-tools/crop-image
-Watermark Image
-Add a "DRAFT" or "PROOF" watermark after blurring for document control
-→ /image-tools/watermark-image
 Resize Image
-Resize the photo to portal dimensions after blurring
+Resize for social platforms
 → /image-tools/resize-image
+Crop Image
+Crop before or after blurring
+→ /image-tools/crop-image
+Photo Editor
+Adjust, filter, and edit photos
+→ /image-tools/photo-editor
+Watermark Image
+Add a watermark before sharing
+→ /image-tools/watermark-image
 All Image Tools
-Complete free image tools suite
+The complete image tools suite
 → /image-tools
 
-[ Blur Face Free - No Sign-Up → repetigo.com/image-tools/blur-face ]
+[ Blur Faces in a Photo Free - Auto + Custom → repetigo.com/image-tools/blur-face ]
 [ Explore All Image Tools → repetigo.com/image-tools ]`;
 
-const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
+const faqSchemaQuestions = Array.from(content.matchAll(/H3: ([^\n]+\?)\n([\s\S]*?)(?=\nH3:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
 export default function BlurFacePage() {
   return (
@@ -243,7 +176,7 @@ export default function BlurFacePage() {
 }
 
 type SeoTableData = { headers: string[]; rows: string[][] };
-const CALLOUT_EMOJI = ["💡", "🇮🇳", "🔒", "🖨️", "📱", "✅", "⚠️", "🖥️", "🔁", "🔄", "★", "👁️"];
+const CALLOUT_EMOJI = ["💡", "🇮🇳", "🔒", "🖨️", "📱", "✅", "⚠️", "🖥️", "🔁", "🔄", "★", "👁️", "ℹ️"];
 
 function StructuredSeoCopy({ content: source }: { content: string }) {
   const blocks = source.replace(/(^|\n)(H[123]: [^\n]+)\n/g, "$1\n$2\n\n").split(/\n{2,}/).map((block) => block.trim()).filter(Boolean);
@@ -282,10 +215,9 @@ function StructuredSeoCopy({ content: source }: { content: string }) {
 }
 
 function getKnownTable(lines: string[]): SeoTableData | null {
-  if (lines[0] === "Reason" && lines[1] === "Who Uses It") return { headers: ["Reason", "Who Uses It", "Example"], rows: chunkRows(lines.slice(3), 3) };
-  if (lines[0] === "Indian Use Case" && lines[1] === "The Problem") return { headers: ["Indian Use Case", "The Problem", "How Face Blurring Helps"], rows: chunkRows(lines.slice(3), 3) };
-  if (lines[0] === "Feature" && lines[1] === "RepetiGo") return { headers: ["Feature", "RepetiGo", "YouCam Perfect", "Snapseed (Phone)", "Adobe Express"], rows: chunkRows(lines.slice(5), 5) };
-  if (lines[0] === "Protection Layer" && lines[1] === "What It Means in Practice") return { headers: ["Protection Layer", "What It Means in Practice"], rows: chunkRows(lines.slice(2), 2) };
+  if (lines[0] === "Step" && lines[1] === "What You Do" && lines[2] === "What Happens") return { headers: ["Step", "What You Do", "What Happens"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "Scenario" && lines[1] === "Why blur") return { headers: ["Scenario", "Why blur", "How"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "People often ask for…" && lines[1] === "The honest answer") return { headers: ["People often ask for…", "The honest answer"], rows: chunkRows(lines.slice(2), 2) };
   if (lines[0] === "Tool" && lines[1] === "What It Does" && lines[2] === "Link") return { headers: ["Tool", "What It Does", "Link"], rows: chunkRows(lines.slice(3), 3) };
   return null;
 }
@@ -324,7 +256,7 @@ function renderTableCell(cell: string) {
 }
 
 function renderInlineMappedLinks(text: string) {
-  const parts = text.split(/(repetigo\.com\/(?:tools\/image\/[a-z-]*|pricing)\/?|\/image-tools\/[a-z-]*\/?|\/image-tools\/?|\/products\/printpilot\/?|\/privacy-policy\/?|\/pricing\/?)/g);
+  const parts = text.split(/(repetigo\.com\/(?:image-tools\/[a-z-]*|pricing)\/?|\/image-tools\/[a-z-]*\/?|\/image-tools\/?)/g);
   return parts.map((part, index) => {
     const href = mapSeoRoute(part.startsWith("repetigo.com") ? "https://" + part : part);
     if (!href) return part;
@@ -337,16 +269,11 @@ function mapSeoRoute(route: string) {
   const routeMap: Record<string, string> = {
     "/image-tools": "/image-tools",
     "/image-tools/blur-face": "/image-tools/blur-face",
-    "/image-tools/background-remover": "/image-tools/background-remover",
     "/image-tools/compress-image": "/image-tools/compress-image",
-    "/image-tools/crop-image": "/image-tools/crop-image",
-    "/image-tools/watermark-image": "/image-tools/watermark-image",
     "/image-tools/resize-image": "/image-tools/resize-image",
-    "/use-cases/secure-printing": "/print-automation",
-    "/products/printpilot": "/print-automation",
-    "/legal/privacy-policy": "/privacy-policy",
-    "/privacy-policy": "/privacy-policy",
-    "/pricing": "/pricing",
+    "/image-tools/crop-image": "/image-tools/crop-image",
+    "/image-tools/photo-editor": "/image-tools/photo-editor",
+    "/image-tools/watermark-image": "/image-tools/watermark-image",
   };
   return routeMap[cleanRoute] || (cleanRoute.startsWith("/image-tools") ? cleanRoute : "");
 }
@@ -355,21 +282,18 @@ function getRouteLabel(href: string) {
   const labels: Record<string, string> = {
     "/image-tools": "Explore All Image Tools",
     "/image-tools/blur-face": "Open Blur Face",
-    "/image-tools/background-remover": "Open Remove Background",
     "/image-tools/compress-image": "Open Compress Image",
-    "/image-tools/crop-image": "Open Crop Image",
-    "/image-tools/watermark-image": "Open Watermark Image",
     "/image-tools/resize-image": "Open Resize Image",
-    "/print-automation": "Learn About PrintPilot",
-    "/privacy-policy": "Read Privacy Policy",
-    "/pricing": "Start Free Trial",
+    "/image-tools/crop-image": "Open Crop Image",
+    "/image-tools/photo-editor": "Open Photo Editor",
+    "/image-tools/watermark-image": "Open Watermark Image",
   };
   return labels[href] || "Open Tool";
 }
 
 function JsonLd() {
-  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Blur Face Tool", applicationCategory: "MultimediaApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free browser-based face blur tool with automatic detection and manual selection. Face detection is processed in memory only and never stored; the blurred image is generated entirely in the browser.", url: pageUrl };
-  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Blur a Face in a Photo Online Free", step: [{ "@type": "HowToStep", name: "Upload Photo", text: "Upload Your Photo" }, { "@type": "HowToStep", name: "Detect or Draw", text: "Let Automatic Detection Find Faces, or Draw Your Own" }, { "@type": "HowToStep", name: "Download", text: "Download Your Photo with the Face Blurred" }] };
+  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Blur Face", applicationCategory: "MultimediaApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online tool that automatically detects and blurs faces in a photo, with custom blur areas and adjustable blur strength. The image is used only to detect faces and then discarded; the blurring itself happens in the browser.", url: pageUrl };
+  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Blur a Face in a Photo", step: [{ "@type": "HowToStep", name: "Upload your photo", text: "Upload your photo" }, { "@type": "HowToStep", name: "Adjust or add areas", text: "Adjust or add areas" }, { "@type": "HowToStep", name: "Download", text: "Download" }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
   const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "Blur Face", item: pageUrl }] };
 

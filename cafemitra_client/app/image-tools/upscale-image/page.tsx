@@ -4,254 +4,194 @@ import UpscaleImageClient from "./UpscaleImageClient";
 const pageUrl = "https://repetigo.com/image-tools/upscale-image";
 
 export const metadata: Metadata = {
-  title: "Upscale Image Online Free India - Enlarge Scans, Old Photos & Prints | RepetiGo",
+  title: "Upscale Image Free - 2× / 4× AI Image Upscaler | RepetiGo",
   description:
-    "Upscale image online free - instantly enlarge blurry scans, old marksheets, and low-res photos for printing. 2x/4x, 100% browser-based - nothing ever uploaded. Built for India.",
+    "Upscale image resolution free - enlarge JPG, PNG & WebP up to 4× with a browser-based image upscaler. Standard 2×/4× runs in your browser; AI mode for tougher photos.",
   alternates: { canonical: pageUrl },
   openGraph: {
-    title: "Upscale Image Online Free India - Enlarge Scans, Old Photos & Prints | RepetiGo",
-    description: "Free instant image upscaler for scans, old photos, and prints - 2x or 4x entirely in your browser. No sign-up, nothing uploaded.",
+    title: "Upscale Image Free - 2× / 4× Image Upscaler",
+    description: "Enlarge JPG, PNG & WebP up to 4×. Standard mode runs in your browser; AI mode for tougher photos.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Upscale Image Free - Scans, Old Photos & Prints | RepetiGo",
-    description: "Enlarge scans, old photos, and prints 2x/4x free. 100% browser-based, no sign-up.",
+    title: "Upscale Image Free - 2× / 4× Image Upscaler",
+    description: "Free image upscaler. 2×/4×, choose WebP/PNG/JPG, standard mode 100% in-browser.",
   },
   robots: { index: true, follow: true },
 };
 
-const content = String.raw`H1: Upscale Image Online Free. Instantly Enlarge Blurry Scans, Old Photos, and Prints.
-RepetiGo's free image upscaler makes a small image larger - 2x or 4x its original size - entirely inside your browser. Upload your scan, old photo, or print file, pick a scale, and download a larger, print-ready version in seconds. No software, no account, and nothing is ever uploaded to a server.
-This is RepetiGo's fast, free, always-available upscaler, built for instant enlargement with no upload wait - the whole process happens on your own device from start to finish.
+const content = String.raw`H1: Upscale Image Free - Enlarge to 2× or 4× Right in Your Browser.
 
-✓ Instant 2x and 4x Enlargement   ✓ Scans, Old Photos & Prints   ✓ No Sign-Up   ✓ 100% Browser-Based - Nothing Uploaded
+RepetiGo's upscale image tool is a free, browser-based image upscaler that enlarges JPG, PNG, and WebP images to 2× or 4× their original size while keeping them as sharp as possible. Add an image, pick your scale, and download the larger version in seconds. Standard upscaling runs entirely in your browser, so your photo never leaves your device - and for tougher pictures there is an optional AI mode for smarter enhancement.
+A small or low-resolution image looks soft and blocky the moment you enlarge it or try to print it. This image upscaler adds pixels intelligently instead of just stretching, so edges stay cleaner and the picture holds up at a bigger size. It is a free image upscaler with no sign-up and no watermark: choose 2× or 4×, pick your output format, compare the before and after side by side, and download.
 
-[ Upscale Image Free - No Sign-Up → repetigo.com/image-tools/upscale-image ]
+✓ Free · No sign-up · No watermark   ✓ 2× or 4× scale   ✓ WebP, PNG or JPG output   ✓ Standard mode runs 100% in your browser
 
-H2: What Is Image Upscaling - and What Does This Tool Actually Do?
-Upscaling means making an image larger in pixel dimensions. A basic resize just duplicates or interpolates existing pixels to fill the bigger canvas - the result is blurry and blocky because no new detail is added.
-RepetiGo's upscaler does better than a basic resize: it enlarges your image in staged steps with high-quality smoothing, which gives a cleaner result than a single naive stretch. It runs entirely on your device using the Canvas API - nothing is uploaded, and the result appears in seconds.
+H2: How to Upscale an Image in 3 Steps.
+Here is how to upscale an image with RepetiGo. A 2× preview appears automatically the moment you add a file, so you see a result almost instantly.
 
-Method
-What It Does
-Speed & Privacy
-Best For
-Basic Resize (most editors)
-Duplicates or interpolates pixels - no new detail
-Instant, but usually local software
-Quick resizing when quality isn't critical
-RepetiGo Upscale Image (this tool)
-Staged high-quality resampling in your browser
-Instant, 100% browser-based, nothing uploaded
-Fast enlargement for scans, old photos, and prints
-Photo Editor (brightness/contrast)
-Sharpens contrast and clarity - no size change
-Instant, 100% browser-based
-When the image is already large enough, just unclear
+Step
+What You Do
+What Happens
+1. Add your image
+Click to select or drag-and-drop a JPG, PNG, or WebP file.
+A 2× preview generates automatically so you see the result at once.
+2. Pick scale & format
+Choose 2× or 4×, and set the output to WebP, PNG, or JPG.
+The image is re-processed at your chosen scale; a side-by-side panel shows old vs new dimensions and file size.
+3. Download
+Click download once the transformed image is ready.
+It saves with a "-2x-upscaled" or "-4x-upscaled" suffix in your chosen format.
 
-💡 Not sure which to use? If your image just needs to be bigger, use this tool - it's instant and nothing leaves your device. If the image is already the right size but just looks unclear, try the Filter & Light tools in Photo Editor at /image-tools/photo-editor instead.
+🔒 In standard mode, all of this happens in your browser using the Canvas engine - your image is never uploaded. (AI mode is different; see below.)
 
-H2: How to Upscale an Image Online Free in 3 Steps.
-H3: Step 1 - Upload Your Image
-Click Select Images or drag and drop your file. Supported formats: JPG, PNG, and WebP. You can upload several images in one session and switch between them, though each image is upscaled and downloaded individually rather than as a batch. As soon as you upload, RepetiGo automatically generates a quick 2x preview so you have an instant result to look at.
-H3: Step 2 - Choose Your Upscale Factor and Output Format
-Pick 2x (doubles width and height - a 400×600 image becomes 800×1200) or 4x (quadruples both - a 400×600 image becomes 1600×2400). Choose your output format: WebP, PNG, or JPG. For a government portal that specifies a minimum pixel size, upscaling is a legitimate way to meet that minimum if your original photo is too small.
-H3: Step 3 - Download Your Upscaled Image
-Click Upscale, then Download. Processing happens on your own device and finishes in under a second for most images - there's no server round-trip. Repeat for each image you uploaded; there is no single "download all" for a batch in this tool.
+H2: 2× or 4× - How Much Bigger Can You Go?
+RepetiGo offers two fixed scales: 2× doubles the width and height, and 4× quadruples them. There is no custom multiplier and no 8× - 2× and 4× cover almost every real need, from making a web image sharper to preparing a photo for print. A 1000×1000 image becomes 2000×2000 at 2×, or 4000×4000 at 4×.
+There is one hard limit to know about: the final image cannot be larger than 48 megapixels. If your chosen scale would push the output past that - for example, 4× on an already-large photo - the tool stops and shows an "Image too large" message. If you hit that, switch to 2×, or crop the image to just the part you need first, then upscale.
 
-[ Upscale Your Image Now - Free → repetigo.com/image-tools/upscale-image ]
+📊 Quick maths: 48 megapixels is roughly a 6928×6928 square, or about 8000×6000. Most 2× jobs are well within it; very large 4× jobs are where you may see the limit.
 
-H2: Indian Use Cases - When You Need to Upscale an Image.
-Scenario
-The Problem
-How This Tool Helps
-🏛️ Low-Resolution ID Photo for a Portal
-An old ID photo is smaller than a portal's stated minimum pixel size.
-2x or 4x upscaling meets the minimum dimension requirement in seconds, without leaving your device.
-🎓 Small Reference Images for a Student Project
-Small images downloaded for a presentation or report pixelate when placed on a slide or printed at A4.
-2x upscaling is usually enough to make them look clean in a presentation or A5/A4 printout.
-🖨️ Print Shop - Slightly Small Customer Photo
-A customer's photo is somewhat smaller than the requested print size, but not blurry.
-Instant 4x upscaling on the shop counter, with no upload wait, before sending to print.
-📋 Reasonably Clear Old Scan That's Just Small
-An old scanned marksheet or certificate is small in pixel size but not badly blurred.
-Upscale here for an instant, clear result at the larger size you need.
-📜 Digitising a Reasonably Clear Family Photograph
-An old printed photograph was scanned at a small size by a local shop, but the scan itself isn't badly blurred - just small.
-2x or 4x upscaling instantly makes it large enough for printing or sharing, with nothing ever leaving your device.
-📱 WhatsApp Image for Formal Printing
-A profile or event photo shared over WhatsApp needs to be printed or used in a document at a larger size, and the compression wasn't too heavy.
-Upscale it here for an instant, private result at the size you need.
+H2: Standard Mode vs AI Mode - Which One to Use.
+The tool has two engines, and the difference matters for both quality and privacy. Standard mode is the default: it enlarges the image using your browser's Canvas engine with high-quality smoothing, entirely on your device. It is fast, works offline once loaded, and nothing is uploaded - the "Files stay in your browser" badge applies to this mode.
+AI mode is the optional upgrade. When you turn on "Need smarter enhancement? Use AI Image Upscaler," the image is sent to RepetiGo's server, where an AI model reconstructs detail - better for photos, faces, and heavily pixelated pictures. The trade-off is that AI mode does upload your image for processing. So the honest rule is simple: for a private or official photo, use standard mode; for a difficult photo where quality matters more than privacy, use AI mode.
 
-H2: Upscale vs Resize vs Compress vs Photo Editor - Which Tool Do You Need?
-Operation
-What It Does
-Changes Dimensions?
-Improves Clarity?
-RepetiGo Tool
-Upscale
-Enlarges with high-quality resampling, browser-only
-✓ Yes - larger
-~ Cleaner than a basic stretch, no new detail added
-Upscale Image ← THIS TOOL
-Resize
-Scales an image up or down
-✓ Yes - either direction
-✗ No - enlarging without extra processing looks soft
-Resize Image → /image-tools/resize-image
-Compress
-Reduces file size at the same dimensions
-✗ No
-✗ Slight trade-off, not an improvement
-Compress Image → /image-tools/compress-image
-Photo Editor
-Adjust brightness, contrast, and blur at the same size
-✗ No - same size
-✓ Yes - clearer at the size you already have
-Photo Editor → /image-tools/photo-editor
-
-★ Use Upscale when you need a LARGER image and want an instant, private result. Use Photo Editor when the image is already the right size but looks flat or unclear. Use Resize when you need an image smaller, and Compress when you need a smaller file at the same dimensions.
-
-H2: 4K and HD Upscaling - What You Can Expect.
-"4K" output means reaching 3840×2160 pixels - the resolution of a 4K display. With this tool's 4x setting, a 960×540 source becomes exactly 3840×2160; with 2x, a 1920×1080 source gets you there too. Because this tool enlarges using high-quality resampling, the result is only ever as sharp as your original photo - just bigger.
-
-Source Image Quality
-Result After 4x Resampling
-Realistic Use
-Good quality source (1080p, sharp, well-exposed)
-Enlarges cleanly - detail from the original is preserved at 4K size
-4K wallpapers, large-format printing, professional display
-Medium quality (720p, slight blur or compression)
-Bigger and reasonably clean, but existing softness is also enlarged
-Standard 4K viewing and everyday printing
-Low quality (480p or less, blurry or heavily compressed)
-Bigger, but blur and compression artefacts are enlarged along with it
-Usable for quick display and casual sharing
-Very low quality (thumbnail, heavily compressed)
-Output is larger but the original quality issues remain clearly visible
-Better than a direct resize for quick use online
-
-The honest limitation: because this tool enlarges using resampling rather than inventing new detail, the result is only ever as sharp as your original image - just bigger. For the clearest possible result, start with the best-quality original you have.
-
-H2: Why Use RepetiGo's Image Upscaler?
-Feature
-RepetiGo Upscale (this tool)
-Topaz Gigapixel
-Canva AI Upscaler
-Adobe Express
-Free to use
-✓ Always free
-✗ Paid subscription
-✓ Free tier (limited)
-✓ Free tier (limited)
-Sign-up required
-✓ Never
-✗ Account required
-✗ Account required
-✗ Account required
-Files ever leave your device?
-✗ Never - fully local
-N/A - desktop software
-✓ Yes - uploaded
-✓ Yes - uploaded
+Standard Mode
+AI Mode
+Where it runs
+Your browser (client-side)
+RepetiGo server (AI model)
+Best for
+Web images, quick enlargements, private photos
+Blurry photos, faces, heavy pixelation
+Privacy
+Image never leaves your device
+Image is uploaded for processing
 Speed
-✓ Instant - no upload wait
-Depends on your PC
-Seconds to minutes
-Seconds to minutes
-Works without installing software
-✓ Yes - browser only
-✗ Requires a desktop app
-✓ Yes
-✓ Yes
-PrintPilot integration
-✓ Native with automatic workflow
-✗ None
-✗ None
-✗ None
+Instant, works offline
+Depends on connection
 
-This tool is built for speed and privacy - nothing you upload here ever leaves your device, and there's no wait for a result.
+🔒 Handling an Aadhaar, PAN, or exam photo? Stay in standard mode - it keeps the image on your device. Only switch to AI mode for pictures you are comfortable processing on a server.
 
-H2: Your Images Are Safe. Always.
-Protection Layer
-What It Means in Practice
-🖥️ 100% Browser-Based Processing
-Your image is enlarged using your own device's processing power via the browser's Canvas API. It is never uploaded to any server.
-🚫 Nothing Ever Leaves Your Device
-Because upscaling happens locally, there is no upload, no transfer, and nothing on any server for us to store or delete.
-👁️ No Image Content Is Read
-RepetiGo's code cannot see, analyse, or extract what's in your photo - it only resamples pixel data on your own device.
-🚫 No Account = No Data Profile
-No sign-up means no personal data, no file history, and no usage profile is ever created.
-🔒 Well Suited to ID Photos and Personal Documents
-Because nothing is transmitted anywhere, this instant upscaler is one of the safer ways to enlarge a personal photo online.
+H2: Can You Upscale an Image to 4K?
+Yes - 4× is the fastest way to reach 4K. A standard 1920×1080 (Full HD) image upscaled 4× becomes 7680×4320, which is 8K-wide on paper but, more usefully, comfortably covers a true 4K (3840×2160) target with room to spare. Even a smaller 960×540 clip reaches 3840×2160 at 4×. That makes this a practical upscale image to 4K route for wallpapers, presentations, and large prints.
+Two honest caveats. First, remember the 48-megapixel cap - a very large source at 4× can exceed it, so you may need 2× or a crop. Second, upscaling adds pixels; it cannot invent detail that was never captured. A genuinely sharp source scales up beautifully to 4K; a tiny, blurry source will be bigger and cleaner but will not magically become studio-quality. For the hardest cases, AI mode gives the best 4K result.
 
-[ Read Our Privacy Policy → /privacy-policy ]
+H2: Choose Your Output Format - WebP, PNG, or JPG.
+Unlike some tools, RepetiGo lets you pick the format of the upscaled file. Each has a best use:
 
-H2: Image Upscaling for Print Shops - The Automated Way.
-Print shop owners regularly get customer photos that are slightly too small for the requested print size. This standalone tool gives an instant, on-the-counter fix with no upload wait - perfect for slotting into a busy counter workflow.
-PrintPilot - RepetiGo's print shop software - can automatically detect when a customer's uploaded photo is smaller than the requested print size and enlarge it as part of the same QR-code upload workflow customers already use, so a shop owner doesn't have to run every photo through this tool manually.
+Format
+Best for
+Note
+WebP
+Websites and previews
+Smallest file at the same quality; keeps transparency
+PNG
+Logos, graphics, transparency
+Lossless; larger file; keeps a transparent background
+JPG
+Photos and print uploads
+Widely accepted; a white background is added (no transparency)
 
-🖨️ Typical low-res photo workflow: Upload → automatic enlargement to the needed size → crop to print ratio → send to printer. PrintPilot can automate this end-to-end for shops handling many jobs a day; this standalone tool handles the enlargement step manually for one-off jobs.
+If you pick JPG and your image had a transparent background, the tool fills that area with white, because JPG cannot store transparency. If you need to keep a see-through background, choose PNG or WebP instead. Once upscaled, you can shrink the file with the compress tool or change format with the convert tools linked below.
 
-[ Learn About PrintPilot → /products/printpilot/ ]
-[ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Upscale an Image Now → repetigo.com/image-tools/upscale-image ]
+H2: ★ Indian Use Cases - Print Shops, Old Photos & Scanned Documents.
+Upscaling is one of the most common jobs at an Indian print shop or cyber cafe. A customer brings a small WhatsApp photo and wants it printed as a poster; an old family photograph needs enlarging; a low-resolution logo has to go on a banner. In every case, enlarging without upscaling gives a soft, pixelated print - and an unhappy customer.
 
-H2: Common Questions About Upscaling Images Online Free.
-H3: Q1: How do I upscale an image online for free in India?
-Go to repetigo.com/image-tools/upscale-image, upload your JPG, PNG, or WebP image, choose 2x or 4x, pick an output format, and click Upscale. The result appears in under a second since everything runs in your browser - no upload, no account, no daily limit. Click Download to save it.
-H3: Q2: Can I upscale a blurry scanned marksheet or old certificate for printing?
-Yes - upload your scanned marksheet or certificate and choose 2x or 4x. The tool enlarges the pixel dimensions with high-quality resampling, which works well for scans that are reasonably clear but just too small. If the scan is already a usable size but just looks flat, try adjusting Contrast and reducing Blur in Photo Editor at /image-tools/photo-editor instead.
-H3: Q3: How many pixels do I need for A4 printing, and can upscaling get me there?
-Clean A4 printing at 300 DPI needs roughly 2480×3508 pixels. A 4x upscale of a 620×877 px image reaches almost exactly that. A 2x upscale of a 1240×1754 px image also gets you there. Keep in mind: this tool enlarges pixel dimensions using high-quality resampling, so the sharpness of your original image matters - a clean, well-lit scan or photo will hold up best at the larger size.
-H3: Q4: Can I reach 4K resolution with this tool?
-Yes, in terms of pixel count: a 960×540 image at 4x becomes 3840×2160 (4K). A 1920×1080 image at 2x reaches the same. Whether it looks sharp at that size depends on your source - a clean, well-lit photo will hold up well; a blurry or heavily compressed one will just look like a bigger blurry image.
-H3: Q5: How does RepetiGo's upscaler compare to Canva's AI upscaler?
-Canva's AI upscaler (in Canva Pro) requires a Canva account and subscription for full access. RepetiGo's Upscale Image tool here is different by design: it's free, needs no account, runs entirely in your browser, and returns a result instantly because nothing is uploaded.
-H3: Q6: How do I upscale an image in Photoshop?
-In Adobe Photoshop (CC 2018+): open your image, go to Image → Image Size, check "Resample" and choose "Preserve Details 2.0" from the dropdown, enter your target dimensions or percentage, adjust Noise Reduction if needed, click OK, then File → Save As. If you don't have Photoshop, this tool gives you a fast, free resize with no installation required.
-H3: Q7: Which is the best free image upscaler?
-It depends what you need. For creative photography and the highest possible upscaling quality, Topaz Gigapixel AI (paid, desktop software) is generally rated best by photographers. For the fastest possible free result when your source image is already reasonably clear and you don't want to wait for an upload, this tool - RepetiGo's Upscale Image - is a strong choice: instant, private, and nothing ever leaves your device.
-H3: Q8: Can I upscale multiple images at once?
-You can upload several images in one session and switch between them using the thumbnail strip, but each image needs its own Upscale click and its own Download - there is no single action that processes or downloads all of them together on this tool.
-H3: Q9: Is there a maximum image size I can upscale?
-The tool enforces a practical limit on the final output: if width × height at your chosen scale would exceed roughly 48 megapixels, upscaling stops with an "image too large" message. In practice this only affects very large source photos at 4x - most phone camera photos upscale without any issue.
-H3: Q10: Is it safe to upload my ID photo or a personal document to this tool?
-Yes - this upscaler processes your image entirely inside your browser using your device's own processing power. The file is never uploaded to any RepetiGo server or third party. There's nothing to intercept and nothing for us to store, because we never receive the image in the first place.
-H3: Q11: Can I upscale an image on my phone?
-Yes. This tool works on mobile browsers - Chrome on Android, Safari on iPhone. Open repetigo.com/image-tools/upscale-image, upload a photo from your Gallery or Files app, choose 2x or 4x, and download the result directly to your phone.
+Scenario
+Problem
+How the upscaler helps
+Print a small WhatsApp photo
+Low resolution looks blocky when printed big
+Upscale 4× (or AI mode) before sending to the printer
+Enlarge an old scanned photo
+Original scan is small and soft
+Upscale 2×/4×, then print or share
+Low-res logo on a banner
+Logo pixelates at large size
+Upscale, keep PNG for transparency, then print
+Product photo for a catalogue
+Supplier image is too small
+Upscale to a usable size for the layout
+Passport photo enlarged to a frame
+Small ID photo looks soft when enlarged
+Upscale 2× for a cleaner framed print
 
-H2: More Free Image Tools from RepetiGo.
+🇮🇳 Print-shop workflow: upscale the image here → check the side-by-side dimensions → if the file is now heavy, compress it at /image-tools/compress-image → send to the printer. For the softest sources, AI mode gives the cleanest enlargement.
+
+H2: Working With More Than One Image.
+You can load several images at once. They appear as a thumbnail strip along the top, and you switch between them with a click; a "+" tile lets you add more at any time, and you can drag-and-drop new files straight onto the workspace. This makes it easy to work through a set of photos one after another without reloading the page.
+One thing to be clear about, so there is no confusion: the tool upscales the image you are currently viewing - it processes them one at a time, not all at once. There is no single "upscale every image" button and no ZIP download here. You upscale and download each image individually. If you need to enlarge a large batch, work through the thumbnail strip image by image.
+
+💡 Need one-click batch processing with a ZIP? That is how the Compress Image tool works - for upscaling, process each image from the thumbnail strip and download it before moving to the next.
+
+H2: How to Upscale an Image in Photoshop, GIMP & Without Any Software.
+If you would rather use desktop software, here are the standard routes - and where a browser tool is simply quicker.
+H3: Photoshop
+To upscale an image in Photoshop: Image → Image Size → tick Resample and choose "Preserve Details 2.0" (or "Preserve Details Enlargement") from the resample menu, set your new width/height or percentage, and click OK. Recent versions add a Super Resolution option in Camera Raw for a cleaner result. This is how to upscale an image in Photoshop with the most control - but it needs a paid licence, which is why many people use a free browser upscaler instead.
+H3: GIMP
+GIMP is free. To gimp upscale image: Image → Scale Image → enter the new dimensions → set Interpolation to "NoHalo" or "LoHalo" for the best enlargement → Scale. GIMP does a solid job for a free desktop app, though for photos and faces an AI upscaler usually produces cleaner detail with far less effort.
+H3: Without Photoshop (Browser)
+You do not need any software at all. To upscale an image without Photoshop, use RepetiGo in your browser: add the image, pick 2× or 4×, and download. Standard mode keeps everything on your device, and AI mode is one click away when a photo needs extra help. This is the fastest free route for anyone who does not own Photoshop.
+H3: Can ChatGPT Upscale Images?
+Not reliably. ChatGPT can generate new images, but it does not truly upscale your existing photo - it may recreate something similar rather than enlarge the actual file, and detail can drift. For a faithful enlargement of your own image, a dedicated image upscaler like RepetiGo is the right tool: it keeps your picture and simply makes it bigger and cleaner.
+
+H2: Will Upscaling Fix a Blurry or Pixelated Image?
+Partly - and it helps to be realistic about what upscaling can and cannot do. When you upscale and enhance image files, the tool adds pixels and smooths the jagged "staircase" edges of a pixelated picture, which makes it look noticeably better at a larger size. Standard mode handles mild softness well; AI mode is the one to reach for on a genuinely blurry photo, because it reconstructs detail rather than just smoothing.
+What upscaling cannot do is recover detail that was never in the original. If a photo is badly out of focus or extremely low resolution, no upscaler - AI included - can invent a face or text that the camera never captured. It will be bigger and cleaner, but not perfect. For the best result on a blurry image, start from the highest-quality copy you have and use AI mode.
+
+📊 Best-result checklist: use the largest original you have · try AI mode for photos and faces · upscale 2× first and check before going to 4× · compare the side-by-side panel before you download.
+
+H2: Upscale Image - Frequently Asked Questions.
+H3: Is this image upscaler free?
+Yes - RepetiGo's upscale image tool is free with no sign-up and no watermark. Standard 2× and 4× upscaling runs in your browser at no cost. The optional AI mode, which sends the image to a server for smarter enhancement, is also available free. You can upscale image files, choose your output format, and download without ever creating an account.
+H3: Can I upscale an image to 4K?
+Yes. Choose 4× and most Full HD or smaller images comfortably reach a 4K resolution - a 1920×1080 image becomes 7680×4320 at 4×. Keep the 48-megapixel output cap in mind: a very large source at 4× may exceed it, in which case use 2× or crop first. Remember that upscaling enlarges and cleans an image but cannot add detail the camera never captured.
+H3: Does upscaling upload my image to a server?
+It depends on the mode. Standard 2×/4× upscaling runs entirely in your browser - your image never leaves your device, shown by the "Files stay in your browser" badge. AI mode is different: it sends the image to RepetiGo's server so an AI model can enhance it. For private or official photos, stay in standard mode; use AI mode only for pictures you are comfortable processing on a server.
+H3: What is the maximum size I can upscale to?
+The output cannot exceed 48 megapixels - roughly a 6928×6928 square or about 8000×6000. If your scale would push past that, the tool shows an "Image too large" message. Switch to 2×, or crop the image to just the area you need, then upscale. This cap keeps processing fast and prevents your browser from running out of memory.
+H3: How do I upscale an image without Photoshop?
+Use RepetiGo in your browser: add the image, choose 2× or 4×, pick a format, and download - no software or licence needed. Standard mode keeps everything on your device, and AI mode is one click away for harder photos. It is the fastest free way to upscale an image without Photoshop, and it works on a phone browser too.
+H3: Can it upscale anime or artwork?
+Yes. An anime image upscaler works well because line-art and flat colour enlarge cleanly. Standard mode handles most anime and illustration nicely; for detailed or compressed artwork, AI mode gives crisper lines. Keep PNG or WebP as the output to preserve any transparency in the artwork.
+H3: Can I upscale several images at once?
+You can load several images and switch between them using the thumbnail strip, but the tool upscales them one at a time - it processes the image you are currently viewing. There is no single "upscale all" button and no ZIP download. Upscale and download each image, then move to the next one in the strip.
+H3: Which output format should I choose?
+Pick WebP for the smallest web-ready file, PNG for logos and anything that needs a transparent background, and JPG for photos or portal uploads. Note that choosing JPG adds a white background if your image was transparent, because JPG cannot store transparency. You can change format later with the convert tools if needed.
+H3: Will upscaling fix a blurry photo?
+It helps but has limits. Upscaling adds pixels and smooths jagged edges, so a mildly soft image looks better enlarged. For a genuinely blurry photo, AI mode reconstructs detail far better than standard smoothing. However, no upscaler can recover detail the camera never captured - start from the sharpest copy you have for the best result.
+H3: Can I upscale an image for printing at 300 DPI?
+Yes, indirectly. Print sharpness depends on having enough pixels for the print size, and upscaling adds pixels - so a 4× enlargement gives you far more pixels to print with, which raises the effective DPI at a given size. The tool does not set a DPI value itself; it increases resolution. Upscale to the pixel count your print needs, then send it to the printer.
+
+H2: Related Image Tools.
 Tool
 What It Does
 Link
-Photo Editor
-Adjust brightness, contrast, and blur without changing size
-→ /image-tools/photo-editor
 Resize Image
-Change image dimensions up or down by pixels or percentage
+Change dimensions without adding new detail
 → /image-tools/resize-image
 Compress Image
-Reduce file size after upscaling if the output is too large
+Shrink the file size of your upscaled image
 → /image-tools/compress-image
 Crop Image
-Crop to a square, portrait, or custom ratio before or after upscaling
+Trim to the subject before enlarging
 → /image-tools/crop-image
+Convert from JPG
+Change format before or after upscaling
+→ /image-tools/convert-from-jpg
 Remove Background
-Remove the background from an upscaled ID photo
+Isolate the subject, then upscale
 → /image-tools/background-remover
 All Image Tools
-Complete free image tools suite
+The complete image tools suite
 → /image-tools
 
-[ Upscale Image Free - No Sign-Up → repetigo.com/image-tools/upscale-image ]
+[ Upscale Images Free - 2× / 4× → repetigo.com/image-tools/upscale-image ]
 [ Explore All Image Tools → repetigo.com/image-tools ]`;
 
-const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
+const faqSchemaQuestions = Array.from(content.matchAll(/H3: ([^\n]+\?)\n([\s\S]*?)(?=\nH3:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
 export default function UpscaleImagePage() {
   return (
@@ -265,7 +205,7 @@ export default function UpscaleImagePage() {
 }
 
 type SeoTableData = { headers: string[]; rows: string[][] };
-const CALLOUT_EMOJI = ["💡", "🇮🇳", "🔒", "🖨️", "📱", "✅", "⚠️", "🖥️", "★"];
+const CALLOUT_EMOJI = ["💡", "🇮🇳", "🔒", "🖨️", "📱", "✅", "⚠️", "🖥️", "★", "📊"];
 
 function StructuredSeoCopy({ content: source }: { content: string }) {
   const blocks = source.replace(/(^|\n)(H[123]: [^\n]+)\n/g, "$1\n$2\n\n").split(/\n{2,}/).map((block) => block.trim()).filter(Boolean);
@@ -304,12 +244,10 @@ function StructuredSeoCopy({ content: source }: { content: string }) {
 }
 
 function getKnownTable(lines: string[]): SeoTableData | null {
-  if (lines[0] === "Method" && lines[1] === "What It Does" && lines[2] === "Speed & Privacy") return { headers: ["Method", "What It Does", "Speed & Privacy", "Best For"], rows: chunkRows(lines.slice(4), 4) };
-  if (lines[0] === "Source Image Quality" && lines[1] === "Result After 4x Resampling") return { headers: ["Source Image Quality", "Result After 4x Resampling", "Realistic Use"], rows: chunkRows(lines.slice(3), 3) };
-  if (lines[0] === "Scenario" && lines[1] === "The Problem") return { headers: ["Scenario", "The Problem", "How This Tool Helps"], rows: chunkRows(lines.slice(3), 3) };
-  if (lines[0] === "Operation" && lines[1] === "What It Does" && lines[2] === "Changes Dimensions?") return { headers: ["Operation", "What It Does", "Changes Dimensions?", "Improves Clarity?", "RepetiGo Tool"], rows: chunkRows(lines.slice(5), 5) };
-  if (lines[0] === "Feature" && lines[1] === "RepetiGo Upscale (this tool)") return { headers: ["Feature", "RepetiGo Upscale (this tool)", "Topaz Gigapixel", "Canva AI Upscaler", "Adobe Express"], rows: chunkRows(lines.slice(5), 5) };
-  if (lines[0] === "Protection Layer" && lines[1] === "What It Means in Practice") return { headers: ["Protection Layer", "What It Means in Practice"], rows: chunkRows(lines.slice(2), 2) };
+  if (lines[0] === "Step" && lines[1] === "What You Do" && lines[2] === "What Happens") return { headers: ["Step", "What You Do", "What Happens"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "Standard Mode" && lines[1] === "AI Mode") return { headers: ["", "Standard Mode", "AI Mode"], rows: chunkRows(lines.slice(2), 3) };
+  if (lines[0] === "Format" && lines[1] === "Best for" && lines[2] === "Note") return { headers: ["Format", "Best for", "Note"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "Scenario" && lines[1] === "Problem") return { headers: ["Scenario", "Problem", "How the upscaler helps"], rows: chunkRows(lines.slice(3), 3) };
   if (lines[0] === "Tool" && lines[1] === "What It Does" && lines[2] === "Link") return { headers: ["Tool", "What It Does", "Link"], rows: chunkRows(lines.slice(3), 3) };
   return null;
 }
@@ -348,7 +286,7 @@ function renderTableCell(cell: string) {
 }
 
 function renderInlineMappedLinks(text: string) {
-  const parts = text.split(/(repetigo\.com\/(?:tools\/image\/[a-z-]*|pricing)\/?|\/image-tools\/[a-z-]*\/?|\/image-tools\/?|\/products\/printpilot\/?|\/privacy-policy\/?|\/pricing\/?)/g);
+  const parts = text.split(/(repetigo\.com\/(?:image-tools\/[a-z-]*|pricing)\/?|\/image-tools\/[a-z-]*\/?|\/image-tools\/?|\/products\/printpilot\/?|\/privacy-policy\/?|\/pricing\/?)/g);
   return parts.map((part, index) => {
     const href = mapSeoRoute(part.startsWith("repetigo.com") ? "https://" + part : part);
     if (!href) return part;
@@ -364,6 +302,7 @@ function mapSeoRoute(route: string) {
     "/image-tools/resize-image": "/image-tools/resize-image",
     "/image-tools/compress-image": "/image-tools/compress-image",
     "/image-tools/crop-image": "/image-tools/crop-image",
+    "/image-tools/convert-from-jpg": "/image-tools/convert-from-jpg",
     "/image-tools/background-remover": "/image-tools/background-remover",
     "/image-tools/photo-editor": "/image-tools/photo-editor",
     "/products/printpilot": "/print-automation",
@@ -380,6 +319,7 @@ function getRouteLabel(href: string) {
     "/image-tools/resize-image": "Open Resize Image",
     "/image-tools/compress-image": "Open Compress Image",
     "/image-tools/crop-image": "Open Crop Image",
+    "/image-tools/convert-from-jpg": "Open Convert from JPG",
     "/image-tools/background-remover": "Open Remove Background",
     "/image-tools/photo-editor": "Open Photo Editor",
     "/print-automation": "Learn About PrintPilot",
@@ -390,8 +330,8 @@ function getRouteLabel(href: string) {
 }
 
 function JsonLd() {
-  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Upscale Image", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online image upscaler - enlarge JPG, PNG, and WebP images 2x or 4x. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl };
-  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Upscale an Image Online Free", step: [{ "@type": "HowToStep", name: "Upload Image", text: "Upload Your Image" }, { "@type": "HowToStep", name: "Choose Factor", text: "Choose Your Upscale Factor and Output Format" }, { "@type": "HowToStep", name: "Download", text: "Download Your Upscaled Image" }] };
+  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Upscale Image", applicationCategory: "MultimediaApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free browser-based image upscaler for JPG, PNG, and WebP. Enlarge to 2x or 4x, choose WebP/PNG/JPG output. Standard mode runs 100% in your browser - no file is ever uploaded to a server; AI mode is available for tougher photos.", url: pageUrl };
+  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to upscale an image", step: [{ "@type": "HowToStep", name: "Add your image", text: "Click to select or drag-and-drop a JPG, PNG, or WebP file." }, { "@type": "HowToStep", name: "Pick scale & format", text: "Choose 2x or 4x, and set the output to WebP, PNG, or JPG." }, { "@type": "HowToStep", name: "Download", text: "Click download once the transformed image is ready." }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
   const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "Upscale Image", item: pageUrl }] };
 

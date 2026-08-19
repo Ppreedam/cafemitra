@@ -56,7 +56,7 @@ Lossy or lossless
 You're optimizing images for a website and control what serves them
 BMP
 Legacy Windows software, some print or embedded systems
-✓ Supported (uncompressed alpha)
+✗ Not supported - transparent areas fill white
 None - uncompressed
 An older system specifically requires BMP and file size doesn't matter
 ICO

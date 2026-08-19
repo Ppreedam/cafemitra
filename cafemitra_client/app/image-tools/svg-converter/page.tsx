@@ -4,232 +4,180 @@ import SvgConverterClient from "./SvgConverterClient";
 const pageUrl = "https://repetigo.com/image-tools/svg-converter";
 
 export const metadata: Metadata = {
-  title: "SVG Converter Free Online - Convert SVG to PNG or JPG | RepetiGo",
+  title: "SVG Converter Free - Convert SVG to PNG or JPG (up to 8×) | RepetiGo",
   description:
-    "Convert SVG to PNG or JPG free online - export logos, icons, and illustrations at any size, transparency preserved. Batch convert multiple files. No sign-up, 100% browser-based - nothing is ever uploaded.",
+    "Free SVG converter - turn SVG files into PNG or JPG in your browser, scaled up to 8× for a crisp, high-resolution image. Batch-convert and download a ZIP.",
   alternates: { canonical: pageUrl },
   openGraph: {
-    title: "SVG Converter Free Online - Convert SVG to PNG or JPG | RepetiGo",
-    description: "Convert SVG to PNG or JPG free - any export size, transparency preserved. Batch convert. No sign-up, 100% browser-based.",
+    title: "SVG Converter Free - Convert SVG to PNG or JPG (up to 8×)",
+    description: "Turn SVG files into PNG or JPG, scaled up to 8× for a crisp image. Batch + ZIP, in your browser.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
     card: "summary_large_image",
-    title: "SVG Converter Free - RepetiGo",
-    description: "Convert SVG to PNG or JPG free, any size, one file or a batch. 100% browser-based.",
+    title: "SVG Converter Free - SVG to PNG or JPG",
+    description: "Free SVG→PNG/JPG. Scale up to 8×, transparency preserved, batch + ZIP, 100% in your browser.",
   },
   robots: { index: true, follow: true },
 };
 
-const content = String.raw`H1: SVG Converter Online Free. Convert SVG to PNG or JPG - Any Size, No Sign-Up.
-RepetiGo's free SVG converter renders your SVG file into a PNG or JPG raster image at any size you choose. Because SVG is a vector format with no fixed resolution, you decide the output size at export time - a small icon can become a crisp 4000px banner, or a large illustration can become a small favicon, with no loss of sharpness from the vector source.
+const content = String.raw`H1: SVG Converter - Convert SVG to PNG or JPG, up to 8× Resolution.
 
-This tool solves a common, simple problem: you have a logo, icon, or illustration as an .svg file, but the place you need to use it - a social media upload, a Word document, an old design tool, a print layout, a form field - only accepts PNG or JPG. Upload the SVG, choose your output format and size, and download a raster file ready to use anywhere.
+RepetiGo's SVG converter turns SVG files into standard PNG or JPG images, free and in your browser. Because an SVG is a vector, the tool can render it at up to 8× its native size, giving you a crisp, high-resolution raster image from even a tiny SVG. Drop in one file or many, choose your scale and format, and download - nothing is uploaded to a server.
+SVG is perfect for the web and design, but plenty of places do not accept it - social platforms, many apps, documents, and some older software all want a PNG or JPG. This tool bridges that gap: convert SVG to PNG when you need transparency, or convert SVG to JPG when you want a simple flat image. And because it renders the vector at your chosen scale rather than just embedding it, the output is genuinely sharp at large sizes.
 
-✓ Export at Any Size   ✓ PNG (Transparent) or JPG Output   ✓ Batch Convert   ✓ No Sign-Up   ✓ 100% Browser-Based - Nothing Uploaded
+✓ Free · No sign-up · No watermark   ✓ SVG → PNG or JPG   ✓ Scale 1× / 2× / 4× / 8×   ✓ Batch + ZIP · 100% in your browser
 
-[ Convert SVG Free - No Sign-Up → repetigo.com/image-tools/svg-converter ]
+H2: How to Convert an SVG in 3 Steps.
+Here is how to convert an SVG to PNG or JPG with RepetiGo. It starts as soon as you add a file.
 
-H2: What Is an SVG File, and Why Convert It to PNG or JPG?
-SVG (Scalable Vector Graphics) stores an image as mathematical shapes and paths rather than a fixed grid of pixels. This makes SVG ideal for logos, icons, and illustrations that need to look sharp at any size - but it also means many everyday tools and platforms don't accept it. Social media uploads, most Microsoft Office and Google Docs image fields, older design software, ID card and print layout tools, and most Indian government portals all expect a standard raster image - PNG or JPG - not SVG.
+Step
+What You Do
+What Happens
+1. Upload your SVG(s)
+Drop or select one or more .svg files.
+Each renders to PNG at 4× automatically; a card shows the dimensions.
+2. Set scale & format
+Choose 1×/2×/4×/8× and PNG or JPG.
+The dropdown previews the exact output pixel size.
+3. Download
+Download each image, or grab them all as a ZIP.
+Files save as .png or .jpg at your chosen resolution.
 
-Converting SVG to PNG or JPG "flattens" the vector shapes into a fixed grid of pixels at whatever size you choose. This is the opposite operation to vectorizing a PNG into SVG - both are legitimate needs depending on which direction you're working in.
+🔒 The rendering happens in your browser on a canvas - your SVG files are never uploaded to RepetiGo or any server.
 
-H3: SVG vs PNG vs JPG - Format Comparison
+H2: Scale Up to 8× for a Crisp, High-Resolution Image.
+This is what makes converting an SVG special. Because an SVG describes shapes mathematically rather than as fixed pixels, it can be drawn at any size without losing sharpness. RepetiGo takes advantage of that: instead of just copying the SVG at its small native size, it renders the vector onto a canvas at the scale you pick - 1×, 2×, 4× (the default), or 8× - so an icon defined at 64px can become a clean 512px PNG at 8×, with crisp edges.
+The scale dropdown shows the exact pixel dimensions you will get for each option, so you can pick the resolution you need. This is genuinely useful when you need a high-resolution PNG of a logo or icon for print, a presentation, or a retina display - you get a large, sharp image from a small vector file, which a simple screenshot or a 1× export could never match. High-quality smoothing keeps the result clean.
 
-Feature
-SVG (Vector)
-PNG (Raster)
-JPG (Raster)
-Made of
-Mathematical paths and shapes
-A fixed grid of pixels
-A fixed grid of pixels
-Resizing
-Scales to any size, always crisp
-Fixed resolution - enlarging causes blur
-Fixed resolution - enlarging causes blur
+💡 Need a big, sharp image from a small SVG? Pick 8× - the dropdown shows the exact output pixels. Great for print, retina screens, and large icons.
+
+H2: PNG or JPG Output - Which to Choose.
+You can render your SVG to either PNG or JPG, and the right choice depends on the background. PNG preserves transparency - if your SVG has a transparent background (most icons and logos do), the PNG keeps it transparent, so the graphic sits cleanly on any colour. JPG does not support transparency, so any transparent areas are filled with white, giving you a flat image on a white background.
+
+Output
 Transparency
-✓ Supported
-✓ Supported - full alpha channel
-✗ Not supported
-File size
-Very small for simple graphics
-Larger than SVG for the same graphic
-Smallest of the three for photos
-Universal acceptance
-✗ Rejected by many upload forms, older software, most Indian portals
-✓ Nearly universal
-✓ Universal
-Editable as shapes
-✓ Yes, in Illustrator, Inkscape, Figma
-✗ Pixel editing only
-✗ Pixel editing only
 Best for
-Logos, icons, source design files
-Logos and icons once rasterized - keeps transparency
-Photos, portal uploads, printing, general sharing
-When to convert SVG → PNG/JPG
--
-When you need transparency in the raster output
-When you need the smallest possible file and don't need transparency
+PNG
+Preserved (transparent stays transparent)
+Icons, logos, graphics for any background
+JPG
+Filled white
+Flat images where a white background is fine
 
-💡 Choosing between PNG and JPG output: if your SVG has a transparent background and you need to keep it transparent - a logo going onto a colored page, a sticker, a UI icon - export to PNG. If the destination doesn't support transparency anyway, or you want the smallest possible file, export to JPG; RepetiGo fills the transparent areas with white automatically.
+As a rule: choose PNG for icons and logos where you want the background to stay clear, and JPG when you specifically want a flat image or a smaller file and do not need transparency. The quality is set at a high fixed level for both, so you do not need to fiddle with settings.
 
-H2: How to Convert SVG to PNG or JPG Online Free in 3 Steps.
-H3: Step 1 - Upload Your SVG File
-Click Select SVG Files or drag and drop your .svg file - or several SVG files at once for batch conversion. RepetiGo reads the SVG's declared size automatically, so you can see exactly what dimensions it will export at before converting. There's no fixed file size cap, because everything runs on your own device.
-H3: Step 2 - Choose Output Format and Size
-As soon as you upload, RepetiGo converts your SVG automatically at the default settings - PNG format at 4x the SVG's native size. Change the Output Format to JPG if you don't need transparency and want the smallest file. Change the Export Size to 1x for the SVG's original declared dimensions, or 2x, 4x, or 8x to render a larger, higher-resolution image - the dropdown shows the exact pixel dimensions each option will produce. Every uploaded file re-converts automatically whenever you change these settings.
-H3: Step 3 - Download Your PNG or JPG
-Click Download for a single file. For a batch, click Download ZIP to get every converted file in one archive. File names are preserved with the new extension (logo.svg → logo.png). Because nothing was ever uploaded, there's nothing left on any server once you're done.
+H2: Convert SVG to PNG.
+Converting SVG to PNG is the most common need, because PNG keeps the transparency that most SVG icons and logos rely on. To convert an SVG to PNG, upload the file, keep PNG selected, pick your scale, and download. The transparent parts of the SVG stay transparent in the PNG, so your icon or logo drops onto any background without a white box behind it.
+This is the go-to when a platform, app, or document needs a PNG but you only have the vector. Rendered at 4× or 8×, the PNG is sharp enough for large uses too. Whether you search for how to convert SVG to PNG on Windows or on a Mac, the answer here is the same: it runs in the browser on any device, with no software to install.
 
-[ Convert SVG Free Now → repetigo.com/image-tools/svg-converter ]
+H2: Convert SVG to JPG.
+Sometimes you want a plain, flat image rather than a transparent one - for a document, an email, or a platform that prefers JPG. To convert an SVG to JPG, upload the file, choose JPG as the output, pick your scale, and download. Any transparent areas in the SVG become white in the JPG, giving you a clean flat image. It is a quick way to turn a vector graphic into a universally-accepted JPG at whatever resolution you need.
 
-H2: ★ Batch SVG Conversion.
-Icon libraries, logo variations, and illustration sets are usually a folder of SVG files, not a single one. RepetiGo's batch converter handles any number of files in one session:
-Upload all SVG files at once - drag a multi-file selection or Ctrl+Click (Windows) / Cmd+Click (Mac) to multi-select.
-Each file converts automatically at your chosen format and size as it's added.
-Change the format or export size at any point to re-convert every file in the batch to the new setting.
-Click Download ZIP to get one archive containing all the converted files, named identically to the originals.
+H2: Batch Convert Multiple SVGs (with ZIP Download).
+If you have a set of SVGs - an icon pack, a folder of logos - you do not need to convert them one by one. Add as many SVG files as you like, each on its own card showing its source and output dimensions, and keep adding more. Convert them all at your chosen scale and format, then download each individually or grab the whole set as a single ZIP (named for the format, so you know what is inside).
 
-💡 Batch converting a mixed icon set works well because every file is rendered at the same relative scale you choose (1x, 2x, 4x, or 8x) - a 24px icon and a 512px logo in the same batch each come out proportionally larger, preserving their relative sizes.
+✅ Real batch support: convert a whole set of SVGs to PNG or JPG at once and download them as one ZIP - all in your browser, nothing uploaded.
 
-H2: ★ Indian Use Cases - Who Converts SVG Files in India?
-H3: Web Developers and Designers Exporting Assets
-Indian developers and designers frequently need a raster export of an SVG icon or logo - for a favicon, an app store listing image, a social media profile picture, or a design handoff document that doesn't support vector embeds. Converting once at the right size avoids re-exporting from design software for every use case.
-H3: Print Shops and Offices Using Older Software
-Many Indian print shops, DTP centres, and offices still run older versions of CorelDRAW, Photoshop, or basic layout software that can't import SVG directly, or need a flattened raster version to place inside a specific document layout. Converting the customer's SVG logo to a high-resolution PNG first removes the compatibility problem entirely.
-H3: Students and Freelancers Submitting Documents
-Students, freelancers, and small business owners often have a logo or certificate design only as an SVG - from a design tool or downloaded template - and need a PNG or JPG to paste into a Word document, a PowerPoint presentation, a project report, or an online form that only accepts standard image uploads.
+H2: Everything Runs in Your Browser.
+Like the rest of RepetiGo's image tools, the SVG converter does all its work on your own device. Your SVG is parsed and rendered to a PNG or JPG locally using the browser's canvas - nothing is uploaded, and no server processes your files. That keeps your graphics private, works on a weak connection, and is why the tool carries a "Files stay in your browser" badge. There is no watermark and no account wall.
 
-H2: Choosing the Right Export Size.
+🔒 Client-side and private: your SVG files stay on your device, nothing is uploaded, and no watermark is added.
 
-Use Case
-Recommended Setting
+H2: ★ Use Cases - Icons, Logos & High-Res Exports.
+Turning an SVG into a raster image comes up constantly in web, design, and print work.
+
+Who
+What they convert
 Why
-Favicon or browser tab icon
-1x or 2x, PNG
-Favicons are small (16-64px) - the SVG's native size is usually enough
-Social media profile picture
-4x, PNG
-Platforms display profile images at various sizes - a larger source avoids blur on high-DPI screens
-Website header logo
-2x-4x, PNG
-Matches typical retina/high-DPI display requirements without an oversized file
-Print layout (visiting cards, banners)
-4x-8x, PNG or JPG
-Print needs higher resolution than screen use - larger export avoids pixelation
-Word document or presentation
-2x, PNG
-Documents are usually viewed on screen - 2x balances clarity and file size
-Portal or form upload with a KB limit
-1x or 2x, JPG
-Smaller file size helps meet strict upload limits - use Compress Image if still too large
+Web designers
+SVG icons → PNG
+Use icons where SVG is not supported
+Brand / marketing
+SVG logo → PNG or JPG
+Drop a logo into docs, slides, or emails
+Print shops
+SVG → PNG at 8×
+A high-resolution raster for printing
+App makers
+SVG → PNG at set scales
+Raster assets from a vector source
+Anyone with an SVG
+SVG → JPG
+A flat image a platform will accept
 
-H2: Why Use RepetiGo's SVG Converter?
+🇮🇳 Tip: render a vector logo at 8× for a crisp PNG, then compress it at /image-tools/compress-image if the high-res file is larger than you need.
 
-Feature
-RepetiGo
-Adobe Illustrator / Photoshop
-Online SVG Converters
-Browser "Save As" / Screenshot
-Free to use
-✓ Always free
-✗ Paid subscription
-~ Varies, often limited
-✓ Free
-Choose exact export size
-✓ 1x to 8x, shown in pixels
-✓ Full manual control
-~ Often fixed or limited
-✗ Fixed to screen resolution
-PNG with transparency
-✓ Yes
-✓ Yes
-~ Varies
-✗ Screenshots are usually opaque
-Batch conversion
-✓ Yes - upload any number of files
-~ Manual per file
-~ Limited on free tiers
-✗ Not possible
-No software install
-✓ Browser-based
-✗ Requires installation
-~ Varies
-✓ Built into the OS
-Files ever leave your device?
-✗ Never - 100% browser-based
-✓ Never - local software
-✓ Yes - uploaded to their servers
-✓ Never - local
-No watermark on output
-✓ Always
-✓ Yes
-~ Some add watermarks
-✓ Yes
+H2: What This Converter Does Not Do.
+So you know whether it fits before you start, here is what this converter is not for - and where to go instead.
 
-H2: Your Files Are Safe. Always.
+People often expect…
+The honest answer
+Convert an image TO an SVG (vectorise)
+No - this converts FROM svg to PNG/JPG, it does not vectorise
+Output WebP, PDF, DXF, STL, EPS or ICO
+No - the outputs are PNG and JPG only
+Type exact pixel dimensions
+No - you choose 1×/2×/4×/8× of the SVG size
+A background colour other than white for JPG
+No - JPG transparency is filled white
+Export an icon set of many sizes at once
+No - one scale per run
+A quality slider
+No - quality is set to a high fixed level
+Keep an animated SVG moving
+No - only a static frame is captured
 
-Protection Layer
-What It Means in Practice
-🖥️ 100% Browser-Based Conversion
-Your SVG is rendered into PNG or JPG using your own device's processing power via the browser. It is never uploaded to any server.
-🚫 Nothing Ever Leaves Your Device
-Because conversion happens locally, there is no upload, no transfer, and nothing on any server for us to store or delete.
-🔒 Safe Rendering, Even for Untrusted SVGs
-SVG files can technically contain embedded scripts. RepetiGo renders your SVG using the browser's image element, the same safe method used to display images on any webpage - embedded scripts are never executed.
-🚫 No Account = No Data Profile
-No sign-up means no personal data, no file history, and no usage profile is ever created.
-👁️ No Content Is Read
-RepetiGo's code cannot see, analyse, or extract what's in your file - it only renders pixels on your own device.
+H2: SVG Converter - Frequently Asked Questions.
+H3: Is this SVG converter free?
+Yes - RepetiGo's SVG converter is completely free with no sign-up and no watermark. Because it converts in your browser rather than on a paid server, you can convert SVG files to PNG or JPG, at up to 8× scale, in a batch, at no cost. There is nothing to unlock.
+H3: How do I convert an SVG to PNG?
+Upload your SVG, keep PNG selected as the output, choose a scale (1×, 2×, 4×, or 8×), and download. The transparent parts of the SVG stay transparent in the PNG. Rendering at a higher scale gives you a larger, sharper image - 8× turns a small icon into a high-resolution PNG. It works in any browser on Mac or Windows.
+H3: How do I get a high-resolution PNG from an SVG?
+Choose a higher scale before converting. Because an SVG is a vector, the tool can render it at 2×, 4×, or 8× its native size without losing sharpness, and the dropdown shows the exact output pixels. Pick 8× for the largest, crispest result - ideal for print, retina screens, or large icons - then download the PNG.
+H3: Should I convert to PNG or JPG?
+Choose PNG if your SVG has a transparent background you want to keep - icons and logos usually do - because PNG preserves transparency. Choose JPG for a flat image where a white background is fine; JPG fills transparent areas with white. For most SVG icons and logos, PNG is the better choice.
+H3: Can I convert an image or PNG into an SVG here?
+No - this tool works the other way round. It converts an SVG into a PNG or JPG (turning a vector into a raster image); it does not turn a PNG, JPG, or photo into an SVG. Converting a raster image into a true SVG is vectorization, which is a different kind of tool. This converter is for going from SVG to a standard image.
+H3: Can I convert several SVGs at once?
+Yes. Add as many SVG files as you like and convert them all to PNG or JPG at your chosen scale, then download each one or grab the whole set as a single ZIP. Each file shows its source and output dimensions on its own card, so batch-converting an icon pack or a folder of logos is quick.
+H3: Does it keep the SVG's transparency?
+Yes, when you choose PNG output - transparent areas of the SVG stay transparent in the PNG. If you choose JPG, transparency is not supported by the format, so those areas are filled with white. So for a graphic that needs a clear background, export as PNG.
+H3: Can I set exact pixel dimensions?
+Not directly - you choose a scale multiplier (1×, 2×, 4×, or 8×) relative to the SVG's own size, and the dropdown shows the exact pixels each option produces. If you need a specific size afterwards, convert here and then use the Resize Image tool to set precise dimensions.
+H3: Can it output WebP, PDF, or a cutting format like DXF?
+No - the outputs are PNG and JPG only. It does not produce WebP, PDF, or vector/CAD formats like DXF, STL, DWG, or EPS. If you need one of those, this is not the right tool; it is focused on turning an SVG into a high-quality PNG or JPG raster image.
+H3: Are my SVG files uploaded to a server?
+No. The converter runs entirely in your browser using the canvas, so your SVG files never leave your device and nothing is sent to RepetiGo. That keeps your graphics private, works on a weak connection, and is why there is no watermark on your converted images.
 
-[ Read Our Privacy Policy → /privacy-policy ]
-
-H2: Common Questions About SVG Conversion.
-H3: Q1: Does Converting SVG to PNG or JPG Lose Quality?
-Converting from SVG always involves choosing a fixed output size, since SVG has no inherent resolution of its own - once rendered at that size, the PNG or JPG is a normal raster image with the same quality characteristics as any other. PNG output is lossless at the size you choose - no compression artifacts. JPG output uses standard JPG compression, which is visually near-identical to the source at quality 90+. The only thing to get right is the export size: choose a size too small for your use case (for example, exporting a favicon-sized SVG at 1x and then trying to print it as a banner) and the result will look blocky, not because the conversion lost quality, but because you're enlarging a fixed-resolution image after the fact. Export at a large enough size for your intended use and there is no visible quality loss.
-H3: Q2: What Size Should I Export My SVG At?
-It depends on where the image will be used. For on-screen use like a website logo or a document image, 2x to 4x the SVG's native size is usually enough to look sharp on modern high-DPI screens. For print - banners, visiting cards, signage - use 4x to 8x, since print resolution requirements are higher than screen resolution. If you're unsure, exporting larger is safer than exporting too small: you can always resize a large PNG down, but enlarging a small one will look blurry. See the Export Size guide above for specific recommendations by use case.
-H3: Q3: Can I Convert SVG to JPG Instead of PNG?
-Yes. Select JPG as the output format before or after uploading. Since JPG doesn't support transparency, RepetiGo fills any transparent areas of the SVG with a white background automatically - this is the correct, expected behaviour, not an error. Use JPG when you don't need transparency and want the smallest possible file size; use PNG when you need the transparent background preserved.
-H3: Q4: Why Won't My Converted File Open in Some Programs?
-This is unlikely once converted - PNG and JPG are among the most universally supported file formats and open in essentially all image viewers, editors, browsers, office software, and upload portals. If a converted file doesn't open somewhere, check that the file downloaded completely and that you're opening the actual .png or .jpg file, not the original .svg. If you specifically need PNG for a program that says it doesn't support your file, confirm you selected PNG (not JPG) as the output format before converting.
-H3: Q5: Is It Safe to Convert an SVG File I Downloaded From an Unknown Source?
-SVG is an XML-based format that can technically include embedded JavaScript, which is a real security consideration if an untrusted SVG is opened in certain contexts, like directly in a browser tab or embedded live in a webpage. RepetiGo's converter avoids this risk entirely: it loads your SVG using the browser's standard image element - the same mechanism used to display any image on any website - which renders the visual content but never executes any embedded script. The output PNG or JPG is a plain raster image with no possibility of embedded code, regardless of what the source SVG contained.
-H3: Q6: What Is the Difference Between SVG Converter and PNG to SVG?
-These tools do opposite jobs. SVG Converter (this page) takes a vector SVG file and rasterizes it into a fixed-pixel PNG or JPG - useful when you have an SVG and need a standard image file. PNG to SVG does the reverse: it traces a raster PNG image into vector paths, useful when you only have a PNG logo or icon and need a scalable SVG version of it. If you're starting from an SVG and need PNG or JPG, use this page. If you're starting from a PNG and need SVG, use the PNG to SVG converter instead.
-
-H2: More Free Image Tools from RepetiGo.
-
+H2: Related Image Tools.
 Tool
 What It Does
 Link
-PNG to SVG
-Vectorize a PNG logo or icon into a real, scalable SVG
-→ /image-tools/png-to-svg
+Convert to JPG
+Convert HEIC/WebP/PNG/BMP/GIF → JPG
+→ /image-tools/convert-to-jpg
+Image Converter
+Convert between many image formats
+→ /image-tools/image-converter
 Compress Image
-Reduce PNG or JPG file size after conversion
+Shrink the rendered PNG/JPG
 → /image-tools/compress-image
 Resize Image
-Resize the converted PNG or JPG to exact pixel dimensions
+Set exact pixel dimensions
 → /image-tools/resize-image
 Remove Background
-Remove the background from a converted PNG
+Transparent PNG from a photo
 → /image-tools/background-remover
-PNG to JPG
-Convert a PNG (including one exported here) into JPG
-→ /image-tools/png-to-jpg
 All Image Tools
-Complete free image tools suite
+The complete image tools suite
 → /image-tools
 
-[ Convert SVG Free - No Sign-Up → repetigo.com/image-tools/svg-converter ]
+[ Convert SVG to PNG or JPG Free - up to 8× → repetigo.com/image-tools/svg-converter ]
 [ Explore All Image Tools → repetigo.com/image-tools ]`;
 
-const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
+const faqSchemaQuestions = Array.from(content.matchAll(/H3: ([^\n]+\?)\n([\s\S]*?)(?=\nH3:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
 export default function SvgConverterPage() {
   return (
@@ -282,10 +230,10 @@ function StructuredSeoCopy({ content: source }: { content: string }) {
 }
 
 function getKnownTable(lines: string[]): SeoTableData | null {
-  if (lines[0] === "Feature" && lines[1] === "SVG (Vector)") return { headers: ["Feature", "SVG (Vector)", "PNG (Raster)", "JPG (Raster)"], rows: chunkRows(lines.slice(4), 4) };
-  if (lines[0] === "Use Case" && lines[1] === "Recommended Setting") return { headers: ["Use Case", "Recommended Setting", "Why"], rows: chunkRows(lines.slice(3), 3) };
-  if (lines[0] === "Feature" && lines[1] === "RepetiGo") return { headers: ["Feature", "RepetiGo", "Adobe Illustrator / Photoshop", "Online SVG Converters", "Browser \"Save As\" / Screenshot"], rows: chunkRows(lines.slice(5), 5) };
-  if (lines[0] === "Protection Layer" && lines[1] === "What It Means in Practice") return { headers: ["Protection Layer", "What It Means in Practice"], rows: chunkRows(lines.slice(2), 2) };
+  if (lines[0] === "Step" && lines[1] === "What You Do" && lines[2] === "What Happens") return { headers: ["Step", "What You Do", "What Happens"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "Output" && lines[1] === "Transparency") return { headers: ["Output", "Transparency", "Best for"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "Who" && lines[1] === "What they convert") return { headers: ["Who", "What they convert", "Why"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "People often expect…" || lines[0] === "People often expect...") return { headers: ["People often expect…", "The honest answer"], rows: chunkRows(lines.slice(2), 2) };
   if (lines[0] === "Tool" && lines[1] === "What It Does" && lines[2] === "Link") return { headers: ["Tool", "What It Does", "Link"], rows: chunkRows(lines.slice(3), 3) };
   return null;
 }
@@ -337,8 +285,8 @@ function mapSeoRoute(route: string) {
   const routeMap: Record<string, string> = {
     "/image-tools": "/image-tools",
     "/image-tools/svg-converter": "/image-tools/svg-converter",
-    "/image-tools/png-to-svg": "/image-tools/png-to-svg",
-    "/image-tools/png-to-jpg": "/image-tools/png-to-jpg",
+    "/image-tools/convert-to-jpg": "/image-tools/convert-to-jpg",
+    "/image-tools/image-converter": "/image-tools/image-converter",
     "/image-tools/compress-image": "/image-tools/compress-image",
     "/image-tools/resize-image": "/image-tools/resize-image",
     "/image-tools/background-remover": "/image-tools/background-remover",
@@ -353,8 +301,8 @@ function getRouteLabel(href: string) {
   const labels: Record<string, string> = {
     "/image-tools": "Explore All Image Tools",
     "/image-tools/svg-converter": "Open SVG Converter",
-    "/image-tools/png-to-svg": "Open PNG to SVG",
-    "/image-tools/png-to-jpg": "Open PNG to JPG",
+    "/image-tools/convert-to-jpg": "Open Convert to JPG",
+    "/image-tools/image-converter": "Open Image Converter",
     "/image-tools/compress-image": "Open Compress Image",
     "/image-tools/resize-image": "Open Resize Image",
     "/image-tools/background-remover": "Open Remove Background",
@@ -366,8 +314,8 @@ function getRouteLabel(href: string) {
 }
 
 function JsonLd() {
-  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo SVG Converter", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online SVG to PNG or JPG converter with adjustable export size and batch conversion. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl };
-  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert SVG to PNG or JPG Online Free", step: [{ "@type": "HowToStep", name: "Upload SVG", text: "Upload Your SVG File" }, { "@type": "HowToStep", name: "Choose Settings", text: "Choose Output Format and Size" }, { "@type": "HowToStep", name: "Download", text: "Download Your PNG or JPG" }] };
+  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo SVG Converter", applicationCategory: "MultimediaApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free browser-based SVG to PNG or JPG converter - render an SVG at up to 8× its native size for a crisp, high-resolution raster image, with batch conversion to a ZIP. Runs 100% in the browser - no file is ever uploaded to a server.", url: pageUrl };
+  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to convert an SVG to PNG or JPG", step: [{ "@type": "HowToStep", name: "Upload your SVG(s)", text: "Drop or select one or more .svg files." }, { "@type": "HowToStep", name: "Set scale & format", text: "Choose 1×/2×/4×/8× and PNG or JPG." }, { "@type": "HowToStep", name: "Download", text: "Download each image, or grab them all as a ZIP." }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
   const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "SVG Converter", item: pageUrl }] };
 

@@ -4,249 +4,175 @@ import RotateImageClient from "./RotateImageClient";
 const pageUrl = "https://repetigo.com/image-tools/rotate-image";
 
 export const metadata: Metadata = {
-  title: "Rotate Image Online Free India - 90°, 180°, 270° & Custom Angle | RepetiGo",
+  title: "Rotate Image Free - Rotate & Flip by 90° or Any Angle | RepetiGo",
   description:
-    "Rotate image online free - rotate 90°, 180°, 270°, or any custom angle, plus flip horizontal or vertical. Batch rotate multiple files. No sign-up, 100% browser-based.",
+    "Free image rotator - rotate a photo left, right, 180°, or any exact angle, and flip it. Batch-rotate many images and download a ZIP. Runs in your browser, no upload.",
   alternates: { canonical: pageUrl },
   openGraph: {
-    title: "Rotate Image Online Free India - 90°, 180°, 270° & Custom Angle | RepetiGo",
-    description: "Free image rotator - any angle, flip horizontal or vertical, batch rotate multiple files. No sign-up, nothing uploaded.",
+    title: "Rotate Image Free - Rotate & Flip by 90° or Any Angle",
+    description: "Rotate left/right/180° or any exact angle, flip, and batch-rotate to a ZIP. In your browser.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Rotate Image Free Online - RepetiGo",
-    description: "Rotate to any angle, flip, and batch-process images free. No sign-up, 100% browser-based.",
+    title: "Rotate Image Free - Rotate & Flip Online",
+    description: "Free image rotator. 90°/180°/any angle, flip H/V, batch + ZIP, 100% in your browser.",
   },
   robots: { index: true, follow: true },
 };
 
-const content = String.raw`H1: Rotate Image Online Free. Fix Sideways Scans, Phone Photos, and Document Images - 90°, 180°, or Any Angle.
-RepetiGo's free image rotator fixes the orientation of any photo, scan, or graphic instantly. Rotate 90° left, 90° right, 180°, or enter any custom angle from 0-360°. Flip horizontal or vertical. Upload one image or several at once - the same rotation and flip settings apply to every file you add. No software to install, no account needed, and your images are never uploaded to a server.
-Whether you need to fix a photo taken sideways on a phone, straighten a scanned document that saved in the wrong orientation, or prepare a photo for a portal upload, the image rotation tool handles it in seconds on any device. The corrected orientation is saved permanently to the downloaded file, not just displayed differently on screen.
+const content = String.raw`H1: Rotate Image Free - Rotate & Flip by 90° or Any Exact Angle.
 
-✓ 90° / 180° / 270° / Custom Angle   ✓ Flip Horizontal & Vertical   ✓ Batch Rotate Multiple Files   ✓ No Sign-Up   ✓ 100% Browser-Based - Nothing Uploaded
+RepetiGo's rotate image tool is a free, browser-based image rotator that turns a JPG, PNG, or WebP picture any way you need - left, right, 180°, or any exact angle from 0 to 360°. You can also flip it horizontally or vertically, and rotate a whole batch of images at once, downloading them together as a ZIP. Because everything runs in your browser, your files are never uploaded to a server.
+It fixes the everyday problems: a photo that came out sideways, a scan that loaded rotated, or a set of images that all need the same turn. Use the quick 90° buttons for a fast fix, or type a precise angle to straighten something by hand. The output keeps your original format, and a preview shows the before and after so you know exactly what you are downloading.
 
-[ Rotate Image Free - No Sign-Up → repetigo.com/image-tools/rotate-image ]
+✓ Free · No sign-up · No watermark   ✓ 90° / 180° / any custom angle   ✓ Flip H & V · batch + ZIP   ✓ 100% in your browser - nothing uploaded
 
-H2: What Does Rotating an Image Do?
-Image rotation changes the orientation of a photo or graphic by turning it a specified number of degrees. When you rotate an image, the content stays the same - only its orientation changes. A portrait photo (tall) rotated 90° becomes a landscape photo (wide), and a landscape photo rotated 90° the other way becomes portrait.
-Rotating is different from flipping. Rotation turns the image clockwise or counter-clockwise around its centre. Flipping mirrors the image left-to-right or top-to-bottom, like holding it up to a mirror. RepetiGo's image rotator supports both - a rotation angle and independent horizontal/vertical flip toggles that can be combined.
+H2: How to Rotate an Image in 3 Steps.
+Here is how to rotate an image with RepetiGo. It starts working the moment you add a file, so a simple turn takes seconds.
 
-Operation
-What It Does
-Common Use
-Right 90°
-Turns the image a quarter-turn clockwise. Portrait becomes landscape.
-Fixing a photo taken with the phone held sideways to the left.
-Left 90°
-Turns the image a quarter-turn counter-clockwise. Portrait becomes landscape the other way.
-Fixing a photo taken with the phone held sideways to the right.
-180°
-Turns the image upside down - what was at the top is now at the bottom.
-Fixing a document scanned upside down, or an inverted photo.
-Custom Angle (0-360°)
-Rotates the image to any angle you type in - 45°, 30°, 3°, or any value.
-Straightening a slightly tilted scan, or creating a diagonal layout.
-Flip Horizontal
-Mirrors the image left-to-right.
-Correcting a mirrored selfie, or fixing text that reads backwards in a photo.
-Flip Vertical
-Mirrors the image top-to-bottom.
-Specific design use cases and some scanner orientation issues.
+Step
+What You Do
+What Happens
+1. Upload your image(s)
+Click or drag-and-drop one or more JPG, PNG, or WebP files.
+Each file appears as a card and is processed with the current settings.
+2. Set rotation & flip
+Use Left 90° / Right 90° / 180°, type a custom angle, or flip H/V.
+The setting applies to your images; open the preview to compare before/after.
+3. Download
+Download each image, or grab them all as a ZIP.
+Files save with a "-rotated" suffix, keeping their original format.
 
-📱 The most common reason to rotate images in India: phone cameras save photos in the orientation the phone was held, but not every app or portal reads that orientation tag correctly. A photo that looks correct in your phone gallery can appear sideways when uploaded to a government portal or sent by email. Rotating the image and re-downloading it fixes the orientation permanently in the file itself.
+🔒 Every rotation happens in your browser using the Canvas engine - your images are never uploaded to RepetiGo or any server.
 
-H2: How to Rotate an Image Online Free in 3 Steps.
-H3: Step 1 - Upload Your Image
-Click the Upload button or drag and drop your image file - or several at once. Supported formats: JPG/JPEG, PNG, WEBP. There's no fixed file size cap - because everything runs on your own device, very large images just take a little longer. The tool works on any browser on any device - Chrome on Android, Safari on iPhone, Edge on Windows, or any desktop browser.
-H3: Step 2 - Choose Your Rotation
-Quick buttons - Left 90°, Right 90°, and 180° - cover the most common fixes. Click one and it's added to the current angle.
-Custom angle - type any value from 0 to 360 directly into the angle field. Use a small value like 2-5° to straighten a slightly tilted scan, or 45° for a diagonal effect.
-Flip toggles - turn on Flip Horizontal or Flip Vertical independently, for cases where the content is mirrored rather than just rotated. Flip and rotation can be combined.
-When you have more than one image uploaded, these settings apply to every image in the batch - there's no need to set the angle separately for each file.
+H2: Quick 90° / 180° Buttons and Any Custom Angle (0–360°).
+Most rotations are simple quarter-turns, so there are one-click buttons for them: Left 90°, Right 90°, and 180°. Tap Right 90° to fix a photo that is lying on its side, or 180° to flip an upside-down scan the right way up. A Reset button returns everything to 0° with no flip whenever you want to start again.
+When you need something precise, the custom angle input takes any exact degree from 0 to 360 - so you can nudge a slightly tilted photo by 3° or 5° to straighten it, or set any specific angle you need. This is what sets a proper image rotator apart from a simple quarter-turn tool: you are not limited to 90° steps. The canvas expands to fit the rotated image, so nothing gets cut off at the corners.
 
-H3: Step 3 - Download Your Rotated Image
-Click Rotate All. Processing happens on your own device and finishes in a couple of seconds per image. Download an individual result, or click Download ZIP to get every rotated image from the batch in one archive. Because nothing was ever uploaded, there's nothing left on any server once you're done. The downloaded file keeps the same format as the original - JPG in, JPG out.
+💡 Straightening a slightly crooked photo? Try a small custom angle like 2–5° (or 355–358° the other way), check the preview, and adjust until the horizon looks level.
 
-[ Rotate Image Free Now → repetigo.com/image-tools/rotate-image ]
+H2: Flip Horizontal & Vertical.
+Rotation turns an image; flipping mirrors it. The Flip Horizontal toggle mirrors left-to-right (useful for a selfie that came out reversed, or to face a subject the other way), and Flip Vertical mirrors top-to-bottom. Both are independent toggles, and they combine with rotation - so you can rotate 90° and flip in the same step. Toggle them off or hit Reset to return to the original orientation.
 
-H2: Rotation Angles Explained - 90°, 180°, 270°, and Custom.
-Understanding which rotation to choose depends on what is wrong with the image's current orientation:
+H2: Rotate Many Images at Once - Batch + ZIP.
+You are not limited to one image. Upload several at once - each gets its own card with a thumbnail and dimensions - and you can keep adding more after the studio is open. Apply your rotation and flip, then download each image individually or grab them all in one bulk ZIP download. It is a real time-saver for a folder of sideways scans or phone photos.
+One honest detail so it works as you expect: the rotation and flip you set apply to every image in the batch - the same turn for all of them. That is perfect when a whole set needs the same fix (for example a stack of scans that all came in rotated the same way). If different images need different angles, rotate them in separate rounds, or remove the ones that are already correct before applying.
+
+✅ Real batch support: upload many, apply one rotation/flip to all, then download individually or as a single ZIP - all in your browser. Same angle for every file in the batch.
+
+H2: Rotating at Angles That Are Not 90° - Corner Gaps Explained.
+When you rotate by a clean 90° or 180°, the result is a perfect rectangle. But when you rotate by any other angle - say 10° to straighten a photo - the tilted image no longer fits neatly in a rectangle, so the tool expands the canvas to fit the whole picture (nothing is cropped) and the four corners become empty, transparent areas. This is normal and unavoidable for angled rotation in any tool.
+If you want a clean rectangle without those transparent corners, crop the result afterwards with the Crop Image tool - a quick rectangular crop removes the gaps and leaves a straight, tidy photo. So the workflow for straightening a tilted horizon is: rotate by the small angle here, then crop to taste. The transparent corners save as-is in a format that supports transparency; there is no background-fill colour option, so cropping is the way to remove them.
+
+💡 Straighten-and-clean workflow: rotate by a few degrees here → then crop the transparent corners at /image-tools/crop-image for a neat rectangle.
+
+H2: Why Does My Image Rotate by Itself on Export or on iPhone?
+This is one of the most confusing image problems, and it has a simple cause. Photos from phones and cameras store an "EXIF orientation" tag - a hidden note that says "display this rotated." Some apps read that tag and show the photo correctly; others ignore it. So an image that looks upright on your phone can suddenly appear sideways when you export it from InDesign, open it somewhere else, or upload it - this is exactly the "image rotates when I export from InDesign" issue, and the same reason photos sometimes look wrong after moving off an iPhone.
+The reliable fix is to "bake in" the correct orientation: rotate the image to look right and re-save it, so the pixels themselves are upright rather than relying on a tag some apps ignore. Upload the photo here, rotate it until it looks correct, and download - the saved file is now genuinely in that orientation and will display the same way everywhere. Note this tool does not auto-detect EXIF orientation for you, so set the rotation manually; once you do, the export or upload problem goes away.
+
+H2: How to Rotate an Image in Photoshop, GIMP, Word, Google Docs, Paint & iPhone.
+Prefer software you already have open? Here are the standard routes for each.
+How to rotate an image in Photoshop: Image → Image Rotation → 90° CW / 90° CCW / 180°, or Arbitrary for a custom angle; to rotate just a layer, use Edit → Transform → Rotate. In GIMP: Image → Transform for 90°/180°, or Tools → Transform Tools → Rotate for a custom angle (this is the quick how to rotate an image in GIMP method). In Word: click the picture → Picture Format → Rotate → choose an option or More Rotation Options for an exact angle; the same menu appears in Google Docs under Image options → Size & rotation.
+In MS Paint: use the Rotate button on the Home tab for 90°/180° and the flip options; Paint does not do arbitrary angles, so for a custom tilt a browser tool is easier. On an iPhone: open Photos → Edit → the crop icon → the rotate icon (top-left) for 90° turns or the dial for a fine angle, then Done. All of these work; for a quick 90° fix, a custom-angle straighten, or batch-rotating several files at once, the browser tool needs no software and keeps everything on your device.
+
+H2: ★ Indian Use Cases - Scanned Documents & Phone Photos.
+Rotation is a constant need at Indian print shops and cyber cafes, where scanned documents and phone photos routinely come in the wrong way round.
 
 Scenario
 Problem
-Correct Rotation
-Phone photo taken with the phone held to the right
-Subject appears lying on their left side in the image
-Left 90° (equivalent to Right 90° clicked three times, or 270°)
-Phone photo taken with the phone held to the left
-Subject appears lying on their right side in the image
-Right 90° (equivalent to Left 90° clicked three times, or 270° the other way)
-Document scanned upside down
-Text and content appears inverted
-180°
-Portrait document saved as landscape
-Tall document appears wide and sideways
-Left 90° or Right 90°, depending on which way it tilted
-Slightly tilted scan (a few degrees off)
-Document appears slightly skewed - text runs slightly uphill or downhill
-Custom angle - typically 1-5°, adjusted until the preview looks straight
-Selfie with a mirror effect
-Text in the image (T-shirts, signs) appears reversed
-Flip Horizontal
+How to fix it here
+Scanned document sideways
+Scanner fed the page landscape
+Right 90° (or Left 90°) → download
+Batch of scanned pages
+A whole stack scanned rotated
+Upload all → one 90° turn → ZIP download
+Phone photo uploads sideways
+EXIF orientation ignored by a portal
+Rotate to look correct → re-save → upload
+Upside-down scan
+Page scanned inverted
+180° → download
+Slightly tilted photo
+Crooked horizon
+Custom small angle → then crop the corners
 
-💡 Not sure which direction to rotate? RepetiGo's rotator auto-applies your current settings to newly uploaded images, and updates the preview each time you click Rotate All - click Left 90° or Right 90° and check the result. If it isn't quite right, click the opposite direction or fine-tune with the custom angle field before downloading.
+🇮🇳 Print-shop tip: for a stack of sideways scans that all need the same turn, upload them together, apply one 90° rotation, and download the ZIP - much faster than fixing each file. Then compress at /image-tools/compress-image if needed.
 
-H2: Indian Use Cases - When You Need to Rotate an Image.
-Image rotation is a daily need in India, driven by smartphone camera behaviour, portal upload requirements, and print shop workflows:
+H2: Everything Runs in Your Browser - Nothing Uploaded.
+RepetiGo rotates your images on your own device using the browser's Canvas engine. Your files are never sent to a server, which keeps scanned documents and personal photos private, works on a weak connection, and is why the tool carries a "Files stay in your browser" badge. There is no watermark and no account wall - the rotated images you download are the full, clean files, in their original format.
 
-Indian Use Case
-The Problem
-The Fix
-Government Portal ID Photo Upload
-Portal requires a portrait-orientation photo. A selfie taken with the phone held horizontally uploads sideways.
-Rotate 90° (left or right, depending on orientation) → download the corrected portrait photo → re-upload to the portal.
-Aadhaar / PAN Scan Upload
-Aadhaar or PAN card scanned upside down or sideways on a flatbed scanner.
-Rotate 90° or 180° to correct orientation, then use Compress Image to meet the required KB limit.
-Scanned Marksheet / Certificate
-A marksheet or certificate scanned sideways on the scanner, saved in landscape when portrait is required.
-Rotate 90° left or right to correct, check the result, download, and submit.
-WhatsApp Photo Shared Sideways
-A photo shared over WhatsApp appears sideways, and you need to forward, print, or attach it correctly oriented.
-Rotate in the browser, download the corrected version, use as needed.
-Print Shop Customer Photo Wrong Orientation
-A customer's USB or WhatsApp photo is sideways or inverted, which would print incorrectly oriented.
-Rotate before printing - or let PrintPilot handle it automatically for repeat volume.
-Receipt / Invoice Scan for Reimbursement
-An office scanner saves a receipt sideways, but the expense portal needs a readable portrait scan.
-Rotate 90°, download, and upload to the expense portal.
+🔒 Client-side means private: your images stay on your device, nothing is uploaded, and no watermark is added - good for scanned documents and personal photos.
 
-H2: Why Use RepetiGo's Image Rotator?
+H2: What This Rotate Tool Does Not Do.
+So you know whether it fits before you start, here is what the rotate tool is not built for - and where to go instead.
 
-Feature
-RepetiGo
-Adobe Express
-Canva
-iloveimg
-Free to use
-✓ Always free
-✓ Free tier
-✓ Free tier
-✓ Limited free
-Sign-up required
-✓ Never
-✗ Account required
-✗ Account required
-~ Optional
-Custom angle rotation
-✓ Any degree, 0-360
-✓ Yes
-✓ Yes
-✓ Yes
-Flip horizontal & vertical
-✓ Yes, independently
-✓ Yes
-✓ Yes
-✓ Yes
-Batch rotate multiple images
-✓ Yes - one setting, all files
-~ Limited
-~ Limited
-✓ Yes
-Files ever leave your device?
-✗ Never - 100% browser-based
-✓ Yes - uploaded to their servers
-✓ Yes - uploaded to their servers
-✓ Yes - uploaded to their servers
-Works without account
-✓ Yes
-✗ No
-✗ No
-~ Optional
-PrintPilot integration
-✓ Native auto-rotation
-✗ None
-✗ None
-✗ None
+People often ask for…
+The honest answer
+Different angles for different files in a batch
+No - one rotation/flip applies to all files at once
+Auto-straighten / EXIF orientation auto-fix
+No - set the rotation manually (which does fix it)
+A grid or protractor to straighten by eye
+No - use the custom angle input and the preview
+Auto-crop the transparent corners after rotating
+No - crop them with the Crop Image tool
+A background colour behind an angled rotation
+No - the corners are transparent (crop to remove)
+Choosing a different output format
+No - output keeps the original format (convert after)
 
-H2: Your Images Are Safe. Always.
+H2: Rotate Image - Frequently Asked Questions.
+H3: Is this image rotator free?
+Yes - RepetiGo's rotate image tool is completely free with no sign-up and no watermark. Because it rotates in your browser rather than on a paid server, everything is available at no cost: quick 90°/180° turns, any custom angle, flip, and batch rotation with a ZIP download. There is no premium tier to unlock.
+H3: How do I rotate an image by a custom angle?
+Use the custom angle input and type any exact degree from 0 to 360 - for example 5° to straighten a slightly tilted photo, or 45° for a diagonal. The canvas expands so nothing is cut off, and the preview shows the result. For a quick quarter-turn instead, use the Left 90°, Right 90°, or 180° buttons.
+H3: Can I rotate several images at once?
+Yes. Upload multiple JPG, PNG, or WebP files, apply your rotation and flip, and download them individually or all together as a ZIP. The same rotation and flip apply to every image in the batch, which is ideal when a whole set of scans or photos needs the same turn. For different angles, rotate them in separate rounds.
+H3: Why does my image rotate by itself when I export or upload it?
+Phones and cameras store an EXIF "orientation" tag that tells apps to display the photo rotated. Some apps honour it and some ignore it, so an image can look upright in one place and sideways in another - the classic "rotates on InDesign export" problem. Fix it by rotating the photo here until it looks right and re-saving; the saved pixels are then genuinely upright everywhere.
+H3: How do I rotate an image in GIMP?
+In GIMP, use Image → Transform for a 90° or 180° turn, or Tools → Transform Tools → Rotate for a custom angle, then flatten and export. It is a solid free desktop option. If you just need a quick turn or a batch of files rotated, the browser tool does it without opening GIMP and keeps everything on your device.
+H3: What happens to the corners when I rotate by an odd angle?
+Rotating by anything other than 90° or 180° means the tilted image no longer fits a rectangle, so the tool expands the canvas to keep the whole picture (nothing is cropped) and the four corners become transparent. To get a clean rectangle, crop the result afterwards with the Crop Image tool - there is no background-fill colour option, so cropping is the way to remove the gaps.
+H3: Does rotating reduce image quality?
+Barely. The tool uses high-quality smoothing and re-encodes at a high quality setting, and a 90° or 180° turn is essentially lossless in visible terms. Custom angles re-sample the image slightly, but the difference is minimal for normal use. The output keeps your original file format.
+H3: Can I flip an image as well as rotate it?
+Yes. Flip Horizontal mirrors the image left-to-right and Flip Vertical mirrors it top-to-bottom, and both combine with rotation - so you can rotate and flip in the same step. Toggle them off or press Reset to return to the original orientation. Flipping is handy for reversed selfies or facing a subject the other way.
+H3: Do my images get uploaded to a server?
+No. The rotate tool runs entirely in your browser using the Canvas engine, so your images never leave your device - nothing is sent to RepetiGo. That keeps scanned documents and personal photos private, works on a weak connection, and is why there is no watermark on your rotated files.
+H3: Can I choose the output format?
+The output keeps the same format as the file you uploaded - a JPG stays a JPG, a PNG stays a PNG, and so on. There is no format-override option inside the rotate tool. If you need a different format afterwards, use the convert tools; if you rotated by an odd angle and want to keep transparency, PNG or WebP is best.
 
-Protection Layer
-What It Means in Practice
-🖥️ 100% Browser-Based Rotation
-Your image is rotated using your own device's processing power via the browser's Canvas API. It is never uploaded to any server.
-🚫 Nothing Ever Leaves Your Device
-Because rotation happens locally, there is no upload, no transfer, and nothing on any server for us to store or delete.
-👁️ No Image Content Is Read
-RepetiGo's code cannot see, analyse, or extract what's in your photo - it only redraws pixel data at the new orientation on your own device.
-🚫 No Account = No Data Profile
-No sign-up means no personal data, no file history, and no usage profile is ever created.
-🔒 Well Suited to Aadhaar, PAN, and Scanned ID Documents
-Because nothing is transmitted anywhere, this is one of the safer ways to rotate a sensitive scan or ID photo online.
-
-[ Read Our Privacy Policy → /privacy-policy ]
-
-H2: Image Rotation for Print Shops.
-Print shops regularly encounter customer photos and scans in incorrect orientations - a portrait ID photo scanned sideways, a receipt photographed upside down, a product photo taken in landscape when the print template needs portrait. Manually rotating each job adds time to every print queue.
-PrintPilot - RepetiGo's print shop software - can fold orientation correction into the same automated workflow customers already use to upload documents via QR code, instead of a shop operator rotating every photo by hand before it reaches the print queue.
-
-[ Learn About PrintPilot → /products/printpilot/ ]
-[ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Rotate an Image Now → repetigo.com/image-tools/rotate-image ]
-
-H2: How to Rotate an Image in Every Major Tool.
-These are the most searched tool-specific rotation methods. Each section below covers the exact steps - and explains when a browser-based tool like RepetiGo is the simpler option.
-H3: How to Rotate an Image in Microsoft Word
-There are two ways to rotate an image in Word - a quick drag method and a precise degree method. Quick method: click the image to select it, then click and drag the green rotation handle that appears above it to rotate freely. Precise method: click the image, open the Picture Format tab, click the Rotate Objects dropdown, and choose Rotate Right 90°, Rotate Left 90°, Flip Horizontal, or Flip Vertical - or click More Rotation Options to enter an exact degree value.
-Rotating an image in Word rotates it within the document but does not change the image file itself. If you need a standalone rotated file (JPG, PNG) for a portal upload, use RepetiGo's browser-based rotator at /image-tools/rotate-image - the downloaded file has the corrected orientation permanently.
-H3: How to Rotate an Image in Photoshop
-Photoshop has two rotation commands. To rotate the whole image: Image → Image Rotation, then choose 90° CW, 90° CCW, 180°, or Arbitrary for a custom angle and direction - this rotates all layers together. To rotate a single layer: select it in the Layers panel, then Edit → Transform → Rotate 90° CW / CCW / 180°, or use Free Transform (Ctrl+T / Cmd+T) and drag a corner handle while holding Shift to constrain to 15° increments.
-Photoshop requires installation and an Adobe Creative Cloud subscription. For a quick rotation without software or a subscription, the same result takes seconds at /image-tools/rotate-image.
-H3: How to Rotate an Image in GIMP (Free)
-GIMP is a free, open-source alternative to Photoshop for Windows, Mac, and Linux. To rotate the whole image: Image → Transform, then choose Rotate 90° Clockwise, Rotate 90° Counter-Clockwise, or Rotate 180°. For a custom angle: Image → Transform → Arbitrary Rotation, enter the degree value and direction - GIMP adds empty canvas space around the rotated image, so use Image → Autocrop Image afterward to remove it. To rotate a single layer: select it in the Layers panel, then Layer → Transform → choose a rotation direction.
-GIMP is free but requires installation. For quick one-off jobs, RepetiGo's browser tool is faster - upload, click, download, with no installation. For complex editing workflows, GIMP gives more control.
-
-🔄 GIMP rotation tip: after an arbitrary rotation, the image edges are filled with the background colour (usually white or transparency). Always use Image → Autocrop Image after rotating to remove the empty border created by the rotation.
-
-H3: How to Rotate an Image in Canva
-Canva doesn't rotate standalone image files directly - it works within a design. Upload your image to a design, click it to select it, and drag the circular rotation handle that appears above it to rotate freely. For a precise rotation, look for the Angle option in the side panel after clicking Edit Image, or right-click the image and choose Flip/Rotate from the context menu for quick 90° rotations and flips.
-To rotate a standalone image file and download the corrected version directly - without creating a design canvas - use RepetiGo's rotator at /image-tools/rotate-image.
-H3: How to Rotate an Image in Paint (Windows)
-Microsoft Paint is built into Windows and provides quick basic rotation. Open your image in Paint, go to the Home tab, click the dropdown arrow next to the Rotate button, and choose Rotate Right 90°, Rotate Left 90°, Rotate 180°, Flip Horizontal, or Flip Vertical. Then File → Save or File → Save As to keep the result.
-Paint supports only 90°, 180°, and flip operations - no custom angle rotation. For a custom angle, or for rotating several images with the same setting in one pass, use RepetiGo's browser rotator at /image-tools/rotate-image.
-H3: How to Rotate an Image on iPhone and in Google Docs
-On iPhone: open the Photos app, select your photo, tap Edit, tap the Crop icon, then tap the rotate button (top-left of the crop screen) - each tap rotates 90° counter-clockwise. For a precise angle, drag the dial at the bottom of the crop view. Tap Done to save. This overwrites your Camera Roll photo; to keep the original and create a separate rotated file, open Safari and use RepetiGo's rotator instead.
-In Google Docs: insert your image (Insert → Image), click it to select it, and drag the small rotation handle above it to rotate within the document. For a precise angle, right-click the image, choose Format Options, and enter an exact value in the Rotate section's Angle field. This only affects the image's position inside the document layout, not the underlying image file - to rotate and save a standalone file, use /image-tools/rotate-image in Chrome.
-
-H2: More Free Image Tools from RepetiGo.
-
+H2: Related Image Tools.
 Tool
 What It Does
 Link
-Compress Image
-Reduce file size after rotating - for portal KB upload limits
-→ /image-tools/compress-image
-Resize Image
-Change dimensions after rotating - for portal pixel requirements
-→ /image-tools/resize-image
 Crop Image
-Crop after rotating if rotation created empty corners around the edges
+Trim the transparent corners after an angled rotate
 → /image-tools/crop-image
-Remove Background
-Remove the background from a rotated ID photo for plain-background compliance
-→ /image-tools/background-remover
+Resize Image
+Change dimensions after rotating
+→ /image-tools/resize-image
+Compress Image
+Shrink rotated files (supports batch + ZIP)
+→ /image-tools/compress-image
 Photo Editor
-Adjust brightness, contrast, and blur after rotating
+Rotate/flip as part of a bigger edit
 → /image-tools/photo-editor
+Convert from JPG
+Change output format after rotating
+→ /image-tools/convert-from-jpg
 All Image Tools
-Complete image tools suite
+The complete image tools suite
 → /image-tools
 
-[ Rotate Image Free - No Sign-Up → repetigo.com/image-tools/rotate-image ]
+[ Rotate an Image Free - 90° or Any Angle → repetigo.com/image-tools/rotate-image ]
 [ Explore All Image Tools → repetigo.com/image-tools ]`;
+
+const faqSchemaQuestions = Array.from(content.matchAll(/H3: ([^\n]+\?)\n([\s\S]*?)(?=\nH3:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
 export default function RotateImagePage() {
   return (
@@ -299,11 +225,9 @@ function StructuredSeoCopy({ content: source }: { content: string }) {
 }
 
 function getKnownTable(lines: string[]): SeoTableData | null {
-  if (lines[0] === "Operation" && lines[1] === "What It Does" && lines[2] === "Common Use") return { headers: ["Operation", "What It Does", "Common Use"], rows: chunkRows(lines.slice(3), 3) };
-  if (lines[0] === "Scenario" && lines[1] === "Problem") return { headers: ["Scenario", "Problem", "Correct Rotation"], rows: chunkRows(lines.slice(3), 3) };
-  if (lines[0] === "Indian Use Case" && lines[1] === "The Problem") return { headers: ["Indian Use Case", "The Problem", "The Fix"], rows: chunkRows(lines.slice(3), 3) };
-  if (lines[0] === "Feature" && lines[1] === "RepetiGo") return { headers: ["Feature", "RepetiGo", "Adobe Express", "Canva", "iloveimg"], rows: chunkRows(lines.slice(5), 5) };
-  if (lines[0] === "Protection Layer" && lines[1] === "What It Means in Practice") return { headers: ["Protection Layer", "What It Means in Practice"], rows: chunkRows(lines.slice(2), 2) };
+  if (lines[0] === "Step" && lines[1] === "What You Do" && lines[2] === "What Happens") return { headers: ["Step", "What You Do", "What Happens"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "Scenario" && lines[1] === "Problem") return { headers: ["Scenario", "Problem", "How to fix it here"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "People often ask for…" || lines[0] === "People often ask for...") return { headers: ["People often ask for…", "The honest answer"], rows: chunkRows(lines.slice(2), 2) };
   if (lines[0] === "Tool" && lines[1] === "What It Does" && lines[2] === "Link") return { headers: ["Tool", "What It Does", "Link"], rows: chunkRows(lines.slice(3), 3) };
   return null;
 }
@@ -342,7 +266,7 @@ function renderTableCell(cell: string) {
 }
 
 function renderInlineMappedLinks(text: string) {
-  const parts = text.split(/(repetigo\.com\/(?:tools\/image\/[a-z-]*|pricing)\/?|\/image-tools\/[a-z-]*\/?|\/image-tools\/?|\/products\/printpilot\/?|\/privacy-policy\/?|\/pricing\/?)/g);
+  const parts = text.split(/(repetigo\.com\/(?:image-tools\/[a-z-]*|pricing)\/?|\/image-tools\/[a-z-]*\/?|\/image-tools\/?|\/products\/printpilot\/?|\/privacy-policy\/?|\/pricing\/?)/g);
   return parts.map((part, index) => {
     const href = mapSeoRoute(part.startsWith("repetigo.com") ? "https://" + part : part);
     if (!href) return part;
@@ -358,6 +282,7 @@ function mapSeoRoute(route: string) {
     "/image-tools/compress-image": "/image-tools/compress-image",
     "/image-tools/resize-image": "/image-tools/resize-image",
     "/image-tools/crop-image": "/image-tools/crop-image",
+    "/image-tools/convert-from-jpg": "/image-tools/convert-from-jpg",
     "/image-tools/background-remover": "/image-tools/background-remover",
     "/image-tools/photo-editor": "/image-tools/photo-editor",
     "/products/printpilot": "/print-automation",
@@ -374,6 +299,7 @@ function getRouteLabel(href: string) {
     "/image-tools/compress-image": "Open Compress Image",
     "/image-tools/resize-image": "Open Resize Image",
     "/image-tools/crop-image": "Open Crop Image",
+    "/image-tools/convert-from-jpg": "Open Convert from JPG",
     "/image-tools/background-remover": "Open Remove Background",
     "/image-tools/photo-editor": "Open Photo Editor",
     "/print-automation": "Learn About PrintPilot",
@@ -384,9 +310,10 @@ function getRouteLabel(href: string) {
 }
 
 function JsonLd() {
-  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Rotate Image", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online image rotator - rotate to any angle, flip horizontal or vertical, and batch rotate multiple images. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl };
-  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Rotate an Image Online Free", step: [{ "@type": "HowToStep", name: "Upload Image", text: "Upload Your Image" }, { "@type": "HowToStep", name: "Choose Rotation", text: "Choose Your Rotation" }, { "@type": "HowToStep", name: "Download", text: "Download Your Rotated Image" }] };
+  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Rotate Image", applicationCategory: "MultimediaApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free browser-based image rotator - rotate 90°, 180°, or any custom angle, flip horizontal or vertical, and batch-rotate multiple images with a ZIP download. Runs 100% in the browser - no file is ever uploaded to a server.", url: pageUrl };
+  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to rotate an image", step: [{ "@type": "HowToStep", name: "Upload your image(s)", text: "Click or drag-and-drop one or more JPG, PNG, or WebP files." }, { "@type": "HowToStep", name: "Set rotation & flip", text: "Use Left 90° / Right 90° / 180°, type a custom angle, or flip H/V." }, { "@type": "HowToStep", name: "Download", text: "Download each image, or grab them all as a ZIP." }] };
+  const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
   const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "Rotate Image", item: pageUrl }] };
 
-  return <>{[softwareApplication, howTo, breadcrumb].map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>;
+  return <>{[softwareApplication, howTo, faqPage, breadcrumb].map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>;
 }

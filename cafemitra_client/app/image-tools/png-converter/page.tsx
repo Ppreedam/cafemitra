@@ -4,215 +4,202 @@ import PngConverterClient from "./PngConverterClient";
 const pageUrl = "https://repetigo.com/image-tools/png-converter";
 
 export const metadata: Metadata = {
-  title: "PNG Converter Free Online - PNG to JPG, WebP, GIF, ICO, PDF | RepetiGo",
+  title: "PNG Converter Free - PNG to PDF, WebP, ICO, GIF & BMP | RepetiGo",
   description:
-    "Convert PNG to JPG, WebP, GIF, BMP, ICO, or PDF free online - one tool, every format. Batch convert multiple files. No sign-up, no watermark, 100% browser-based - nothing is ever uploaded.",
+    "Free PNG converter - convert PNG to PDF, WebP, ICO, GIF or BMP in your browser. Batch-convert and download a ZIP. No upload, no watermark, nothing to install.",
   alternates: { canonical: pageUrl },
   openGraph: {
-    title: "PNG Converter Free Online - PNG to JPG, WebP, GIF, ICO, PDF | RepetiGo",
-    description: "Convert PNG to JPG, WebP, GIF, BMP, ICO, or PDF free - one tool, every format. Batch convert. No sign-up, 100% browser-based.",
+    title: "PNG Converter Free - PNG to PDF, WebP, ICO, GIF & BMP",
+    description: "Convert PNG to PDF, WebP, ICO, GIF or BMP in your browser. Batch + ZIP, nothing uploaded.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
     card: "summary_large_image",
-    title: "PNG Converter Free - RepetiGo",
-    description: "Convert PNG to any format free, one file or a batch. No sign-up, 100% browser-based.",
+    title: "PNG Converter Free - PNG to 6 Formats",
+    description: "Free PNG converter: PDF/WebP/ICO/GIF/BMP/JPG. Batch + ZIP, 100% in your browser.",
   },
   robots: { index: true, follow: true },
 };
 
-const content = String.raw`H1: PNG Converter Online Free. Convert PNG to JPG, WebP, GIF, BMP, ICO, or PDF - One Tool, No Sign-Up.
-RepetiGo's free PNG Converter turns your PNG image into whichever format you actually need - JPG, WebP, GIF, BMP, ICO, or PDF - from a single tool. Upload a PNG, pick an output format, and download the result. Upload a batch and convert every file to the same format at once. No account, no watermark, and your files are never uploaded anywhere - conversion runs entirely inside your browser.
+const content = String.raw`H1: PNG Converter - Convert PNG to PDF, WebP, ICO, GIF, BMP or JPG.
 
-Different destinations need different formats: a portal upload usually wants JPG, a website wants WebP, a favicon wants ICO, an old system might only accept BMP, and a document workflow might want PDF. Instead of hunting for six separate converters, this page covers every common PNG output in one place.
+RepetiGo's PNG converter turns a PNG image into one of six formats - PDF, WebP, ICO, GIF, BMP, or JPG - free and in your browser. Upload one PNG or a whole batch, pick the output format, and download. It is the all-in-one tool for the conversions people need most from a PNG: a PDF for a document upload, a WebP for a faster website, an ICO for an app or site icon, and more. Everything runs on your device, so nothing is uploaded to a server.
+PNG is a great lossless format, but plenty of situations call for something else - a portal that wants a PDF, a website that needs WebP, or software that requires a BMP. Rather than hunting for a different tool each time, this png converter handles them all in one place. Below, each output is explained honestly, including exactly what you get for GIF and ICO.
 
-✓ 6 Output Formats in One Tool   ✓ Batch Convert   ✓ Adjustable Quality Where It Applies   ✓ No Sign-Up   ✓ 100% Browser-Based - Nothing Uploaded
+✓ Free · No sign-up · No watermark   ✓ PNG → PDF · WebP · ICO · GIF · BMP · JPG   ✓ Batch + ZIP   ✓ 100% in your browser - nothing uploaded
 
-[ Convert PNG Free - No Sign-Up → repetigo.com/image-tools/png-converter ]
+H2: How to Convert a PNG in 3 Steps.
+Here is how to convert a PNG with RepetiGo. Choose your target format and go.
 
-H2: What Format Should You Convert Your PNG To?
-The right output format depends entirely on where the file is going. Converting to the wrong format either fails outright (a portal rejecting WebP) or wastes an opportunity (using PNG on a website when WebP would load faster). Here's how the common PNG output formats compare:
+Step
+What You Do
+What Happens
+1. Upload your PNG(s)
+Drop or select one or more .png files.
+Each converts to JPG at 90% by default to start.
+2. Choose the output
+Pick PDF, WebP, ICO, GIF, BMP or JPG; set quality for JPG/WebP.
+A helper note explains what that format gives you.
+3. Download
+Convert and download each file, or grab a ZIP.
+You get the file in your chosen format.
 
-H3: PNG Output Format Comparison
+🔒 Every conversion happens in your browser - your PNG files are never uploaded to RepetiGo or any server.
+
+H2: The Six Output Formats.
+Here is what each output is for - and, where it matters, an honest note on exactly what you get.
 
 Format
-Best For
-Transparency
-Compression
-When to Choose It
-JPG
-Photos, portal uploads, printing, email, general sharing
-✗ Not supported
-Lossy - smaller files
-Universal compatibility is the priority, and you don't need transparency
-WebP
-Website images, faster page loads
-✓ Supported
-Lossy or lossless
-You're optimizing images for a website and control what serves them
-GIF
-Simple flat-colour graphics, basic icons
-✓ 1-bit only (fully on or off)
-Limited to 256 colours
-You specifically need the legacy GIF format, not photos or gradients
-BMP
-Legacy Windows software, some print or embedded systems
-✓ Supported (uncompressed alpha)
-None - uncompressed
-An older system specifically requires BMP and file size doesn't matter
-ICO
-Favicons, Windows application icons
-✓ Supported
-None - wraps the image directly
-You need a small icon file for a browser tab or a Windows app
+Best for
+Note
 PDF
-Document workflows, sharing a single image as a document
-✓ Supported (rendered as image)
-None - PNG embedded as-is
-The destination expects a document file, not an image file
+Document uploads, sharing
+Single page; image = full page
+WebP
+Faster websites, smaller files
+Quality slider (40–100%)
+JPG
+Photos, small files, portals
+Quality slider; transparency → white
+ICO
+App / site icons
+Single-size icon (not a multi-size favicon set)
+GIF
+A simple image as .gif
+Single frame, 256 colours (not animated)
+BMP
+Legacy software needing bitmaps
+24-bit BMP
 
-💡 If you need SVG output instead - a scalable vector version of your PNG logo or icon - that's a different operation from format conversion (SVG is generated by tracing the image into vector paths, not by simply relabeling it). Use RepetiGo's dedicated PNG to SVG converter for real vector tracing.
+The JPG and WebP outputs have a quality slider; GIF, BMP, ICO, and PDF do not, because those formats do not use the same lossy quality setting. Two outputs - GIF and ICO - come with caveats worth reading before you rely on them, covered below.
 
-H2: How to Convert PNG Online Free in 3 Steps.
-H3: Step 1 - Upload Your PNG File
-Click Select PNG Images or drag and drop your .png file - or several PNG files at once for batch conversion. There's no fixed file size cap, because everything runs on your own device. The converter works in any browser on any device.
-H3: Step 2 - Choose Your Output Format
-As soon as you upload, RepetiGo converts your PNG automatically to JPG at 90% quality by default. Change Output Format to switch between JPG, WebP, GIF, BMP, ICO, or PDF - every uploaded file re-converts automatically to the new format. For JPG and WebP, a quality slider appears so you can balance file size against visual detail; the other formats don't need a quality setting, since GIF, BMP, ICO, and PDF each work differently under the hood.
-H3: Step 3 - Download Your Converted File
-Click Download for a single file. For a batch, click Download ZIP to get every converted file in one archive. File names are preserved with the new extension (photo.png → photo.jpg). Because nothing was ever uploaded, there's nothing left on any server once you're done.
+H2: Convert PNG to PDF.
+Turning a PNG into a PDF is one of the most useful conversions, because so many portals, forms, and email workflows expect PDF documents. To convert PNG to PDF, upload the image, choose PDF as the output, and download a single-page PDF with your image embedded. It is the quick way to make a screenshot, scan, or graphic into an uploadable document. This covers the common convert PNG to PDF and how to convert PNG to PDF needs directly, right in the browser.
+One honest note on the format: it produces a single-page PDF where the page is sized to your image, rather than a fixed A4 or Letter page, and it converts one PNG into one PDF. There is no option to set margins, orientation, or combine several PNGs into a multi-page PDF here. For a straightforward PNG-to-PDF, that is exactly what you want; if you need to merge many images into one paged document, that is a job for a dedicated PDF tool.
 
-[ Convert PNG Free Now → repetigo.com/image-tools/png-converter ]
+📄 PNG → PDF is single-image, single-page, sized to the image. No margins, A4/Letter, or multi-image merge - use a dedicated PDF tool for those.
 
-H2: ★ Batch PNG Conversion.
-Whether it's a folder of product photos, a set of app icons, or a batch of scanned documents, converting PNG files one at a time is slow. RepetiGo's batch converter handles any number of files in one session:
-Upload all PNG files at once - drag a multi-file selection or Ctrl+Click (Windows) / Cmd+Click (Mac) to multi-select.
-Each file converts automatically to your chosen format as it's added.
-Change the output format or quality at any point to re-convert every file in the batch.
-Click Download ZIP to get one archive containing all the converted files, named identically to the originals.
+H2: Convert PNG to WebP.
+WebP makes noticeably smaller files than PNG at similar quality, which is why it is popular for websites - smaller images mean faster pages. To convert PNG to WebP, upload the file, choose WebP as the output, and use the quality slider (40–100%) to balance size against detail. It is an easy way to shrink heavy PNGs for a site without a visible quality drop, and the quality slider gives you control that the lossless formats do not need.
 
-💡 Every file in a batch converts to the same output format. If you need some PNGs as JPG and others as ICO, run them through in two separate batches - upload, convert, download, then start over with the next group and a different format.
+H2: Convert PNG to ICO / Icon.
+An ICO file is the classic Windows icon format, used for application icons and website favicons. To convert a PNG to an icon, upload a square PNG (icons look best square), choose ICO as the output, and download the .ico file. The tool builds a genuine ICO that wraps your image, ready to use as an app or site icon.
+The honest caveat, the same as with any single-step icon maker: this creates a single-size .ico file. A fully standards-compliant website favicon bundles several sizes (16×16, 32×32, 48×48, 256×256) into one file so browsers can pick the right one. This tool makes a single-resolution icon, which works for many uses but is not the complete multi-size favicon set. For a basic app or site icon it is perfect; for a full favicon bundle, use a dedicated favicon generator. Start from a good-sized square PNG for the crispest result.
 
-H2: ★ Indian Use Cases - Who Uses a PNG Converter in India?
-PNG is the default screenshot and graphic format on most Windows and Android devices in India, which means PNG files constantly need to become something else depending on where they're headed next.
+💡 For an icon, start from a square PNG (e.g. 256×256). Note the .ico is a single size - great as an app/site icon, but not the full multi-size favicon bundle.
 
-Who Uses It
-Common Need
-Format They Choose
-Students and job applicants
-Converting a PNG screenshot or scanned certificate for a portal upload
-JPG - smaller file, accepted everywhere
-Web developers and agencies
-Preparing PNG assets for faster-loading websites
-WebP - smaller files without losing transparency
-Small business owners
-Creating a favicon or app icon from their PNG logo
-ICO - the format browsers and Windows expect for icons
-Print shops and DTP centres
-Handling PNG files for older layout or print software
-BMP - universally readable by legacy software
-Freelancers and consultants
-Sending a single design or screenshot as a shareable document
-PDF - opens the same way on any device without an image viewer
-Developers building simple graphics or older web content
-Occasionally still need the legacy GIF format for basic icons
-GIF - for flat-colour graphics only, not photos
+H2: Convert PNG to GIF - Single Frame.
+You can convert a PNG to a GIF here, with one important thing to understand: it produces a single-frame, 256-colour GIF - not an animation. To convert PNG to GIF, upload the PNG, choose GIF, and download. The tool reduces the image to a 256-colour palette (which is how GIF works) and saves it as one still frame. That is exactly right when you simply need a .gif version of a static image.
+What it does not do is create an animated GIF. If you were hoping to combine several PNG frames into a moving GIF, that is a different feature this tool does not have - it converts one PNG into one still GIF. Also note that GIF's 256-colour limit can shift the look of a photo with many colours, so for detailed images WebP or JPG is usually a better choice than GIF.
 
-H2: Why Use RepetiGo's PNG Converter?
+⚠️ PNG → GIF is a SINGLE, still frame (256 colours) - it does NOT make an animated GIF from multiple PNGs. For a photo with many colours, WebP or JPG keeps the look better.
 
-Feature
-RepetiGo
-CloudConvert
-Online-Convert.com
-Windows Paint
-Free to use
-✓ Always free
-✓ Free (25 conversions/day)
-✓ Free with limits
-✓ Free (built-in)
-Multiple output formats in one tool
-✓ JPG, WebP, GIF, BMP, ICO, PDF
-✓ Many formats
-✓ Many formats
-~ Limited formats
-Sign-up required
-✓ Never
-✗ Account for higher limits
-~ Sometimes
-✓ No account
-Batch conversion
-✓ Yes - upload any number of files
-✓ Yes (limit applies)
-~ Limited
-✗ One file at a time
-Files ever leave your device?
-✗ Never - 100% browser-based
-✓ Yes - uploaded to their servers
-✓ Yes - uploaded to their servers
-✓ Never - local
-No watermark on output
-✓ Always
-✓ Yes
-~ Some tiers add watermarks
-✓ Yes
+H2: Convert PNG to BMP.
+BMP is an old, uncompressed bitmap format that some legacy software and specific workflows still require. To convert a PNG to BMP, upload it, choose BMP, and download. The tool uses a purpose-built 24-bit BMP encoder that writes a proper bitmap file from your image. Because BMP is uncompressed, the file will be larger than the PNG - that is normal for the format. It is a handy conversion precisely because BMP support is rare in simple online tools.
 
-H2: Your Files Are Safe. Always.
+H2: Quality & Transparency Notes.
+A couple of details help you get the result you expect. The quality slider (40–100%) appears only for JPG and WebP outputs, because those are the formats where you trade file size against detail; for GIF, BMP, ICO, and PDF there is no such setting, so the slider is hidden. The default is a high 90% for JPG and WebP, which suits most uses.
+On transparency: PNG supports it, but not every output format does. When you convert a PNG with a transparent background to JPG, the transparent areas are filled with white, because JPG cannot store transparency. WebP and GIF handle transparency differently, and PDF places the image on a page. If keeping a transparent background is essential, JPG is not the right output - but for most document and web uses, these behaviours are exactly what you want.
 
-Protection Layer
-What It Means in Practice
-🖥️ 100% Browser-Based Conversion
-Your PNG is converted using your own device's processing power via the browser. It is never uploaded to any server.
-🚫 Nothing Ever Leaves Your Device
-Because conversion happens locally, there is no upload, no transfer, and nothing on any server for us to store or delete.
-👁️ No Image Content Is Read
-RepetiGo's code cannot see, analyse, or extract what's in your image - it only re-encodes pixel data on your own device.
-🚫 No Account = No Data Profile
-No sign-up means no personal data, no file history, and no usage profile is ever created.
-🔒 Well Suited to Logos, Screenshots, and Personal Files
-Because nothing is transmitted anywhere, this is a safe way to convert an unreleased design, a personal document, or a confidential screenshot.
+H2: Batch Convert Multiple PNGs (with ZIP).
+You are not limited to one file. Add as many PNGs as you like - each gets its own card - pick your output format, and convert them all at once. Download each result individually or grab the whole set as a single ZIP, named for the format so you know what is inside. If one file has a problem, it fails on its own without stopping the rest of the batch, so a large set converts reliably.
 
-[ Read Our Privacy Policy → /privacy-policy ]
+✅ Real batch support: convert a whole set of PNGs to your chosen format and download them as one ZIP - all in your browser, with per-file error handling.
 
-H2: Common Questions About PNG Conversion.
-H3: Q1: Does Converting PNG to JPG, WebP, or GIF Reduce Quality?
-It depends on the format. JPG and WebP use lossy compression - at quality 90 and above, the result is visually indistinguishable from the PNG source, though some fine detail is technically discarded. GIF is more limited: it's restricted to 256 colours total and only 1-bit transparency (fully transparent or fully opaque, no partial transparency), so a GIF conversion can visibly change a PNG with smooth gradients or more than 256 colours. BMP, ICO, and PDF all preserve the image data without lossy compression, so there's no quality trade-off with those formats - the difference is file size and compatibility, not visual quality.
-H3: Q2: What's the Difference Between ICO and PNG for a Favicon?
-Browsers and operating systems have historically expected the ICO format specifically for favicons and Windows application icons, and some older browsers only support ICO, not PNG, in that role. Modern browsers do accept PNG favicons too, but ICO remains the safest, most universally compatible choice if you want the icon to work correctly everywhere, including in Windows shortcuts and older software. Converting your PNG logo to ICO here gives you a properly formatted favicon file.
-H3: Q3: Can I Convert PNG to SVG With This Tool?
-Not with this specific converter - PNG to SVG is a fundamentally different operation. Format conversion (what this page does) re-encodes the same pixel data in a new file format. Converting to SVG means tracing the image into vector paths - a different algorithm entirely, only useful for flat-colour logos, icons, and line art rather than photos. RepetiGo's dedicated PNG to SVG converter handles that with real vector tracing and adjustable detail levels.
-H3: Q4: Why Does My Converted GIF Look Different From the Original PNG?
-GIF is limited to a palette of 256 colours and 1-bit transparency, both stricter limits than PNG's millions of colours and full alpha channel. If your PNG has smooth gradients, photographic detail, or partially transparent areas, converting to GIF will visibly simplify those parts of the image, since GIF has no way to represent them precisely. This is expected behaviour of the GIF format itself, not a conversion error. GIF conversion works best on simple, flat-colour graphics like basic icons or logos with solid colours.
-H3: Q5: How Do I Batch Convert Multiple PNG Files at Once?
-Go to repetigo.com/image-tools/png-converter. Click Select PNG Images and choose multiple files using Ctrl+Click (Windows) or Cmd+Click (Mac), or drag several files into the upload area at once. Each file converts automatically to your chosen output format. Click Download ZIP to get an archive containing all the converted files, named identically to the originals. There's no file count limit per batch, and every file in the batch converts to the same format and quality setting.
+H2: ★ Indian Use Cases - Documents & Web.
+For users in India, PNG conversion is a daily need - especially turning images into PDFs for the many portals and forms that require documents.
 
-H2: More Free Image Tools from RepetiGo.
+Scenario
+Need
+How to do it here
+Portal wants a PDF
+A screenshot/scan as a document
+Convert PNG → PDF, then upload
+Faster website
+Heavy PNGs slow the site
+Convert PNG → WebP with the quality slider
+Website favicon / app icon
+A .ico from a logo
+Convert PNG → ICO (single size)
+Portal wants JPG
+A flat JPG image
+Use the PNG to JPG tool (linked)
+Legacy software
+A 24-bit bitmap
+Convert PNG → BMP
 
+🇮🇳 Document tip: convert a screenshot or scan PNG to PDF here for a portal upload; if the PDF or image must be under a size limit, compress first at /image-tools/compress-image.
+
+H2: What This Converter Does Not Do.
+So you know whether it fits before you start, here is what this converter is not for - and where to go instead.
+
+People often ask for…
+The honest answer
+Convert PNG to JPG
+Yes it can - but the dedicated PNG to JPG tool is the focused option
+Convert PNG to SVG (vectorise)
+No - there is no SVG output; this does not vectorise
+Convert PNG to TIFF, CDR, DXF, PSD or a CAD format
+No - the outputs are PDF/WebP/ICO/GIF/BMP/JPG only
+Convert PNG to Word / Excel / PPT
+No - those are documents, not image outputs
+Make an animated GIF from several PNGs
+No - GIF output is a single still frame
+A full multi-size favicon (16/32/48/256)
+No - the .ico is a single size
+Convert another format INTO a PNG
+No - input here is PNG only (see reverse tools)
+
+H2: PNG Converter - Frequently Asked Questions.
+H3: Is this PNG converter free?
+Yes - RepetiGo's PNG converter is completely free with no sign-up and no watermark. Because it converts in your browser rather than on a paid server, all six outputs - PDF, WebP, ICO, GIF, BMP, and JPG - plus batch conversion with a ZIP are available at no cost. There is nothing to unlock.
+H3: How do I convert a PNG to PDF?
+Upload the PNG, choose PDF as the output, and download - you get a single-page PDF with your image embedded, sized to the image. It is ideal for a portal or form that only accepts PDF documents. Note it makes one PDF per image and does not merge several PNGs into a multi-page document; for that, use a dedicated PDF tool.
+H3: How do I convert a PNG to WebP?
+Upload the PNG, choose WebP, and use the quality slider (40–100%) to balance size against detail. WebP makes much smaller files than PNG at similar quality, which is great for speeding up a website. The quality slider appears for WebP and JPG only, since those are the formats where the size-versus-detail trade-off applies.
+H3: Can I make an animated GIF from PNGs?
+No - the GIF output is a single, still frame (256 colours), not an animation. Converting a PNG to GIF gives you a .gif version of that one image; it does not combine several PNG frames into a moving GIF. If you need a still .gif, this works well, but for animation you would need a dedicated animated-GIF maker.
+H3: Will the ICO work as a website favicon?
+It works as a basic icon, with a caveat: the tool makes a single-size .ico, while a fully standards-compliant favicon bundles several sizes (16, 32, 48, 256px) in one file. For an app icon or a simple favicon it is fine; for a complete multi-size favicon set, use a dedicated favicon generator. Start from a square PNG for the best result.
+H3: Can it convert a PNG to JPG?
+Yes - JPG is one of the six outputs, and transparent areas are filled white since JPG has no transparency. That said, if converting to JPG is your main goal, the dedicated PNG to JPG tool is the focused option and is linked below. Use this converter when you want PDF, WebP, ICO, GIF, or BMP, or the convenience of choosing among all of them.
+H3: Can it convert PNG to SVG, TIFF, or a CAD format?
+No. The outputs are PDF, WebP, ICO, GIF, BMP, and JPG only. It does not produce SVG (it does not vectorise a PNG), TIFF, or CAD/vector formats like CDR, DXF, DWG, or PSD. If you need one of those, this is not the right tool; it is focused on the six common outputs above.
+H3: What happens to transparency?
+It depends on the output. Converting a transparent PNG to JPG fills the transparent areas with white, because JPG cannot store transparency. WebP and GIF handle transparency in their own way, and PDF places the image on a page. If keeping a transparent background is essential, avoid JPG output; for most document and web uses, the default behaviour is what you want.
+H3: Can I convert several PNGs at once?
+Yes. Add as many PNGs as you like, choose an output format, and convert them all - then download each file or grab the whole set as a single ZIP named for the format. If one file has a problem it fails on its own without stopping the others, so large batches convert reliably in one go.
+H3: Are my PNG files uploaded to a server?
+No. The converter runs entirely in your browser using the canvas and purpose-built encoders, so your PNG files never leave your device and nothing is sent to RepetiGo. That keeps your files private, works on a weak connection, and is why there is no watermark on your converted images.
+
+H2: Related Image Tools.
 Tool
 What It Does
 Link
-PNG to SVG
-Vectorize a PNG logo or icon into a real, scalable SVG
-→ /image-tools/png-to-svg
 PNG to JPG
-Dedicated PNG to JPG converter with quality control
+Dedicated PNG → JPG converter
 → /image-tools/png-to-jpg
-SVG Converter
-Convert an SVG file into PNG or JPG at any size
-→ /image-tools/svg-converter
+WebP to PNG
+The reverse: WebP → lossless PNG
+→ /image-tools/webp-to-png
+Image Converter
+Convert any image between formats
+→ /image-tools/image-converter
 Compress Image
-Reduce file size further after conversion
+Shrink the converted file (batch + ZIP)
 → /image-tools/compress-image
 Resize Image
-Resize a PNG before or after converting it
+Precise pixel resizing
 → /image-tools/resize-image
 All Image Tools
-Complete free image tools suite
+The complete image tools suite
 → /image-tools
 
-[ Convert PNG Free - No Sign-Up → repetigo.com/image-tools/png-converter ]
+[ Convert a PNG Free - to PDF, WebP, ICO & More → repetigo.com/image-tools/png-converter ]
 [ Explore All Image Tools → repetigo.com/image-tools ]`;
 
-const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
+const faqSchemaQuestions = Array.from(content.matchAll(/H3: ([^\n]+\?)\n([\s\S]*?)(?=\nH3:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
 export default function PngConverterPage() {
   return (
@@ -226,7 +213,7 @@ export default function PngConverterPage() {
 }
 
 type SeoTableData = { headers: string[]; rows: string[][] };
-const CALLOUT_EMOJI = ["💡", "🇮🇳", "🔒", "🖨️", "📱", "✅", "⚠️", "🖥️", "🔁", "🔄", "★"];
+const CALLOUT_EMOJI = ["💡", "🇮🇳", "🔒", "🖨️", "📱", "✅", "⚠️", "🖥️", "🔁", "🔄", "★", "📄"];
 
 function StructuredSeoCopy({ content: source }: { content: string }) {
   const blocks = source.replace(/(^|\n)(H[123]: [^\n]+)\n/g, "$1\n$2\n\n").split(/\n{2,}/).map((block) => block.trim()).filter(Boolean);
@@ -265,10 +252,10 @@ function StructuredSeoCopy({ content: source }: { content: string }) {
 }
 
 function getKnownTable(lines: string[]): SeoTableData | null {
-  if (lines[0] === "Format" && lines[1] === "Best For") return { headers: ["Format", "Best For", "Transparency", "Compression", "When to Choose It"], rows: chunkRows(lines.slice(5), 5) };
-  if (lines[0] === "Who Uses It" && lines[1] === "Common Need") return { headers: ["Who Uses It", "Common Need", "Format They Choose"], rows: chunkRows(lines.slice(3), 3) };
-  if (lines[0] === "Feature" && lines[1] === "RepetiGo") return { headers: ["Feature", "RepetiGo", "CloudConvert", "Online-Convert.com", "Windows Paint"], rows: chunkRows(lines.slice(5), 5) };
-  if (lines[0] === "Protection Layer" && lines[1] === "What It Means in Practice") return { headers: ["Protection Layer", "What It Means in Practice"], rows: chunkRows(lines.slice(2), 2) };
+  if (lines[0] === "Step" && lines[1] === "What You Do" && lines[2] === "What Happens") return { headers: ["Step", "What You Do", "What Happens"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "Format" && lines[1] === "Best for" && lines[2] === "Note") return { headers: ["Format", "Best for", "Note"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "Scenario" && lines[1] === "Need") return { headers: ["Scenario", "Need", "How to do it here"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "People often ask for…" || lines[0] === "People often ask for...") return { headers: ["People often ask for…", "The honest answer"], rows: chunkRows(lines.slice(2), 2) };
   if (lines[0] === "Tool" && lines[1] === "What It Does" && lines[2] === "Link") return { headers: ["Tool", "What It Does", "Link"], rows: chunkRows(lines.slice(3), 3) };
   return null;
 }
@@ -320,9 +307,9 @@ function mapSeoRoute(route: string) {
   const routeMap: Record<string, string> = {
     "/image-tools": "/image-tools",
     "/image-tools/png-converter": "/image-tools/png-converter",
-    "/image-tools/png-to-svg": "/image-tools/png-to-svg",
     "/image-tools/png-to-jpg": "/image-tools/png-to-jpg",
-    "/image-tools/svg-converter": "/image-tools/svg-converter",
+    "/image-tools/webp-to-png": "/image-tools/webp-to-png",
+    "/image-tools/image-converter": "/image-tools/image-converter",
     "/image-tools/compress-image": "/image-tools/compress-image",
     "/image-tools/resize-image": "/image-tools/resize-image",
     "/products/printpilot": "/print-automation",
@@ -336,9 +323,9 @@ function getRouteLabel(href: string) {
   const labels: Record<string, string> = {
     "/image-tools": "Explore All Image Tools",
     "/image-tools/png-converter": "Open PNG Converter",
-    "/image-tools/png-to-svg": "Open PNG to SVG",
     "/image-tools/png-to-jpg": "Open PNG to JPG",
-    "/image-tools/svg-converter": "Open SVG Converter",
+    "/image-tools/webp-to-png": "Open WebP to PNG",
+    "/image-tools/image-converter": "Open Image Converter",
     "/image-tools/compress-image": "Open Compress Image",
     "/image-tools/resize-image": "Open Resize Image",
     "/print-automation": "Learn About PrintPilot",
@@ -349,8 +336,8 @@ function getRouteLabel(href: string) {
 }
 
 function JsonLd() {
-  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo PNG Converter", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online PNG converter supporting JPG, WebP, GIF, BMP, ICO, and PDF output with batch conversion. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl };
-  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert PNG Online Free", step: [{ "@type": "HowToStep", name: "Upload PNG", text: "Upload Your PNG File" }, { "@type": "HowToStep", name: "Choose Format", text: "Choose Your Output Format" }, { "@type": "HowToStep", name: "Download", text: "Download Your Converted File" }] };
+  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo PNG Converter", applicationCategory: "MultimediaApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free browser-based PNG converter - convert a PNG to PDF, WebP, ICO, GIF, BMP, or JPG, with batch conversion to a ZIP. Runs 100% in the browser - no file is ever uploaded to a server.", url: pageUrl };
+  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to convert a PNG", step: [{ "@type": "HowToStep", name: "Upload your PNG(s)", text: "Drop or select one or more .png files." }, { "@type": "HowToStep", name: "Choose the output", text: "Pick PDF, WebP, ICO, GIF, BMP or JPG; set quality for JPG/WebP." }, { "@type": "HowToStep", name: "Download", text: "Convert and download each file, or grab a ZIP." }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
   const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "PNG Converter", item: pageUrl }] };
 
