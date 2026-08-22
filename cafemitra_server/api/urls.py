@@ -12,10 +12,13 @@ urlpatterns = [
     re_path(r"^admin/shops/(?P<shop_id>[0-9]+)/adjust-balance/?$", admin_views.admin_shop_adjust_balance),  # POST manual wallet credit/debit with a mandatory reason (audit-logged)
     re_path(r"^admin/shops/(?P<shop_id>[0-9]+)/suspend/?$", admin_views.admin_shop_suspend),  # POST deactivate a shop account
     re_path(r"^admin/shops/(?P<shop_id>[0-9]+)/reactivate/?$", admin_views.admin_shop_reactivate),  # POST reactivate a suspended shop account
+    re_path(r"^admin/shops/(?P<shop_id>[0-9]+)/delete/?$", admin_views.admin_shop_delete),  # POST permanently delete a shop account and all its data (requires confirmEmail match)
+    re_path(r"^admin/shops/(?P<shop_id>[0-9]+)/orders/?$", admin_views.admin_shop_orders),  # GET paginated order history for one shop, filterable by status
     re_path(r"^admin/orders/stuck/?$", admin_views.admin_stuck_orders),  # GET awaiting-approval / stuck photo jobs across all shops
     re_path(r"^admin/orders/?$", admin_views.admin_orders),  # GET paginated/filtered platform-wide order list (shop, service, paymentMode, status, from, to)
     re_path(r"^admin/orders/(?P<order_id>[0-9]+)/?$", admin_views.admin_order_detail),  # GET full order detail (any shop, admin-only)
     re_path(r"^admin/wallet/ledger/?$", admin_views.admin_wallet_ledger),  # GET platform-wide wallet transaction ledger (shop, type, from, to)
+    re_path(r"^admin/wallet/ledger/summary/?$", admin_views.admin_wallet_ledger_summary),  # GET lifetime credit/debit totals + current balance for one shop (shop required)
     re_path(r"^admin/wallet/topups/?$", admin_views.admin_wallet_topups),  # GET gateway-wise top-up list (gateway, status)
     re_path(r"^admin/withdrawals/?$", admin_views.admin_withdrawals),  # GET withdrawal request queue (status)
     re_path(r"^admin/withdrawals/(?P<withdrawal_id>[0-9]+)/approve/?$", admin_views.admin_withdrawal_approve),  # POST mark a pending withdrawal as paid

@@ -21,6 +21,7 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.db import transaction
 from django.db.models import Count, Max, Q, Sum
+from django.db.models.functions import Substr
 from django.http import FileResponse, HttpResponse, HttpResponseRedirect, JsonResponse
 from django.utils.html import escape
 from django.utils import timezone
@@ -1293,25 +1294,29 @@ def public_wallet_config():
 
 
 def wallet_collection_summary(user):
-    online_collected = (
-        WalletTransaction.objects.filter(user=user, kind=WalletTransaction.KIND_ONLINE_ORDER_CREDIT)
-        .aggregate(total=Sum("amount"))
-        .get("total")
-        or Decimal("0.00")
+    # One query with three conditional sums instead of three separate
+    # aggregate() round trips - each round trip to a remote DB adds latency
+    # this call pays on every wallet-page and admin-shop-page load.
+    totals = WalletTransaction.objects.filter(user=user).aggregate(
+        online=Sum("amount", filter=Q(kind=WalletTransaction.KIND_ONLINE_ORDER_CREDIT)),
+        cash=Sum("amount", filter=Q(kind=WalletTransaction.KIND_CASH_COUNTER_COLLECTION)),
+        # The signup bonus is promotional credit, not money the shop actually
+        # earned - it counts toward the spendable wallet balance (tool usage
+        # can still draw on it) but must never itself be cashed out via
+        # withdrawal.
+        signup=Sum("amount", filter=Q(kind=WalletTransaction.KIND_SIGNUP_BONUS, direction=WalletTransaction.DIRECTION_CREDIT)),
     )
-    cash_collected = (
-        WalletTransaction.objects.filter(user=user, kind=WalletTransaction.KIND_CASH_COUNTER_COLLECTION)
-        .aggregate(total=Sum("amount"))
-        .get("total")
-        or Decimal("0.00")
-    )
+    online_collected = totals["online"] or Decimal("0.00")
+    cash_collected = totals["cash"] or Decimal("0.00")
+    signup_bonus_credited = totals["signup"] or Decimal("0.00")
     total_collected = (online_collected + cash_collected).quantize(Decimal("0.01"))
     balance = wallet_balance(user)
-    net_withdrawable = max(balance, Decimal("0.00")).quantize(Decimal("0.01"))
+    net_withdrawable = max(balance - signup_bonus_credited, Decimal("0.00")).quantize(Decimal("0.01"))
     return {
         "onlineCollected": online_collected.quantize(Decimal("0.01")),
         "cashCounterCollected": cash_collected.quantize(Decimal("0.01")),
         "totalCollected": total_collected,
+        "signupBonusCredited": signup_bonus_credited.quantize(Decimal("0.01")),
         "netWithdrawable": net_withdrawable,
     }
 
@@ -1618,15 +1623,34 @@ def public_shop(shop):
 
 
 def ensure_service_pricing(user):
+    """Called on nearly every pricing-touching request (order creation, the
+    admin shop page, the owner's pricing screen...) to backfill any default
+    service a user's account is missing. Reading all of a user's existing
+    rows up front and only writing what's actually missing/stale turns the
+    common case (everything already there) into one query instead of one
+    get_or_create round trip per default service.
+    """
+    existing = {p.service_key: p for p in ServicePricing.objects.filter(user=user, service_key__in=DEFAULT_SERVICE_PRICING.keys())}
+
+    to_create = []
+    to_update = []
+    now = timezone.now()
     for service_key, service in DEFAULT_SERVICE_PRICING.items():
-        pricing, created = ServicePricing.objects.get_or_create(
-            user=user,
-            service_key=service_key,
-            defaults={"service_name": service["serviceName"], "settings": service["settings"]},
-        )
-        if not created and pricing.service_name != service["serviceName"]:
+        pricing = existing.get(service_key)
+        if pricing is None:
+            to_create.append(ServicePricing(user=user, service_key=service_key, service_name=service["serviceName"], settings=service["settings"]))
+        elif pricing.service_name != service["serviceName"]:
             pricing.service_name = service["serviceName"]
-            pricing.save(update_fields=["service_name", "updated_at"])
+            pricing.updated_at = now
+            to_update.append(pricing)
+
+    if to_create:
+        # ignore_conflicts guards the rare race of two concurrent requests
+        # both finding a service "missing" for a brand-new user - whichever
+        # insert loses just gets silently skipped, same end state as before.
+        ServicePricing.objects.bulk_create(to_create, ignore_conflicts=True)
+    if to_update:
+        ServicePricing.objects.bulk_update(to_update, ["service_name", "updated_at"])
 
 
 def public_pricing(pricing):
@@ -1638,33 +1662,69 @@ def public_pricing(pricing):
     }
 
 
+# PrintOrder columns that can hold large payloads - passport-photo orders
+# were measured up to ~2.7MB in gemini_photo and ~400KB in original_filename
+# (the AI result and raw upload live as base64 data URIs directly on the
+# row - see the is_passport branch below). No list view ever renders that
+# raw data, but a plain `.filter(...).order_by(...)[:20]` still pulls every
+# column via SELECT *, so listing 20 orders for an active passport-photo
+# shop could mean transferring tens of megabytes just to throw it away.
+# Every list-style queryset (as opposed to fetching one order for its own
+# detail view) should go through order_list_queryset() below instead of
+# querying PrintOrder directly.
+ORDER_LIST_DEFERRED_FIELDS = ("gemini_photo", "original_filename", "resume_data", "biodata_data", "passport_prompt")
+
+
+def order_list_queryset(queryset):
+    """Defers the large columns and replaces the few booleans/short values
+    public_order(..., include_media=False) still needs with SQL-computed
+    annotations, so Postgres answers "is there a photo" / "what's the
+    filename" without the multi-megabyte value ever crossing the wire.
+    """
+    return queryset.defer(*ORDER_LIST_DEFERRED_FIELDS).annotate(
+        _list_is_data_uri=Q(original_filename__startswith="data:"),
+        _list_has_gemini_photo=~Q(gemini_photo=""),
+        _list_file_name=Substr("original_filename", 1, 300),
+    )
+
+
 def public_order(order, include_media=True):
     token_id = order.token_id or f"{order.shop_code}-T{order.token_number:03d}"
     is_passport = order.service_key == "passport_photo"
+    has_document = bool(order.document)
+
+    if include_media:
+        is_data_uri = order.original_filename.startswith("data:")
+        has_gemini_photo = bool(order.gemini_photo)
+        safe_file_name = order.original_filename
+    else:
+        # Reads the order_list_queryset() annotations instead of the
+        # (possibly deferred, possibly multi-megabyte) raw columns - falls
+        # back to False/"" for any caller that passes include_media=False
+        # without going through order_list_queryset first.
+        is_data_uri = bool(getattr(order, "_list_is_data_uri", False))
+        has_gemini_photo = bool(getattr(order, "_list_has_gemini_photo", False))
+        safe_file_name = getattr(order, "_list_file_name", "") or ""
+
     if is_passport:
-        # Raw upload and AI result live as base64 data URIs directly on the
-        # order row for this service - no file on disk to build a URL for.
-        # Orders created before this switched over still have a real file
-        # instead, so fall back to that. These base64 payloads can be
-        # hundreds of KB each, so list views (include_media=False) skip them
-        # and only expose hasRawPhoto/hasGeminiPhoto - the full data is
-        # fetched on demand via order_detail when a single order is opened.
+        # Orders created before this service switched to storing the raw
+        # upload/AI result as base64 data URIs still have a real file
+        # instead, so fall back to that. The full data is only ever
+        # serialized (include_media=True) when a single order is opened.
         file_name = "passport-photo.jpg"
-        has_raw_photo = bool(order.original_filename.startswith("data:") or order.document)
-        if order.original_filename.startswith("data:"):
+        has_raw_photo = bool(is_data_uri or has_document)
+        if is_data_uri:
             file_url = order.original_filename if include_media else ""
             document_deleted = False
-        elif order.document:
+        elif has_document:
             file_url = order.document.url
             document_deleted = False
         else:
             file_url = ""
             document_deleted = True
-        has_gemini_photo = bool(order.gemini_photo)
         gemini_photo_value = order.gemini_photo if include_media else ""
     else:
-        has_document = bool(order.document)
-        file_name = order.original_filename
+        file_name = safe_file_name
         file_url = order.document.url if has_document else ""
         document_deleted = not has_document
         has_raw_photo = has_document
@@ -1688,6 +1748,7 @@ def public_order(order, include_media=True):
         "paymentStatus": order.payment_status,
         "paymentGateway": order.payment_gateway,
         "status": order.status,
+        "agentMessage": order.agent_message,
         "fileName": file_name,
         "fileUrl": file_url,
         "documentDeleted": document_deleted,
@@ -1705,7 +1766,7 @@ def public_order(order, include_media=True):
             if order.photo_status == PrintOrder.PHOTO_STATUS_FAILED
             else order.photo_error_message
         ),
-        "passportPrompt": order.passport_prompt,
+        "passportPrompt": order.passport_prompt if include_media else "",
     }
 
 
@@ -2516,6 +2577,7 @@ def wallet(request):
                 "onlineCollected": float(collection_summary["onlineCollected"]),
                 "cashCounterCollected": float(collection_summary["cashCounterCollected"]),
                 "totalCollected": float(collection_summary["totalCollected"]),
+                "signupBonusCredited": float(collection_summary["signupBonusCredited"]),
                 "netWithdrawable": float(collection_summary["netWithdrawable"]),
                 "pendingWithdrawal": float(pending_withdrawal),
                 "paidWithdrawal": float(paid_withdrawal),
@@ -3319,7 +3381,7 @@ def order_history(request):
     if not user:
         return JsonResponse({"message": "Unauthorized."}, status=401)
 
-    orders = PrintOrder.objects.filter(user=user).order_by("-created_at")[:100]
+    orders = order_list_queryset(PrintOrder.objects.filter(user=user)).order_by("-created_at")[:100]
     return JsonResponse({"orders": [public_order(order, include_media=False) for order in orders]})
 
 

@@ -265,8 +265,12 @@ export type ShopOrder = {
   orderNumber: string;
   serviceName: string;
   status: string;
+  paymentMode: string;
   paymentStatus: string;
   totalAmount: number;
+  agentMessage: string;
+  photoStatus: string;
+  photoErrorMessage: string;
   createdAt: string;
 };
 
@@ -305,12 +309,20 @@ export type ShopDetailResponse = {
   recentTransactions: ShopTransaction[];
 };
 
-export function fetchShops(params: { search?: string; balanceFilter?: string; cashCounter?: string; status?: string; page?: number }) {
+export function fetchShops(params: {
+  search?: string;
+  balanceFilter?: string;
+  cashCounter?: string;
+  status?: string;
+  page?: number;
+  pageSize?: number;
+}) {
   const query = new URLSearchParams();
   if (params.search) query.set("search", params.search);
   if (params.balanceFilter) query.set("balanceFilter", params.balanceFilter);
   if (params.cashCounter) query.set("cashCounter", params.cashCounter);
   if (params.status) query.set("status", params.status);
+  if (params.pageSize) query.set("pageSize", String(params.pageSize));
   if (params.page) query.set("page", String(params.page));
   return request<ShopListResponse>(`/admin/shops/?${query.toString()}`);
 }
@@ -336,14 +348,35 @@ export function setShopActive(id: number, active: boolean) {
   });
 }
 
+export function deleteShop(id: number, confirmEmail: string) {
+  return request<{ deleted: boolean }>(`/admin/shops/${id}/delete/`, {
+    method: "POST",
+    body: JSON.stringify({ confirmEmail }),
+  });
+}
+
+export type ShopOrderListResponse = {
+  count: number;
+  page: number;
+  pageSize: number;
+  orders: ShopOrder[];
+};
+
+export function fetchShopOrders(id: number, params: { status?: string; from?: string; to?: string; page?: number }) {
+  const query = new URLSearchParams();
+  if (params.status) query.set("status", params.status);
+  if (params.from) query.set("from", params.from);
+  if (params.to) query.set("to", params.to);
+  if (params.page) query.set("page", String(params.page));
+  return request<ShopOrderListResponse>(`/admin/shops/${id}/orders/?${query.toString()}`);
+}
+
 // --- Orders (Phase 4) ---------------------------------------------------
 
 export type AdminOrder = ShopOrder & {
   shopId: number;
   shopName: string;
   shopEmail: string;
-  paymentMode: string;
-  paymentStatus: string;
 };
 
 export type AdminOrderListResponse = {
@@ -414,6 +447,18 @@ export function fetchWalletLedger(params: { shop?: string; type?: string; from?:
   );
 }
 
+export type WalletLedgerSummary = {
+  shopId: number;
+  currentBalance: number;
+  totalCredit: number;
+  totalDebit: number;
+  platformRevenue: number;
+};
+
+export function fetchWalletLedgerSummary(shopId: number) {
+  return request<WalletLedgerSummary>(`/admin/wallet/ledger/summary/?shop=${shopId}`);
+}
+
 export type EarningsPeriod = { amount: number; comparisonAmount: number; changePercent: number | null };
 
 export function fetchWalletEarningsSummary() {
@@ -454,12 +499,14 @@ export type AdminWithdrawal = {
   shopId: number;
   shopName: string;
   shopEmail: string;
+  balanceAfterRequest: number | null;
 };
 
-export function fetchWithdrawals(status?: string, page?: number) {
+export function fetchWithdrawals(status?: string, page?: number, email?: string) {
   const query = new URLSearchParams();
   if (status) query.set("status", status);
   if (page) query.set("page", String(page));
+  if (email) query.set("email", email);
   const qs = query.toString();
   return request<{ count: number; page: number; pageSize: number; withdrawals: AdminWithdrawal[] }>(
     `/admin/withdrawals/${qs ? `?${qs}` : ""}`
@@ -639,8 +686,13 @@ export function exportWalletLedgerCsv() {
   return downloadCsv("/admin/wallet/ledger/export/", "wallet-ledger.csv");
 }
 
-export function exportOrdersCsv() {
-  return downloadCsv("/admin/orders/export/", "orders.csv");
+export function exportOrdersCsv(params?: { shop?: string; service?: string; paymentMode?: string; status?: string; from?: string; to?: string }) {
+  const query = new URLSearchParams();
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value) query.set(key, String(value));
+  });
+  const qs = query.toString();
+  return downloadCsv(`/admin/orders/export/${qs ? `?${qs}` : ""}`, "orders.csv");
 }
 
 // --- Notification badges (V2-A) --------------------------------------------

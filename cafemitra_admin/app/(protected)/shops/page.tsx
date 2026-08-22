@@ -6,10 +6,12 @@ import Pagination from "@/components/Pagination";
 import { bulkSetShopsActive, fetchShops, type Shop } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
 
+const PAGE_SIZE = 10;
+
 export default function ShopsPage() {
   const [shops, setShops] = useState<Shop[]>([]);
   const [count, setCount] = useState(0);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
@@ -22,7 +24,7 @@ export default function ShopsPage() {
 
   function load() {
     setLoading(true);
-    fetchShops({ search, status, balanceFilter, cashCounter, page })
+    fetchShops({ search, status, balanceFilter, cashCounter, page, pageSize: PAGE_SIZE })
       .then((res) => {
         setShops(res.shops);
         setCount(res.count);

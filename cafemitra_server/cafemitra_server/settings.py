@@ -91,6 +91,21 @@ if DATABASE_URL:
             "HOST": parsed_db_url.hostname,
             "PORT": parsed_db_url.port or 5432,
             "OPTIONS": {"sslmode": "require"},
+            # Deliberately NOT setting CONN_MAX_AGE here. This DB sits behind
+            # Supabase's SESSION-mode pooler, which caps concurrent clients
+            # at pool_size=15 platform-wide (shared across every Django
+            # worker/process hitting it). A persistent per-worker connection
+            # (CONN_MAX_AGE > 0) is held for its full lifetime even between
+            # requests - with more than a handful of workers that exhausts
+            # the pool within seconds and every further connection attempt
+            # fails with "FATAL: max clients reached in session mode",
+            # surfacing as random 500s across the app. Closing the
+            # connection at the end of every request (the default) keeps
+            # each worker's DB connection held only while actively running a
+            # query, which is what keeps concurrent usage under the pooler's
+            # limit. Revisit only alongside switching to Supabase's
+            # TRANSACTION-mode pooler (port 6543), which is built for many
+            # short-lived connections.
         }
     }
 else:

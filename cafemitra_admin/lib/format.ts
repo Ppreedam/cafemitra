@@ -20,3 +20,36 @@ export function formatRelativeTime(iso: string): string {
   const diffDay = Math.round(diffHr / 24);
   return `${diffDay}d ago`;
 }
+
+const ORDER_STATUS_STYLES: Record<string, string> = {
+  printed: "bg-green-50 text-green-700",
+  failed: "bg-red-50 text-red-700",
+  printing: "bg-indigo-50 text-indigo-700",
+  queued: "bg-amber-50 text-amber-700",
+  awaiting_approval: "bg-amber-50 text-amber-700",
+  awaiting_payment: "bg-slate-100 text-slate-500",
+};
+
+export function orderStatusBadgeClass(status: string): string {
+  return ORDER_STATUS_STYLES[status] || "bg-slate-100 text-slate-500";
+}
+
+type OrderResultInfo = {
+  order: {
+    status: string;
+    agentMessage: string;
+    photoStatus?: string;
+    photoErrorMessage?: string;
+  };
+};
+
+// Picks the most relevant human-readable outcome for an order: the AI
+// photo-generation error takes priority for passport-photo jobs (those
+// don't flow through the physical print queue, so `status`/`agentMessage`
+// stay blank for them), otherwise falls back to the print agent's message.
+export function orderResultMessage({ order }: OrderResultInfo): string {
+  if (order.photoStatus === "failed" && order.photoErrorMessage) return order.photoErrorMessage;
+  if (order.status === "failed") return order.agentMessage || "Failed - no message from the print agent.";
+  if (order.status === "printed") return order.agentMessage || "Printed successfully.";
+  return order.agentMessage || "-";
+}
