@@ -36,7 +36,7 @@ from .background_remover.passport_photo_processor import ProcessingError, enhanc
 from .background_remover.watermark_remover import remove_gemini_watermark
 # from .models import AuthToken, ContactMessage, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from .admin_roles import role_allows_section
-from .models import Agent, AuthToken, ContactMessage, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
+from .models import Agent, AuthToken, ContactMessage, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from cafemitra_server.product_setting import PAYMENT_GATEWAYS, active_payment_gateway
 
 User = get_user_model()
@@ -57,6 +57,7 @@ WALLET_SETTING_DEFAULTS = {
     "credit_limit": Decimal("-50.00"),
     "daily_grace_limit": Decimal("5.00"),
     "collection_commission_rate": Decimal("0.03"),
+    "withdrawal_fee_percent": Decimal("2.00"),
 }
 UPI_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]{2,256}@[A-Za-z0-9]{2,64}$")
 UPI_PAYMENT_PA = "8298972939@okbizaxis"
@@ -1340,6 +1341,7 @@ def public_withdrawal(withdrawal):
     return {
         "id": withdrawal.id,
         "amount": float(withdrawal.amount),
+        "feeAmount": float(withdrawal.fee_amount),
         "method": withdrawal.method,
         "accountDetail": withdrawal.account_detail,
         "note": withdrawal.note,
@@ -2541,6 +2543,20 @@ def wallet_config(request):
 
 @csrf_exempt
 @require_http_methods(["GET", "OPTIONS"])
+def tool_visibility(request):
+    """Public, unauthenticated - which Automation Tools nav entries the
+    admin has switched on. Both the marketing site's navbar dropdown and the
+    shop-owner dashboard sidebar fetch this same map and hide any tool key
+    that's off, so a tool disabled from the admin panel disappears from
+    both surfaces at once instead of needing a separate toggle each.
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+    return JsonResponse({item.tool_key: item.is_enabled for item in ToolVisibility.objects.all()})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
 def wallet(request):
     if request.method == "OPTIONS":
         return JsonResponse({})
@@ -2608,6 +2624,7 @@ def wallet(request):
                 "netWithdrawable": float(collection_summary["netWithdrawable"]),
                 "pendingWithdrawal": float(pending_withdrawal),
                 "paidWithdrawal": float(paid_withdrawal),
+                "withdrawalFeePercent": float(get_wallet_setting("withdrawal_fee_percent")),
             },
             "limits": {
                 "creditLimit": float(credit_limit),
@@ -2661,14 +2678,26 @@ def request_withdrawal(request):
         if net_withdrawable < amount:
             return JsonResponse({"message": "Amount is higher than your withdrawable wallet balance."}, status=400)
 
-        withdrawal = WithdrawalRequest.objects.create(user=user, amount=amount, method=method, account_detail=account_detail, note=note)
+        # `amount` is what the shop owner typed (capped by their withdrawable
+        # balance) - the fee is subtracted from it before it becomes the
+        # actual withdrawal request/wallet debit, so only the net figure
+        # ever leaves the wallet. The fee percentage is frozen into
+        # fee_amount at request time so a later WalletSetting change doesn't
+        # retroactively alter this request.
+        fee_percent = get_wallet_setting("withdrawal_fee_percent")
+        fee_amount = (amount * fee_percent / Decimal("100")).quantize(Decimal("0.01"))
+        net_amount = (amount - fee_amount).quantize(Decimal("0.01"))
+
+        withdrawal = WithdrawalRequest.objects.create(
+            user=user, amount=net_amount, fee_amount=fee_amount, method=method, account_detail=account_detail, note=note
+        )
         create_wallet_transaction(
             user,
             WalletTransaction.KIND_WITHDRAWAL,
-            amount,
+            net_amount,
             WalletTransaction.DIRECTION_DEBIT,
             True,
-            note=f"Withdrawal requested via {method}.",
+            note=f"Withdrawal requested via {method} ({fee_percent}% fee of Rs. {fee_amount} deducted from Rs. {amount}).",
         )
 
     return JsonResponse({"withdrawal": public_withdrawal(withdrawal), "balance": float(wallet_balance(user))}, status=201)
@@ -3791,7 +3820,7 @@ def public_shop_by_code(request, code):
 
 PASSPORT_PHOTO_CHECK_MAX_RETRIES = 5
 PASSPORT_PHOTO_CHECK_RETRY_DELAY_SECONDS = 5
-PASSPORT_PHOTO_STALE_JOB_SECONDS = 60
+PASSPORT_PHOTO_STALE_JOB_SECONDS = 80
 PASSPORT_PHOTO_FALLBACK_RETRY_SECONDS = 20
 
 
@@ -3927,8 +3956,14 @@ def check_passport_photo(request):
             return JsonResponse({"found": True, "imageUrl": order.gemini_photo})
 
         if order.photo_status == PrintOrder.PHOTO_STATUS_FAILED:
-            fallback = f"{order.service_name or 'Passport Size Photo'} generation failed."
-            return JsonResponse({"found": False, "message": friendly_photo_error_message(order.photo_error_message, fallback)}, status=200)
+            # The real cause (agent offline, Gemini fallback error, etc.) is
+            # kept in order.photo_error_message for admin diagnostics - the
+            # dashboard tool itself just tells the shop owner to check back,
+            # since resolve_passport_photo() keeps retrying the Gemini
+            # fallback on later polls rather than giving up outright.
+            return JsonResponse(
+                {"found": False, "message": "Your photo is being generated. Please check the Orders page in a moment."}, status=200
+            )
 
         if attempt < PASSPORT_PHOTO_CHECK_MAX_RETRIES - 1:
             time.sleep(PASSPORT_PHOTO_CHECK_RETRY_DELAY_SECONDS)

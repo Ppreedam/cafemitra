@@ -21,6 +21,7 @@ type WalletTransaction = {
 type Withdrawal = {
   id: number;
   amount: number;
+  feeAmount: number;
   method: string;
   accountDetail: string;
   note: string;
@@ -38,6 +39,7 @@ type WalletData = {
     netWithdrawable: number;
     pendingWithdrawal: number;
     paidWithdrawal: number;
+    withdrawalFeePercent: number;
   };
   limits: {
     creditLimit: number;
@@ -66,6 +68,7 @@ const emptyWallet: WalletData = {
     netWithdrawable: 0,
     pendingWithdrawal: 0,
     paidWithdrawal: 0,
+    withdrawalFeePercent: 0,
   },
   limits: {
     creditLimit: -50,
@@ -108,6 +111,7 @@ function loadScript(src: string) {
 export default function WalletPage() {
   const [wallet, setWallet] = useState<WalletData>(emptyWallet);
   const [message, setMessage] = useState("Loading wallet...");
+  const [messageKind, setMessageKind] = useState<"success" | "error">("error");
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("UPI");
   const [accountDetail, setAccountDetail] = useState("");
@@ -120,6 +124,7 @@ export default function WalletPage() {
   const [topupAmount, setTopupAmount] = useState("100");
   const [isToppingUp, setIsToppingUp] = useState(false);
   const [topupMessage, setTopupMessage] = useState("");
+  const [topupMessageKind, setTopupMessageKind] = useState<"success" | "error">("error");
   const [historyTab, setHistoryTab] = useState<"ledger" | "withdrawals">("ledger");
 
   useEffect(() => {
@@ -134,9 +139,11 @@ export default function WalletPage() {
     const paymentResult = searchParams.get("payment");
     if (!searchParams.get("topup")) return;
     if (paymentResult === "success") {
+      setMessageKind("success");
       setMessage("Top-up successful. Your wallet balance has been updated.");
       loadWallet();
     } else if (paymentResult === "failure") {
+      setMessageKind("error");
       setMessage("Top-up payment was not completed. Please try again.");
     }
   }, []);
@@ -169,6 +176,7 @@ export default function WalletPage() {
       setMessage("");
       window.dispatchEvent(new Event("cafemitra:wallet-updated"));
     } catch (error) {
+      setMessageKind("error");
       setMessage(error instanceof Error ? error.message : "Could not load wallet.");
     }
   }
@@ -187,9 +195,17 @@ export default function WalletPage() {
       const result = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(result.message || "Could not request withdrawal.");
       setNote("");
-      setMessage("Withdrawal request created.");
+      setMessageKind("success");
+      const paidAmount = result.withdrawal?.amount;
+      const feeAmount = result.withdrawal?.feeAmount;
+      setMessage(
+        typeof paidAmount === "number" && typeof feeAmount === "number" && feeAmount > 0
+          ? `Withdrawal request created for Rs. ${paidAmount} (Rs. ${feeAmount} transaction fee deducted).`
+          : "Withdrawal request created."
+      );
       await loadWallet();
     } catch (error) {
+      setMessageKind("error");
       setMessage(error instanceof Error ? error.message : "Could not request withdrawal.");
     } finally {
       setIsSubmitting(false);
@@ -217,6 +233,7 @@ export default function WalletPage() {
       else if (gateway === "phonepe") await openPhonepeTopup(topupId);
       else throw new Error("No online payment gateway is configured for top-up.");
     } catch (error) {
+      setTopupMessageKind("error");
       setTopupMessage(error instanceof Error ? error.message : "Could not start top-up.");
       setIsToppingUp(false);
     }
@@ -244,13 +261,21 @@ export default function WalletPage() {
         const verified = await verifyResponse.json().catch(() => ({}));
         setIsToppingUp(false);
         if (!verifyResponse.ok) {
+          setTopupMessageKind("error");
           setTopupMessage(verified.message || "Payment verification failed.");
           return;
         }
+        setTopupMessageKind("success");
         setTopupMessage("Top-up successful. Your wallet balance has been updated.");
         await loadWallet();
       },
-      modal: { ondismiss: () => { setIsToppingUp(false); setTopupMessage("Payment was not completed."); } },
+      modal: {
+        ondismiss: () => {
+          setIsToppingUp(false);
+          setTopupMessageKind("error");
+          setTopupMessage("Payment was not completed.");
+        },
+      },
     });
     checkout.open();
   }
@@ -293,7 +318,23 @@ export default function WalletPage() {
   const upiError = method === "UPI" && trimmedAccountDetail && !upiIdPattern.test(trimmedAccountDetail)
     ? "Enter a valid UPI ID like name@bank or mobile@upi."
     : "";
-  const canSubmitWithdrawal = Number(amount) > 0 && Boolean(trimmedAccountDetail) && !upiError;
+  const amountError =
+    Number(amount) > wallet.summary.netWithdrawable
+      ? wallet.summary.netWithdrawable <= 0 && wallet.summary.signupBonusCredited > 0
+        ? `Your Rs. ${wallet.balance} balance is still covered by your Rs. ${wallet.summary.signupBonusCredited} signup bonus - that's promotional credit for using tools, not withdrawable cash. Earn from online orders to unlock withdrawals.`
+        : wallet.summary.signupBonusCredited > 0
+          ? `You can withdraw up to Rs. ${wallet.summary.netWithdrawable} (the Rs. ${wallet.summary.signupBonusCredited} signup bonus isn't withdrawable).`
+          : `You can withdraw up to Rs. ${wallet.summary.netWithdrawable}.`
+      : "";
+  const canSubmitWithdrawal =
+    Number(amount) > 0 && Number(amount) <= wallet.summary.netWithdrawable && Boolean(trimmedAccountDetail) && !upiError;
+  const withdrawFeePercent = wallet.summary.withdrawalFeePercent;
+  const withdrawFeeAmount = Number(amount) > 0 && !amountError ? Math.round(Number(amount) * (withdrawFeePercent / 100) * 100) / 100 : 0;
+  const withdrawNetAmount = Number(amount) > 0 && !amountError ? Math.round((Number(amount) - withdrawFeeAmount) * 100) / 100 : 0;
+  const withdrawFeeHint =
+    Number(amount) > 0 && !amountError && withdrawFeePercent > 0
+      ? `You'll receive Rs. ${withdrawNetAmount} after the ${withdrawFeePercent}% transaction fee (Rs. ${withdrawFeeAmount}).`
+      : "";
   const pagination = wallet.ledgerPagination || emptyWallet.ledgerPagination;
 
   function updateLedgerFilter(next: Partial<{ type: LedgerType; from: string; to: string }>) {
@@ -309,7 +350,9 @@ export default function WalletPage() {
         <div className="dashboard-hero">
           <div>
             <h1>Service Credits & Settlement</h1>
-            <p>{message || "Online payments are withdrawable, cash counter money stays with the cafe, and every paid tool use is deducted from your balance as it happens."}</p>
+            <p className={message ? messageKind : undefined}>
+              {message || "Online payments are withdrawable, cash counter money stays with the cafe, and every paid tool use is deducted from your balance as it happens."}
+            </p>
           </div>
           <span className="status-pill">Wallet Active</span>
         </div>
@@ -366,7 +409,7 @@ export default function WalletPage() {
                 <span>Amount</span>
                 <input min="10" step="0.01" type="number" value={topupAmount} onChange={(event) => setTopupAmount(event.target.value)} />
               </label>
-              {topupMessage ? <small className="field-error">{topupMessage}</small> : null}
+              {topupMessage ? <small className={`field-${topupMessageKind}`}>{topupMessage}</small> : null}
               <button className="btn btn-primary" type="submit" disabled={isToppingUp || Number(topupAmount) < 10}>
                 <ArrowUpToLine size={16} /> {isToppingUp ? "Processing..." : "Top Up Now"}
               </button>
@@ -382,7 +425,17 @@ export default function WalletPage() {
               </div>
               <label className="auto-field">
                 <span>Amount</span>
-                <input min="0" step="0.01" max={wallet.summary.netWithdrawable || undefined} type="number" value={amount} onChange={(event) => setAmount(event.target.value)} />
+                <input
+                  aria-invalid={Boolean(amountError)}
+                  min="0"
+                  step="0.01"
+                  max={wallet.summary.netWithdrawable}
+                  type="number"
+                  value={amount}
+                  onChange={(event) => setAmount(event.target.value)}
+                />
+                {amountError ? <small className="field-error">{amountError}</small> : null}
+                {!amountError && withdrawFeeHint ? <small className="field-hint">{withdrawFeeHint}</small> : null}
               </label>
               <label className="auto-field">
                 <span>Method</span>
@@ -482,7 +535,10 @@ export default function WalletPage() {
                   <div className="wallet-row" key={withdrawal.id}>
                     <div>
                       <strong>{formatCurrency(withdrawal.amount)}</strong>
-                      <span>{withdrawal.method} | {withdrawal.accountDetail}</span>
+                      <span>
+                        {withdrawal.method} | {withdrawal.accountDetail}
+                        {withdrawal.feeAmount > 0 ? ` | ${formatCurrency(withdrawal.feeAmount)} transaction fee deducted` : ""}
+                      </span>
                     </div>
                     <span className={`order-status ${withdrawal.status}`}>{formatLabel(withdrawal.status)}</span>
                   </div>
@@ -507,7 +563,7 @@ function formatAmountInput(value: number) {
 
 function metricMeta(label: string, signupBonusCredited: number) {
   if (label === "Withdrawable Balance") {
-    return signupBonusCredited > 0 ? `Excludes ${formatCurrency(signupBonusCredited)} signup bonus` : "Ready to withdraw";
+    return signupBonusCredited > 0 ? `Excludes ${formatCurrency(signupBonusCredited)} signup bonus (promotional, not withdrawable)` : "Ready to withdraw";
   }
   if (label === "Online Balance") return "Wallet balance";
   if (label === "Cash Counter Collected") return "Already with cafe";

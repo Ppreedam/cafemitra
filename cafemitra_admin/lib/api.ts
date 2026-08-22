@@ -490,6 +490,7 @@ export function fetchWalletTopups(params: { gateway?: string; status?: string; p
 export type AdminWithdrawal = {
   id: number;
   amount: number;
+  feeAmount: number;
   method: string;
   accountDetail: string;
   note: string;
@@ -561,6 +562,24 @@ export function updateToolPricing(
   data: { price?: number; priceB2b?: number | null; priceB2c?: number | null; isBillable?: boolean }
 ) {
   return request<AdminToolPricing>(`/admin/tool-pricing/${toolKey}/`, { method: "PUT", body: JSON.stringify(data) });
+}
+
+export type AdminToolVisibility = {
+  toolKey: string;
+  label: string;
+  isEnabled: boolean;
+  updatedAt: string;
+};
+
+export function fetchToolVisibility() {
+  return request<{ tools: AdminToolVisibility[] }>("/admin/tool-visibility/");
+}
+
+export function updateToolVisibility(toolKey: string, isEnabled: boolean) {
+  return request<AdminToolVisibility>(`/admin/tool-visibility/${toolKey}/`, {
+    method: "PUT",
+    body: JSON.stringify({ isEnabled }),
+  });
 }
 
 // --- Referral Agents (Phase 6) -------------------------------------------

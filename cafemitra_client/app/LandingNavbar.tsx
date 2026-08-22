@@ -40,7 +40,7 @@ import {
 } from "lucide-react";
 import { HomeHeaderActions } from "./HomeHeaderActions";
 import { ToolSearch } from "./ToolSearch";
-import { hasStoredSession } from "@/lib/api";
+import { apiUrl, hasStoredSession } from "@/lib/api";
 import { releaseFlags } from "./release-flags";
 import { blogPosts } from "./blog-data";
 
@@ -53,6 +53,7 @@ const serviceMenu = [
     summary: "AI-powered print queue, counter workflow, and printer automation.",
     description: "Manage queues, shop terminals, uploads, billing, and print status from one calm dashboard.",
     metric: "Live queue",
+    toolKey: "auto_document_print",
   },
   {
     name: "Resume Builder",
@@ -63,6 +64,7 @@ const serviceMenu = [
     description: "Pick a template, fill in details, and print a polished resume right from the counter.",
     metric: "Resume templates",
     openAccess: true,
+    toolKey: "resume_builder",
   },
   {
     name: "Biodata Maker",
@@ -73,6 +75,7 @@ const serviceMenu = [
     description: "Pick a template, fill in personal and family details, and print a clean biodata right from the counter.",
     metric: "Biodata templates",
     openAccess: true,
+    toolKey: "biodata_maker",
   },
   // {
   //   name: "Document AI",
@@ -93,6 +96,7 @@ const serviceMenu = [
     description: "Create consistent photo sheets for common ID requirements without opening separate tools.",
     metric: "Photo sheet",
     comingSoon: true,
+    toolKey: "passport_photo",
   },
   // {
   //   name: "Agreement Maker",
@@ -122,6 +126,7 @@ const serviceMenu = [
     summary: "Design ID cards with ready-made templates and instant preview.",
     description: "Pick a template, fill in holder details and photo, and generate print-ready ID cards.",
     metric: "Card templates",
+    toolKey: "id_card_maker",
   },
   {
     name: "ID Card Print",
@@ -132,6 +137,7 @@ const serviceMenu = [
     description: "Prepare reusable ID card templates, customer records, and print-ready card batches.",
     metric: "Batch cards",
     openAccess: true,
+    toolKey: "id_card_print",
   },
 ];
 
@@ -190,7 +196,9 @@ export function LandingNavbar() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [disabledTools, setDisabledTools] = useState<Set<string>>(new Set());
   const searchWrapRef = useRef<HTMLDivElement>(null);
+  const visibleServiceMenu = serviceMenu.filter((item) => !item.toolKey || !disabledTools.has(item.toolKey));
   const isHomeActive = pathname === "/";
   const isServicesActive = pathname === "/print-automation";
   const isPdfToolsActive = pathname.startsWith("/pdf-tools");
@@ -200,6 +208,20 @@ export function LandingNavbar() {
 
   useEffect(() => {
     setIsLoggedIn(hasStoredSession());
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(apiUrl("/api/tools/visibility/"))
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: Record<string, boolean> | null) => {
+        if (cancelled || !data) return;
+        setDisabledTools(new Set(Object.entries(data).filter(([, enabled]) => !enabled).map(([key]) => key)));
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -240,7 +262,7 @@ export function LandingNavbar() {
             <button className={isServicesActive ? "nav-dropdown-trigger nav-link-active" : "nav-dropdown-trigger"} type="button">
               Automation Tools <ChevronDown size={14} aria-hidden />
             </button>
-            <ProductMegaMenu items={serviceMenu} isLoggedIn={isLoggedIn} />
+            <ProductMegaMenu items={visibleServiceMenu} isLoggedIn={isLoggedIn} />
           </div>
           <div className="nav-dropdown nav-pdf-tools">
             <button className={isPdfToolsActive ? "nav-dropdown-trigger nav-link-active" : "nav-dropdown-trigger"} type="button">
@@ -377,6 +399,7 @@ type MegaMenuItem = {
   metric: string;
   comingSoon?: boolean;
   openAccess?: boolean;
+  toolKey?: string;
 };
 
 function ProductMegaMenu({ items, isLoggedIn }: { items: MegaMenuItem[]; isLoggedIn: boolean }) {

@@ -2509,6 +2509,14 @@ img.profile-photo {
   font-weight: 600;
 }
 
+.dashboard-hero p.success {
+  color: #167f5d;
+}
+
+.dashboard-hero p.error {
+  color: #c7354d;
+}
+
 .status-pill {
   align-self: start;
   display: inline-flex;
@@ -2764,6 +2772,14 @@ img.profile-photo {
   font-size: 1.02rem;
   font-weight: 700;
   line-height: 1.7;
+}
+
+.app-frame .dashboard-hero p.success {
+  color: #167f5d;
+}
+
+.app-frame .dashboard-hero p.error {
+  color: #c7354d;
 }
 
 .app-frame .status-pill {
@@ -4317,6 +4333,24 @@ img.profile-photo {
 
 .field-error {
   color: #c7354d;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.field-success {
+  color: #167f5d;
+  font-size: 0.76rem;
+  font-weight: 800;
+}
+
+.field-hint {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.field-warning {
+  color: #a15c07;
   font-size: 0.76rem;
   font-weight: 800;
 }

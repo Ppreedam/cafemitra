@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { ProfileTopbar } from "./profile/ProfileTopbar";
 import { recordServiceVisit } from "@/lib/recentServices";
+import { apiUrl } from "@/lib/api";
 
 type NavItem = {
   name: string;
@@ -45,8 +46,8 @@ const navGroups: NavGroup[] = [
     items: [
       { name: "PrintPilot", icon: Printer, href: "/auto-print", match: ["/auto-print"], serviceKey: "auto_document_print" },
       { name: "Passport Photo", icon: IdCard, href: "/passport-photo", match: ["/passport-photo"], serviceKey: "passport_photo" },
-      { name: "ID Card Maker", icon: FileScan, href: "/id-card-maker", match: ["/id-card-maker"] },
-      { name: "ID Card Print", icon: IdCard, href: "/id-card-print", match: ["/id-card-print"] },
+      { name: "ID Card Maker", icon: FileScan, href: "/id-card-maker", match: ["/id-card-maker"], serviceKey: "id_card_maker" },
+      { name: "ID Card Print", icon: IdCard, href: "/id-card-print", match: ["/id-card-print"], serviceKey: "id_card_print" },
       { name: "PDF Tools", icon: FileText, href: "/pdf-tools", match: ["/pdf-tools"], serviceKey: "pdf_tools" },
       { name: "Image Tools", icon: Image, href: "/image-tools", match: ["/image-tools"], serviceKey: "image_tools" },
       { name: "Resume Builder", icon: FileUser, href: "/resume-builder", match: ["/resume-builder"], serviceKey: "resume_builder" },
@@ -63,7 +64,22 @@ const printerServiceKeyByPath: Record<string, string> = {
 
 export function DashboardShell({ activePath, children }: { activePath: string; children: ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+  const [disabledTools, setDisabledTools] = useState<Set<string>>(new Set());
   const printerServiceKey = printerServiceKeyByPath[activePath] || "auto_document_print";
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(apiUrl("/api/tools/visibility/"))
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data: Record<string, boolean> | null) => {
+        if (cancelled || !data) return;
+        setDisabledTools(new Set(Object.entries(data).filter(([, enabled]) => !enabled).map(([key]) => key)));
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     // Reset whenever the viewport crosses the mobile breakpoint - "collapsed"
@@ -81,7 +97,7 @@ export function DashboardShell({ activePath, children }: { activePath: string; c
 
   return (
     <main className={`app-frame ${isSidebarCollapsed ? "sidebar-collapsed" : ""}`}>
-      <AppSidebar activePath={activePath} isCollapsed={isSidebarCollapsed} />
+      <AppSidebar activePath={activePath} isCollapsed={isSidebarCollapsed} disabledTools={disabledTools} />
       <div className="sidebar-backdrop" onClick={() => setIsSidebarCollapsed(true)} aria-hidden />
       <section className="app-main">
         <ProfileTopbar
@@ -95,7 +111,15 @@ export function DashboardShell({ activePath, children }: { activePath: string; c
   );
 }
 
-function AppSidebar({ activePath, isCollapsed }: { activePath: string; isCollapsed: boolean }) {
+function AppSidebar({
+  activePath,
+  isCollapsed,
+  disabledTools,
+}: {
+  activePath: string;
+  isCollapsed: boolean;
+  disabledTools: Set<string>;
+}) {
   return (
     <aside className="sidebar">
       <Link className="brand" href="/">
@@ -108,22 +132,24 @@ function AppSidebar({ activePath, isCollapsed }: { activePath: string; isCollaps
         {navGroups.map((group, index) => (
           <div key={`${group.label}-${index}`}>
             {group.label ? <div className="nav-label">{group.label}</div> : null}
-            {group.items.map((item) => {
-              const Icon = item.icon;
-              const isActive = item.match?.includes(activePath);
-              return (
-                <Link
-                  className={`side-link ${isActive ? "active" : ""}`}
-                  href={item.href}
-                  key={item.name}
-                  title={isCollapsed ? item.name : undefined}
-                  onClick={item.serviceKey ? () => recordServiceVisit(item.serviceKey!) : undefined}
-                >
-                  <Icon size={17} />
-                  <span>{item.name}</span>
-                </Link>
-              );
-            })}
+            {group.items
+              .filter((item) => !item.serviceKey || !disabledTools.has(item.serviceKey))
+              .map((item) => {
+                const Icon = item.icon;
+                const isActive = item.match?.includes(activePath);
+                return (
+                  <Link
+                    className={`side-link ${isActive ? "active" : ""}`}
+                    href={item.href}
+                    key={item.name}
+                    title={isCollapsed ? item.name : undefined}
+                    onClick={item.serviceKey ? () => recordServiceVisit(item.serviceKey!) : undefined}
+                  >
+                    <Icon size={17} />
+                    <span>{item.name}</span>
+                  </Link>
+                );
+              })}
           </div>
         ))}
       </nav>

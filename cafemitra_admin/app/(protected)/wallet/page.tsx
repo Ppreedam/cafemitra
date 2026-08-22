@@ -8,6 +8,7 @@ import {
   approveWithdrawal,
   exportWalletLedgerCsv,
   fetchToolPricing,
+  fetchToolVisibility,
   fetchWalletEarningsSummary,
   fetchWalletLedger,
   fetchWalletLedgerSummary,
@@ -16,8 +17,10 @@ import {
   fetchWithdrawals,
   rejectWithdrawal,
   updateToolPricing,
+  updateToolVisibility,
   updateWalletSetting,
   type AdminToolPricing,
+  type AdminToolVisibility,
   type AdminTopup,
   type AdminTransaction,
   type AdminWalletSetting,
@@ -27,7 +30,7 @@ import {
 } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
 
-const TABS = ["Withdrawals", "Ledger", "Top-ups", "Wallet Settings", "Tool Pricing"] as const;
+const TABS = ["Withdrawals", "Ledger", "Top-ups", "Wallet Settings", "Tool Pricing", "Automation Tools"] as const;
 type Tab = (typeof TABS)[number];
 
 const TXN_KIND_LABELS: Record<string, string> = {
@@ -155,7 +158,11 @@ function ShopLedgerModal({
         </div>
 
         <div className="mx-5 mt-4 rounded-md bg-indigo-50 border border-indigo-100 px-4 py-2 text-sm text-indigo-800">
-          Validating withdrawal request: <strong>{formatCurrency(withdrawal.amount)}</strong> via {withdrawal.method} to{" "}
+          Validating withdrawal request: <strong>{formatCurrency(withdrawal.amount)}</strong>
+          {withdrawal.feeAmount > 0 ? (
+            <span className="text-xs text-indigo-600"> (already net of {formatCurrency(withdrawal.feeAmount)} transaction fee)</span>
+          ) : null}{" "}
+          via {withdrawal.method} to{" "}
           <span className="inline-flex items-center gap-1.5 font-mono">
             {withdrawal.accountDetail}
             <CopyButton value={withdrawal.accountDetail} />
@@ -395,7 +402,10 @@ function WithdrawalsTab() {
               >
                 <td className="px-4 py-2 text-slate-700">{w.shopName || w.shopEmail}</td>
                 <td className="px-4 py-2 text-slate-700">{w.shopEmail}</td>
-                <td className="px-4 py-2 text-slate-900 font-medium">{formatCurrency(w.amount)}</td>
+                <td className="px-4 py-2 text-slate-900 font-medium">
+                  {formatCurrency(w.amount)}
+                  {w.feeAmount > 0 && <div className="text-xs font-normal text-slate-400">-{formatCurrency(w.feeAmount)} fee</div>}
+                </td>
                 <td className="px-4 py-2 text-slate-700">{w.method}</td>
                 <td className="px-4 py-2 text-slate-700 font-mono text-xs">
                   <span className="inline-flex items-center gap-1.5">
@@ -748,6 +758,70 @@ function ToolPricingTab() {
   );
 }
 
+function ToolVisibilityTab() {
+  const [tools, setTools] = useState<AdminToolVisibility[]>([]);
+  const [error, setError] = useState("");
+
+  function load() {
+    fetchToolVisibility()
+      .then((res) => setTools(res.tools))
+      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load tools."));
+  }
+
+  useEffect(load, []);
+
+  async function handleToggle(item: AdminToolVisibility) {
+    try {
+      await updateToolVisibility(item.toolKey, !item.isEnabled);
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed.");
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white overflow-x-auto">
+      <p className="px-4 pt-3 text-xs text-slate-500">
+        Controls whether a tool shows up in the public site&apos;s Automation Tools menu and the shop-owner dashboard sidebar. Turning a
+        tool off hides it from both places - it doesn&apos;t affect pricing.
+      </p>
+      {error && <div className="m-3 rounded-md bg-red-50 text-red-700 text-sm px-3 py-2">{error}</div>}
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-slate-200 text-left text-slate-500">
+            <th className="px-4 py-2 font-medium">Tool</th>
+            <th className="px-4 py-2 font-medium">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {tools.map((item) => (
+            <tr key={item.toolKey} className="border-b border-slate-100 last:border-0">
+              <td className="px-4 py-2 text-slate-700">{item.label}</td>
+              <td className="px-4 py-2">
+                <button
+                  role="switch"
+                  aria-checked={item.isEnabled}
+                  aria-label={`Turn ${item.label} ${item.isEnabled ? "off" : "on"}`}
+                  onClick={() => handleToggle(item)}
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    item.isEnabled ? "bg-green-600" : "bg-slate-300"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                      item.isEnabled ? "translate-x-6" : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export default function WalletPage() {
   const [tab, setTab] = useState<Tab>("Withdrawals");
 
@@ -775,6 +849,7 @@ export default function WalletPage() {
       {tab === "Top-ups" && <TopupsTab />}
       {tab === "Wallet Settings" && <WalletSettingsTab />}
       {tab === "Tool Pricing" && <ToolPricingTab />}
+      {tab === "Automation Tools" && <ToolVisibilityTab />}
     </div>
   );
 }

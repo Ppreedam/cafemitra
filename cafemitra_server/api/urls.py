@@ -27,6 +27,8 @@ urlpatterns = [
     re_path(r"^admin/wallet-settings/(?P<key>[a-z_]+)/?$", admin_views.admin_wallet_setting_detail),  # PUT edit one wallet setting's value/isActive
     re_path(r"^admin/tool-pricing/?$", admin_views.admin_tool_pricing),  # GET RepetiGo's own per-tool usage fees
     re_path(r"^admin/tool-pricing/(?P<tool_key>[\w-]+)/?$", admin_views.admin_tool_pricing_detail),  # PUT edit one tool's price/price_b2b/price_b2c/is_billable
+    re_path(r"^admin/tool-visibility/?$", admin_views.admin_tool_visibility),  # GET which Automation Tools nav entries are on/off
+    re_path(r"^admin/tool-visibility/(?P<tool_key>[\w-]+)/?$", admin_views.admin_tool_visibility_detail),  # PUT toggle one tool's isEnabled
     re_path(r"^admin/agents/?$", admin_views.admin_agents),  # GET list (status filter) / POST onboard an existing account as a referral agent
     re_path(r"^admin/agents/(?P<agent_id>[0-9]+)/?$", admin_views.admin_agent_detail),  # GET detail (referred shops + commission ledger) / PUT commission rate/type/status/offer
     re_path(r"^admin/contact-messages/?$", admin_views.admin_contact_messages),  # GET inbox (status=unread|resolved)
@@ -87,6 +89,7 @@ urlpatterns = [
 
     # --- Wallet -----------------------------------------------------------
     re_path(r"^wallet/config/?$", views.wallet_config),  # GET public signup/referral bonus, grace limits, and billable tool prices
+    re_path(r"^tools/visibility/?$", views.tool_visibility),  # GET public map of {toolKey: isEnabled} for the Automation Tools nav (navbar + dashboard sidebar)
     re_path(r"^wallet/?$", views.wallet),  # GET balance, collection summary, limits, and paginated transaction ledger
     re_path(r"^wallet/withdraw/?$", views.request_withdrawal),  # POST request a withdrawal against the withdrawable balance
     re_path(r"^wallet/topup/?$", views.create_wallet_topup),  # POST start a wallet top-up, returns {id, amount, gateway}

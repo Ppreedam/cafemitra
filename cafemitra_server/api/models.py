@@ -341,13 +341,41 @@ class ToolPricing(models.Model):
         return f"{self.tool_key} - Rs. {self.price} ({self.unit})"
 
 
+class ToolVisibility(models.Model):
+    """Whether a tool shows up in the "Automation Tools" nav on the public
+    site and in the shop-owner dashboard sidebar at all - distinct from
+    ToolPricing.is_billable, which is about charging for an already-visible
+    tool. `tool_key` is the same identifier the client apps already use as
+    each nav item's serviceKey (see DEFAULT_SERVICE_PRICING and
+    DashboardShell.tsx's navGroups), not the finer-grained per-template keys
+    ToolPricing uses for resume_builder/biodata_maker.
+    """
+
+    tool_key = models.CharField(max_length=60, unique=True)
+    label = models.CharField(max_length=160)
+    is_enabled = models.BooleanField(default=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["label"]
+
+    def __str__(self) -> str:
+        return f"{self.tool_key}: {'on' if self.is_enabled else 'off'}"
+
+
 class WithdrawalRequest(models.Model):
     STATUS_PENDING = "pending"
     STATUS_PAID = "paid"
     STATUS_REJECTED = "rejected"
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="withdrawal_requests")
+    # Net amount actually requested/debited from the wallet - the shop owner
+    # typed a larger figure (up to their withdrawable balance) and this is
+    # that figure minus the transaction fee below, frozen at request time so
+    # a later change to WalletSetting "withdrawal_fee_percent" doesn't alter
+    # past requests.
     amount = models.DecimalField(max_digits=10, decimal_places=2)
+    fee_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     method = models.CharField(max_length=40)
     account_detail = models.CharField(max_length=180)
     note = models.CharField(max_length=255, blank=True)

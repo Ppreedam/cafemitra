@@ -18,7 +18,7 @@ from django.http import HttpResponse, JsonResponse
 from .admin_activity import log_admin_activity
 from .admin_auth import get_admin_role, require_admin, require_section
 from .lead_scraper_runner import run_scrape_job
-from .models import AdminActivityLog, AdminRole, Agent, ContactMessage, GooglePlace, PrintOrder, ScrapeRun, ServicePricing, ShopProfile, ToolPricing, UserProfile, WalletSetting, WalletTransaction, WalletTopup, WithdrawalRequest
+from .models import AdminActivityLog, AdminRole, Agent, ContactMessage, GooglePlace, PrintOrder, ScrapeRun, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTransaction, WalletTopup, WithdrawalRequest
 from .views import (
     create_password_reset,
     create_wallet_transaction,
@@ -1127,6 +1127,46 @@ def admin_tool_pricing_detail(request, tool_key):
             "updatedAt": pricing.updated_at.isoformat(),
         }
     )
+
+
+def public_tool_visibility(item):
+    return {"toolKey": item.tool_key, "label": item.label, "isEnabled": item.is_enabled, "updatedAt": item.updated_at.isoformat()}
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def admin_tool_visibility(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    _, err = require_section(request, "wallet")
+    if err:
+        return err
+
+    return JsonResponse({"tools": [public_tool_visibility(item) for item in ToolVisibility.objects.all()]})
+
+
+@csrf_exempt
+@require_http_methods(["PUT", "OPTIONS"])
+def admin_tool_visibility_detail(request, tool_key):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "wallet")
+    if err:
+        return err
+
+    item = ToolVisibility.objects.filter(tool_key=tool_key).first()
+    if not item:
+        return JsonResponse({"message": "Tool not found."}, status=404)
+
+    body = parse_body(request)
+    if "isEnabled" in body:
+        item.is_enabled = bool(body.get("isEnabled"))
+    item.save()
+    log_admin_activity(admin_user, "tool_visibility.update", "tool_visibility", tool_key, f"isEnabled={item.is_enabled}")
+
+    return JsonResponse(public_tool_visibility(item))
 
 
 # --- Phase 6: Referral Agent / Partner Program -------------------------------
