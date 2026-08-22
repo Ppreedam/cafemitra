@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { ArrowLeft, ChevronDown, ChevronUp, Download, Eye, FolderOpen, Printer, RotateCcw, Save, Sparkles, Wallet } from "lucide-react";
-import { apiFetch } from "@/lib/api";
+import { usePathname, useSearchParams } from "next/navigation";
+import { ArrowLeft, ChevronDown, ChevronUp, Download, Eye, FolderOpen, LogIn, Printer, RotateCcw, Save, Sparkles, Wallet } from "lucide-react";
+import { apiFetch, hasStoredSession } from "@/lib/api";
 import { fetchAgentHealth, runAgentPrintFile } from "@/lib/printpilot-agent";
 import { useTemplatePrices } from "../../resume-builder/useTemplatePrices";
 import { resumeFileSlug, triggerPdfDownload } from "../../resume-builder/downloadPdf";
@@ -37,34 +37,15 @@ function blobToBase64(blob: Blob) {
   });
 }
 
-function buildPrintShellHtml(pdfUrl: string) {
-  return `<!DOCTYPE html>
-<html>
-<head>
-<title>Print Biodata</title>
-<style>*{margin:0;padding:0;}html,body{height:100%;}embed{width:100%;height:100vh;border:0;}</style>
-</head>
-<body>
-<embed src="${pdfUrl}" type="application/pdf" />
-<script>
-  window.onload = function () {
-    window.focus();
-    setTimeout(function () { window.print(); }, 400);
-  };
-</script>
-</body>
-</html>`;
-}
-
 export default function BiodataBuilderClient() {
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const templatePrices = useTemplatePrices<BiodataTemplateId>("biodata_maker_");
   const [data, setData] = useState<BiodataData>(sampleBiodata);
   const [downloadBusy, setDownloadBusy] = useState(false);
-  const [browserPrintBusy, setBrowserPrintBusy] = useState(false);
   const [printPilotBusy, setPrintPilotBusy] = useState(false);
   const [previewBusy, setPreviewBusy] = useState(false);
-  const busy = downloadBusy || browserPrintBusy || printPilotBusy || previewBusy;
+  const busy = downloadBusy || printPilotBusy || previewBusy;
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [savedOrder, setSavedOrder] = useState<SavedBiodataOrderSummary | null>(null);
@@ -74,8 +55,18 @@ export default function BiodataBuilderClient() {
   const [refreshBusy, setRefreshBusy] = useState(false);
   const [savedMessage, setSavedMessage] = useState("");
   const [chargeConfirm, setChargeConfirm] = useState<{ price: number; label: string; resolve: (ok: boolean) => void } | null>(null);
+  const [loginPrompt, setLoginPrompt] = useState(false);
   const [templatesExpanded, setTemplatesExpanded] = useState(false);
   const skipNextSaveRef = useRef(false);
+  const loginNextUrl = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
+
+  // Building and previewing a biodata is free for anyone. Login is only
+  // required for the actions that actually produce/save an output.
+  function requireLogin() {
+    if (hasStoredSession()) return true;
+    setLoginPrompt(true);
+    return false;
+  }
   // Same reasoning as Resume Builder: downloading/printing is blocked once a
   // biodata is marked as for-customer until that customer's payment clears.
   const locked = forCustomer && savedOrder?.paymentStatus !== "paid";
@@ -159,6 +150,7 @@ export default function BiodataBuilderClient() {
 
   async function saveBiodata() {
     if (saveBusy) return;
+    if (!requireLogin()) return;
     setSaveBusy(true);
     setError("");
     setSavedMessage("");
@@ -196,6 +188,7 @@ export default function BiodataBuilderClient() {
 
   async function downloadPdf() {
     if (busy || locked) return;
+    if (!requireLogin()) return;
     if (!(await requestChargeConfirm(templatePrices?.[data.template], templateLabel))) return;
     setDownloadBusy(true);
     setError("");
@@ -210,31 +203,9 @@ export default function BiodataBuilderClient() {
     }
   }
 
-  async function printViaBrowser() {
-    if (busy || locked) return;
-    if (!(await requestChargeConfirm(templatePrices?.[data.template], templateLabel))) return;
-    setBrowserPrintBusy(true);
-    setError("");
-    const printWindow = window.open("", "_blank");
-    try {
-      await chargeBiodataDownload(data.template);
-      const blob = await buildBiodataPdf(data);
-      const url = URL.createObjectURL(blob);
-      if (printWindow) {
-        printWindow.document.open();
-        printWindow.document.write(buildPrintShellHtml(url));
-        printWindow.document.close();
-      }
-    } catch (reason) {
-      printWindow?.close();
-      setError(reason instanceof Error ? reason.message : "Could not prepare the print preview. Please try again.");
-    } finally {
-      setBrowserPrintBusy(false);
-    }
-  }
-
   async function printViaPrintPilot() {
     if (busy || locked) return;
+    if (!requireLogin()) return;
     if (!(await requestChargeConfirm(templatePrices?.[data.template], templateLabel))) return;
     setPrintPilotBusy(true);
     setError("");
@@ -294,9 +265,6 @@ export default function BiodataBuilderClient() {
           </button>
           <button type="button" className="resbuild-btn-secondary" onClick={previewPdf} disabled={busy}>
             <Eye size={16} /> {previewBusy ? "Preparing..." : "Preview PDF"}
-          </button>
-          <button type="button" className="resbuild-btn-secondary" onClick={printViaBrowser} disabled={busy || locked} title={locked ? "Customer payment is pending" : undefined}>
-            <Printer size={16} /> {browserPrintBusy ? "Preparing..." : "Print"}
           </button>
           <button type="button" className="resbuild-btn-secondary" onClick={printViaPrintPilot} disabled={busy || locked} title={locked ? "Customer payment is pending" : undefined}>
             <Printer size={16} /> {printPilotBusy ? "Printing..." : "Print via PrintPilot"}
@@ -383,6 +351,22 @@ export default function BiodataBuilderClient() {
             <div className="resbuild-confirm-actions">
               <button type="button" className="resbuild-btn-secondary" onClick={() => answerChargeConfirm(false)}>Cancel</button>
               <button type="button" className="resbuild-btn-primary" onClick={() => answerChargeConfirm(true)}>OK, Continue</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {loginPrompt ? (
+        <div className="resbuild-confirm-overlay" onClick={() => setLoginPrompt(false)}>
+          <div className="resbuild-confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <span className="resbuild-confirm-icon"><LogIn size={20} /></span>
+            <h3>Login to continue</h3>
+            <p>
+              Your biodata stays exactly as you left it. Log in (or create a free account) to save, download, or print it.
+            </p>
+            <div className="resbuild-confirm-actions">
+              <button type="button" className="resbuild-btn-secondary" onClick={() => setLoginPrompt(false)}>Keep editing</button>
+              <Link className="resbuild-btn-primary" href={`/login?next=${encodeURIComponent(loginNextUrl)}`}>Login</Link>
             </div>
           </div>
         </div>

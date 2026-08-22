@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { ArrowLeft, ChevronDown, ChevronUp, Download, Eye, FolderOpen, Printer, RotateCcw, Save, Sparkles, Wallet } from "lucide-react";
-import { apiFetch } from "@/lib/api";
+import { usePathname, useSearchParams } from "next/navigation";
+import { ArrowLeft, ChevronDown, ChevronUp, Download, Eye, FolderOpen, LogIn, Printer, RotateCcw, Save, Sparkles, Wallet } from "lucide-react";
+import { apiFetch, hasStoredSession } from "@/lib/api";
 import { fetchAgentHealth, runAgentPrintFile } from "@/lib/printpilot-agent";
 import { TEMPLATES, type TemplateId } from "../templates";
 import { useTemplatePrices } from "../useTemplatePrices";
@@ -49,34 +49,15 @@ function blobToBase64(blob: Blob) {
   });
 }
 
-function buildPrintShellHtml(pdfUrl: string) {
-  return `<!DOCTYPE html>
-<html>
-<head>
-<title>Print Resume</title>
-<style>*{margin:0;padding:0;}html,body{height:100%;}embed{width:100%;height:100vh;border:0;}</style>
-</head>
-<body>
-<embed src="${pdfUrl}" type="application/pdf" />
-<script>
-  window.onload = function () {
-    window.focus();
-    setTimeout(function () { window.print(); }, 400);
-  };
-</script>
-</body>
-</html>`;
-}
-
 export default function ResumeBuilderClient() {
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const templatePrices = useTemplatePrices<TemplateId>("resume_builder_");
   const [resume, setResume] = useState<ResumeData>(sampleResume);
   const [downloadBusy, setDownloadBusy] = useState(false);
-  const [browserPrintBusy, setBrowserPrintBusy] = useState(false);
   const [printPilotBusy, setPrintPilotBusy] = useState(false);
   const [previewBusy, setPreviewBusy] = useState(false);
-  const busy = downloadBusy || browserPrintBusy || printPilotBusy || previewBusy;
+  const busy = downloadBusy || printPilotBusy || previewBusy;
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [savedOrder, setSavedOrder] = useState<SavedOrderSummary | null>(null);
@@ -86,7 +67,19 @@ export default function ResumeBuilderClient() {
   const [refreshBusy, setRefreshBusy] = useState(false);
   const [savedMessage, setSavedMessage] = useState("");
   const [chargeConfirm, setChargeConfirm] = useState<{ price: number; label: string; resolve: (ok: boolean) => void } | null>(null);
+  const [loginPrompt, setLoginPrompt] = useState(false);
   const [templatesExpanded, setTemplatesExpanded] = useState(false);
+  const loginNextUrl = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
+
+  // Building and previewing a resume is free for anyone. Login is only
+  // required for the actions that actually produce/save an output, so the
+  // gate shows up as a clear prompt here instead of a confusing "session
+  // expired" error surfacing later from a failed API call.
+  function requireLogin() {
+    if (hasStoredSession()) return true;
+    setLoginPrompt(true);
+    return false;
+  }
   const skipNextSaveRef = useRef(false);
   // Downloading/printing is blocked once a resume is marked as for-customer
   // until that customer's payment actually clears - the watermarked Preview
@@ -185,6 +178,7 @@ export default function ResumeBuilderClient() {
 
   async function saveResume() {
     if (saveBusy) return;
+    if (!requireLogin()) return;
     setSaveBusy(true);
     setError("");
     setSavedMessage("");
@@ -222,6 +216,7 @@ export default function ResumeBuilderClient() {
 
   async function downloadPdf() {
     if (busy || locked) return;
+    if (!requireLogin()) return;
     if (!(await requestChargeConfirm(templatePrices?.[resume.template], templateLabel))) return;
     setDownloadBusy(true);
     setError("");
@@ -236,35 +231,9 @@ export default function ResumeBuilderClient() {
     }
   }
 
-  async function printViaBrowser() {
-    if (busy || locked) return;
-    if (!(await requestChargeConfirm(templatePrices?.[resume.template], templateLabel))) return;
-    setBrowserPrintBusy(true);
-    setError("");
-    // Opened right after the confirm resolves (still within the same
-    // microtask chain as the modal's own OK click, which carries its own
-    // user-activation), before the async charge/build work below, so the
-    // browser still treats it as a direct result of a click, not a blocked popup.
-    const printWindow = window.open("", "_blank");
-    try {
-      await chargeResumeDownload(resume.template);
-      const blob = await buildResumePdf(resume);
-      const url = URL.createObjectURL(blob);
-      if (printWindow) {
-        printWindow.document.open();
-        printWindow.document.write(buildPrintShellHtml(url));
-        printWindow.document.close();
-      }
-    } catch (reason) {
-      printWindow?.close();
-      setError(reason instanceof Error ? reason.message : "Could not prepare the print preview. Please try again.");
-    } finally {
-      setBrowserPrintBusy(false);
-    }
-  }
-
   async function printViaPrintPilot() {
     if (busy || locked) return;
+    if (!requireLogin()) return;
     if (!(await requestChargeConfirm(templatePrices?.[resume.template], templateLabel))) return;
     setPrintPilotBusy(true);
     setError("");
@@ -288,8 +257,8 @@ export default function ResumeBuilderClient() {
     if (busy) return;
     setPreviewBusy(true);
     setError("");
-    // Opened synchronously, same reason as printViaBrowser - otherwise the
-    // browser treats the tab as an unrequested popup and blocks it.
+    // Opened synchronously - otherwise the browser treats the tab as an
+    // unrequested popup and blocks it.
     const previewTab = window.open("", "_blank");
     try {
       const blob = await buildPreviewPdf(resume);
@@ -326,9 +295,6 @@ export default function ResumeBuilderClient() {
           </button>
           <button type="button" className="resbuild-btn-secondary" onClick={previewPdf} disabled={busy}>
             <Eye size={16} /> {previewBusy ? "Preparing..." : "Preview PDF"}
-          </button>
-          <button type="button" className="resbuild-btn-secondary" onClick={printViaBrowser} disabled={busy || locked} title={locked ? "Customer payment is pending" : undefined}>
-            <Printer size={16} /> {browserPrintBusy ? "Preparing..." : "Print"}
           </button>
           <button type="button" className="resbuild-btn-secondary" onClick={printViaPrintPilot} disabled={busy || locked} title={locked ? "Customer payment is pending" : undefined}>
             <Printer size={16} /> {printPilotBusy ? "Printing..." : "Print via PrintPilot"}
@@ -422,6 +388,22 @@ export default function ResumeBuilderClient() {
             <div className="resbuild-confirm-actions">
               <button type="button" className="resbuild-btn-secondary" onClick={() => answerChargeConfirm(false)}>Cancel</button>
               <button type="button" className="resbuild-btn-primary" onClick={() => answerChargeConfirm(true)}>OK, Continue</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {loginPrompt ? (
+        <div className="resbuild-confirm-overlay" onClick={() => setLoginPrompt(false)}>
+          <div className="resbuild-confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <span className="resbuild-confirm-icon"><LogIn size={20} /></span>
+            <h3>Login to continue</h3>
+            <p>
+              Your resume stays exactly as you left it. Log in (or create a free account) to save, download, or print it.
+            </p>
+            <div className="resbuild-confirm-actions">
+              <button type="button" className="resbuild-btn-secondary" onClick={() => setLoginPrompt(false)}>Keep editing</button>
+              <Link className="resbuild-btn-primary" href={`/login?next=${encodeURIComponent(loginNextUrl)}`}>Login</Link>
             </div>
           </div>
         </div>

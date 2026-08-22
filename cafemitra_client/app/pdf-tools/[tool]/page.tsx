@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation";
 import { useRef, useState, type MutableRefObject } from "react";
 import Link from "next/link";
-import { Archive, ArrowLeft, ArrowRight, Bot, Check, Crop, FileImage, FileLock2, FileOutput, FilePenLine, FileScan, FileText, Files, Languages, ListOrdered, LockOpen, Plus, Presentation, RotateCw, Scissors, Shield, Sparkles, Stamp, Table2, TextSelect, Trash2, type LucideIcon } from "lucide-react";
+import { Archive, ArrowLeft, Bot, Check, Crop, FileImage, FileLock2, FileOutput, FilePenLine, FileScan, FileText, Files, Languages, ListOrdered, LockOpen, Plus, Presentation, RotateCw, Scissors, Shield, Sparkles, Stamp, Table2, TextSelect, Trash2, type LucideIcon } from "lucide-react";
 import { DashboardShell } from "../../DashboardShell";
 import { PdfToolUpload } from "../PdfToolUpload";
 import ConversionTool, { isConversionSlug } from "../ConversionTool";
@@ -93,7 +93,7 @@ function GenericToolWorkspace({ config, files, inputRef, accept, onAdd, onRemove
       <header><div><span><Icon size={24} /></span><div><h1>{config.title}</h1><p>{config.description}</p></div></div><button type="button" onClick={() => inputRef.current?.click()}><Plus size={18} /> Add files</button></header>
       <div className="generic-selected-files">{files.map((file, index) => <article key={`${file.name}-${file.lastModified}-${index}`}><span>{isPdfInput ? "PDF" : file.name.split(".").pop()?.toUpperCase()}</span><div><strong>{file.name}</strong><small>{formatBytes(file.size)}</small></div><button type="button" onClick={() => onRemove(index)} aria-label={`Remove ${file.name}`}><Trash2 size={17} /></button></article>)}</div>
       <div className="generic-tool-status"><span><Check size={18} /></span><div><strong>{ready ? "Files ready" : `Select ${config.required} files`}</strong><p>{ready ? `${files.length} file${files.length > 1 ? "s" : ""} selected. The ${config.title} processing workspace will use these files.` : `${config.title} requires ${config.required} PDF files.`}</p></div></div>
-      <footer><button type="button" onClick={onReset}>Start over</button><button className="primary" type="button" disabled={!ready}>{config.title} <ArrowRight size={18} /></button></footer>
+      <footer><button type="button" onClick={onReset}>Start over</button><button className="primary" type="button" disabled title="This tool is coming soon">{config.title} - Coming soon</button></footer>
     </section>
   </>;
 }

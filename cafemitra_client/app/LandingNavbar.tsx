@@ -16,6 +16,7 @@ import {
   FileLock2,
   FileOutput,
   FilePenLine,
+  FileScan,
   FileText,
   FileUser,
   Files,
@@ -61,6 +62,7 @@ const serviceMenu = [
     summary: "Build and print professional resumes with ready-made templates.",
     description: "Pick a template, fill in details, and print a polished resume right from the counter.",
     metric: "Resume templates",
+    openAccess: true,
   },
   {
     name: "Biodata Maker",
@@ -70,6 +72,7 @@ const serviceMenu = [
     summary: "Build and print matrimonial or general biodata with ready-made templates.",
     description: "Pick a template, fill in personal and family details, and print a clean biodata right from the counter.",
     metric: "Biodata templates",
+    openAccess: true,
   },
   // {
   //   name: "Document AI",
@@ -112,14 +115,23 @@ const serviceMenu = [
   //   comingSoon: true,
   // },
   {
+    name: "ID Card Maker",
+    href: "/id-card-maker",
+    icon: FileScan,
+    color: "#0d9488",
+    summary: "Design ID cards with ready-made templates and instant preview.",
+    description: "Pick a template, fill in holder details and photo, and generate print-ready ID cards.",
+    metric: "Card templates",
+  },
+  {
     name: "ID Card Print",
-    href: "/dashboard",
+    href: "/id-card-print",
     icon: IdCard,
     color: "#f97316",
     summary: "Batch-ready ID card layouts for schools, offices, and local businesses.",
     description: "Prepare reusable ID card templates, customer records, and print-ready card batches.",
     metric: "Batch cards",
-    comingSoon: true,
+    openAccess: true,
   },
 ];
 
@@ -364,6 +376,7 @@ type MegaMenuItem = {
   description: string;
   metric: string;
   comingSoon?: boolean;
+  openAccess?: boolean;
 };
 
 function ProductMegaMenu({ items, isLoggedIn }: { items: MegaMenuItem[]; isLoggedIn: boolean }) {
@@ -371,7 +384,7 @@ function ProductMegaMenu({ items, isLoggedIn }: { items: MegaMenuItem[]; isLogge
     <div className="nav-mega-menu services-simple-menu" aria-label="Services menu">
       {items.map((item) => {
         const Icon = item.icon;
-        const href = isLoggedIn ? item.href : `/login?next=${encodeURIComponent(item.href)}`;
+        const href = isLoggedIn || item.openAccess ? item.href : `/login?next=${encodeURIComponent(item.href)}`;
 
         return (
           <Link href={href} key={item.name}>

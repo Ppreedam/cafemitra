@@ -4,20 +4,42 @@ import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import AdjustBalanceModal from "@/components/AdjustBalanceModal";
+import DeleteShopModal from "@/components/DeleteShopModal";
+import Pagination from "@/components/Pagination";
+import { useRouter } from "next/navigation";
 import {
+  deleteShop,
   fetchActivityLog,
   fetchShopDetail,
+  fetchShopOrders,
   impersonateShop,
   sendShopPasswordReset,
   setShopActive,
   updateShop,
   type AdminActivityLogEntry,
   type ShopDetailResponse,
+  type ShopOrder,
 } from "@/lib/api";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, orderResultMessage, orderStatusBadgeClass } from "@/lib/format";
 
 const TABS = ["Profile", "Orders", "Wallet", "Pricing", "Timeline"] as const;
 type Tab = (typeof TABS)[number];
+
+const ORDER_STATUSES = ["", "awaiting_payment", "awaiting_approval", "queued", "printing", "printed", "failed"];
+
+type PriceItem = { id?: string; label?: string; rate?: number };
+
+function humanizeSettingKey(key: string): string {
+  const withSpaces = key.replace(/([a-z0-9])([A-Z])/g, "$1 $2");
+  return withSpaces.charAt(0).toUpperCase() + withSpaces.slice(1);
+}
+
+function formatSettingValue(value: unknown): string {
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (value === null || value === undefined || value === "") return "-";
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
 
 type TimelineEvent = {
   key: string;
@@ -30,16 +52,44 @@ type TimelineEvent = {
 export default function ShopDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const shopId = Number(id);
+  const router = useRouter();
 
   const [data, setData] = useState<ShopDetailResponse | null>(null);
   const [tab, setTab] = useState<Tab>("Profile");
   const [error, setError] = useState("");
   const [showAdjustModal, setShowAdjustModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [creditLimitInput, setCreditLimitInput] = useState("");
   const [cashCounterInput, setCashCounterInput] = useState(false);
   const [saving, setSaving] = useState(false);
   const [actionMessage, setActionMessage] = useState("");
   const [activityLog, setActivityLog] = useState<AdminActivityLogEntry[]>([]);
+  const [orders, setOrders] = useState<ShopOrder[]>([]);
+  const [orderStatusFilter, setOrderStatusFilter] = useState("");
+  const [orderFrom, setOrderFrom] = useState("");
+  const [orderTo, setOrderTo] = useState("");
+  const [orderPage, setOrderPage] = useState(1);
+  const [orderMeta, setOrderMeta] = useState({ count: 0, pageSize: 20 });
+  const [ordersError, setOrdersError] = useState("");
+
+  function updateOrderFilter(setter: (value: string) => void) {
+    return (value: string) => {
+      setter(value);
+      setOrderPage(1);
+    };
+  }
+
+  useEffect(() => {
+    if (tab !== "Orders") return;
+    fetchShopOrders(shopId, { status: orderStatusFilter, from: orderFrom, to: orderTo, page: orderPage })
+      .then((res) => {
+        setOrders(res.orders);
+        setOrderMeta({ count: res.count, pageSize: res.pageSize });
+        setOrdersError("");
+      })
+      .catch((err) => setOrdersError(err instanceof Error ? err.message : "Failed to load orders."));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab, shopId, orderStatusFilter, orderFrom, orderTo, orderPage]);
 
   function load() {
     fetchShopDetail(shopId)
@@ -179,6 +229,12 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
           >
             {data.shop.isActive ? "Suspend" : "Reactivate"}
           </button>
+          <button
+            onClick={() => setShowDeleteModal(true)}
+            className="rounded-md border border-red-300 bg-red-50 px-3 py-1.5 text-sm text-red-700 hover:bg-red-100"
+          >
+            Delete
+          </button>
         </div>
       </div>
 
@@ -250,36 +306,102 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
       )}
 
       {tab === "Orders" && (
-        <div className="rounded-xl border border-slate-200 bg-white overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-slate-200 text-left text-slate-500">
-                <th className="px-4 py-2 font-medium">Order</th>
-                <th className="px-4 py-2 font-medium">Service</th>
-                <th className="px-4 py-2 font-medium">Amount</th>
-                <th className="px-4 py-2 font-medium">Status</th>
-                <th className="px-4 py-2 font-medium">Created</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.recentOrders.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-4 py-6 text-center text-slate-500">
-                    No orders yet.
-                  </td>
-                </tr>
-              )}
-              {data.recentOrders.map((order) => (
-                <tr key={order.id} className="border-b border-slate-100 last:border-0">
-                  <td className="px-4 py-2 text-slate-700">{order.orderNumber}</td>
-                  <td className="px-4 py-2 text-slate-700">{order.serviceName}</td>
-                  <td className="px-4 py-2 text-slate-900 font-medium">{formatCurrency(order.totalAmount)}</td>
-                  <td className="px-4 py-2 text-slate-700">{order.status}</td>
-                  <td className="px-4 py-2 text-slate-500">{new Date(order.createdAt).toLocaleString("en-IN")}</td>
-                </tr>
+        <div>
+          <div className="flex flex-wrap items-center gap-2 mb-3">
+            <select
+              value={orderStatusFilter}
+              onChange={(e) => updateOrderFilter(setOrderStatusFilter)(e.target.value)}
+              className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+            >
+              {ORDER_STATUSES.map((s) => (
+                <option key={s} value={s}>
+                  {s || "All status"}
+                </option>
               ))}
-            </tbody>
-          </table>
+            </select>
+            <label className="flex items-center gap-1 text-xs text-slate-500">
+              From
+              <input
+                type="date"
+                value={orderFrom}
+                onChange={(e) => updateOrderFilter(setOrderFrom)(e.target.value)}
+                className="rounded-md border border-slate-300 px-2 py-1.5 text-sm text-slate-700"
+              />
+            </label>
+            <label className="flex items-center gap-1 text-xs text-slate-500">
+              To
+              <input
+                type="date"
+                value={orderTo}
+                onChange={(e) => updateOrderFilter(setOrderTo)(e.target.value)}
+                className="rounded-md border border-slate-300 px-2 py-1.5 text-sm text-slate-700"
+              />
+            </label>
+            {(orderStatusFilter || orderFrom || orderTo) && (
+              <button
+                onClick={() => {
+                  setOrderStatusFilter("");
+                  setOrderFrom("");
+                  setOrderTo("");
+                  setOrderPage(1);
+                }}
+                className="text-xs text-indigo-700 hover:underline"
+              >
+                Clear filters
+              </button>
+            )}
+          </div>
+
+          {ordersError && <div className="mb-3 rounded-md bg-red-50 text-red-700 text-sm px-3 py-2">{ordersError}</div>}
+
+          <div className="rounded-xl border border-slate-200 bg-white overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-200 text-left text-slate-500">
+                  <th className="px-4 py-2 font-medium">Order</th>
+                  <th className="px-4 py-2 font-medium">Service</th>
+                  <th className="px-4 py-2 font-medium">Amount</th>
+                  <th className="px-4 py-2 font-medium">Payment</th>
+                  <th className="px-4 py-2 font-medium">Status</th>
+                  <th className="px-4 py-2 font-medium">Result / Message</th>
+                  <th className="px-4 py-2 font-medium">Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {orders.length === 0 && (
+                  <tr>
+                    <td colSpan={7} className="px-4 py-6 text-center text-slate-500">
+                      {orderStatusFilter || orderFrom || orderTo ? "No orders match these filters." : "No orders yet."}
+                    </td>
+                  </tr>
+                )}
+                {orders.map((order) => (
+                  <tr key={order.id} className="border-b border-slate-100 last:border-0">
+                    <td className="px-4 py-2">
+                      <Link href={`/orders/${order.id}`} className="font-medium text-indigo-700 hover:underline">
+                        {order.orderNumber}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-2 text-slate-700">{order.serviceName}</td>
+                    <td className="px-4 py-2 text-slate-900 font-medium">{formatCurrency(order.totalAmount)}</td>
+                    <td className="px-4 py-2 text-slate-700">
+                      {order.paymentMode} <span className="text-xs text-slate-400">({order.paymentStatus})</span>
+                    </td>
+                    <td className="px-4 py-2">
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${orderStatusBadgeClass(order.status)}`}>
+                        {order.status}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 max-w-xs truncate text-slate-600" title={orderResultMessage({ order })}>
+                      {orderResultMessage({ order })}
+                    </td>
+                    <td className="px-4 py-2 text-slate-500">{new Date(order.createdAt).toLocaleString("en-IN")}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <Pagination page={orderPage} pageSize={orderMeta.pageSize} count={orderMeta.count} onPageChange={setOrderPage} />
+          </div>
         </div>
       )}
 
@@ -353,14 +475,60 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
 
       {tab === "Pricing" && (
         <div className="space-y-3">
-          {data.pricing.map((item) => (
-            <div key={item.serviceKey} className="rounded-xl border border-slate-200 bg-white p-4">
-              <h3 className="text-sm font-semibold text-slate-900 mb-2">{item.serviceName}</h3>
-              <pre className="text-xs text-slate-600 bg-slate-50 rounded-md p-3 overflow-x-auto">
-                {JSON.stringify(item.settings, null, 2)}
-              </pre>
-            </div>
-          ))}
+          {data.pricing.length === 0 && <p className="text-sm text-slate-500">No pricing configured yet.</p>}
+          {data.pricing.map((item) => {
+            const settings = item.settings || {};
+            const priceItems = Array.isArray(settings.priceItems) ? (settings.priceItems as PriceItem[]) : [];
+            const paymentMode = typeof settings.paymentMode === "string" ? settings.paymentMode : "";
+            const otherEntries = Object.entries(settings).filter(([key]) => key !== "priceItems" && key !== "paymentMode");
+
+            return (
+              <div key={item.serviceKey} className="rounded-xl border border-slate-200 bg-white p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-sm font-semibold text-slate-900">{item.serviceName}</h3>
+                  {paymentMode && (
+                    <span className="inline-flex rounded-full bg-indigo-50 px-2 py-0.5 text-xs font-medium text-indigo-700">
+                      {paymentMode}
+                    </span>
+                  )}
+                </div>
+
+                {priceItems.length > 0 ? (
+                  <table className="w-full text-sm mb-3">
+                    <thead>
+                      <tr className="border-b border-slate-200 text-left text-slate-500">
+                        <th className="py-1.5 font-medium">Item</th>
+                        <th className="py-1.5 font-medium">Rate</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {priceItems.map((priceItem, index) => (
+                        <tr key={priceItem.id ?? index} className="border-b border-slate-100 last:border-0">
+                          <td className="py-1.5 text-slate-700">{priceItem.label || priceItem.id || "-"}</td>
+                          <td className="py-1.5 text-slate-900 font-medium">
+                            {typeof priceItem.rate === "number" ? formatCurrency(priceItem.rate) : formatSettingValue(priceItem.rate)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <p className="text-sm text-slate-500 mb-3">No price items configured.</p>
+                )}
+
+                {otherEntries.length > 0 && (
+                  <div className="border-t border-slate-100 pt-3 grid grid-cols-2 gap-x-4 gap-y-1">
+                    {otherEntries.map(([key, value]) => (
+                      <div key={key} className="flex items-center justify-between gap-2 text-xs">
+                        <span className="text-slate-500">{humanizeSettingKey(key)}</span>
+                        <span className="text-slate-700 truncate">{formatSettingValue(value)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
       )}
 
@@ -400,6 +568,16 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
             setShowAdjustModal(false);
             load();
           }}
+        />
+      )}
+
+      {showDeleteModal && (
+        <DeleteShopModal
+          shopId={shopId}
+          shopName={data.shop.shopName}
+          shopEmail={data.shop.email}
+          onClose={() => setShowDeleteModal(false)}
+          onDeleted={() => router.push("/shops")}
         />
       )}
     </div>

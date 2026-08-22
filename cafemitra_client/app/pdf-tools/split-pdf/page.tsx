@@ -60,7 +60,7 @@ H2: How to Split PDF Files in 3 Steps.
 Every split follows the same three steps. No account required, no daily limit, no software installation.
 
 H3: Step 1 - Upload Your PDF File
-Click the Upload button or drag and drop your PDF file into the upload area. The tool accepts one PDF at a time, up to [FILE SIZE LIMIT]. Upload works on any device - iPhone, Android, Windows laptop, or Mac - from your browser. No app download required. If your PDF is very large and slow to upload, use the Compress PDF tool at /pdf-tools/compress-pdf first to reduce its file size, then upload the compressed version.
+Click the Upload button or drag and drop your PDF file into the upload area. The tool accepts one PDF at a time, up to 100MB. Upload works on any device - iPhone, Android, Windows laptop, or Mac - from your browser. No app download required. If your PDF is very large and slow to upload, use the Compress PDF tool at /pdf-tools/compress-pdf first to reduce its file size, then upload the compressed version.
 Only one PDF can be uploaded per split session. If you need to split multiple PDFs, run separate sessions.
 
 H3: Step 2 - Choose How to Split

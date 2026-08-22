@@ -4,8 +4,8 @@ import Link from "next/link";
 import { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import {
-  CircleHelp,
   ClipboardList,
+  FileScan,
   FileText,
   FileUser,
   Home,
@@ -13,7 +13,6 @@ import {
   Image,
   Printer,
   Users,
-  UserRound,
   type LucideIcon,
 } from "lucide-react";
 import { ProfileTopbar } from "./profile/ProfileTopbar";
@@ -46,6 +45,8 @@ const navGroups: NavGroup[] = [
     items: [
       { name: "PrintPilot", icon: Printer, href: "/auto-print", match: ["/auto-print"], serviceKey: "auto_document_print" },
       { name: "Passport Photo", icon: IdCard, href: "/passport-photo", match: ["/passport-photo"], serviceKey: "passport_photo" },
+      { name: "ID Card Maker", icon: FileScan, href: "/id-card-maker", match: ["/id-card-maker"] },
+      { name: "ID Card Print", icon: IdCard, href: "/id-card-print", match: ["/id-card-print"] },
       { name: "PDF Tools", icon: FileText, href: "/pdf-tools", match: ["/pdf-tools"], serviceKey: "pdf_tools" },
       { name: "Image Tools", icon: Image, href: "/image-tools", match: ["/image-tools"], serviceKey: "image_tools" },
       { name: "Resume Builder", icon: FileUser, href: "/resume-builder", match: ["/resume-builder"], serviceKey: "resume_builder" },
@@ -126,17 +127,6 @@ function AppSidebar({ activePath, isCollapsed }: { activePath: string; isCollaps
           </div>
         ))}
       </nav>
-
-      <div className="help-box">
-        <div className="help-avatar">
-          <UserRound size={21} />
-        </div>
-        <strong>Need Help?</strong>
-        <p>We are here to assist you.</p>
-        <Link className="btn" href="/contact-us">
-          <CircleHelp size={15} /> Contact Support
-        </Link>
-      </div>
     </aside>
   );
 }

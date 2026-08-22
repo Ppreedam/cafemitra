@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   Building2,
   ChevronDown,
+  LogIn,
   Menu,
   Printer,
   Wallet,
@@ -59,16 +61,22 @@ type ProfileTopbarProps = {
 };
 
 export function ProfileTopbar({ isSidebarCollapsed = false, onMenuClick, printerServiceKey = "auto_document_print" }: ProfileTopbarProps) {
+  const pathname = usePathname();
   const [profile, setProfile] = useState<ProfileSummary>(fallbackProfile);
   const [agentHealth, setAgentHealth] = useState<AgentHealth | null>(null);
   const [wallet, setWallet] = useState<WalletSummary | null>(null);
   const [topbarPrinters, setTopbarPrinters] = useState<string[]>(fallbackPrinters);
   const [selectedPrinter, setSelectedPrinter] = useState(fallbackPrinters[0]);
+  // Free tools (Resume Builder, Biodata Maker, PDF/Image Tools, etc.) render this
+  // same shell for visitors who have never logged in - the "Owner" fallback
+  // profile is not a real account, so it should read as a guest, not a person.
+  const [isGuest, setIsGuest] = useState(true);
 
   useEffect(() => {
     hydrateFromStorage();
     fetchProfile();
     fetchWallet();
+    setIsGuest(!hasStoredSession());
 
     window.addEventListener("cafemitra:profile-updated", hydrateFromStorage);
     window.addEventListener("cafemitra:wallet-updated", fetchWallet);
@@ -128,6 +136,7 @@ export function ProfileTopbar({ isSidebarCollapsed = false, onMenuClick, printer
   function resetProfile() {
     setProfile(fallbackProfile);
     setWallet(null);
+    setIsGuest(true);
   }
 
   async function refreshPrinters() {
@@ -223,7 +232,13 @@ export function ProfileTopbar({ isSidebarCollapsed = false, onMenuClick, printer
           <Wallet size={21} />
           <span>{formatWalletBalance(balance)}</span>
         </Link>
-        <ProfileMenu user={profile.user} />
+        {isGuest ? (
+          <Link className="topbar-guest-login" href={`/login?next=${encodeURIComponent(pathname)}`}>
+            <LogIn size={17} /> Login
+          </Link>
+        ) : (
+          <ProfileMenu user={profile.user} />
+        )}
       </div>
     </header>
   );

@@ -60,7 +60,7 @@ H2: How to Merge PDF Files in 3 Steps.
 Every merge follows the same three steps. No account required, no daily limit, no software installation.
 
 H3: Step 1 - Upload Your PDF Files
-Click the Upload button or drag and drop your PDF files into the upload area. You can upload multiple files at once - up to [MAX FILES] PDFs per merge, with a total combined size of up to [MAX SIZE]. All files must be in PDF format. If you have images (JPG, PNG, HEIC) that you want to include in the merged PDF, convert them first using the JPG to PDF tool at /pdf-tools/jpg-to-pdf, then upload the resulting PDFs here.
+Click the Upload button or drag and drop your PDF files into the upload area. You can upload multiple files at once - up to 50 PDFs per merge, with a total combined size of up to 300MB. All files must be in PDF format. If you have images (JPG, PNG, HEIC) that you want to include in the merged PDF, convert them first using the JPG to PDF tool at /pdf-tools/jpg-to-pdf, then upload the resulting PDFs here.
 The upload works on any device - iPhone, Android, Windows laptop, Mac, or tablet - from your browser. No app download required.
 
 H3: Step 2 - Arrange the Order of Your Files
@@ -128,7 +128,7 @@ Print shop integration
 ✗ No
 ✗ No
 Max files per merge
-✓ Up to [N] files
+✓ Up to 50 files
 ✓ Unlimited (free)
 ~ Limited (free)
 ~ Limited
@@ -247,7 +247,7 @@ H3: Q2: How do I merge multiple PDF files into one?
 Upload all the PDF files you want to combine, arrange them in the correct order using drag-and-drop, and click Merge. The tool combines all uploaded files into a single PDF in the order you specified. For example, to merge an Aadhaar scan, a PAN card scan, a marksheet, and a certificate into one PDF: upload all four files, drag them into the correct sequence (ID docs first, then academic documents), and download the merged result. All four pages - or more, if any file has multiple pages - will appear in order in the output.
 
 H3: Q3: How many PDF files can I merge at once?
-RepetiGo's merge PDF free tool supports up to [MAX FILES] files per merge session, with a total combined size of up to [MAX SIZE]. If you have more files than the limit, merge them in batches - first merge files 1–[N] into one PDF, then merge that result with the remaining files in a second session. There is no daily limit on the number of merge sessions.
+RepetiGo's merge PDF free tool supports up to 50 files per merge session, with a total combined size of up to 300MB. If you have more files than the limit, merge them in batches - first merge files 1–25 into one PDF, then merge that result with the remaining files in a second session. There is no daily limit on the number of merge sessions.
 
 H3: Q4: What is the best free PDF merger in India?
 For Indian users, RepetiGo offers the most relevant free PDF merger - no daily limit (unlike Smallpdf's 2-per-day free limit), no sign-up required (unlike Adobe Acrobat which requires an account), built for Indian document workflows (Aadhaar, PAN, marksheets, certificates), and integrated with a print shop platform used by Indian businesses. The merge quality is identical to paid alternatives - PDF merging is a lossless operation that no tool can do 'better' or 'worse' than another at the file level.
@@ -320,7 +320,7 @@ const faqSchemaQuestions = [
   ],
   [
     "How many PDF files can I merge at once?",
-    "RepetiGo's merge PDF free tool supports up to [MAX FILES] files per merge session, with a total combined size of up to [MAX SIZE].",
+    "RepetiGo's merge PDF free tool supports up to 50 files per merge session, with a total combined size of up to 300MB.",
   ],
   [
     "What is the best free PDF merger in India?",

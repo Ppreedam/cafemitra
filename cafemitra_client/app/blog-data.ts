@@ -1,5 +1,5 @@
 import type { LucideIcon } from "lucide-react";
-import { IdCard, Printer } from "lucide-react";
+import { BookUser, FileUser, IdCard, Printer } from "lucide-react";
 
 export type BlogPost = {
   slug: string;
@@ -37,5 +37,29 @@ export const blogPosts: BlogPost[] = [
     ctaLabel: "Make Your Photo",
     icon: IdCard,
     color: "#5740ed",
+  },
+  {
+    slug: "resume-maker",
+    href: "/tools/resume-maker/",
+    category: "Free Tool",
+    title: "Resume Maker",
+    excerpt:
+      "9 professional templates, including an ATS-safe design. Add your photo, fill your details, and download a print-ready PDF - online or at a nearby cyber cafe.",
+    readTime: "9 Templates + PDF",
+    ctaLabel: "Make Your Resume",
+    icon: FileUser,
+    color: "#16a34a",
+  },
+  {
+    slug: "biodata-maker",
+    href: "/tools/biodata-maker/",
+    category: "Free Tool",
+    title: "Marriage Biodata Maker",
+    excerpt:
+      "Matrimonial and simple templates - add your photo and details, and download a print-ready PDF. Online or at a nearby cyber cafe.",
+    readTime: "Templates + PDF",
+    ctaLabel: "Make Your Biodata",
+    icon: BookUser,
+    color: "#c026d3",
   },
 ];

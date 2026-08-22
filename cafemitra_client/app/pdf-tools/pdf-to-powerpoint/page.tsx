@@ -229,7 +229,7 @@ No - and this is expected. PDF is a static format with no animation data. When y
 H3: Q9: Is it safe to upload a presentation PDF to a free online converter?
 With RepetiGo, yes. Your file is uploaded over an encrypted TLS connection, processed in an isolated workspace, and permanently deleted within 60 minutes. The conversion engine processes the document's structure - no content is read or stored by any person for any other purpose. No sign-up means no data profile is created. For confidential business presentations, unpublished research, and sensitive reports, this auto-deletion policy is essential.
 H3: Q10: How large a PDF can I convert to PowerPoint?
-RepetiGo's PDF to PowerPoint converter accepts files up to [FILE SIZE LIMIT]. For large PDFs with many high-resolution images, processing may take 1-3 minutes. If your PDF is very large, consider compressing it first with RepetiGo's Compress PDF tool at /pdf-tools/compress-pdf to reduce the file size before conversion. For very long presentations (50+ pages), consider splitting the PDF first into smaller sections for faster, more manageable conversion.
+RepetiGo's PDF to PowerPoint converter accepts files up to 100MB. For large PDFs with many high-resolution images, processing may take 1-3 minutes. If your PDF is very large, consider compressing it first with RepetiGo's Compress PDF tool at /pdf-tools/compress-pdf to reduce the file size before conversion. For very long presentations (50+ pages), consider splitting the PDF first into smaller sections for faster, more manageable conversion.
 
 H2: More Free PDF Tools from RepetiGo.
 Tool
