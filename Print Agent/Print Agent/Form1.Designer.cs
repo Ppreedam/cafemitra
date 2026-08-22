@@ -30,6 +30,7 @@ namespace Print_Agent
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             pnlTopBar = new Panel();
+            label3 = new Label();
             btnGear = new Button();
             pictureBox1 = new PictureBox();
             softwareVersion = new Label();
@@ -103,6 +104,7 @@ namespace Print_Agent
             // pnlTopBar
             // 
             pnlTopBar.BackColor = Color.White;
+            pnlTopBar.Controls.Add(label3);
             pnlTopBar.Controls.Add(btnGear);
             pnlTopBar.Controls.Add(pictureBox1);
             pnlTopBar.Controls.Add(softwareVersion);
@@ -113,10 +115,19 @@ namespace Print_Agent
             pnlTopBar.Size = new Size(404, 64);
             pnlTopBar.TabIndex = 0;
             // 
+            // label3
+            // 
+            label3.AutoSize = true;
+            label3.Location = new Point(311, 4);
+            label3.Name = "label3";
+            label3.Size = new Size(72, 17);
+            label3.TabIndex = 4;
+            label3.Text = "Version: 14";
+            // 
             // btnGear
             // 
             btnGear.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnGear.Location = new Point(348, 10);
+            btnGear.Location = new Point(348, 28);
             btnGear.Name = "btnGear";
             btnGear.Size = new Size(36, 36);
             btnGear.TabIndex = 2;
@@ -137,12 +148,13 @@ namespace Print_Agent
             // softwareVersion
             // 
             softwareVersion.AutoSize = true;
-            softwareVersion.Location = new Point(368, 20);
+            softwareVersion.Location = new Point(361, 4);
             softwareVersion.Name = "softwareVersion";
-            softwareVersion.Size = new Size(15, 17);
+            softwareVersion.Size = new Size(22, 17);
             softwareVersion.TabIndex = 1;
-            softwareVersion.Text = "9";
+            softwareVersion.Text = "14";
             softwareVersion.Visible = false;
+            softwareVersion.Click += softwareVersion_Click;
             // 
             // pnlTopBarBorder
             // 
@@ -776,5 +788,6 @@ namespace Print_Agent
 
         private Label softwareVersion;
         private PictureBox pictureBox1;
+        private Label label3;
     }
 }

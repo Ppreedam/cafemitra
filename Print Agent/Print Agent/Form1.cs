@@ -90,6 +90,15 @@ namespace Print_Agent
             {
                 _initialVisibilityHandled = true;
                 base.SetVisibleCore(false);
+
+                // base.SetVisibleCore(false) never actually shows the form,
+                // so the window handle is not guaranteed to exist yet at
+                // this point - calling BeginInvoke before it does throws
+                // "Invoke or BeginInvoke cannot be called on a control
+                // until the window handle has been created." Reading
+                // Handle forces creation (it's a no-op if it already
+                // exists), making the BeginInvoke below safe.
+                _ = Handle;
                 BeginInvoke(new Action(MinimizeToTray));
                 return;
             }
@@ -1576,6 +1585,11 @@ namespace Print_Agent
         }
 
         private void txtAgentLog_TextChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void softwareVersion_Click(object sender, EventArgs e)
         {
 
         }

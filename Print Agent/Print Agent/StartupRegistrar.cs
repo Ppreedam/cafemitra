@@ -3,12 +3,13 @@ using Microsoft.Win32;
 namespace Print_Agent;
 
 // ---------------------------------------------------------------
-// First-run setup: registers the app to launch automatically at
-// Windows sign-in, via both the HKCU Run key and a shortcut in the
-// user's Startup folder (shell:startup) - belt and suspenders, since
-// some environments only honor one of the two. Runs once, gated by a
-// marker file in AgentPaths.ConfigDir - later runs are a no-op, so a
-// user who later removes either entry won't have it re-added.
+// Registers the app to launch automatically at Windows sign-in, via
+// both the HKCU Run key and a shortcut in the user's Startup folder
+// (shell:startup) - belt and suspenders, since some environments only
+// honor one of the two. Runs (and replaces both entries) on every
+// launch instead of a one-time flag, so a user who deletes either
+// entry - or an exe path that changed after an update/move - gets it
+// restored/refreshed the next time the app starts.
 // ---------------------------------------------------------------
 internal static class StartupRegistrar
 {
@@ -23,14 +24,6 @@ internal static class StartupRegistrar
 
     public static void EnsureEnabledOnce()
     {
-        // v2: bumped from autostart_installed.flag so installs that already
-        // registered before --autostart existed pick up the new argument
-        // once, without re-adding the entry for someone who removed it via
-        // this app's own future "disable autostart" feature (not yet
-        // built) rather than just deleting the flag file by hand.
-        var markerPath = Path.Combine(AgentPaths.ConfigDir, "autostart_installed_v2.flag");
-        if (File.Exists(markerPath)) return;
-
         try
         {
             var exePath = Environment.ProcessPath;
@@ -47,18 +40,6 @@ internal static class StartupRegistrar
         catch
         {
             // Best-effort - a failed autostart registration should never block startup.
-        }
-        finally
-        {
-            try
-            {
-                Directory.CreateDirectory(AgentPaths.ConfigDir);
-                File.WriteAllText(markerPath, DateTime.Now.ToString("O"));
-            }
-            catch
-            {
-                // If we can't even write the marker, we'll just retry next launch.
-            }
         }
     }
 }
