@@ -17545,3 +17545,364 @@ img.profile-photo {
 
 .resbuild-scale-outer { position: relative; width: 100%; min-width: 0; overflow: hidden; }
 .resbuild-scale-stage { width: 680px; transform-origin: top left; }
+
+/* ID Card tools (id-card-maker, id-card-print) */
+.idcard-doctype-tabs {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.idcard-doctype-tabs button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #18214d;
+  background: #fff;
+  font-weight: 780;
+  font-size: 0.86rem;
+  cursor: pointer;
+}
+
+.idcard-doctype-tabs button.active {
+  border-color: transparent;
+  background: var(--brand-hero-gradient);
+  color: #fff;
+}
+
+.idcard-field-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 16px;
+}
+
+.idcard-photo-slot {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  width: 96px;
+  aspect-ratio: 1 / 1.25;
+  border: 1px dashed #cfd5e8;
+  border-radius: 8px;
+  color: #4d587a;
+  background: #fbfcff;
+  place-content: center;
+  text-align: center;
+  cursor: pointer;
+}
+
+.idcard-photo-slot img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 7px;
+}
+
+.idcard-photo-slot span {
+  position: relative;
+  font-size: 0.68rem;
+  font-weight: 720;
+}
+
+.idcard-photo-slot input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.idcard-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.idcard-field-grid label {
+  display: grid;
+  gap: 4px;
+}
+
+.idcard-field-grid span {
+  color: #6b7598;
+  font-size: 0.76rem;
+  font-weight: 720;
+}
+
+.idcard-field-grid input {
+  min-height: 38px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  padding: 0 10px;
+  color: #18214d;
+  background: #fff;
+  font-size: 0.86rem;
+  font-weight: 640;
+}
+
+.idcard-preview {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  justify-content: center;
+  padding: 10px 0 16px;
+}
+
+.idcard-card {
+  display: flex;
+  flex-direction: column;
+  width: 260px;
+  aspect-ratio: 85.6 / 53.98;
+  overflow: hidden;
+  border: 1px solid var(--soft-line);
+  border-radius: 10px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(25, 35, 82, 0.1);
+}
+
+.idcard-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  color: #fff;
+  background: var(--brand-hero-gradient);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.idcard-card-badge {
+  opacity: 0.85;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+.idcard-card-body {
+  display: flex;
+  flex: 1;
+  gap: 10px;
+  padding: 10px;
+}
+
+.idcard-card-photo,
+.idcard-card-qr {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 46px;
+  color: #9aa4c4;
+  border: 1px solid #e1e5f2;
+  border-radius: 6px;
+  background: #f6f7fb;
+}
+
+.idcard-card-qr {
+  border-style: dashed;
+}
+
+.idcard-card-photo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 5px;
+}
+
+.idcard-card-fields {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.idcard-card-field span {
+  display: block;
+  color: #8e97b8;
+  font-size: 0.58rem;
+  font-weight: 720;
+}
+
+.idcard-card-field strong {
+  display: block;
+  overflow: hidden;
+  color: #18214d;
+  font-size: 0.72rem;
+  font-weight: 760;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.idcard-card-id {
+  border-top: 1px solid var(--soft-line);
+  padding: 6px 10px;
+  color: #18214d;
+  font-size: 0.82rem;
+  font-weight: 850;
+  letter-spacing: 0.03em;
+}
+
+.idcard-print-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  border-top: 1px solid var(--soft-line);
+  padding-top: 16px;
+}
+
+.idcard-toggle-group {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.idcard-toggle-group button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: #18214d;
+  background: #fff;
+  font-size: 0.8rem;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.idcard-toggle-group button.active {
+  border-color: transparent;
+  background: var(--brand-hero-gradient);
+  color: #fff;
+}
+
+.idcard-copies-group {
+  display: grid;
+  gap: 6px;
+  color: #6b7598;
+  font-size: 0.76rem;
+  font-weight: 720;
+}
+
+.idcard-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.idcard-stepper button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--soft-line);
+  border-radius: 999px;
+  color: #18214d;
+  background: #fff;
+  cursor: pointer;
+}
+
+.idcard-stepper strong {
+  min-width: 18px;
+  color: #18214d;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+.idcard-photo-pair {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.idcard-side-slot {
+  display: grid;
+  gap: 8px;
+}
+
+.idcard-side-label {
+  color: #6b7598;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.idcard-photo-pair .customer-upload {
+  min-height: 150px;
+}
+
+.idcard-photo-pair .customer-document-preview {
+  grid-template-columns: 92px 1fr;
+  min-height: 0;
+}
+
+.idcard-photo-pair .document-thumb {
+  width: 92px;
+}
+
+.idcard-sheet-preview {
+  display: flex;
+  justify-content: center;
+  padding: 14px 0;
+}
+
+.idcard-sheet-preview.bw .idcard-sheet-page {
+  filter: grayscale(1);
+}
+
+.idcard-sheet-page {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 240px;
+  min-height: 339px;
+  border: 1px solid var(--soft-line);
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 10px 24px rgba(25, 35, 82, 0.1);
+  padding: 12px 10px;
+}
+
+.idcard-sheet-row {
+  display: flex;
+  gap: 6px;
+}
+
+.idcard-sheet-card {
+  flex: 1;
+  aspect-ratio: 85.6 / 53.98;
+  overflow: hidden;
+  border: 1px solid #d9deeb;
+  border-radius: 3px;
+  background: #f6f7fb;
+}
+
+.idcard-sheet-card img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (max-width: 900px) {
+  .idcard-doctype-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .idcard-photo-pair {
+    grid-template-columns: 1fr;
+  }
+
+  .idcard-preview {
+    flex-direction: column;
+    align-items: center;
+  }
+}

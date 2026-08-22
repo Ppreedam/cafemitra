@@ -22,9 +22,11 @@ from .models import AdminActivityLog, AdminRole, Agent, ContactMessage, GooglePl
 from .views import (
     create_password_reset,
     create_wallet_transaction,
+    delete_user_files,
     ensure_service_pricing,
     issue_tokens,
     money,
+    order_list_queryset,
     parse_body,
     public_order,
     public_pricing,
@@ -439,7 +441,7 @@ def admin_shop_detail(request, shop_id):
 
     ensure_service_pricing(shop_user)
     pricing = ServicePricing.objects.filter(user=shop_user)
-    recent_orders = PrintOrder.objects.filter(user=shop_user).order_by("-created_at")[:20]
+    recent_orders = order_list_queryset(PrintOrder.objects.filter(user=shop_user).order_by("-created_at"))[:20]
     recent_transactions = WalletTransaction.objects.filter(user=shop_user).order_by("-created_at")[:20]
 
     return JsonResponse(
@@ -542,6 +544,79 @@ def admin_shop_reactivate(request, shop_id):
     return admin_shop_set_active(request, shop_id, True)
 
 
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def admin_shop_delete(request, shop_id):
+    """Permanently delete a shop account. Irreversible - the caller must echo
+    the shop's own email back as confirmation, and the User row's CASCADE FKs
+    take the profile, pricing, orders, wallet transactions, withdrawals and
+    topups down with it. Recorded in the activity log with a snapshot of the
+    shop's identity since the row itself won't exist to look up afterward.
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "shops")
+    if err:
+        return err
+
+    shop_user = get_shop_user(shop_id)
+    if not shop_user:
+        return JsonResponse({"message": "Shop not found."}, status=404)
+
+    body = parse_body(request)
+    confirm_email = str(body.get("confirmEmail", "")).strip().lower()
+    if confirm_email != shop_user.email.strip().lower():
+        return JsonResponse({"message": "Confirmation email does not match this shop's email."}, status=400)
+
+    shop_name = shop_user.shop.shop_name if getattr(shop_user, "shop", None) else ""
+    snapshot = f"email={shop_user.email}, shopName={shop_name}, balance={shop_user.profile.balance if hasattr(shop_user, 'profile') else ''}"
+
+    with transaction.atomic():
+        log_admin_activity(admin_user, "shop.delete", "shop", shop_user.id, snapshot)
+        delete_user_files(shop_user)
+        shop_user.delete()
+
+    return JsonResponse({"deleted": True})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def admin_shop_orders(request, shop_id):
+    """Paginated, status/date-filterable order history for one shop - split
+    out from admin_shop_detail's fixed 20-row recentOrders so the Orders tab
+    can filter/page. Gated on the "shops" section (not "orders") so a finance
+    or support admin browsing a shop's profile doesn't need separate
+    "orders" access just to see that shop's own order history.
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    _, err = require_section(request, "shops")
+    if err:
+        return err
+
+    shop_user = get_shop_user(shop_id)
+    if not shop_user:
+        return JsonResponse({"message": "Shop not found."}, status=404)
+
+    orders = order_list_queryset(PrintOrder.objects.filter(user=shop_user)).order_by("-created_at")
+
+    status = request.GET.get("status", "").strip()
+    if status:
+        orders = orders.filter(status=status)
+
+    date_from = parse_date(request.GET.get("from", "").strip())
+    if date_from:
+        orders = orders.filter(created_at__date__gte=date_from)
+    date_to = parse_date(request.GET.get("to", "").strip())
+    if date_to:
+        orders = orders.filter(created_at__date__lte=date_to)
+
+    page_items, meta = paginate(orders, request)
+    return JsonResponse({**meta, "orders": [public_order(order, include_media=False) for order in page_items]})
+
+
 # --- Phase 4: Orders monitoring (platform-wide) -----------------------------
 
 def paginate(queryset, request, default_size=20):
@@ -568,7 +643,7 @@ def admin_orders(request):
     if err:
         return err
 
-    orders = PrintOrder.objects.select_related("user", "user__shop").order_by("-created_at")
+    orders = order_list_queryset(PrintOrder.objects.select_related("user", "user__shop")).order_by("-created_at")
 
     shop_id = request.GET.get("shop", "").strip()
     if shop_id:
@@ -641,11 +716,11 @@ def admin_stuck_orders(request):
         return err
 
     now = timezone.now()
-    awaiting_approval = PrintOrder.objects.select_related("user", "user__shop").filter(
+    awaiting_approval = order_list_queryset(PrintOrder.objects.select_related("user", "user__shop")).filter(
         status=PrintOrder.STATUS_AWAITING_APPROVAL,
         created_at__lte=now - timedelta(minutes=30),
     ).order_by("created_at")
-    stuck_photo = PrintOrder.objects.select_related("user", "user__shop").filter(
+    stuck_photo = order_list_queryset(PrintOrder.objects.select_related("user", "user__shop")).filter(
         photo_status__in=[PrintOrder.PHOTO_STATUS_PENDING, PrintOrder.PHOTO_STATUS_CLAIMED],
         created_at__lte=now - timedelta(seconds=60),
     ).order_by("created_at")
@@ -713,6 +788,52 @@ def admin_wallet_ledger(request):
 
 @csrf_exempt
 @require_http_methods(["GET", "OPTIONS"])
+def admin_wallet_ledger_summary(request):
+    """Lifetime credit/debit totals + current balance for one shop, used to
+    sanity-check a withdrawal request against the shop's actual wallet
+    history without the admin having to page through the full ledger."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    _, err = require_section(request, "wallet")
+    if err:
+        return err
+
+    shop_id = request.GET.get("shop", "").strip()
+    if not shop_id:
+        return JsonResponse({"message": "shop is required."}, status=400)
+
+    shop_user = get_shop_user(shop_id)
+    if not shop_user:
+        return JsonResponse({"message": "Shop not found."}, status=404)
+
+    totals = WalletTransaction.objects.filter(user_id=shop_id, affects_balance=True).aggregate(
+        totalCredit=Sum("amount", filter=Q(direction=WalletTransaction.DIRECTION_CREDIT)),
+        totalDebit=Sum("amount", filter=Q(direction=WalletTransaction.DIRECTION_DEBIT)),
+        # What RepetiGo itself earned from this shop's tool usage - the same
+        # metric admin_wallet_earnings_summary uses platform-wide, scoped to
+        # one shop so "profit from this shop" has a concrete number.
+        platformRevenue=Sum(
+            "amount",
+            filter=Q(kind=WalletTransaction.KIND_TOOL_USAGE, direction=WalletTransaction.DIRECTION_DEBIT),
+        ),
+    )
+
+    profile = getattr(shop_user, "profile", None)
+
+    return JsonResponse(
+        {
+            "shopId": int(shop_id),
+            "currentBalance": float(profile.balance) if profile else 0,
+            "totalCredit": float(totals["totalCredit"] or 0),
+            "totalDebit": float(totals["totalDebit"] or 0),
+            "platformRevenue": float(totals["platformRevenue"] or 0),
+        }
+    )
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
 def admin_wallet_topups(request):
     if request.method == "OPTIONS":
         return JsonResponse({})
@@ -770,6 +891,10 @@ def admin_withdrawals(request):
     if status:
         withdrawals = withdrawals.filter(status=status)
 
+    email = request.GET.get("email", "").strip()
+    if email:
+        withdrawals = withdrawals.filter(user__email__icontains=email)
+
     page_items, meta = paginate(withdrawals, request)
 
     def public_admin_withdrawal(withdrawal):
@@ -777,6 +902,22 @@ def admin_withdrawals(request):
         payload["shopId"] = withdrawal.user_id
         payload["shopName"] = withdrawal.user.shop.shop_name if hasattr(withdrawal.user, "shop") else ""
         payload["shopEmail"] = withdrawal.user.email
+        # There's no direct FK from WithdrawalRequest to the WalletTransaction
+        # request_withdrawal() creates for it, so match on user+kind+amount at
+        # or after the request's timestamp. This gives balance_after AT THE
+        # MOMENT the withdrawal was requested - unlike the shop's *current*
+        # balance, it isn't skewed by tool-usage debits that happened later.
+        debit_txn = (
+            WalletTransaction.objects.filter(
+                user_id=withdrawal.user_id,
+                kind=WalletTransaction.KIND_WITHDRAWAL,
+                amount=withdrawal.amount,
+                created_at__gte=withdrawal.created_at,
+            )
+            .order_by("created_at")
+            .first()
+        )
+        payload["balanceAfterRequest"] = float(debit_txn.balance_after) if debit_txn and debit_txn.balance_after is not None else None
         return payload
 
     return JsonResponse({**meta, "withdrawals": [public_admin_withdrawal(w) for w in page_items]})
@@ -1307,7 +1448,7 @@ def admin_orders_export(request):
     if err:
         return err
 
-    orders = PrintOrder.objects.select_related("user", "user__shop").order_by("-created_at")
+    orders = order_list_queryset(PrintOrder.objects.select_related("user", "user__shop")).order_by("-created_at")
 
     shop_id = request.GET.get("shop", "").strip()
     if shop_id:

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Pagination from "@/components/Pagination";
 import { exportOrdersCsv, fetchOrders, type AdminOrder } from "@/lib/api";
-import { formatCurrency } from "@/lib/format";
+import { formatCurrency, orderResultMessage, orderStatusBadgeClass } from "@/lib/format";
 
 const SERVICES = [
   { value: "", label: "All services" },
@@ -22,10 +22,12 @@ export default function OrdersPage() {
   const [service, setService] = useState("");
   const [status, setStatus] = useState("");
   const [paymentMode, setPaymentMode] = useState("");
+  const [from, setFrom] = useState("");
+  const [to, setTo] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchOrders({ service, status, paymentMode, page })
+    fetchOrders({ service, status, paymentMode, from, to, page })
       .then((res) => {
         setOrders(res.orders);
         setCount(res.count);
@@ -33,7 +35,7 @@ export default function OrdersPage() {
         setError("");
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load orders."));
-  }, [service, status, paymentMode, page]);
+  }, [service, status, paymentMode, from, to, page]);
 
   function updateFilter(setter: (value: string) => void) {
     return (value: string) => {
@@ -71,6 +73,39 @@ export default function OrdersPage() {
           <option value="Online Payment">Online Payment</option>
           <option value="Cash Counter">Cash Counter</option>
         </select>
+        <label className="flex items-center gap-1 text-xs text-slate-500">
+          From
+          <input
+            type="date"
+            value={from}
+            onChange={(e) => updateFilter(setFrom)(e.target.value)}
+            className="rounded-md border border-slate-300 px-2 py-1.5 text-sm text-slate-700"
+          />
+        </label>
+        <label className="flex items-center gap-1 text-xs text-slate-500">
+          To
+          <input
+            type="date"
+            value={to}
+            onChange={(e) => updateFilter(setTo)(e.target.value)}
+            className="rounded-md border border-slate-300 px-2 py-1.5 text-sm text-slate-700"
+          />
+        </label>
+        {(service || status || paymentMode || from || to) && (
+          <button
+            onClick={() => {
+              setService("");
+              setStatus("");
+              setPaymentMode("");
+              setFrom("");
+              setTo("");
+              setPage(1);
+            }}
+            className="text-xs text-indigo-700 hover:underline"
+          >
+            Clear filters
+          </button>
+        )}
         <Link
           href="/orders/stuck"
           className="rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
@@ -78,7 +113,11 @@ export default function OrdersPage() {
           View stuck orders
         </Link>
         <button
-          onClick={() => exportOrdersCsv().catch((err) => setError(err instanceof Error ? err.message : "Export failed."))}
+          onClick={() =>
+            exportOrdersCsv({ service, status, paymentMode, from, to }).catch((err) =>
+              setError(err instanceof Error ? err.message : "Export failed.")
+            )
+          }
           className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
         >
           Export CSV
@@ -97,13 +136,14 @@ export default function OrdersPage() {
               <th className="px-4 py-2 font-medium">Amount</th>
               <th className="px-4 py-2 font-medium">Payment</th>
               <th className="px-4 py-2 font-medium">Status</th>
+              <th className="px-4 py-2 font-medium">Result / Message</th>
               <th className="px-4 py-2 font-medium">Created</th>
             </tr>
           </thead>
           <tbody>
             {orders.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-slate-500">
+                <td colSpan={8} className="px-4 py-6 text-center text-slate-500">
                   No orders match these filters.
                 </td>
               </tr>
@@ -125,7 +165,14 @@ export default function OrdersPage() {
                 <td className="px-4 py-2 text-slate-700">
                   {order.paymentMode} <span className="text-xs text-slate-400">({order.paymentStatus})</span>
                 </td>
-                <td className="px-4 py-2 text-slate-700">{order.status}</td>
+                <td className="px-4 py-2">
+                  <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${orderStatusBadgeClass(order.status)}`}>
+                    {order.status}
+                  </span>
+                </td>
+                <td className="px-4 py-2 max-w-xs truncate text-slate-600" title={orderResultMessage({ order })}>
+                  {orderResultMessage({ order })}
+                </td>
                 <td className="px-4 py-2 text-slate-500">{new Date(order.createdAt).toLocaleString("en-IN")}</td>
               </tr>
             ))}

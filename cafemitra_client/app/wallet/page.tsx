@@ -34,6 +34,7 @@ type WalletData = {
     onlineCollected: number;
     cashCounterCollected: number;
     totalCollected: number;
+    signupBonusCredited: number;
     netWithdrawable: number;
     pendingWithdrawal: number;
     paidWithdrawal: number;
@@ -61,6 +62,7 @@ const emptyWallet: WalletData = {
     onlineCollected: 0,
     cashCounterCollected: 0,
     totalCollected: 0,
+    signupBonusCredited: 0,
     netWithdrawable: 0,
     pendingWithdrawal: 0,
     paidWithdrawal: 0,
@@ -343,7 +345,7 @@ export default function WalletPage() {
                 <div className="metric-content">
                   <div className="metric-label">{card.label}</div>
                   <div className="metric-value">{card.value}</div>
-                  <div className="metric-meta">{metricMeta(card.label)}</div>
+                  <div className="metric-meta">{metricMeta(card.label, wallet.summary.signupBonusCredited)}</div>
                 </div>
               </article>
             );
@@ -503,8 +505,10 @@ function formatAmountInput(value: number) {
   return amount > 0 ? amount.toFixed(2).replace(/\.00$/, "") : "";
 }
 
-function metricMeta(label: string) {
-  if (label === "Withdrawable Balance") return "Ready to withdraw";
+function metricMeta(label: string, signupBonusCredited: number) {
+  if (label === "Withdrawable Balance") {
+    return signupBonusCredited > 0 ? `Excludes ${formatCurrency(signupBonusCredited)} signup bonus` : "Ready to withdraw";
+  }
   if (label === "Online Balance") return "Wallet balance";
   if (label === "Cash Counter Collected") return "Already with cafe";
   return "Wallet ledger";
