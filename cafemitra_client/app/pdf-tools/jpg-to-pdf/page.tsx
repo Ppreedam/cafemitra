@@ -69,7 +69,7 @@ First frame used for animated GIFs.
 H2: How to Convert JPG to PDF Online Free in 3 Steps.
 Every conversion follows the same three steps. No account required, no daily limit.
 H3: Step 1 - Upload Your Image Files
-Click the Upload button or drag and drop your image files into the upload area. You can upload multiple images at once - they will all be included in the same PDF, one image per page. Supported formats: JPG, JPEG, PNG, HEIC, WEBP, BMP, GIF. Maximum file size per image: [SIZE LIMIT]. Upload works on any device - iPhone, Android, Windows laptop, or Mac - from your browser. No app download required.
+Click the Upload button or drag and drop your image files into the upload area. You can upload multiple images at once - they will all be included in the same PDF, one image per page. Supported formats: JPG, JPEG, PNG, HEIC, WEBP, BMP, GIF. Maximum file size per image: 20MB. Upload works on any device - iPhone, Android, Windows laptop, or Mac - from your browser. No app download required.
 iPhone users: HEIC files upload directly without any pre-conversion. Go to Photos → select photo → share → select the image file → upload here.
 H3: Step 2 - Arrange and Configure
 After upload, your images appear as a list with thumbnails. Drag and drop to reorder them - the image at the top becomes the first page of your PDF. You can also configure:
@@ -110,7 +110,7 @@ Photograph the completed form, convert to PDF, submit online.
 H2: How to Convert Multiple JPG Images into One PDF.
 The most common advanced use case: a student needs to submit their Aadhaar card, PAN card, marksheet, and a certificate - all as one combined PDF. Each document is a separate phone photo. The converter handles this in one session.
 To combine multiple JPG images into one PDF: upload all your image files at once (or one by one), arrange them in the correct order using drag-and-drop (Aadhaar first, PAN second, marksheet third, certificate last), and click Convert. The resulting PDF contains all images as separate pages in the order you specified.
-There is no limit on the number of images per conversion session within the total file size limit of [SIZE LIMIT]. For a typical set of 4–6 phone photos of Indian identity documents, this is well within the limit.
+There is no limit on the number of images per conversion session within the total file size limit of 100MB. For a typical set of 4–6 phone photos of Indian identity documents, this is well within the limit.
 ✅ After converting multiple images to one PDF, if the resulting file is too large for a portal's upload limit, use the Compress PDF tool at /pdf-tools/compress-pdf to reduce the file size. The compress tool works perfectly on PDFs created by the image converter.
 
 H2: Does Converting JPG to PDF Reduce Image Quality?
@@ -227,7 +227,7 @@ On iPhone: open Safari or Chrome, tap Upload, and choose a photo from Photos or 
 H3: Q9: Is it safe to upload my Aadhaar or PAN card photo to this tool?
 RepetiGo's tool uses HTTPS for all transfers. Images are processed in isolated temporary sessions with no user account linkage. All files are automatically deleted within 60 minutes of download. No image content is read, analysed, or stored for any purpose other than creating your PDF. For Indian users converting identity documents, this privacy protection is substantially stronger than sharing the same photo over WhatsApp, which stores it permanently on the recipient's device.
 H3: Q10: What is the maximum file size for uploading images?
-Each image can be up to [SIZE LIMIT] in file size. For multiple images in one session, the total combined size should not exceed [TOTAL SIZE LIMIT]. Phone photos of documents typically range from 1–5 MB each, well within the limit. If an image exceeds the limit, reduce its resolution on your device before uploading, or use the camera's standard mode for document photos.
+Each image can be up to 20MB in file size. For multiple images in one session, the total combined size should not exceed 100MB. Phone photos of documents typically range from 1–5 MB each, well within the limit. If an image exceeds the limit, reduce its resolution on your device before uploading, or use the camera's standard mode for document photos.
 H3: Q11: What is the difference between JPG to PDF and PDF to JPG?
 JPG to PDF converts images into a PDF document - your photos or screenshots become pages in a PDF. This is used when you need to submit image files in PDF format for portals, institutions, or printing. PDF to JPG (reverse direction) extracts pages from an existing PDF document and saves them as image files - useful when you need to share individual pages as images or edit PDF content in an image editor. RepetiGo offers both: JPG to PDF and PDF to JPG at the PDF to JPG tool.
 

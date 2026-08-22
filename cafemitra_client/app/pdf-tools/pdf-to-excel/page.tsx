@@ -59,7 +59,7 @@ Not recommended. Manual entry is faster for handwritten tables.
 H2: How to Convert PDF to Excel Free in 3 Steps.
 Every conversion follows the same three steps. No account required, no daily limit.
 H3: Step 1 - Upload Your PDF File
-Click the Upload button or drag and drop your PDF into the upload area. Maximum file size: [SIZE LIMIT]. The tool accepts standard PDF files. Password-protected PDFs must have the protection removed before upload. Upload works on any device - Android phone, iPhone, Windows laptop, Mac, or Chromebook - from your browser. No app download required.
+Click the Upload button or drag and drop your PDF into the upload area. Maximum file size: 100MB. The tool accepts standard PDF files. Password-protected PDFs must have the protection removed before upload. Upload works on any device - Android phone, iPhone, Windows laptop, Mac, or Chromebook - from your browser. No app download required.
 If your PDF is very large (50+ pages) but you only need data from specific pages, consider splitting it first using the Split PDF tool at /pdf-tools/split-pdf. Processing a smaller PDF extracts data faster and more accurately.
 H3: Step 2 - Select Pages or Tables
 After upload, you can choose to convert the entire document or select specific pages. For large documents with many pages of non-tabular content (text paragraphs, images, headers), selecting only the pages that contain the tables you need produces cleaner output with less manual cleanup required.

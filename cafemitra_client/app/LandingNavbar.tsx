@@ -61,6 +61,7 @@ const serviceMenu = [
     summary: "Build and print professional resumes with ready-made templates.",
     description: "Pick a template, fill in details, and print a polished resume right from the counter.",
     metric: "Resume templates",
+    openAccess: true,
   },
   {
     name: "Biodata Maker",
@@ -70,6 +71,7 @@ const serviceMenu = [
     summary: "Build and print matrimonial or general biodata with ready-made templates.",
     description: "Pick a template, fill in personal and family details, and print a clean biodata right from the counter.",
     metric: "Biodata templates",
+    openAccess: true,
   },
   // {
   //   name: "Document AI",
@@ -364,6 +366,7 @@ type MegaMenuItem = {
   description: string;
   metric: string;
   comingSoon?: boolean;
+  openAccess?: boolean;
 };
 
 function ProductMegaMenu({ items, isLoggedIn }: { items: MegaMenuItem[]; isLoggedIn: boolean }) {
@@ -371,7 +374,7 @@ function ProductMegaMenu({ items, isLoggedIn }: { items: MegaMenuItem[]; isLogge
     <div className="nav-mega-menu services-simple-menu" aria-label="Services menu">
       {items.map((item) => {
         const Icon = item.icon;
-        const href = isLoggedIn ? item.href : `/login?next=${encodeURIComponent(item.href)}`;
+        const href = isLoggedIn || item.openAccess ? item.href : `/login?next=${encodeURIComponent(item.href)}`;
 
         return (
           <Link href={href} key={item.name}>
