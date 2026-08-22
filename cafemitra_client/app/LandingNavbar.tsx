@@ -16,6 +16,7 @@ import {
   FileLock2,
   FileOutput,
   FilePenLine,
+  FileScan,
   FileText,
   FileUser,
   Files,
@@ -114,14 +115,23 @@ const serviceMenu = [
   //   comingSoon: true,
   // },
   {
+    name: "ID Card Maker",
+    href: "/id-card-maker",
+    icon: FileScan,
+    color: "#0d9488",
+    summary: "Design ID cards with ready-made templates and instant preview.",
+    description: "Pick a template, fill in holder details and photo, and generate print-ready ID cards.",
+    metric: "Card templates",
+  },
+  {
     name: "ID Card Print",
-    href: "/dashboard",
+    href: "/id-card-print",
     icon: IdCard,
     color: "#f97316",
     summary: "Batch-ready ID card layouts for schools, offices, and local businesses.",
     description: "Prepare reusable ID card templates, customer records, and print-ready card batches.",
     metric: "Batch cards",
-    comingSoon: true,
+    openAccess: true,
   },
 ];
 

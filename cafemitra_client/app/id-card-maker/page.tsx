@@ -2,6 +2,8 @@
 
 import type React from "react";
 import { useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   BadgeCheck,
   Car,
@@ -10,6 +12,7 @@ import {
   FileScan,
   IdCard,
   Loader2,
+  LogIn,
   Palette,
   Printer,
   QrCode,
@@ -17,6 +20,7 @@ import {
   Upload,
   X,
 } from "lucide-react";
+import { hasStoredSession } from "@/lib/api";
 import { DashboardShell } from "../DashboardShell";
 import { WalletLimitBanner } from "../WalletLimitBanner";
 
@@ -78,6 +82,7 @@ const DOC_LAYOUT: Record<DocType, DocLayout> = {
 const COPY_OPTIONS = [2, 4, 6, 8];
 
 export default function IdCardMakerPage() {
+  const pathname = usePathname();
   const [docType, setDocType] = useState<DocType>("aadhaar");
   const [file, setFile] = useState<File | null>(null);
   const [step, setStep] = useState<Step>("upload");
@@ -85,6 +90,16 @@ export default function IdCardMakerPage() {
   const [photoUrl, setPhotoUrl] = useState("");
   const [colorMode, setColorMode] = useState<ColorMode>("color");
   const [copies, setCopies] = useState(4);
+  const [loginPrompt, setLoginPrompt] = useState(false);
+
+  // Building and previewing a card is free for anyone. Login is only
+  // required for the actual print/download output, since generating that
+  // file needs an identity to store it against.
+  function requireLogin() {
+    if (hasStoredSession()) return true;
+    setLoginPrompt(true);
+    return false;
+  }
 
   const fields = DOC_FIELDS[docType];
   const layout = DOC_LAYOUT[docType];
@@ -139,6 +154,7 @@ export default function IdCardMakerPage() {
   }
 
   function printCards() {
+    if (!requireLogin()) return;
     const printWindow = window.open("", "_blank");
     if (!printWindow) return;
     printWindow.document.open();
@@ -277,6 +293,20 @@ export default function IdCardMakerPage() {
           </article>
         </section>
       </div>
+
+      {loginPrompt ? (
+        <div className="resbuild-confirm-overlay" onClick={() => setLoginPrompt(false)}>
+          <div className="resbuild-confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <span className="resbuild-confirm-icon"><LogIn size={20} /></span>
+            <h3>Login to continue</h3>
+            <p>Your card stays exactly as you left it. Log in (or create a free account) to print or download it.</p>
+            <div className="resbuild-confirm-actions">
+              <button type="button" className="resbuild-btn-secondary" onClick={() => setLoginPrompt(false)}>Keep editing</button>
+              <Link className="resbuild-btn-primary" href={`/login?next=${encodeURIComponent(pathname)}`}>Login</Link>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </DashboardShell>
   );
 }

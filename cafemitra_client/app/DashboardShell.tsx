@@ -4,7 +4,6 @@ import Link from "next/link";
 import { ReactNode } from "react";
 import { useEffect, useState } from "react";
 import {
-  CircleHelp,
   ClipboardList,
   FileScan,
   FileText,
@@ -14,7 +13,6 @@ import {
   Image,
   Printer,
   Users,
-  UserRound,
   type LucideIcon,
 } from "lucide-react";
 import { ProfileTopbar } from "./profile/ProfileTopbar";
@@ -129,17 +127,6 @@ function AppSidebar({ activePath, isCollapsed }: { activePath: string; isCollaps
           </div>
         ))}
       </nav>
-
-      <div className="help-box">
-        <div className="help-avatar">
-          <UserRound size={21} />
-        </div>
-        <strong>Need Help?</strong>
-        <p>We are here to assist you.</p>
-        <Link className="btn" href="/contact-us">
-          <CircleHelp size={15} /> Contact Support
-        </Link>
-      </div>
     </aside>
   );
 }
