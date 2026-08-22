@@ -6,10 +6,12 @@ namespace Print_Agent;
 // ---------------------------------------------------------------
 // Startup setup: makes sure a Desktop shortcut and a Start Menu
 // shortcut for the app (both carrying its .ico) exist, then
-// best-effort pins it to the taskbar. Each shortcut is checked (and
-// recreated if missing) on every launch instead of a one-time flag,
-// so a shortcut the user deletes - or that never got created due to
-// a transient failure - gets restored next time the app starts.
+// best-effort pins it to the taskbar. The Desktop shortcut is
+// recreated (replaced) on every launch so it always points at the
+// current exe/icon even if the user moved the install or an update
+// changed the path; the Start Menu shortcut is only created if
+// missing. Runs on every launch instead of a one-time flag, so a
+// shortcut the user deletes gets restored next time the app starts.
 // ---------------------------------------------------------------
 internal static class ShortcutInstaller
 {
@@ -27,7 +29,8 @@ internal static class ShortcutInstaller
             var startMenuShortcut = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.Programs), ShortcutName);
 
-            if (!File.Exists(desktopShortcut)) CreateShortcut(desktopShortcut, exePath);
+            // Always (re)create - replaces a stale/existing shortcut too.
+            CreateShortcut(desktopShortcut, exePath);
             if (!File.Exists(startMenuShortcut)) CreateShortcut(startMenuShortcut, exePath);
             TryPinToTaskbar(exePath);
         }
