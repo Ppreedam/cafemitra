@@ -7,21 +7,21 @@ const pageUrl = "https://repetigo.com/pdf-tools/extract-pages";
 export const metadata: Metadata = {
   title: "Extract Pages from PDF - Free Online, No Sign-Up | RepetiGo",
   description:
-    "Extract pages from a PDF free and online - no sign-up, no software. Pull single, multiple, or specific pages into a new file on any device. Auto-deletes within 60 minutes.",
+    "Extract pages from a PDF free and online - no sign-up, no software. Pull single, multiple, or specific pages into a new file on any device. Processed entirely in your browser - never uploaded.",
   alternates: {
     canonical: pageUrl,
   },
   openGraph: {
     title: "Extract Pages from PDF - Free Online, No Sign-Up | RepetiGo",
     description:
-      "Pull specific pages out of a PDF free in your browser. No sign-up. Files auto-delete within 60 minutes.",
+      "Pull specific pages out of a PDF free in your browser. No sign-up. Files are processed locally - browser-only.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
     card: "summary_large_image",
     title: "Extract Pages from PDF - Free Online | RepetiGo",
-    description: "Free online tool to extract pages from a PDF on any device. No sign-up. Auto-delete.",
+    description: "Free online tool to extract pages from a PDF on any device. No sign-up. Browser-only processing.",
   },
   robots: {
     index: true,
@@ -30,28 +30,28 @@ export const metadata: Metadata = {
 };
 
 const content = String.raw`H1: Extract Pages from PDF - Free, Online, No Sign-Up
-Need just one or two pages out of a longer PDF? Upload your file, pick the pages you want to keep, and download them as a brand-new PDF - all in your browser. No account, no software install. RepetiGo's tool to extract pages from a PDF is free, works on any device, and auto-deletes your file within 60 minutes.
-✓ 100% free      ✓ No sign-up      ✓ Works on any device      ✓ Auto-deletes in 60 min
+Need just one or two pages out of a longer PDF? Upload your file, pick the pages you want to keep, and download them as a brand-new PDF - all in your browser. No account, no software install. RepetiGo's tool to extract pages from a PDF is free, works on any device, and processes your file entirely in your browser.
+✓ 100% free      ✓ No sign-up      ✓ Works on any device      ✓ Browser-only - never uploaded
 ➜ Extract Pages from PDF - Free
 No email. No install. Just upload and extract.
 
 H2: What Does Extracting Pages from a PDF Mean?
 Extracting pages from a PDF means copying one or more pages out of a larger document and saving them as a separate, new PDF - while your original file stays exactly as it was. RepetiGo's extract pages from PDF tool is a free, browser-based utility that lets you pull out a single page, a specific range, or several scattered pages, and download them as their own file in seconds.
 This is different from removing pages. When you remove pages from a PDF, you delete them from the original and keep what's left. When you extract pages from a PDF, you pull a copy of the pages you choose into a new file - the original document is untouched. If you want to delete pages instead of pulling them out, use RepetiGo's Remove Pages tool.
-📊 Every file you upload runs through an ephemeral pipeline and is automatically deleted within 60 minutes. RepetiGo never stores your PDF, and no sign-up is required to extract pages from a PDF.
+📊 Nothing you select is ever sent to a server - your PDF is processed entirely in your browser. RepetiGo never stores your PDF, and no sign-up is required to extract pages from a PDF.
 
 H2: How to Extract Pages from a PDF (Step by Step)
 Here is how to extract pages from a PDF for free with RepetiGo. The whole process takes under a minute:
-1. Upload your PDF. Drag and drop the file, or click to browse. It uploads over an encrypted connection.
+1. Upload your PDF. Drag and drop the file, or click to browse. Nothing is uploaded to a server - your file is read directly in your browser.
 2. Select the pages to extract. Your PDF appears as page thumbnails. Click any page - single, multiple, or a range - to mark it for extraction.
-3. Click 'Extract Pages'. RepetiGo copies the selected pages into a brand-new PDF instantly.
-4. Download your new PDF. Save the extracted pages to your device. Your uploaded file is auto-deleted within 60 minutes.
+3. Click 'Extract Pages'. RepetiGo copies the selected pages into a brand-new PDF instantly, at their original quality.
+4. Download your new PDF. Save the extracted pages to your device. Your file was processed locally and never uploaded.
 💡 Your original PDF is never changed. Extracting pages from a PDF only creates a new, smaller file with the pages you chose.
 
 H2: Is It Safe to Extract Pages from a PDF Online?
 Yes - if the tool handles your file responsibly. Many free online PDF tools store your uploads on their servers indefinitely, which is a real privacy risk when your PDF contains an Aadhaar scan, a mark sheet, or a bank statement. RepetiGo is built differently.
-When you extract pages from a PDF online with RepetiGo, your file is processed through a secure, temporary pipeline and then permanently deleted within 60 minutes. There is no sign-up, so we never link the file to your name or email. Nothing is kept, sold, or shared.
-🔒 Your PDF is encrypted in transit, processed in an ephemeral workspace, and cryptographically deleted within 60 minutes. No account. No tracking. Read more on our security page.
+When you extract pages from a PDF online with RepetiGo, your file never leaves your device - it's processed entirely in your browser. There is no sign-up, so we never link the file to your name or email. Nothing is kept, sold, or shared.
+🔒 Your PDF is processed locally in your browser - never uploaded, never stored. No account. No tracking. Read more on our security page.
 
 H2: Extract Pages from a PDF on Any Device
 Because RepetiGo runs in your browser, you can extract pages from a PDF on a laptop, phone, or tablet - no app to download. Here's how it works on the platforms people ask about most.
@@ -72,10 +72,10 @@ You can extract multiple pages from a PDF in one go. Click every page you want -
 H2: Extract Pages from a PDF - Built for India
 Indian documents often bundle everything into one long PDF. An NTA admit card (JEE, NEET, UGC) might sit alongside instructions and a photo-guidelines page. A college mark sheet PDF might include several semesters when you only need one. A DigiLocker download might combine an Aadhaar copy with other certificates.
 With RepetiGo you can extract pages from a PDF online free in India - pull out just the one page you need to print or submit, without printing or emailing the whole bundle. Because nothing is stored and no sign-up is needed, your Aadhaar or mark sheet never sits on a stranger's server.
-⚠️ Under India's DPDP Act 2023, personal documents like Aadhaar and mark sheets deserve careful handling. Extracting only the page you need - and using a tool that auto-deletes your file - keeps your data in your control.
+⚠️ Under India's DPDP Act 2023, personal documents like Aadhaar and mark sheets deserve careful handling. Extracting only the page you need - and using a tool that never uploads your file in the first place - keeps your data in your control.
 
 H2: For Print Shops and Cyber Cafes
-If you run a print shop, cyber cafe, or CSC centre, customers often bring a long PDF and only need one page printed - a single admit-card page, one form, one certificate. Manually scrolling to find and print just that page slows down the counter. RepetiGo's PrintPilot automates the whole workflow - customers upload by QR code, the AI prepares the exact pages needed, and files auto-delete after printing.
+If you run a print shop, cyber cafe, or CSC centre, customers often bring a long PDF and only need one page printed - a single admit-card page, one form, one certificate. Manually scrolling to find and print just that page slows down the counter. RepetiGo's PrintPilot automates the whole workflow - customers upload by QR code, the AI prepares the exact pages needed, and files aren't kept around after the job is printed.
 Free tools like extract pages from a PDF introduce your customers to RepetiGo. PrintPilot is the paid engine that runs your shop: secure QR upload, AI page handling, print queue, UPI payments, and privacy built in.
 ➜ See How PrintPilot Runs Your Print Shop
 Automate uploads, page handling, and secure printing.
@@ -83,20 +83,20 @@ Automate uploads, page handling, and secure printing.
 H2: Why Use RepetiGo to Extract PDF Pages?
 • Free forever - no paywall to extract pages from a PDF, unlike Adobe Acrobat Pro.
 • No sign-up - no email, no account, no tracking to extract pages from a PDF online.
-• Private by design - files auto-delete within 60 minutes; nothing is stored.
+• Private by design - files never uploaded; processed locally in your browser.
 • Any device - extract pages from a PDF on Mac, Windows, or mobile in the browser.
 • Original stays intact - extracting never changes your source PDF.
 • Made for India - handles Aadhaar, admit cards, and mark sheets with privacy in mind.
 
 H2: Frequently Asked Questions
 H3: How do I extract pages from a PDF for free?
-Upload your PDF to RepetiGo's extract pages from PDF tool, click the page thumbnails you want to pull out, press Extract Pages, and download the new file. It's completely free, needs no sign-up, and works in any browser. Your uploaded file is automatically deleted within 60 minutes, so nothing is stored.
+Upload your PDF to RepetiGo's extract pages from PDF tool, click the page thumbnails you want to pull out, press Extract Pages, and download the new file. It's completely free, needs no sign-up, and works in any browser. Your file is never uploaded - processed entirely in your browser, so nothing is stored.
 H3: What's the difference between extracting and removing pages from a PDF?
 Extracting copies the pages you select into a brand-new PDF while your original file stays untouched. Removing does the opposite - it deletes the selected pages from the original and keeps what's left. If you want to keep only certain pages as a separate file, extract them. If you want to delete pages from the document you already have, use RepetiGo's Remove Pages tool instead.
 H3: How do I extract pages from a PDF without Adobe Acrobat?
 You don't need Adobe Acrobat. Its Organize Pages feature requires a paid Acrobat Pro subscription. RepetiGo lets you extract pages from a PDF without Acrobat for free - open the tool in any browser, upload your file, select the pages to pull out, and download. No install and no licence required.
 H3: Is it safe to extract pages from a PDF online?
-With RepetiGo, yes. Your file is uploaded over an encrypted connection, processed in a temporary workspace, and permanently deleted within 60 minutes. There is no sign-up, so your PDF is never linked to your name or email. This matters most for sensitive files like Aadhaar, admit cards, or mark sheets.
+With RepetiGo, yes. Your file is never uploaded to a server at all - it's processed entirely in your browser. There is no sign-up, so your PDF is never linked to your name or email. This matters most for sensitive files like Aadhaar, admit cards, or mark sheets.
 H3: Can I extract multiple specific pages from a PDF at once?
 Yes. Click every page you want to extract - they can be scattered across the document or a continuous range - and RepetiGo pulls them all into a single new PDF in one step. You don't need to extract pages one at a time.
 H3: How do I extract pages from a PDF on Mac?
@@ -104,12 +104,12 @@ You can use Preview's thumbnail view and drag selected pages into a new window, 
 H3: Will extracting pages reduce the quality of my PDF?
 No. Extracting only copies the pages you select into a new file. Those pages keep their original resolution, text, and formatting. Your source document is never modified.
 H3: Do you keep a copy of my PDF after I extract pages?
-No. RepetiGo processes your file through an ephemeral pipeline and deletes it automatically within 60 minutes. We don't require an account, we don't store your document, and we never sell or share your data.
+No. RepetiGo processes your file locally in your browser - it is never uploaded to any server. We don't require an account and we never sell or share your data.
 
 H2: Extract Pages from Your PDF Now
 Pull out the pages you need and download a clean new PDF in under a minute - free, private, and on any device.
 ➜ Extract Pages from PDF - Start Free
-No sign-up · Auto-deletes in 60 minutes · Works on any device`;
+No sign-up · Browser-only processing · Works on any device`;
 
 const faqStart = content.indexOf("H2: Frequently Asked Questions");
 const faqEnd = content.indexOf("H2: Extract Pages from Your PDF Now", faqStart);

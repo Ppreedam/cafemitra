@@ -7,28 +7,29 @@ const pageUrl = "https://repetigo.com/pdf-tools/redact-pdf";
 
 export const metadata: Metadata = {
   title: "Redact PDF Free Online - Permanently Remove Sensitive Data | RepetiGo",
-  description: "Redact sensitive text, images, and data from PDFs permanently. Free online PDF redaction without Adobe Acrobat, no sign-up, and auto-delete in 60 minutes.",
+  description: "Redact any PDF free online - permanently black out names, account numbers, SSNs, and sensitive data before sharing. No Adobe Acrobat needed. No sign-up. Files deleted in browser-only.",
   alternates: { canonical: pageUrl },
   openGraph: {
     title: "Redact PDF Free Online - Permanently Remove Sensitive Data | RepetiGo",
-    description: "Permanently remove sensitive information from PDFs before sharing. Free, private, and browser-based.",
+    description: "Redact any PDF free - permanently black out names, SSNs, account numbers, and sensitive data. No Adobe. No sign-up. Browser-only processing.",
     type: "website",
     url: pageUrl,
+    images: ["https://repetigo.com/og-redact-pdf.jpg"],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Redact PDF Free Online | RepetiGo",
-    description: "Permanently redact text, images, and sensitive data from a PDF without Adobe Acrobat.",
+    title: "Redact PDF Free Online - RepetiGo",
+    description: "Permanently remove sensitive data from PDFs free. No Adobe, no sign-up.",
   },
   robots: { index: true, follow: true },
 };
 
 const content = String.raw`H1: Redact PDF Free. Permanently Remove Sensitive Data Before Sharing. No Adobe.
 You need to share a PDF - but it contains information that should not be seen. A name. An account number. A salary figure. A medical record. An identity number. Simply hiding the text is not enough - it needs to be gone permanently.
-RepetiGo's free PDF redaction tool permanently blacks out selected text, images, and data from your PDF before you download and share it. The redacted content is destroyed - not hidden, not masked, not covered. Permanently removed.
-✓ Permanently remove text, images, and data  ✓ Supports DPDP Act and GDPR-aligned workflows  ✓ Mac, Windows, iPhone  ✓ No Adobe Acrobat Pro  ✓ No sign-up  ✓ Files deleted in 60 minutes
+RepetiGo's free PDF redaction tool permanently blacks out selected content from your PDF before you download and share it. The redacted content is destroyed - not hidden, not masked, not covered. Permanently removed. Note: the entire output PDF becomes a flattened image document, which means text searchability is lost on all pages - not just the redacted areas.
+✓ Permanently remove text, images, and data  ✓ Supports DPDP Act and GDPR-aligned workflows  ✓ Mac, Windows, iPhone  ✓ No Adobe Acrobat Pro  ✓ No sign-up  ✓ Files never uploaded - processed in your browser
 
-➜  [ Redact PDF Free Now → repetigo.com/pdf-tools/redact-pdf ]
+➜  [ Redact PDF Free Now → repetigo.com/tools/pdf/redact-pdf/ ]
 
 H2: What Does Redacting a PDF Mean?
 Redacting a PDF means permanently removing selected content from the document so that it cannot be read, recovered, or reconstructed. The redacted areas are replaced with solid black bars - but unlike simply drawing a black box over the text, true redaction destroys the underlying data entirely.
@@ -65,20 +66,17 @@ H2: How to Redact a PDF Free Online.
 Three steps. Most documents are redacted and ready to share in under two minutes.
 
 H3: Step 1 - Upload Your PDF
-Click Upload or drag your PDF into the tool. Any PDF works - contracts, statements, reports, forms, letters, medical documents. Upload travels over TLS encryption. No account required.
-Note: if the PDF has editing restrictions applied, remove them first using RepetiGo's Unlock PDF tool at /pdf-tools/unlock-pdf - some PDFs block content selection and redaction when permission-restricted.
+Click Upload or drag your PDF into the tool. Any PDF works - contracts, statements, reports, forms, letters, medical documents. Nothing is uploaded - your file is read directly in your browser. No account required.
+Note: if the PDF has editing restrictions applied, remove them first using RepetiGo's Unlock PDF tool at /tools/pdf/unlock-pdf/ - some PDFs block content selection and redaction when permission-restricted.
 H3: Step 2 - Select and Redact the Sensitive Content
-Use the redaction tool to select the content you want to remove:
-•  Text redaction: Click and drag to select any text - a name, an account number, a date of birth, a sentence, a full paragraph. All selected text is permanently removed.
-•  Image redaction: Draw a redaction box over any image, photo, signature, or graphic that should not be shared.
-•  Area redaction: Select an entire area of the page - useful for redacting a block of data, a table cell, or a section with mixed content.
-Review your selections before proceeding - redaction is permanent and cannot be reversed once applied.
+Position one rectangular redaction box using the on-screen sliders (from left, from top, width, height) - drag them until the box covers the sensitive text, image, or data on the page preview. This same box position and size is applied to every page you have selected, so it works best when the content you're redacting sits in the same place across those pages (a header field, a repeated stamp, a consistent form field). If sensitive content sits in different positions on different pages, redact those pages in separate passes, repositioning the box each time.
+Review your selection before proceeding - redaction is permanent and cannot be reversed once applied. Once applied, every selected page is flattened into an image, so none of the text on those pages - inside or outside the redaction box - remains selectable or searchable afterward.
 
 H3: Step 3 - Download Your Redacted PDF
-Click Apply Redactions and Download. Your redacted PDF saves to your device - all selected content permanently destroyed, replaced with clean black redaction marks. The document looks exactly as it did, except the sensitive content is visibly removed. Both your uploaded original and the redacted output are deleted from our servers within 60 minutes.
+Click Apply Redactions and Download. Your redacted PDF saves to your device - the selected content permanently destroyed, replaced with a clean black redaction mark. The document looks exactly as it did, except the sensitive content is visibly removed. Both your uploaded original and the redacted output are never sent to any server - processed locally in your browser.
 🔒  Always keep a copy of the original unredacted PDF in a secure, access-controlled location before distributing the redacted version. Redaction is irreversible - the original cannot be reconstructed from the redacted file.
 
-➜  [ Redact Your PDF Now - Free → repetigo.com/pdf-tools/redact-pdf ]
+➜  [ Redact Your PDF Now - Free → repetigo.com/tools/pdf/redact-pdf/ ]
 
 H2: What Information Should You Redact?
 Before sharing any PDF that was not created specifically for the recipient, check it for the following categories of information. Each type carries compliance, legal, or reputational risk if shared unredacted:
@@ -111,16 +109,16 @@ H2: How to Redact a PDF on Mac Free.
 macOS Preview does not have a built-in redaction tool. The annotation tools in Preview (including its signature drawing tool) do not permanently remove content - they layer marks on top of text, leaving the underlying data intact. Adobe Acrobat Pro has redaction on Mac, but requires a paid subscription.
 To redact a PDF on Mac for free, open RepetiGo in Safari or Chrome, upload your PDF, select the content to redact, apply the redaction, and download the permanently redacted file. No software installation, no Adobe licence, no subscription.
 1.  Open Safari or Chrome on your Mac
-2.  Go to repetigo.com/pdf-tools/redact-pdf and upload your PDF
-3.  Use the redaction selector to mark text, images, or areas for removal
+2.  Go to repetigo.com/tools/pdf/redact-pdf/ and upload your PDF
+3.  Position the redaction box over the content you want removed, using the sliders
 4.  Click Apply Redactions - the content is permanently destroyed
 5.  Download the redacted PDF - share with confidence
 ⚠️  macOS Preview's annotation tools do NOT redact - they cover text with shapes that can be removed. Only true redaction, like RepetiGo provides, permanently destroys the underlying content.
 
 H2: Redact PDF Without Adobe Acrobat.
 Adobe Acrobat Pro is the traditional tool for PDF redaction - but at a monthly subscription cost that is impractical for individuals and small teams who need to redact PDFs occasionally. Adobe Reader (the free version) has no redaction capability at all.
-RepetiGo provides the same true permanent redaction - content permanently destroyed from the PDF's data layer - free, in any browser, no Adobe licence required. The output files are fully PDF-standard compliant and open correctly in every PDF reader.
-•  RepetiGo: Free · browser-based · true permanent redaction · text + image + area · auto-deletes in 60 min · no account
+RepetiGo provides the same true permanent redaction - content permanently destroyed as every selected page is flattened - free, in any browser, no Adobe licence required. The output files are fully PDF-standard compliant and open correctly in every PDF reader.
+•  RepetiGo: Free · browser-based · true permanent redaction · one box position, applied to every page you select · browser-only · no account
 •  Adobe Acrobat Pro: Paid subscription · desktop app · full redaction features · best for enterprise high-volume workflows
 •  Adobe Reader: Free · no redaction capability whatsoever
 •  macOS Preview: Free built-in · annotation tools only - NOT true redaction · underlying data remains accessible
@@ -141,18 +139,18 @@ India's DPDP Act 2023 and the everyday volume of Aadhaar, PAN, and financial dat
 •  HR and employee documents: Employee salary slips, appraisal documents, background verification reports, and medical certificates shared with managers, auditors, or third parties should have non-relevant personal data (other employees' salaries, unrelated medical details) redacted.
 •  CA and audit workpapers: Financial statements, ITR documents, and audit reports shared with clients or regulatory bodies should have third-party account numbers, personal financial details, and confidential business information redacted unless specifically required.
 •  Government document processing: Government offices processing citizen applications that contain identity documents - Aadhaar, voter ID, ration cards - should redact identity numbers from copies retained in files that are shared more broadly.
-With RepetiGo you can redact PDF documents free online in India - upload your PDF, permanently remove the sensitive content, and download a clean redacted version in seconds. Files are auto-deleted within 60 minutes.
+With RepetiGo you can redact PDF documents free online in India - upload your PDF, permanently remove the sensitive content, and download a clean redacted version in seconds. Files are never uploaded - processed locally in your browser.
 ⚠️  India's DPDP Act 2023 makes the data fiduciary (the organisation collecting and processing data) responsible for limiting personal data shared with third parties to what is necessary. PDF redaction is a direct technical compliance control for this requirement.
 
 H2: Your PDF Is Safe. Always.
 Documents submitted for redaction are the most sensitive you will handle - they contain exactly the personal data, financial information, and confidential content that needs to be protected. Here is what happens to your file:
-•  🔒 Encrypted upload: TLS encryption in transit. Your file cannot be intercepted.
-•  🔐 Isolated processing: Your file processes in a temporary session with no link to any account or persistent identifier.
-•  🗑️ Auto-deleted in 60 minutes: Both your original uploaded PDF and the redacted output are permanently deleted within 60 minutes - the sensitive data in the original is gone.
-•  👁️ Content never read: The redaction engine marks and removes your selected content. It does not read, store, analyse, or index the rest of your document.
+•  🔒 Stays in your browser: Your file is processed entirely within your browser - it is never uploaded to any server.
+•  🔐 Local processing: Your file is processed locally with no link to any account or persistent identifier.
+•  🗑️ Never uploaded: Both your original PDF and the redacted output stay in your browser and are never sent to any server - the sensitive data in the original never leaves your device.
+•  👁️ Content never read: The redaction engine marks and flattens your selected pages. It does not read, store, analyse, or index the rest of your document.
 •  🚫 No account = no data: No sign-up means we hold zero information about you, your documents, or your redaction sessions.
-🔒  The document you are redacting contains exactly the data that should not be on a stranger's server. RepetiGo's 60-minute auto-deletion means the original - with the unredacted sensitive data - is gone before it could ever be at risk.
-Privacy Policy → /security/ | Auto-Delete → /features/auto-delete/
+🔒  The document you are redacting contains exactly the data that should not be on a stranger's server. RepetiGo's browser-only processing means the original - with the unredacted sensitive data - is never at risk on our servers, because it was never there.
+Privacy Policy → /security/ | Browser-only processing - no upload, no storage
 
 H2: PDF Redaction for Print Shops and Document Services.
 Document service centres that handle customer identity documents - Aadhaar copies, PAN cards, bank statements, salary slips - routinely retain copies or scans of customer documents for record-keeping. Under DPDP Act 2023, retaining more personal data than necessary creates compliance liability. PrintPilot - RepetiGo's document shop automation platform - can automatically redact identity numbers and personal data from document copies before they are filed or archived, so only the job record is retained without the sensitive data.
@@ -160,11 +158,11 @@ Document service centres that handle customer identity documents - Aadhaar copie
 Learn about PrintPilot → /products/printpilot/
 
 ➜  [ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Redact a PDF Now - Free → repetigo.com/pdf-tools/redact-pdf ]
+[ Or Redact a PDF Now - Free → repetigo.com/tools/pdf/redact-pdf/ ]
 
 H2: Common Questions About Redacting PDFs.
 H3: Q1: How do I redact a PDF for free without Adobe?
-Go to repetigo.com/pdf-tools/redact-pdf, upload your PDF, select the text, images, or areas to redact, apply the redactions, and download the permanently redacted file. Free, no account, files deleted in 60 minutes. Works in any browser on Mac, Windows, and mobile.
+Go to repetigo.com/tools/pdf/redact-pdf/, upload your PDF, position the redaction box over the sensitive content on the pages you select, apply the redaction, and download the permanently redacted file. Free, no account, files never uploaded - processed in your browser. Works in any browser on Mac, Windows, and mobile.
 H3: Q2: What does redacting a PDF mean exactly?
 Redacting a PDF means permanently removing selected content from the document. The redacted content is destroyed from the PDF's internal data - not hidden, not covered, not masked. It is replaced with a solid black bar. The underlying data is gone and cannot be retrieved, copied, searched, or reconstructed from the redacted file.
 H3: Q3: Is blacking out text in a PDF the same as redacting it?
@@ -172,29 +170,29 @@ No - and this is critical. Drawing a black annotation box or rectangle over text
 H3: Q4: Can redaction be undone or reversed?
 True permanent redaction cannot be reversed - the data is permanently destroyed. This is the entire point of redaction. However, if you only drew an annotation box or black shape over the text (not true redaction), that is removable - the underlying text was never actually deleted. This is why it is important to use a proper redaction tool rather than annotation tools. Always keep the original unredacted document securely before distributing the redacted version.
 H3: Q5: How do I redact a PDF on Mac without Adobe Acrobat?
-Open RepetiGo in Safari or Chrome on your Mac, upload your PDF, use the redaction selector to mark the content for removal, apply redactions, and download. macOS Preview cannot redact PDFs - its annotation tools only cover text without destroying it. RepetiGo performs true permanent redaction in the browser without any software installation.
+Open RepetiGo in Safari or Chrome on your Mac, upload your PDF, position the redaction box over the content you want removed, apply redactions, and download. macOS Preview cannot redact PDFs - its annotation tools only cover text without destroying it. RepetiGo performs true permanent redaction in the browser without any software installation.
 H3: Q6: What types of information should I redact before sharing a PDF?
 Personal identity data (Aadhaar, PAN, passport numbers), financial data (account numbers, IFSC codes, salary figures), medical information, legal privileged content, authentication credentials (passwords, PINs), and any personal data about third parties not relevant to the recipient's purpose. See the What Information Should You Redact section above for a full category list.
 H3: Q7: Does redacting a PDF reduce its file size?
-Slightly - removing content from the PDF reduces the data in the content stream. However, the reduction is usually minimal for text redactions. Image redactions can reduce file size more noticeably if large images are removed. The change is unlikely to be significant enough to affect email or portal submission limits.
+Not necessarily - and it can even increase. Every selected page is flattened into a JPG image as part of the redaction process, so a text-heavy PDF (normally very compact) often ends up larger after redaction, not smaller. If file size matters, compress the redacted PDF afterward with RepetiGo's Compress PDF tool.
 H3: Q8: Can I redact a PDF on iPhone or Android?
-Yes. Open RepetiGo in Safari on iPhone or Chrome on Android, upload your PDF from the Files app, use the redaction tool to select and mark content, apply the redaction, and download the redacted file. No app installation required. The permanently redacted PDF can be shared immediately from your phone.
+Yes. Open RepetiGo in Safari on iPhone or Chrome on Android, upload your PDF from the Files app, position the redaction box over the content you want removed, apply the redaction, and download the redacted file. No app installation required. The permanently redacted PDF can be shared immediately from your phone.
 H3: Q9: How do I know the redaction was applied correctly?
-After downloading the redacted PDF, open it and attempt to select and copy text in the redacted areas. If true redaction was applied, no text will be selectable or copyable in those areas - the content is gone. You can also use RepetiGo's Compare PDF tool at /pdf-tools/compare-pdf to compare the original and redacted versions side by side and verify that the correct content was removed.
+After downloading the redacted PDF, open it and try to select text anywhere on a redacted page. Since the whole page is flattened into an image as part of the redaction process, no text on that page will be selectable - not just the area you redacted, which confirms the sensitive content is gone. You can also use RepetiGo's Compare PDF tool at /tools/pdf/compare-pdf/ to compare the original and redacted versions side by side and verify that the correct content was removed.
 H3: Q10: Is it safe to upload a document with sensitive data to redact it online?
-With RepetiGo, yes. Your file uploads over TLS encryption, processes in an isolated temporary session, and both the original and the redacted output are permanently deleted within 60 minutes. The redaction engine marks and removes your selected content; it does not read, extract, or store the document's content. No sign-up means we hold no data about you or your documents.
+With RepetiGo, yes. Your file is processed entirely within your browser - the original and the redacted output both stay in your browser and are never sent anywhere. The redaction engine marks and flattens your selected pages; it does not read, extract, or store the document's content. No sign-up means we hold no data about you or your documents.
 
 H2: More Free PDF Tools from RepetiGo.
-•  Protect PDF → /pdf-tools/protect-pdf - add password protection after redacting
-•  Edit PDF → /pdf-tools/edit-pdf - modify non-sensitive content before redacting
-•  Sign PDF → /pdf-tools/sign-pdf - sign the redacted document before sending
-•  Compare PDF → /pdf-tools/compare-pdf - verify the redacted version against the original
-•  Unlock PDF → /pdf-tools/unlock-pdf - remove restrictions if the PDF is locked before redacting
-•  PDF Form → /pdf-tools/pdf-forms - fill forms then redact sensitive fields before sharing
-•  All PDF Tools → /pdf-tools - complete free PDF tools library
+•  Protect PDF → /tools/pdf/protect-pdf/ - add password protection after redacting
+•  Edit PDF → /tools/pdf/edit-pdf/ - modify non-sensitive content before redacting
+•  Sign PDF → /tools/pdf/sign-pdf/ - sign the redacted document before sending
+•  Compare PDF → /tools/pdf/compare-pdf/ - verify the redacted version against the original
+•  Unlock PDF → /tools/pdf/unlock-pdf/ - remove restrictions if the PDF is locked before redacting
+•  PDF Form → /tools/pdf/pdf-form/ - fill forms then redact sensitive fields before sharing
+•  All PDF Tools → /tools/pdf/ - complete free PDF tools library
 
-➜  [ Redact PDF Free Now → repetigo.com/pdf-tools/redact-pdf ]
-Permanently remove sensitive data · DPDP Act-aligned · No sign-up · Auto-deleted in 60 minutes`;
+➜  [ Redact PDF Free Now → repetigo.com/tools/pdf/redact-pdf/ ]
+Permanently remove sensitive data · DPDP Act-aligned · No sign-up · Browser-only processing`;
 
 type SeoTable = { headers: string[]; rows: string[][] };
 
@@ -221,6 +219,7 @@ const tables: SeoTable[] = [
 ];
 
 const routeMap: Record<string, string> = {
+  "/tools/pdf": "/pdf-tools",
   "/pdf-tools": "/pdf-tools",
   "/pdf-tools/redact-pdf": "/pdf-tools/redact-pdf",
   "/pdf-tools/protect-pdf": "/pdf-tools/protect-pdf",

@@ -6,14 +6,14 @@ const pageUrl = "https://repetigo.com/pdf-tools/merge-pdf";
 export const metadata: Metadata = {
   title: "Merge PDF Online Free India - Combine PDF Files Instantly | RepetiGo",
   description:
-    "Merge PDF files online free - combine multiple PDFs into one in seconds. No sign-up, no install, works on any device. Files auto-deleted after 60 min. Free.",
+    "Merge PDF files online free - combine multiple PDFs into one in seconds. No sign-up, no install, works on any device. Files browser-only - never uploaded. Free.",
   alternates: {
     canonical: pageUrl,
   },
   openGraph: {
     title: "Merge PDF Online Free India - Combine PDF Files Instantly | RepetiGo",
     description:
-      "Free PDF merger - combine multiple PDFs into one in seconds. No sign-up, auto-deleted after 60 min. Works on phone & laptop.",
+      "Free PDF merger - combine multiple PDFs into one in seconds. No sign-up, browser-only - never uploaded. Works on phone & laptop.",
     type: "website",
     url: pageUrl,
     images: ["https://repetigo.com/og-merge-pdf.jpg"],
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "Merge PDF Free Online - RepetiGo",
-    description: "Combine PDFs free - merge multiple files into one. No sign-up, auto-deleted 60 min. India-built.",
+    description: "Combine PDFs free - merge multiple files into one. No sign-up, browser-only. India-built.",
   },
   robots: {
     index: true,
@@ -33,9 +33,9 @@ const mergePdfContent = String.raw`H1: Merge PDF Online Free. Combine Multiple P
 
 RepetiGo's free PDF merger lets you combine multiple PDF files into a single document - no software to install, no account to create, no limit on how many times you use it. Upload your PDF files, arrange them in the order you want, and download one merged PDF. Done.
 
-The merge PDF online free tool works on any device with a browser - phone, tablet, or laptop. Your uploaded files and the merged result are automatically deleted from our servers 60 minutes after download. Nothing is stored. Nothing is shared.
+The merge PDF online free tool works on any device with a browser - phone, tablet, or laptop. Your files are processed entirely within your browser - never uploaded to any server, never stored, never shared.
 
-✓ No Sign-Up Required   ✓ No Software to Install   ✓ Drag-to-Reorder Pages   ✓ Files Auto-Deleted in 60 Minutes
+✓ No Sign-Up Required   ✓ No Software to Install   ✓ Reorder Files Before Merging   ✓ Browser-Only - Files Never Uploaded
 
 [ Merge PDF Now - Free, No Sign-Up → repetigo.com/pdf-tools/merge-pdf ]
 
@@ -60,15 +60,16 @@ H2: How to Merge PDF Files in 3 Steps.
 Every merge follows the same three steps. No account required, no daily limit, no software installation.
 
 H3: Step 1 - Upload Your PDF Files
-Click the Upload button or drag and drop your PDF files into the upload area. You can upload multiple files at once - up to 50 PDFs per merge, with a total combined size of up to 300MB. All files must be in PDF format. If you have images (JPG, PNG, HEIC) that you want to include in the merged PDF, convert them first using the JPG to PDF tool at /pdf-tools/jpg-to-pdf, then upload the resulting PDFs here.
+Click the Upload button or drag and drop your PDF files into the upload area. You can upload multiple files at once - there's no fixed file count or size limit enforced by the tool. All files must be in PDF format. If you have JPG or PNG images that you want to include in the merged PDF, convert them first using the JPG to PDF tool at /pdf-tools/jpg-to-pdf, then upload the resulting PDFs here.
 The upload works on any device - iPhone, Android, Windows laptop, Mac, or tablet - from your browser. No app download required.
 
 H3: Step 2 - Arrange the Order of Your Files
-After upload, your PDF files appear as a list with thumbnails of the first page of each file. Drag and drop to reorder them - the file at the top of the list becomes the first section of your merged PDF, and the file at the bottom becomes the last. This step is crucial if you are combining documents that must appear in a specific sequence - for example, a cover page, then a main document, then an appendix.
-If you uploaded files in the wrong order, drag them into the correct sequence before clicking Merge. You cannot reorder pages after merging - reorder before.
+After upload, your PDF files appear as a row of cards with a thumbnail of each file's first page. Use the Up and Down arrow buttons on each card to reorder them - the file numbered 1 becomes the first section of your merged PDF, and the last one becomes the final section. There's no drag-and-drop reordering - the arrow buttons are the way to move a file. This step is crucial if you are combining documents that must appear in a specific sequence - for example, a cover page, then a main document, then an appendix.
+You can also click Preview on any file to see all its pages individually and deselect specific pages you don't want included in the merge - useful if one of your source PDFs has an extra cover sheet or blank page you'd rather leave out.
+If you uploaded files in the wrong order, use the arrow buttons to fix the sequence before clicking Merge. You cannot reorder pages after merging - reorder before.
 
 H3: Step 3 - Merge and Download Your Combined PDF
-Click the Merge button. Processing takes a few seconds for most files - larger files or files with many pages may take up to 30 seconds. When complete, a download button appears. Click it to save your merged PDF to your device. Your uploaded files and the merged output are automatically deleted from our servers within 60 minutes. Nothing remains on our system after that.
+Click the Merge button. Processing takes a few seconds for most files - larger files or files with many pages may take up to 30 seconds. When complete, a download button appears. Click it to save your merged PDF to your device. Your files are never sent to any server - processed locally, both during merging and afterward.
 
 📱  The merge PDF free tool works on mobile browsers - Safari on iPhone, Chrome on Android. Upload files from your Files app, arrange them, and download the merged PDF directly to your phone. Useful for combining documents on the go before sharing or printing.
 
@@ -102,13 +103,13 @@ Daily merge limit
 ~ 2 per hour
 ~ 2 per day
 ✗ Very limited
-File auto-deleted
-✓ 60 minutes
+File never uploaded
+✓ Browser-only processing
 ✓ 1 hour
 ✓ 1 hour
 ✓ 1 hour
-Drag-to-reorder
-✓ Yes
+Reorder before merging
+✓ Up/Down buttons
 ✓ Yes
 ✓ Yes
 ✓ Yes
@@ -128,7 +129,7 @@ Print shop integration
 ✗ No
 ✗ No
 Max files per merge
-✓ Up to 50 files
+✓ No fixed limit
 ✓ Unlimited (free)
 ~ Limited (free)
 ~ Limited
@@ -200,19 +201,19 @@ When you upload PDFs to merge, those files may contain sensitive information - i
 
 Protection Layer
 What It Means in Practice
-🔒  HTTPS Encrypted Transfer
-Every file upload travels over HTTPS (TLS encryption). Your PDFs cannot be intercepted between your device and our server.
-🔐  Isolated Processing Session
-Your files are processed in a temporary session with no link to any user account, user ID, or persistent identifier. We do not know who you are.
-🗑️  Auto-Deleted in 60 Minutes
-All uploaded files and the merged output are automatically and permanently deleted from our servers within 60 minutes of your download.
-👁️  No File Content Is Read
-The merge tool analyses PDF structure - page count, file boundaries - not content. No text is extracted, stored, or read by any person or system.
+🔒  Stays in Your Browser
+Your PDFs are never uploaded to any server - they are processed entirely on your device.
+🔐  Local Processing
+Your files are processed locally in your browser with no link to any user account, user ID, or persistent identifier. We do not know who you are.
+🔒  Never Uploaded
+Your uploaded files and the merged output stay on your device the whole time - nothing is sent anywhere to be processed.
+👁️  No File Content Is Read by Us
+The merge logic runs in your browser to copy page structure - page count, file boundaries. No text is extracted, stored, or seen by RepetiGo.
 🚫  No Account = No Data Profile
 No sign-up means no personal data is collected. No usage history, file history, or personal profile is stored anywhere.
 
 
-🔒  If you close your browser before downloading, your uploaded files are still deleted within 60 minutes. RepetiGo never retains any uploaded file beyond its processing purpose. Your original files on your own device are never modified.
+🔒  RepetiGo never retains any file beyond your own browser session - there's nothing on our servers to retain in the first place. Your original files on your own device are never modified.
 
 
 Read our Privacy Policy → /security/  
@@ -241,13 +242,13 @@ Learn about PrintPilot → /products/printpilot/  |  QR Document Upload → /fea
 H2: Common Questions About Merging PDFs Online Free.
 
 H3: Q1: How do I merge PDF files online for free in India?
-To merge PDF online free using RepetiGo: go to repetigo.com/pdf-tools/merge-pdf, click Upload and select your PDF files (you can select multiple files at once), drag them into the order you want in the merged output, and click Merge. Your combined PDF downloads automatically. No account is required, no software is needed, and there is no daily limit. The merge PDF online free tool works from any browser in India - on phone or laptop.
+To merge PDF online free using RepetiGo: go to repetigo.com/pdf-tools/merge-pdf, click Upload and select your PDF files (you can select multiple files at once), use the Up/Down arrow buttons on each file card to fix the order if needed, and click Merge. Your combined PDF downloads automatically. No account is required, no software is needed, and there is no daily limit. The merge PDF online free tool works from any browser in India - on phone or laptop.
 
 H3: Q2: How do I merge multiple PDF files into one?
-Upload all the PDF files you want to combine, arrange them in the correct order using drag-and-drop, and click Merge. The tool combines all uploaded files into a single PDF in the order you specified. For example, to merge an Aadhaar scan, a PAN card scan, a marksheet, and a certificate into one PDF: upload all four files, drag them into the correct sequence (ID docs first, then academic documents), and download the merged result. All four pages - or more, if any file has multiple pages - will appear in order in the output.
+Upload all the PDF files you want to combine, use the Up/Down buttons on each file card to arrange them in the correct order, and click Merge. The tool combines all uploaded files into a single PDF in the order you specified. For example, to merge an Aadhaar scan, a PAN card scan, a marksheet, and a certificate into one PDF: upload all four files, use the arrow buttons to put them in the correct sequence (ID docs first, then academic documents), and download the merged result. All four pages - or more, if any file has multiple pages - will appear in order in the output.
 
 H3: Q3: How many PDF files can I merge at once?
-RepetiGo's merge PDF free tool supports up to 50 files per merge session, with a total combined size of up to 300MB. If you have more files than the limit, merge them in batches - first merge files 1–25 into one PDF, then merge that result with the remaining files in a second session. There is no daily limit on the number of merge sessions.
+There's no fixed file count or total size limit enforced by RepetiGo's merge PDF free tool - it's practically limited only by your device's available memory. You need at least 2 valid PDF files to merge. There is no daily limit on the number of merge sessions.
 
 H3: Q4: What is the best free PDF merger in India?
 For Indian users, RepetiGo offers the most relevant free PDF merger - no daily limit (unlike Smallpdf's 2-per-day free limit), no sign-up required (unlike Adobe Acrobat which requires an account), built for Indian document workflows (Aadhaar, PAN, marksheets, certificates), and integrated with a print shop platform used by Indian businesses. The merge quality is identical to paid alternatives - PDF merging is a lossless operation that no tool can do 'better' or 'worse' than another at the file level.
@@ -259,13 +260,13 @@ H3: Q6: Can I merge just two PDF files?
 Yes. The merge tool works for any number of files from 2 upwards. To merge two PDFs: upload both files, verify the order (the first file listed becomes the first section of the merged PDF), and click Merge. The result is a single PDF containing all pages from both files in the order you specified.
 
 H3: Q7: Can I merge a PDF with image files like JPG or PNG?
-Not directly - the merge tool only accepts PDF files as input. To include JPG, PNG, or HEIC images in a merged PDF, first convert them to PDF using the JPG to PDF converter at /pdf-tools/jpg-to-pdf. Each image or set of images becomes a PDF, which you can then upload to the merge tool along with your other PDFs. This two-step workflow - convert images to PDF, then merge - lets you create a single PDF from any combination of PDFs and images.
+Not directly - the merge tool only accepts PDF files as input. To include JPG or PNG images in a merged PDF, first convert them to PDF using the JPG to PDF converter at /pdf-tools/jpg-to-pdf (reliably supports JPG and PNG). Each image or set of images becomes a PDF, which you can then upload to the merge tool along with your other PDFs. This two-step workflow - convert images to PDF, then merge - lets you create a single PDF from any combination of PDFs and images.
 
 H3: Q8: Can I merge PDF files without Adobe Acrobat?
 Yes. Adobe Acrobat is not required. RepetiGo's merge PDF online free tool handles PDF merging entirely in the browser - no Adobe software, no installation, no subscription. The merge result is fully compatible with Adobe Acrobat and all other PDF viewers. If you have been using Adobe Acrobat just for merging and do not need its other features (editing, form creation, digital signing), RepetiGo's free tool handles the merge task with no cost.
 
 H3: Q9: Can I merge PDF files on my phone?
-Yes. The merge PDF free tool works on mobile browsers - Safari on iPhone, Chrome on Android - without any app download. Upload files from your phone's Files app (on iPhone) or File Manager (on Android), arrange them using the drag-and-drop interface, and download the merged PDF directly to your phone. On a slow mobile data connection, the upload and download times may be longer for large files, but the merge tool works normally on any mobile browser.
+Yes. The merge PDF free tool works on mobile browsers - Safari on iPhone, Chrome on Android - without any app download. Upload files from your phone's Files app (on iPhone) or File Manager (on Android), tap the Up/Down arrow buttons on each file card to arrange them, and download the merged PDF directly to your phone. Since everything runs in your browser rather than on a server, a slow mobile data connection only affects the initial page load, not the merge itself.
 
 H3: Q10: Can I merge PDF files on a Mac?
 Yes. The merge tool works in any browser on Mac - Safari, Chrome, Firefox, or Edge. Go to repetigo.com/pdf-tools/merge-pdf in your browser, upload your PDFs from Finder, arrange them, and download the merged result. Mac users can also merge PDFs natively using Preview (open one PDF in Preview, then drag another PDF's thumbnail into the sidebar), but Preview's merge feature is limited to two files at a time and the drag-and-drop order control is less intuitive than a dedicated merge tool.
@@ -284,19 +285,19 @@ Tool
 What It Does
 Link
 Compress PDF
-Reduce PDF file size - standard or maximum compression
+Reduce PDF file size with an adjustable compression slider
 → /pdf-tools/compress-pdf
 Split PDF
 Divide one PDF into separate files by page range
 → /pdf-tools/split-pdf
 JPG to PDF
-Convert images (JPG, PNG, HEIC) to PDF - useful before merging
+Convert JPG or PNG images to PDF - useful before merging
 → /pdf-tools/jpg-to-pdf
 PDF to JPG
 Extract PDF pages as JPG image files
 → /pdf-tools/pdf-to-jpg
 Word to PDF
-Convert DOCX, ODT, RTF to PDF - then merge
+Convert DOCX text content to PDF - then merge
 → /pdf-tools/word-to-pdf
 Rotate PDF
 Fix pages with wrong orientation - before or after merging
@@ -312,15 +313,15 @@ See the complete PDF tools suite
 const faqSchemaQuestions = [
   [
     "How do I merge PDF files online for free in India?",
-    "To merge PDF online free using RepetiGo: go to repetigo.com/pdf-tools/merge-pdf, click Upload and select your PDF files (you can select multiple files at once), drag them into the order you want in the merged output, and click Merge. Your combined PDF downloads automatically. No account is required, no software is needed, and there is no daily limit. The merge PDF online free tool works from any browser in India - on phone or laptop.",
+    "To merge PDF online free using RepetiGo: go to repetigo.com/pdf-tools/merge-pdf, click Upload and select your PDF files (you can select multiple files at once), use the Up/Down arrow buttons to fix the order if needed, and click Merge. Your combined PDF downloads automatically. No account is required, no software is needed, and there is no daily limit. The merge PDF online free tool works from any browser in India - on phone or laptop.",
   ],
   [
     "How do I merge multiple PDF files into one?",
-    "Upload all the PDF files you want to combine, arrange them in the correct order using drag-and-drop, and click Merge. The tool combines all uploaded files into a single PDF in the order you specified.",
+    "Upload all the PDF files you want to combine, use the Up/Down arrow buttons on each file card to arrange them in the correct order, and click Merge. The tool combines all uploaded files into a single PDF in the order you specified.",
   ],
   [
     "How many PDF files can I merge at once?",
-    "RepetiGo's merge PDF free tool supports up to 50 files per merge session, with a total combined size of up to 300MB.",
+    "There's no fixed file count or total size limit enforced by RepetiGo's merge PDF free tool. You need at least 2 valid PDF files to merge.",
   ],
   [
     "What is the best free PDF merger in India?",
@@ -333,7 +334,7 @@ const faqSchemaQuestions = [
   ["Can I merge just two PDF files?", "Yes. The merge tool works for any number of files from 2 upwards."],
   [
     "Can I merge a PDF with image files like JPG or PNG?",
-    "Not directly - the merge tool only accepts PDF files as input. To include JPG, PNG, or HEIC images in a merged PDF, first convert them to PDF using the JPG to PDF converter.",
+    "Not directly - the merge tool only accepts PDF files as input. To include JPG or PNG images in a merged PDF, first convert them to PDF using the JPG to PDF converter.",
   ],
   [
     "Can I merge PDF files without Adobe Acrobat?",

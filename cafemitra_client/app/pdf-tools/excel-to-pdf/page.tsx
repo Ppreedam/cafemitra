@@ -5,17 +5,17 @@ import ConversionTool from "../ConversionTool";
 const pageUrl = "https://repetigo.com/pdf-tools/excel-to-pdf";
 export const metadata: Metadata = {
   title: "Excel to PDF Converter Free - Save Spreadsheets as PDF | RepetiGo",
-  description: "Convert Excel to PDF free - save spreadsheets, charts, and multiple sheets as PDF. Works without Microsoft Excel. No sign-up. Files auto-deleted after 60 min. Try free.",
+  description: "Convert Excel to PDF free - save spreadsheet data as PDF text. Works without Microsoft Excel. No sign-up. Files browser-only - never uploaded. Try free.",
   alternates: { canonical: pageUrl },
-  openGraph: { title: "Excel to PDF Converter Free - Save Spreadsheets as PDF | RepetiGo", description: "Convert Excel to PDF free online. Works without Microsoft Excel. Save multiple sheets as one PDF. No sign-up, auto-deleted 60 min.", type: "website", url: pageUrl, images: ["https://repetigo.com/og-excel-to-pdf.jpg"] },
-  twitter: { card: "summary_large_image", title: "Excel to PDF Converter Free - RepetiGo", description: "Convert Excel to PDF free. Works without Excel. Multiple sheets to one PDF. No sign-up, auto-deleted." },
+  openGraph: { title: "Excel to PDF Converter Free - Save Spreadsheets as PDF | RepetiGo", description: "Convert Excel to PDF free online. Works without Microsoft Excel. No sign-up, browser-only - never uploaded.", type: "website", url: pageUrl, images: ["https://repetigo.com/og-excel-to-pdf.jpg"] },
+  twitter: { card: "summary_large_image", title: "Excel to PDF Converter Free - RepetiGo", description: "Convert Excel to PDF free. Works without Excel. No sign-up, browser-only." },
   robots: { index: true, follow: true },
 };
 
 const excelToPdfContent = String.raw`H1: Excel to PDF Converter. Save Any Spreadsheet as PDF - With or Without Excel.
-There are three ways to convert Excel to PDF. If you have Microsoft Excel installed, the built-in Save As option is the fastest. If you use Google Sheets, it has a built-in PDF download. If you do not have Excel installed - or need to convert an .xlsx file someone sent you - RepetiGo's free online converter handles it in your browser, no installation needed.
-This page covers all three methods, the most common formatting problems (columns getting cut off, multi-sheet PDF issues), and when to use RepetiGo's online converter over the built-in options.
-✓ Works Without Microsoft Excel   ✓ Multiple Sheets → One PDF   ✓ No Sign-Up   ✓ Files Auto-Deleted in 60 Min
+There are three ways to convert Excel to PDF. If you have Microsoft Excel installed, the built-in Save As option is the fastest and gives you a true visual export - fonts, borders, colours, charts, and column widths all intact. If you use Google Sheets, it has a built-in PDF download that's nearly as good. If you do not have Excel installed - or just need the cell values from an .xlsx file quickly - RepetiGo's free online converter extracts the data as plain text in your browser, no installation needed.
+This page covers all three methods, the most common formatting problems (columns getting cut off, multi-sheet PDF issues), and when RepetiGo's text-only converter is - and isn't - the right choice compared to the built-in options.
+✓ Works Without Microsoft Excel   ✓ All Sheets Included   ✓ No Sign-Up   ✓ Browser-Only - Files Never Uploaded
 
 [ Convert Excel to PDF Free - No Excel Required → repetigo.com/pdf-tools/excel-to-pdf ]
 
@@ -34,15 +34,15 @@ You use Google Sheets, or have the file in Google Drive
 Free. No installation. Available on phone.
 Requires Google account. Minor formatting differences from Excel.
 RepetiGo Online Converter (Method 3)
-No Excel installed. Chromebook. Batch conversion. Received .xlsx from someone.
-Browser-based. No Excel needed. Auto-deletes files. Precise page settings.
-Requires internet connection. File size limit applies.
+No Excel installed. Need cell values quickly, formatting not required. Batch text extraction.
+Browser-based. No Excel needed. Never uploads your file.
+Extracts plain text only - no fonts, cell colours, borders, charts, or column widths. Not a visual export.
 Print to PDF (any app)
 Quick single-page capture when other methods aren't available
 Available on any OS. No tool needed.
 Poor column control. Wide sheets may be cut off. No batch.
 
-💡  If you have Microsoft Excel installed on your computer, Method 1 (Save As → PDF) is always the fastest and produces the most accurate output. RepetiGo's tool is for when you don't have Excel - or when you need to convert an .xlsx file you received without opening it first.
+💡  If you have Microsoft Excel installed on your computer, Method 1 (Save As → PDF) is always the fastest and produces the most accurate output. RepetiGo's tool is for when you don't have Excel and just need the spreadsheet's text content in a PDF - it does not preserve the visual layout, so it isn't a substitute for Method 1 or 2 when formatting matters.
 
 H2: Method 1 - Save as PDF Using Microsoft Excel (Built-In).
 The fastest and most accurate way to convert Excel to PDF is the built-in Save As function in Microsoft Excel. This method works on Windows and Mac, preserves all formatting, and does not require any additional software or internet connection.
@@ -61,14 +61,15 @@ Google Sheets PDF export works well for standard spreadsheets. For complex Excel
 Indian users: if you use Google Workspace through your school or office (common in Indian educational institutions and startups), Google Sheets is already available. File → Download → PDF Document is the built-in free method.
 
 H2: Method 3 - RepetiGo Online Converter (No Excel Required).
-When you need to convert an Excel file to PDF without Microsoft Excel installed - or when you received an .xlsx file and need to convert it without opening it - RepetiGo's free online converter handles it in your browser.
-Steps: (1) Go to repetigo.com/pdf-tools/excel-to-pdf. (2) Upload your .xlsx, .xls, or .csv file by clicking Upload or dragging and dropping. (3) Choose which sheets to convert, your page orientation (portrait or landscape), and your scaling preference (fit to page or actual size). (4) Click Convert. (5) Download your PDF - your file is deleted from our servers within 60 minutes.
+When you need to convert an Excel file to PDF without Microsoft Excel installed - and you only need the cell values, not the visual formatting - RepetiGo's free online converter handles it in your browser.
+Steps: (1) Go to repetigo.com/pdf-tools/excel-to-pdf. (2) Upload your .xlsx, .xls, or .csv file by clicking Upload or dragging and dropping. (3) Click Convert - there are no sheet, orientation, or scaling settings to configure; every sheet is included automatically, laid out as plain text on standard portrait pages. (4) Download your PDF - your file is never sent to any server - processed locally.
+Be aware of what this method does and doesn't preserve: every sheet's cell values come through as plain text (each sheet labelled by name), but fonts, cell colours, borders, merged cells, column widths, and charts are not carried into the output. For a document where the visual layout matters - an invoice, a formatted report, a financial statement for a client - use Method 1 or Method 2 instead.
 RepetiGo's online converter is particularly useful for:
 Chromebook users (Chrome OS does not run Microsoft Excel natively)
 Linux users (Excel is not available on Linux - LibreOffice can be used but may have formatting differences)
-Received an .xlsx file and need a PDF version without opening it in Excel
-Converting a batch of .xlsx files from colleagues or clients
-Mobile users on Android or iPhone who need to convert a spreadsheet on the go
+Received an .xlsx file and need its data in a text-searchable PDF without opening it in Excel
+Converting a batch of .xlsx files from colleagues or clients in one session
+Mobile users on Android or iPhone who need the data from a spreadsheet on the go
 
 H2: Why Indian Professionals Convert Excel to PDF.
 Use Case
@@ -110,9 +111,9 @@ Upload to RepetiGo, convert, download. The original file is not opened or modifi
 Phone or tablet
 The Excel mobile app has limited PDF export options. Google Sheets mobile export is more capable but has limitations.
 RepetiGo's browser-based converter works on Android (Chrome) and iPhone (Safari).
-Privacy - auto-delete required
-You need to convert a sensitive spreadsheet and want it deleted immediately after.
-RepetiGo permanently deletes all uploaded files 60 minutes after download.
+Privacy - want zero server exposure
+You need to convert a sensitive spreadsheet and don't want it touching any server at all.
+RepetiGo never uploads your file - it's processed entirely in your browser.
 
 H2: Common Formatting Problems - and How to Fix Them.
 The most common complaint when converting Excel to PDF is that columns get cut off - part of the spreadsheet is missing from the PDF output. Here are the fixes:
@@ -140,18 +141,18 @@ In Excel: Page Layout → Scale to Fit → set Width and Height to 'Automatic'. 
 
 ★  The most common fix for cut-off columns: Page Layout tab → Orientation → Landscape → Scale to Fit → Width: 1 page. This forces all columns onto each page by using landscape orientation and auto-scaling the content to fit.
 
-H2: Your Spreadsheet Is Safe. Always.
+H2: Your Spreadsheet Never Leaves Your Browser.
 When you upload an Excel file to RepetiGo's converter - especially one containing financial data, salary information, or business reports - here is exactly what happens:
 Protection Layer
 What It Means in Practice
-🔒  HTTPS Encrypted Transfer
-Your Excel file travels from your device to our server over HTTPS (TLS encryption). It cannot be intercepted in transit.
-🔐  Isolated Processing Session
-Your file is processed in a temporary session with no link to any user account or persistent identifier.
-🗑️  Auto-Deleted in 60 Minutes
-Your uploaded Excel file and the converted PDF are automatically and permanently deleted within 60 minutes of download.
-👁️  No Data Is Read or Stored
-The converter reads the file structure to render it as PDF. No cell data, financial figures, or personal information is stored, logged, or used for any purpose beyond conversion.
+🔒  Stays in Your Browser
+Your Excel file is never uploaded to any server - it is processed entirely on your device.
+🔐  Local Processing
+Your file is processed locally in your browser with no link to any user account or persistent identifier.
+🔒  Never Uploaded
+Your Excel file and the converted PDF stay on your device the whole time - nothing is sent anywhere to be processed.
+👁️  No Data Is Read by Us
+The converter runs in your browser to build the PDF. No cell data, financial figures, or personal information is seen, stored, or logged by RepetiGo.
 🚫  No Account = No Data Profile
 No sign-up means no personal data is held. No file history, no usage profile.
 
@@ -167,7 +168,7 @@ Learn about PrintPilot → /products/printpilot/ | QR Document Upload → /featu
 
 H2: Common Questions About Converting Excel to PDF.
 H3: Q1: How do I convert Excel to PDF?
-There are three methods. If you have Excel installed: File → Save As → select PDF as the file format → Save (Windows) or File → Export → PDF (Mac). If you use Google Sheets: open the file in Google Sheets → File → Download → PDF Document. If you don't have Excel installed: go to repetigo.com/pdf-tools/excel-to-pdf, upload your .xlsx file, configure your settings, click Convert, and download the PDF. All three methods are free. The built-in Excel method is fastest if you have Excel. RepetiGo is for when you don't.
+There are three methods. If you have Excel installed: File → Save As → select PDF as the file format → Save (Windows) or File → Export → PDF (Mac) - this preserves your full formatting. If you use Google Sheets: open the file in Google Sheets → File → Download → PDF Document. If you don't have Excel installed and just need the data as text: go to repetigo.com/pdf-tools/excel-to-pdf, upload your .xlsx file, click Convert, and download the PDF. All three methods are free. The built-in Excel method is fastest and most visually accurate if you have Excel. RepetiGo is for when you don't and formatting isn't critical.
 H3: Q2: How do I save an Excel file as a PDF?
 In Microsoft Excel on Windows: File → Save As → change the file type to 'PDF (*.pdf)' → click Options to choose which sheets or page ranges to include → Save. On Mac: File → Export → select PDF → Export. The PDF is saved to the same location as your Excel file. If you want to include all sheets (not just the active one), select all sheet tabs first by right-clicking the first tab → 'Select All Sheets', then perform the Save As.
 H3: Q3: How do I convert an Excel file to PDF using Google Sheets?
@@ -175,17 +176,17 @@ Open Google Drive (drive.google.com). Right-click your .xlsx file → Open with 
 H3: Q4: Can I convert Excel to PDF without Microsoft Excel installed?
 Yes. Two options: (1) Google Sheets - upload your .xlsx to Google Drive, open in Google Sheets, File → Download → PDF. Requires a Google account. (2) RepetiGo - go to repetigo.com/pdf-tools/excel-to-pdf, upload your .xlsx file, convert, and download. Works in any browser, no account or software required. For Chromebook users (Chrome OS), LibreOffice is not available natively, so RepetiGo's online converter or Google Sheets are the practical options.
 H3: Q5: How do I convert multiple sheets in Excel to one PDF?
-Using Microsoft Excel: Before saving, right-click any sheet tab and choose 'Select All Sheets'. All tabs should now be selected (the tab names appear bold). Go to File → Save As → PDF → Save. Excel combines all selected sheets into one PDF with each sheet starting on a new page. If you want to select specific sheets (not all), hold Ctrl and click each tab you want, then Save As → PDF. Using RepetiGo: upload the .xlsx file, in the settings choose 'All sheets' or select specific sheets, then convert - the output is a single PDF with all selected sheets.
+Using Microsoft Excel: Before saving, right-click any sheet tab and choose 'Select All Sheets'. All tabs should now be selected (the tab names appear bold). Go to File → Save As → PDF → Save. Excel combines all selected sheets into one PDF with each sheet starting on a new page. If you want to select specific sheets (not all), hold Ctrl and click each tab you want, then Save As → PDF. Using RepetiGo: upload the .xlsx file and click Convert - every sheet in the workbook is automatically included as plain text, labelled by sheet name; there's no option to select only some sheets, and sheets aren't given individual page breaks the way Excel's own export does.
 H3: Q6: How do I save multiple sheets in an Excel workbook as one PDF?
 This is the most common multi-sheet challenge. In Excel: right-click the leftmost sheet tab → 'Select All Sheets' (all tab names turn white/bold, indicating selection). While all sheets are selected: File → Save As → choose PDF. Click 'Options' in the save dialog and make sure 'Entire Workbook' is selected (not just 'Active Sheets'). Click OK → Save. The output PDF contains all sheets in order. If sheet page breaks are wrong, adjust them using View → Page Break Preview on each sheet individually before combining.
 H3: Q7: How do I convert Excel to PDF without columns being cut off?
-Columns getting cut off is the most common formatting problem. Fix 1 (Landscape): Page Layout tab → Orientation → Landscape. This gives more horizontal space for wide spreadsheets. Fix 2 (Scale to Fit): Page Layout → Scale to Fit → Width: 1 page. This shrinks the spreadsheet to fit all columns on each page. Be careful - very wide spreadsheets shrunk to fit may produce tiny, unreadable text. Fix 3 (Print Area): Select only the columns you need → Page Layout → Print Area → Set Print Area. This excludes unused columns from the PDF. Fix 4 (RepetiGo): Upload to our converter and choose the 'Fit to Width' option - the converter automatically scales to fit all columns.
+Columns getting cut off is the most common formatting problem. Fix 1 (Landscape): Page Layout tab → Orientation → Landscape. This gives more horizontal space for wide spreadsheets. Fix 2 (Scale to Fit): Page Layout → Scale to Fit → Width: 1 page. This shrinks the spreadsheet to fit all columns on each page. Be careful - very wide spreadsheets shrunk to fit may produce tiny, unreadable text. Fix 3 (Print Area): Select only the columns you need → Page Layout → Print Area → Set Print Area. This excludes unused columns from the PDF. Fix 4 (RepetiGo): This one doesn't apply here - RepetiGo's converter doesn't lay out a visual grid at all, so there's no column width or fit-to-page setting; cell values simply flow as wrapped text, so columns can't get 'cut off' the way they can in a true visual export, but you also don't get the spreadsheet's original table layout.
 H3: Q8: How do I convert Excel to PDF on a Mac?
 In Microsoft Excel for Mac: File → Export → PDF. Or: File → Print → click the 'PDF' dropdown in the bottom-left of the print dialog → 'Save as PDF'. For the best formatting preservation, use File → Export → PDF and set your page orientation and scale before exporting. On Mac, you can also open the .xlsx in Numbers (Apple's free spreadsheet app), then File → Export To → PDF. Numbers may reformat the spreadsheet slightly but works for simple files.
 H3: Q9: How do I convert Excel to PDF on my phone?
 On Android: if you have the Microsoft Excel app (free with limited features), open your file → File → Export → PDF. Or: open the file in Google Sheets app (free) → three-dot menu → Share & Export → Download as PDF. On iPhone: if you have the Excel app, the same export path works. Alternatively, use Google Sheets on the browser or app. RepetiGo's browser-based converter also works on Android (Chrome) and iPhone (Safari) - upload from Files app, convert, download PDF.
 H3: Q10: Is it safe to upload an Excel file with financial data to a free online converter?
-RepetiGo uses HTTPS for all transfers. Your Excel file is processed in an isolated temporary session with no user account linkage. The file and the converted PDF are automatically deleted within 60 minutes of download. No cell data, financial figures, names, or personal information is read, stored, or used for any purpose beyond rendering the PDF. For maximum security with highly sensitive spreadsheets (complete financial records, payroll data, legal documents), consider whether the 60-minute retention window is acceptable, or use the built-in Excel export which never leaves your local computer.
+With RepetiGo, yes - and more precisely, nothing is ever uploaded at all. Your file is processed entirely within your browser, with no user account linkage and nothing sent to or stored on a server. No cell data, financial figures, names, or personal information is read, stored, or used by RepetiGo for any purpose beyond building the PDF locally on your device.
 
 H2: More Free PDF Tools from RepetiGo.
 Tool
@@ -234,4 +235,4 @@ function renderTableCell(cell: string) { const href = mapSeoRoute(cell.replace(/
 function renderInlineMappedLinks(text: string) { return text.split(/(repetigo\.com\/(?:tools\/pdf\/[a-z-]+|tools\/excel-to-pdf|pricing)\/?|\/tools\/pdf\/[a-z-]*\/?|\/tools\/excel-to-pdf\/?|\/products\/printpilot\/?|\/features\/(?:qr-upload|auto-delete)\/?|\/security\/?)/g).map((part, index) => { const href = mapSeoRoute(part.startsWith("repetigo.com") ? `https://${part}` : part); return href ? <a href={href} key={`${part}-${index}`}>{getRouteLabel(href)}</a> : part; }); }
 function mapSeoRoute(route: string) { const clean = route.trim().replace(/^https?:\/\/(www\.)?repetigo\.com/i, "").replace(/\/$/, ""); const routes: Record<string, string> = { "/pdf-tools": "/pdf-tools", "/pdf-tools/excel-to-pdf": "/pdf-tools/excel-to-pdf", "/pdf-tools/pdf-to-excel": "/pdf-tools/pdf-to-excel", "/pdf-tools/word-to-pdf": "/pdf-tools/word-to-pdf", "/pdf-tools/compress-pdf": "/pdf-tools/compress-pdf", "/pdf-tools/split-pdf": "/pdf-tools/split-pdf", "/pdf-tools/merge-pdf": "/pdf-tools/merge-pdf", "/pdf-tools/rotate-pdf": "/pdf-tools/rotate-pdf", "/pdf-tools/jpg-to-pdf": "/pdf-tools/jpg-to-pdf", "/products/printpilot": "/print-automation", "/features/qr-upload": "/print-automation", "/features/auto-delete": "/privacy-policy", "/security": "/privacy-policy", "/pricing": "/pricing" }; return routes[clean] || ""; }
 function getRouteLabel(href: string) { const labels: Record<string, string> = { "/pdf-tools": "Explore All PDF Tools", "/pdf-tools/excel-to-pdf": "Open Excel to PDF", "/pdf-tools/pdf-to-excel": "Open PDF to Excel", "/pdf-tools/word-to-pdf": "Open Word to PDF", "/pdf-tools/compress-pdf": "Open Compress PDF", "/pdf-tools/split-pdf": "Open Split PDF", "/pdf-tools/merge-pdf": "Open Merge PDF", "/pdf-tools/rotate-pdf": "Open Rotate PDF", "/pdf-tools/jpg-to-pdf": "Open JPG to PDF", "/print-automation": "Learn About PrintPilot", "/privacy-policy": "Read Privacy Policy", "/pricing": "Start Free Trial" }; return labels[href] || "Open Tool"; }
-function JsonLd() { const schemas = [{ "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Excel to PDF Converter", applicationCategory: "BusinessApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free Excel to PDF converter - convert .xlsx, .xls, .csv files to PDF without Microsoft Excel. No sign-up.", url: pageUrl }, { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert Excel to PDF Online Free", step: [{ "@type": "HowToStep", name: "Upload Excel file" }, { "@type": "HowToStep", name: "Choose sheet and range settings" }, { "@type": "HowToStep", name: "Download PDF" }] }, { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqs.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "PDF Tools", item: "https://repetigo.com/pdf-tools" }, { "@type": "ListItem", position: 3, name: "Excel to PDF", item: pageUrl }] }]; return <>{schemas.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>; }
+function JsonLd() { const schemas = [{ "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Excel to PDF Converter", applicationCategory: "BusinessApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free Excel to PDF converter - convert .xlsx, .xls, .csv files to PDF without Microsoft Excel. No sign-up.", url: pageUrl }, { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert Excel to PDF Online Free", step: [{ "@type": "HowToStep", name: "Upload Excel file" }, { "@type": "HowToStep", name: "Click Convert" }, { "@type": "HowToStep", name: "Download PDF" }] }, { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqs.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "PDF Tools", item: "https://repetigo.com/pdf-tools" }, { "@type": "ListItem", position: 3, name: "Excel to PDF", item: pageUrl }] }]; return <>{schemas.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>; }

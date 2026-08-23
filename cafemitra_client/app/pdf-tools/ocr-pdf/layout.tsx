@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "OCR PDF Online Free - Make Scanned PDFs Searchable | RepetiGo",
-  description: "OCR PDF free online - make any scanned or image-based PDF searchable. Extract text. No sign-up, no install. Files auto-deleted after 60 min. Works on any device.",
+  description: "OCR PDF free online - extract text from any text-based PDF searchable. Extract text. No sign-up, no install. Files auto-deleted after 60 min. Works on any device.",
   alternates: { canonical: "https://repetigo.com/pdf-tools/ocr-pdf" },
   openGraph: {
     title: "OCR PDF Online Free - Make Scanned PDFs Searchable | RepetiGo",
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "OCR PDF Free Online - RepetiGo",
+    title: "PDF Text Extractor Free Online - RepetiGo",
     description: "Make scanned PDFs searchable free. No sign-up, no install, auto-deleted.",
   },
   robots: { index: true, follow: true },
