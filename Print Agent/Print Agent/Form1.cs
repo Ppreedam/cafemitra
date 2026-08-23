@@ -944,6 +944,12 @@ namespace Print_Agent
             // the network, so login/polling/etc. all target the right host.
             await ApiBaseUrlProvider.RefreshBaseUrl(_config, _configPath, LogStatus);
 
+            // Dev convenience: if a local `manage.py runserver` is up on
+            // localhost:8000, use it for this session instead of production
+            // - never persisted, so the next launch without it running falls
+            // straight back to production automatically.
+            await ApiBaseUrlProvider.UseLocalDevServerIfAvailable(_config, LogStatus);
+
             // Check for an update before doing anything else. If one is
             // needed, Updater.exe is already launched by this point - it
             // will close this process (by pid) once it's ready to install,

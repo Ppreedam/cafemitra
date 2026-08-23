@@ -7079,7 +7079,8 @@ img.profile-photo {
   letter-spacing: 0;
 }
 
-.customer-summary-panel button {
+.customer-summary-panel button,
+.customer-summary-panel .customer-download-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -7092,6 +7093,8 @@ img.profile-photo {
   background: var(--brand-hero-gradient);
   font-weight: 850;
   cursor: pointer;
+  text-decoration: none;
+  margin-top: 8px;
 }
 
 .customer-summary-panel button:disabled {
@@ -7184,6 +7187,7 @@ img.profile-photo {
 
 .customer-portal .customer-panel.is-guided .customer-panel-head > span,
 .customer-portal .customer-summary-panel button,
+.customer-portal .customer-summary-panel .customer-download-btn,
 .customer-portal .customer-upload em {
   background: linear-gradient(135deg, #2563eb, #16a1bd);
 }
@@ -7815,6 +7819,11 @@ img.profile-photo {
 .cash-approval-actions button.danger {
   color: #c7354d;
   background: rgba(233, 84, 106, 0.12);
+}
+
+.cash-approval-actions button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .orders-action-message {

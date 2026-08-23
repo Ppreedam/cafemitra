@@ -117,6 +117,7 @@ export default function OrdersPage() {
   const [dateTo, setDateTo] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [markingPaidId, setMarkingPaidId] = useState<number | null>(null);
+  const [cashActionId, setCashActionId] = useState<number | null>(null);
   const [actionError, setActionError] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [compareOrder, setCompareOrder] = useState<Order | null>(null);
@@ -204,6 +205,21 @@ export default function OrdersPage() {
     }
   }
 
+  async function respondToCashOrder(orderId: number, approve: boolean) {
+    setCashActionId(orderId);
+    setActionError("");
+    try {
+      const response = await apiFetch(`/api/orders/${orderId}/${approve ? "approve-cash" : "reject-cash"}/`, { method: "POST" });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.message || `Could not ${approve ? "approve" : "reject"} this order.`);
+      setOrders((current) => current.map((order) => (order.id === orderId ? { ...order, ...result.order } : order)));
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : `Could not ${approve ? "approve" : "reject"} this order.`);
+    } finally {
+      setCashActionId(null);
+    }
+  }
+
   async function markToolOrderPaid(orderId: number, endpoint: string) {
     setMarkingPaidId(orderId);
     setActionError("");
@@ -264,20 +280,37 @@ export default function OrdersPage() {
             <section className="cash-approval-panel">
               <div>
                 <strong>Cash Counter Approval</strong>
-                <p>The Reptigo Windows Agent will ask for cash collection confirmation before printing.</p>
+                <p>
+                  Confirm you&apos;ve collected cash for these before they&apos;re processed - for document print, the desktop Print
+                  Agent also asks for this; passport photo can only be approved here.
+                </p>
               </div>
               <div className="cash-approval-list">
                 {cashApprovalOrders.map((order) => (
                   <article className="cash-approval-card" key={order.id}>
                     <div>
                       <span className="token-pill">{order.tokenId}</span>
-                      <strong>{order.fileName || order.orderNumber}</strong>
+                      <strong>{order.fileName || order.serviceName || order.orderNumber}</strong>
                       <small>
                         {order.pages} x {order.copies} pages | Rs. {order.totalAmount}
                       </small>
                     </div>
                     <div className="cash-approval-actions">
-                      <span className="order-status awaiting_approval">Waiting for agent</span>
+                      <button
+                        type="button"
+                        disabled={cashActionId === order.id}
+                        onClick={() => respondToCashOrder(order.id, true)}
+                      >
+                        {cashActionId === order.id ? "..." : "Approve"}
+                      </button>
+                      <button
+                        type="button"
+                        className="danger"
+                        disabled={cashActionId === order.id}
+                        onClick={() => respondToCashOrder(order.id, false)}
+                      >
+                        Reject
+                      </button>
                     </div>
                   </article>
                 ))}

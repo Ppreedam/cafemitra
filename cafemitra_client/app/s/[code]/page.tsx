@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { Clock3, Crop, Eye, EyeOff, FileText, IdCard, Image as ImageIcon, LoaderCircle, LockKeyhole, Printer, Trash2, Upload, Wallet, X } from "lucide-react";
+import { Clock3, Crop, Download, Eye, EyeOff, FileText, IdCard, Image as ImageIcon, LoaderCircle, LockKeyhole, Printer, Trash2, Upload, Wallet, X } from "lucide-react";
 import { apiUrl } from "@/lib/api";
 import { calculatePriceItemRate, formatPriceItem, getAllowedPaymentModes, mergePricingDefaults, type PriceItem, type PricingService } from "@/lib/pricing";
 import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
@@ -304,6 +304,7 @@ export default function CustomerScanPage() {
 
   useEffect(() => {
     if (!order || order.status === "printed" || order.status === "failed") return;
+    if (isPassportPhoto && order.geminiPhoto) return;
 
     const intervalId = window.setInterval(async () => {
       try {
@@ -332,11 +333,26 @@ export default function CustomerScanPage() {
 
   useEffect(() => {
     if (!order) return;
-    if (order.status === "printed") {
+    // Passport photo never enters the desktop Print Agent's queue (the
+    // agent excludes that service entirely) - `status` stays "queued"
+    // forever regardless of how far along the AI generation is, so its
+    // own completion signal (geminiPhoto present) drives progress instead.
+    // Still animates up to 92% meanwhile so the wait doesn't look stalled.
+    if (isPassportPhoto) {
+      if (order.geminiPhoto) {
+        setPrintProgress(100);
+        return;
+      }
+      // Generation hasn't started yet while a cash-counter order is waiting
+      // on the shop owner's approval - animating toward 92% here would
+      // read as "in progress" when nothing is actually happening.
+      if (order.status === "awaiting_approval") return;
+    } else if (order.status === "printed") {
       setPrintProgress(100);
       return;
+    } else if (order.status !== "queued" && order.status !== "printing") {
+      return;
     }
-    if (order.status !== "queued" && order.status !== "printing") return;
 
     const intervalId = window.setInterval(() => {
       setPrintProgress((current) => {
@@ -347,7 +363,7 @@ export default function CustomerScanPage() {
     }, 650);
 
     return () => window.clearInterval(intervalId);
-  }, [order?.status, order?.id]);
+  }, [order?.status, order?.id, isPassportPhoto, order?.geminiPhoto]);
 
   function selectService(service: PricingService) {
     setSelectedService(service.serviceKey);
@@ -1116,35 +1132,53 @@ export default function CustomerScanPage() {
                 <div className="customer-token-card">
                   <small>Passport Photo Preview</small>
                   {order.geminiPhoto ? (
-                    <img src={apiUrl(order.geminiPhoto)} alt="Generated passport photo" className="gemini-photo-preview" />
+                    <>
+                      <img src={apiUrl(order.geminiPhoto)} alt="Generated passport photo" className="gemini-photo-preview" />
+                      <a className="customer-download-btn" href={apiUrl(order.geminiPhoto)} download="passport-photo.jpg">
+                        <Download size={16} /> Download photo
+                      </a>
+                      <p className="customer-inline-help">Please collect your hardcopy passport photo from your cyber cafe shop.</p>
+                    </>
+                  ) : order.status === "awaiting_approval" ? (
+                    <span>Waiting for the cafe owner to confirm your cash counter payment before your photo is generated.</span>
                   ) : (
-                    <span>Generating your passport photo... this page checks every few seconds.</span>
+                    <div className="print-progress-box">
+                      <div className="print-progress-head">
+                        <LoaderCircle className="spin" size={16} />
+                        <span>Generating your passport photo…</span>
+                        <strong>{printProgress}%</strong>
+                      </div>
+                      <progress value={printProgress} max={100} />
+                      <p>This page checks every few seconds - your photo and download link will appear here.</p>
+                    </div>
                   )}
                 </div>
               ) : null}
-              {order.status === "queued" || order.status === "printing" ? (
-                <div className="print-progress-box">
-                  <div className="print-progress-head">
-                    <LoaderCircle className="spin" size={16} />
-                    <span>{order.status === "printing" ? "Printing your document…" : "Waiting in the print queue…"}</span>
-                    <strong>{printProgress}%</strong>
+              {!isPassportPhoto ? (
+                order.status === "queued" || order.status === "printing" ? (
+                  <div className="print-progress-box">
+                    <div className="print-progress-head">
+                      <LoaderCircle className="spin" size={16} />
+                      <span>{order.status === "printing" ? "Printing your document…" : "Waiting in the print queue…"}</span>
+                      <strong>{printProgress}%</strong>
+                    </div>
+                    <progress value={printProgress} max={100} />
+                    <p>Please stay on this page — you&apos;ll be able to delete your document here once printing is complete.</p>
                   </div>
-                  <progress value={printProgress} max={100} />
-                  <p>Please stay on this page — you&apos;ll be able to delete your document here once printing is complete.</p>
-                </div>
-              ) : (
-                <span>
-                  {order.status === "awaiting_approval"
-                    ? "Cash counter approval is pending. The cafe owner will approve the print after receiving cash."
-                    : order.documentDeleted
-                      ? "The document has been deleted. The token record is saved."
-                      : order.status === "printed"
-                        ? "Print is complete. You can delete the uploaded document if you want."
-                        : order.status === "failed"
-                          ? "Printing failed. Please contact the cafe for help."
-                          : "Payment is pending."}
-                </span>
-              )}
+                ) : (
+                  <span>
+                    {order.status === "awaiting_approval"
+                      ? "Cash counter approval is pending. The cafe owner will approve the print after receiving cash."
+                      : order.documentDeleted
+                        ? "The document has been deleted. The token record is saved."
+                        : order.status === "printed"
+                          ? "Print is complete. You can delete the uploaded document if you want."
+                          : order.status === "failed"
+                            ? "Printing failed. Please contact the cafe for help."
+                            : "Payment is pending."}
+                  </span>
+                )
+              ) : null}
             </div>
           ) : null}
           {orderError ? <div className="profile-alert error">{orderError}</div> : null}

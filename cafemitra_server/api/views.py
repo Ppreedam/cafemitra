@@ -3831,8 +3831,14 @@ def resolve_passport_photo(order):
     `order` in place as needed. Safe to call on every poll from any caller
     (dashboard tool or public scan-to-print page) - retries the fallback at
     most once every PASSPORT_PHOTO_FALLBACK_RETRY_SECONDS so a permanently
-    broken fallback doesn't get hammered on every poll."""
-    if order.service_key != "passport_photo" or order.gemini_photo:
+    broken fallback doesn't get hammered on every poll. A cash-counter order
+    still waiting on the shop owner's approval (STATUS_AWAITING_APPROVAL) is
+    excluded from the agent's job list on purpose (see agent_passport_jobs)
+    - without this guard, this "stale job" detector would treat that as an
+    abandoned agent job after PASSPORT_PHOTO_STALE_JOB_SECONDS and trigger
+    the paid Gemini fallback anyway, generating (and billing) the photo
+    before it was ever approved."""
+    if order.service_key != "passport_photo" or order.gemini_photo or order.status == PrintOrder.STATUS_AWAITING_APPROVAL:
         return
 
     just_failed = False
@@ -3982,10 +3988,18 @@ def agent_passport_jobs(request):
         return JsonResponse({"message": "Unauthorized."}, status=401)
 
     # Any authenticated caller gets the full pending queue (not just their
-    # own orders) so a single agent can process everyone's passport photos.
+    # own orders) so a single agent can process everyone's passport photos -
+    # which is exactly why a cash-counter order sitting at
+    # STATUS_AWAITING_APPROVAL must be excluded here: unlike the document
+    # print queue, whichever agent happens to be polling has no relationship
+    # to this order's own shop, so it can't sensibly ask that shop's owner
+    # to confirm cash was collected. That confirmation only happens via the
+    # shop's own dashboard (approve_cash_order/reject_cash_order) - a job
+    # never reaches this shared pool, and never runs the AI generation that
+    # bills the shop's wallet, until then.
     jobs = PrintOrder.objects.filter(
         service_key="passport_photo", photo_status=PrintOrder.PHOTO_STATUS_PENDING,
-    ).order_by("created_at")[:20]
+    ).exclude(status=PrintOrder.STATUS_AWAITING_APPROVAL).order_by("created_at")[:20]
     return JsonResponse({"jobs": [public_passport_job(job, request) for job in jobs]})
 
 
@@ -4005,6 +4019,11 @@ def claim_passport_job(request, job_id):
             return JsonResponse({"message": "Photo job not found."}, status=404)
         if order.photo_status != PrintOrder.PHOTO_STATUS_PENDING:
             return JsonResponse({"message": "Job already claimed."}, status=409)
+        if order.status == PrintOrder.STATUS_AWAITING_APPROVAL:
+            # Second guard behind agent_passport_jobs already excluding this
+            # order from the pool - belt-and-suspenders against a client
+            # that claims by id without going through the job list.
+            return JsonResponse({"message": "This cash-counter order is still waiting for the shop owner's approval."}, status=409)
 
         order.photo_status = PrintOrder.PHOTO_STATUS_CLAIMED
         order.photo_updated_at = timezone.now()
@@ -4026,6 +4045,12 @@ def complete_passport_job(request, job_id):
     order = PrintOrder.objects.filter(id=job_id, service_key="passport_photo").first()
     if not order:
         return JsonResponse({"message": "Photo job not found."}, status=404)
+    if order.status == PrintOrder.STATUS_AWAITING_APPROVAL:
+        # Same guard as claim_passport_job/agent_passport_jobs - this order
+        # was never legitimately claimable, so don't let a report against
+        # its id (including the failure branch's Gemini fallback below)
+        # generate/bill a photo that was never approved.
+        return JsonResponse({"message": "This cash-counter order is still waiting for the shop owner's approval."}, status=409)
 
     if str(request.POST.get("status", "")).strip() == PrintOrder.PHOTO_STATUS_FAILED:
         order.photo_status = PrintOrder.PHOTO_STATUS_FAILED

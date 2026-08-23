@@ -97,7 +97,14 @@ CHANNEL_LAYERS = {
             # connections with a client-side TimeoutError. Reproduced and
             # confirmed live during testing (connections were dying ~5s
             # after connecting with no activity) - do not remove this.
-            "hosts": [{"address": REDIS_URL, "socket_timeout": None}],
+            # protocol=2 pins the connection to RESP2 - redis-py 5+ defaults
+            # to RESP3 and opens every connection with a HELLO command,
+            # which any Redis older than 6.0 doesn't understand at all
+            # ("unknown command 'HELLO'"), crashing the WebSocket consumer's
+            # connect() with a 500 instead of completing the handshake.
+            # RESP2 is all channels_redis actually needs and every Redis
+            # version speaks it, so this is safe in any environment.
+            "hosts": [{"address": REDIS_URL, "socket_timeout": None, "protocol": 2}],
         },
     },
 }

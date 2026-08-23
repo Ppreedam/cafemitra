@@ -720,10 +720,14 @@ def admin_stuck_orders(request):
         status=PrintOrder.STATUS_AWAITING_APPROVAL,
         created_at__lte=now - timedelta(minutes=30),
     ).order_by("created_at")
+    # A cash-counter order sitting at STATUS_AWAITING_APPROVAL is correctly
+    # waiting on the shop owner (already surfaced by the `awaiting_approval`
+    # alert above), not actually stuck - excluded here so this alert doesn't
+    # cry wolf for however long that approval legitimately takes.
     stuck_photo = order_list_queryset(PrintOrder.objects.select_related("user", "user__shop")).filter(
         photo_status__in=[PrintOrder.PHOTO_STATUS_PENDING, PrintOrder.PHOTO_STATUS_CLAIMED],
         created_at__lte=now - timedelta(seconds=60),
-    ).order_by("created_at")
+    ).exclude(status=PrintOrder.STATUS_AWAITING_APPROVAL).order_by("created_at")
 
     def summarize(order):
         return {
