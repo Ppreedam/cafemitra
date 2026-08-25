@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useEffect, useState } from "react";
-import { AlertTriangle, ArrowDownToLine, ArrowUpToLine, Banknote, Clock3, ReceiptText, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowDownToLine, ArrowUpToLine, Banknote, Clock3, ReceiptText, Ticket, Wallet } from "lucide-react";
 import { apiFetch, hasStoredSession } from "@/lib/api";
 import { DashboardShell } from "../DashboardShell";
 import { SkeletonBlock, UiState } from "../UiState";
@@ -36,6 +36,7 @@ type WalletData = {
     cashCounterCollected: number;
     totalCollected: number;
     signupBonusCredited: number;
+    couponCreditReceived: number;
     netWithdrawable: number;
     pendingWithdrawal: number;
     paidWithdrawal: number;
@@ -65,6 +66,7 @@ const emptyWallet: WalletData = {
     cashCounterCollected: 0,
     totalCollected: 0,
     signupBonusCredited: 0,
+    couponCreditReceived: 0,
     netWithdrawable: 0,
     pendingWithdrawal: 0,
     paidWithdrawal: 0,
@@ -125,6 +127,10 @@ export default function WalletPage() {
   const [isToppingUp, setIsToppingUp] = useState(false);
   const [topupMessage, setTopupMessage] = useState("");
   const [topupMessageKind, setTopupMessageKind] = useState<"success" | "error">("error");
+  const [couponCode, setCouponCode] = useState("");
+  const [isRedeeming, setIsRedeeming] = useState(false);
+  const [redeemMessage, setRedeemMessage] = useState("");
+  const [redeemMessageKind, setRedeemMessageKind] = useState<"success" | "error">("error");
   const [historyTab, setHistoryTab] = useState<"ledger" | "withdrawals">("ledger");
 
   useEffect(() => {
@@ -209,6 +215,34 @@ export default function WalletPage() {
       setMessage(error instanceof Error ? error.message : "Could not request withdrawal.");
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  async function submitCoupon(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setIsRedeeming(true);
+    setRedeemMessage("");
+
+    try {
+      const response = await apiFetch("/api/wallet/coupon/redeem/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code: couponCode }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.message || "Could not redeem this coupon.");
+      setRedeemMessageKind("success");
+      // The coupon's own admin-authored message is the confirmation - a
+      // generic "success" string would hide the whole point of letting
+      // admins write it (e.g. "Diwali offer! Rs. 50 credited.").
+      setRedeemMessage(result.message || "Coupon redeemed successfully.");
+      setCouponCode("");
+      await loadWallet();
+    } catch (error) {
+      setRedeemMessageKind("error");
+      setRedeemMessage(error instanceof Error ? error.message : "Could not redeem this coupon.");
+    } finally {
+      setIsRedeeming(false);
     }
   }
 
@@ -318,12 +352,19 @@ export default function WalletPage() {
   const upiError = method === "UPI" && trimmedAccountDetail && !upiIdPattern.test(trimmedAccountDetail)
     ? "Enter a valid UPI ID like name@bank or mobile@upi."
     : "";
+  const promoCredit = wallet.summary.signupBonusCredited + wallet.summary.couponCreditReceived;
+  const promoCreditLabel =
+    wallet.summary.signupBonusCredited > 0 && wallet.summary.couponCreditReceived > 0
+      ? `Rs. ${promoCredit} signup bonus + coupon credit`
+      : wallet.summary.couponCreditReceived > 0
+        ? `Rs. ${wallet.summary.couponCreditReceived} coupon credit`
+        : `Rs. ${wallet.summary.signupBonusCredited} signup bonus`;
   const amountError =
     Number(amount) > wallet.summary.netWithdrawable
-      ? wallet.summary.netWithdrawable <= 0 && wallet.summary.signupBonusCredited > 0
-        ? `Your Rs. ${wallet.balance} balance is still covered by your Rs. ${wallet.summary.signupBonusCredited} signup bonus - that's promotional credit for using tools, not withdrawable cash. Earn from online orders to unlock withdrawals.`
-        : wallet.summary.signupBonusCredited > 0
-          ? `You can withdraw up to Rs. ${wallet.summary.netWithdrawable} (the Rs. ${wallet.summary.signupBonusCredited} signup bonus isn't withdrawable).`
+      ? wallet.summary.netWithdrawable <= 0 && promoCredit > 0
+        ? `Your Rs. ${wallet.balance} balance is still covered by your ${promoCreditLabel} - that's promotional credit for using tools, not withdrawable cash. Earn from online orders to unlock withdrawals.`
+        : promoCredit > 0
+          ? `You can withdraw up to Rs. ${wallet.summary.netWithdrawable} (the ${promoCreditLabel} isn't withdrawable).`
           : `You can withdraw up to Rs. ${wallet.summary.netWithdrawable}.`
       : "";
   const canSubmitWithdrawal =
@@ -361,9 +402,8 @@ export default function WalletPage() {
           <div className="profile-alert error wallet-limit-alert">
             <AlertTriangle size={18} />
             <span>
-              Your service credits balance ({formatCurrency(wallet.balance)}) has reached the minimum allowed limit
-              ({formatCurrency(wallet.limits.creditLimit)}). Paid tools (PrintPilot, Passport Photo) are paused until
-              you top up.
+              Insufficient balance ({formatCurrency(wallet.balance)}). Please top up your wallet to continue using
+              paid tools (PrintPilot, Passport Photo).
             </span>
           </div>
         ) : wallet.limits.isLowBalance ? (
@@ -388,7 +428,7 @@ export default function WalletPage() {
                 <div className="metric-content">
                   <div className="metric-label">{card.label}</div>
                   <div className="metric-value">{card.value}</div>
-                  <div className="metric-meta">{metricMeta(card.label, wallet.summary.signupBonusCredited)}</div>
+                  <div className="metric-meta">{metricMeta(card.label, wallet.summary.signupBonusCredited, wallet.summary.couponCreditReceived)}</div>
                 </div>
               </article>
             );
@@ -412,6 +452,29 @@ export default function WalletPage() {
               {topupMessage ? <small className={`field-${topupMessageKind}`}>{topupMessage}</small> : null}
               <button className="btn btn-primary" type="submit" disabled={isToppingUp || Number(topupAmount) < 10}>
                 <ArrowUpToLine size={16} /> {isToppingUp ? "Processing..." : "Top Up Now"}
+              </button>
+            </form>
+
+            <form className="panel wallet-withdraw-panel" onSubmit={submitCoupon}>
+              <div className="panel-title-row compact">
+                <div>
+                  <h2>Redeem Coupon</h2>
+                  <p>Enter a coupon code to credit your wallet instantly.</p>
+                </div>
+                <Ticket size={20} />
+              </div>
+              <label className="auto-field">
+                <span>Coupon Code</span>
+                <input
+                  type="text"
+                  value={couponCode}
+                  onChange={(event) => setCouponCode(event.target.value.toUpperCase())}
+                  placeholder="e.g. DIWALI50"
+                />
+              </label>
+              {redeemMessage ? <small className={`field-${redeemMessageKind}`}>{redeemMessage}</small> : null}
+              <button className="btn btn-primary" type="submit" disabled={isRedeeming || !couponCode.trim()}>
+                <Ticket size={16} /> {isRedeeming ? "Redeeming..." : "Redeem Coupon"}
               </button>
             </form>
 
@@ -561,9 +624,13 @@ function formatAmountInput(value: number) {
   return amount > 0 ? amount.toFixed(2).replace(/\.00$/, "") : "";
 }
 
-function metricMeta(label: string, signupBonusCredited: number) {
+function metricMeta(label: string, signupBonusCredited: number, couponCreditReceived = 0) {
   if (label === "Withdrawable Balance") {
-    return signupBonusCredited > 0 ? `Excludes ${formatCurrency(signupBonusCredited)} signup bonus (promotional, not withdrawable)` : "Ready to withdraw";
+    const excluded = [
+      signupBonusCredited > 0 ? `${formatCurrency(signupBonusCredited)} signup bonus` : "",
+      couponCreditReceived > 0 ? `${formatCurrency(couponCreditReceived)} coupon credit` : "",
+    ].filter(Boolean);
+    return excluded.length ? `Excludes ${excluded.join(" and ")} (promotional, not withdrawable)` : "Ready to withdraw";
   }
   if (label === "Online Balance") return "Wallet balance";
   if (label === "Cash Counter Collected") return "Already with cafe";

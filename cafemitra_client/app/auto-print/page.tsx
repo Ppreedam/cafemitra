@@ -180,6 +180,7 @@ const queue = [
 const paymentModeOptions = [
   { value: "Online Payment", label: "Online Payment" },
   { value: "Both", label: "Online Payment + Cash Counter" },
+  { value: "Cash Counter", label: "Only Cash Counter" },
 ];
 export default function AutoPrintPage() {
   const router = useRouter();
@@ -841,8 +842,8 @@ export default function AutoPrintPage() {
                   </div>
                   <div className="payment-mode-list">
                     {paymentModeOptions.map((option) => {
-                      const isBothOption = option.value === "Both";
-                      const isLocked = isBothOption && !cashCounterAvailable;
+                      const needsCashCounter = option.value === "Both" || option.value === "Cash Counter";
+                      const isLocked = needsCashCounter && !cashCounterAvailable;
                       return (
                         <button
                           className={paymentMode === option.value ? "active" : ""}
@@ -860,7 +861,7 @@ export default function AutoPrintPage() {
                       );
                     })}
                   </div>
-                  <p className="payment-mode-note">Online Payment is always available to customers. Turn on "Online Payment + Cash Counter" to also let customers pay at your counter.</p>
+                  <p className="payment-mode-note">Online Payment is available to customers by default. Turn on "Online Payment + Cash Counter" to also let customers pay at your counter, or pick "Only Cash Counter" to accept counter payment only.</p>
                   {!cashCounterAvailable ? <p className="payment-mode-note payment-mode-locked">{cashCounterReason}</p> : null}
                   {pricingMessage ? <div className="profile-alert success">{pricingMessage}</div> : null}
                   {pricingError ? <div className="profile-alert error">{pricingError}</div> : null}

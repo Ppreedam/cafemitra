@@ -3,16 +3,17 @@
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Check, ChevronLeft, ChevronRight, Circle, Crop, Eye, IdCard, Laugh, Loader2, RefreshCw, Settings, Trash2, Upload, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Circle, Crop, Eye, IdCard, Laugh, Loader2, Printer, RefreshCw, Settings, Sparkles, Trash2, Upload, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
 import { WalletLimitBanner } from "../WalletLimitBanner";
 import { apiFetch, apiUrl, dataUriToBlob } from "@/lib/api";
 import { fetchPricingServiceByKey, type PriceItem } from "@/lib/pricing";
 import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
 import { CropEditor, cropImage, DEFAULT_CROP_RECT, type CropRect } from "../CropEditor";
+import { buildPrintSheetHtml, maxTilesForPaper, openPrintSheet as openManualPrintSheet, parsePhotoCount, type PaperSize } from "./printSheet";
 
 type JobState = "idle" | "submitting" | "processing" | "done" | "not_found" | "failed";
-type PaperSize = "a4" | "4x6";
+type ToolMode = "ai" | "manual";
 
 const goodPhotoExamples = [
   { src: "/Good_bad_image/GoodImage1.jpg", caption: "Face clearly visible, straight look" },
@@ -108,7 +109,7 @@ const PROCESSING_GROUP_RANGES = (() => {
   });
 })();
 
-type ExistingPassportOrder = {
+export type ExistingPassportOrder = {
   id: number;
   fileUrl: string;
   fileName: string;
@@ -125,6 +126,7 @@ const CHECK_INTERVAL_MS = 5_000;
 const MAX_CHECK_ATTEMPTS = 7;
 
 export default function PassportPhotoPage() {
+  const [mode, setMode] = useState<ToolMode>("ai");
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
   const [photoVariation, setPhotoVariation] = useState(passportAttireOptions[0].key);
@@ -139,8 +141,14 @@ export default function PassportPhotoPage() {
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [viewOrder, setViewOrder] = useState<ExistingPassportOrder | null>(null);
+  const [manualInitialOrder, setManualInitialOrder] = useState<ExistingPassportOrder | null>(null);
   const [isLoadingOrder, setIsLoadingOrder] = useState(false);
   const [paperSize, setPaperSize] = useState<PaperSize | null>(null);
+  const [manualPaperSize, setManualPaperSize] = useState<PaperSize | null>(null);
+  const [useCustomTiles, setUseCustomTiles] = useState(false);
+  const [customTileWidth, setCustomTileWidth] = useState(1.2);
+  const [customTileHeight, setCustomTileHeight] = useState(1.6);
+  const [customTileCount, setCustomTileCount] = useState<number | null>(null);
   const [stepCursor, setStepCursor] = useState(0);
   const [showJokes, setShowJokes] = useState(false);
   const [jokeIndex, setJokeIndex] = useState(0);
@@ -221,6 +229,12 @@ export default function PassportPhotoPage() {
       if (!response.ok || !result.order) throw new Error(result.message || "Could not load this order.");
 
       const order: ExistingPassportOrder = result.order;
+      if (order.attireCategory === "manual") {
+        setMode("manual");
+        setManualInitialOrder(order);
+        return;
+      }
+
       setViewOrder(order);
       setJobId(order.id);
       if (order.attireCategory) setPhotoVariation(order.attireCategory);
@@ -261,66 +275,6 @@ export default function PassportPhotoPage() {
     }
   }
 
-  function parsePhotoCount(label?: string) {
-    const match = /(\d+)/.exec(label || "");
-    const value = match ? parseInt(match[1], 10) : NaN;
-    return Number.isFinite(value) && value > 0 ? value : 6;
-  }
-
-  function buildPrintSheetHtml(size: PaperSize, imageUrl: string, count: number) {
-    const itemsPerRow = size === "a4" ? 6 : 3;
-    const pageSizeCss = size === "a4" ? "width:210mm;height:297mm;" : "width:4in;height:6in;";
-    const pageRuleCss = size === "a4" ? "size:A4;" : "size:4in 6in;";
-    const pagePaddingCss = size === "a4" ? "4mm 12mm 12mm 6mm" : "2mm 3mm 3mm 3mm";
-
-    const rowCounts: number[] = [];
-    for (let remaining = count; remaining > 0; remaining -= itemsPerRow) {
-      rowCounts.push(Math.min(itemsPerRow, remaining));
-    }
-
-    const rowsHtml = rowCounts
-      .map((rowCount) => {
-        const photosHtml = Array.from({ length: rowCount })
-          .map(() => `<div class="photo"><img src="${imageUrl}" /></div>`)
-          .join("");
-        return `<div class="photo-row">${photosHtml}</div>`;
-      })
-      .join("");
-
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Passport Photo Sheet</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;}
-body{background:#f2f2f2;font-family:Arial, Helvetica, sans-serif;}
-.page{${pageSizeCss}background:#fff;margin:20px auto;padding:${pagePaddingCss};}
-.photo-row{display:flex;justify-content:flex-start;gap:2mm;margin-bottom:2mm;}
-.photo-row:last-child{margin-bottom:0;}
-.photo{width:1.2in;height:1.6in;border:1px solid #999;overflow:hidden;background:#fff;flex:0 0 auto;}
-.photo img{width:100%;height:100%;object-fit:cover;object-position:center;}
-@media print{
-  body{background:white;}
-  .page{margin:0;${pageSizeCss}padding:${pagePaddingCss};box-shadow:none;}
-  @page{${pageRuleCss}margin:0;}
-}
-</style>
-</head>
-<body>
-<div class="page">
-${rowsHtml}
-</div>
-<script>
-  window.onload = function () {
-    window.focus();
-    window.print();
-  };
-</script>
-</body>
-</html>`;
-  }
-
   function openPrintSheet(size: PaperSize) {
     setPaperSize(size);
     if (!finalImageUrl) {
@@ -336,6 +290,19 @@ ${rowsHtml}
     printWindow.document.open();
     printWindow.document.write(html);
     printWindow.document.close();
+  }
+
+  function printManualSheet(size: PaperSize) {
+    if (!manualInitialOrder?.geminiPhoto) return;
+    setManualPaperSize(size);
+    if (useCustomTiles) {
+      const maxFit = maxTilesForPaper(size, customTileWidth, customTileHeight).max;
+      const count = Math.min(customTileCount ?? maxFit, maxFit);
+      openManualPrintSheet(size, apiUrl(manualInitialOrder.geminiPhoto), count, customTileWidth, customTileHeight);
+    } else {
+      const count = parsePhotoCount(manualInitialOrder.priceLabel);
+      openManualPrintSheet(size, apiUrl(manualInitialOrder.geminiPhoto), count);
+    }
   }
 
   useEffect(() => {
@@ -533,17 +500,142 @@ ${rowsHtml}
           <div>
             <span className="auto-print-kicker">PrintPilot Passport Photo Maker</span>
             <h1>Passport Size Photo Maker</h1>
-            <p>Upload a photo, choose a professional attire, and get an AI-generated passport photo that meets official standards.</p>
+            <p>
+              {mode === "ai"
+                ? "Upload a photo, choose a professional attire, and get an AI-generated passport photo that meets official standards."
+                : "Upload a photo and manually remove the background, crop it to size, and adjust it yourself - no AI wait, no AI cost."}
+            </p>
           </div>
           <div className="auto-print-hero-actions">
             <Link className="icon-action-btn" href="/pricing-settings" aria-label="Pricing settings" title="Pricing settings">
               <Settings size={18} />
             </Link>
-            <span className="status-pill">AI Powered</span>
+            <span className="status-pill">{mode === "ai" ? "AI Powered" : "Manual Edit"}</span>
           </div>
         </div>
 
-        {isLoadingOrder ? (
+        <div className="passport-mode-tabs" role="tablist">
+          <button type="button" role="tab" aria-selected={mode === "ai"} className={mode === "ai" ? "active" : ""} onClick={() => setMode("ai")}>
+            AI Generate
+          </button>
+          <button type="button" role="tab" aria-selected={mode === "manual"} className={mode === "manual" ? "active" : ""} onClick={() => setMode("manual")}>
+            Manual Edit
+          </button>
+        </div>
+
+        {mode === "manual" ? (
+          <section className="passport-maker-grid">
+            <article className="customer-panel">
+              <div className="customer-panel-head">
+                <span>Step 1</span>
+                <h2>Edit With Photo Editor</h2>
+              </div>
+              <p className="customer-inline-help">
+                Edit your photo with the full toolset - background removal, ratio-locked passport/ID crop presets, brightness/contrast/filters,
+                and a Name &amp; DOB caption for exam forms - then save it as your passport photo directly from there.
+              </p>
+              <Link className="passport-preview-button" href="/image-tools/photo-editor?for=passport">
+                <Sparkles size={18} /> Open Photo Editor
+              </Link>
+            </article>
+
+            <article className="customer-panel">
+              <div className="customer-panel-head">
+                <span>Step 2</span>
+                <h2>Preview</h2>
+              </div>
+
+              {manualInitialOrder?.geminiPhoto ? (
+                <>
+                  <div className="passport-final-preview">
+                    <div className="passport-final-preview-frame">
+                      <img src={apiUrl(manualInitialOrder.geminiPhoto)} alt="Final passport photo" />
+                      <span className="passport-final-preview-badge">
+                        <Check size={12} /> Ready
+                      </span>
+                    </div>
+                  </div>
+                  <div className="passport-attire-picker">
+                    <span>Paper Size</span>
+                    <div className="passport-papersize-options">
+                      <label className={`passport-papersize-radio${manualPaperSize === "4x6" ? " active" : ""}`}>
+                        <input
+                          type="radio"
+                          name="manual-passport-paper-size"
+                          checked={manualPaperSize === "4x6"}
+                          onChange={() => setManualPaperSize("4x6")}
+                          onClick={() => (useCustomTiles ? setManualPaperSize("4x6") : printManualSheet("4x6"))}
+                        />
+                        <span>4x6 Photo Paper</span>
+                      </label>
+                      <label className={`passport-papersize-radio${manualPaperSize === "a4" ? " active" : ""}`}>
+                        <input
+                          type="radio"
+                          name="manual-passport-paper-size"
+                          checked={manualPaperSize === "a4"}
+                          onChange={() => setManualPaperSize("a4")}
+                          onClick={() => (useCustomTiles ? setManualPaperSize("a4") : printManualSheet("a4"))}
+                        />
+                        <span>A4 Sheet</span>
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="passport-attire-picker">
+                    <label className="manual-inline-toggle">
+                      <input type="checkbox" checked={useCustomTiles} onChange={(event) => setUseCustomTiles(event.target.checked)} />
+                      <span>Custom Tile Size</span>
+                    </label>
+                    {useCustomTiles ? (() => {
+                      const max4x6 = maxTilesForPaper("4x6", customTileWidth, customTileHeight).max;
+                      const maxA4 = maxTilesForPaper("a4", customTileWidth, customTileHeight).max;
+                      const maxForSelected = manualPaperSize === "a4" ? maxA4 : manualPaperSize === "4x6" ? max4x6 : Math.max(max4x6, maxA4);
+                      return (
+                        <>
+                          <div className="manual-field-grid manual-field-grid-3">
+                            <label>
+                              <span>Width (in)</span>
+                              <input type="number" min="0.5" step="0.1" value={customTileWidth} onChange={(event) => setCustomTileWidth(Math.max(0.5, Number(event.target.value) || 0.5))} />
+                            </label>
+                            <label>
+                              <span>Height (in)</span>
+                              <input type="number" min="0.5" step="0.1" value={customTileHeight} onChange={(event) => setCustomTileHeight(Math.max(0.5, Number(event.target.value) || 0.5))} />
+                            </label>
+                            <label>
+                              <span>Number of Tiles</span>
+                              <input
+                                type="number"
+                                min="1"
+                                max={maxForSelected}
+                                placeholder={`Auto (${maxForSelected})`}
+                                value={customTileCount ?? ""}
+                                onChange={(event) => setCustomTileCount(event.target.value ? Math.max(1, Number(event.target.value)) : null)}
+                              />
+                            </label>
+                          </div>
+                          <small className="customer-inline-help">
+                            Fits up to {max4x6} on 4x6 Photo Paper, {maxA4} on A4 Sheet - leave Number of Tiles blank to auto-fill the sheet, or set a smaller count.
+                          </small>
+                          <button
+                            type="button"
+                            className="passport-preview-button"
+                            disabled={!manualPaperSize}
+                            onClick={() => manualPaperSize && printManualSheet(manualPaperSize)}
+                          >
+                            <Printer size={18} /> Generate Print Sheet
+                          </button>
+                          {!manualPaperSize ? <small className="customer-inline-help">Pick a paper size above first.</small> : null}
+                        </>
+                      );
+                    })() : null}
+                  </div>
+                </>
+              ) : (
+                <p className="customer-inline-help">Once you save a photo from Photo Editor, it will appear here ready to print.</p>
+              )}
+            </article>
+          </section>
+        ) : isLoadingOrder ? (
           <div className="passport-order-loading">
             <Loader2 size={28} className="passport-step-spin" />
             <strong>Loading your order...</strong>

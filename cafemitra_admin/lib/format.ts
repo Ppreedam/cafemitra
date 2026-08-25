@@ -53,3 +53,15 @@ export function orderResultMessage({ order }: OrderResultInfo): string {
   if (order.status === "printed") return order.agentMessage || "Printed successfully.";
   return order.agentMessage || "-";
 }
+
+// A passport-photo order's `status` tracks the print/token queue, not the
+// AI generation step - so it can sit at "queued" indefinitely while
+// photoStatus is "failed" and the server keeps retrying the Gemini fallback
+// in the background (see resolve_passport_photo in views.py). That's
+// correct for the retry logic, but shows admins a misleading "queued" badge
+// next to an obvious failure message. This is the status to actually
+// display: same as order.status, except a failed photo generation wins.
+export function orderEffectiveStatus({ order }: OrderResultInfo): string {
+  if (order.photoStatus === "failed") return "failed";
+  return order.status;
+}

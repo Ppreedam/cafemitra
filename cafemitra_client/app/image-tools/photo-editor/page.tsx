@@ -4,30 +4,30 @@ import PhotoEditorClient from "./PhotoEditorClient";
 const pageUrl = "https://repetigo.com/image-tools/photo-editor";
 
 export const metadata: Metadata = {
-  title: "Free Photo Editor Online - Filters, Crop, Text & Batch | RepetiGo",
+  title: "Free Photo Editor Online - Filters, Crop, Background Remover & Batch | RepetiGo",
   description:
-    "Free online photo editor - adjust filters, crop, add text, stickers, frames and merge photos in your browser. Batch-edit and download as PNG, JPG or WebP. No watermark.",
+    "Free online photo editor - remove backgrounds, adjust filters, crop to ID/passport sizes, add a Name & DOB caption, text, stickers, frames and merge photos in your browser. Batch-edit and download as PNG, JPG or WebP. No watermark.",
   alternates: { canonical: pageUrl },
   openGraph: {
-    title: "Free Photo Editor Online - Filters, Crop, Text & Batch",
-    description: "Adjust filters, crop, add text, stickers, frames and merge photos in your browser. No watermark.",
+    title: "Free Photo Editor Online - Filters, Crop, Background Remover & Batch",
+    description: "Remove backgrounds, adjust filters, crop, add text, stickers, frames and merge photos in your browser. No watermark.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
     card: "summary_large_image",
     title: "Free Photo Editor Online - All-in-One, In Your Browser",
-    description: "Filters, crop, transform, draw, text, stickers, frames, merge + batch. PNG/JPG/WebP, no watermark.",
+    description: "Background removal, filters, crop, transform, draw, text, stickers, frames, merge + batch. PNG/JPG/WebP, no watermark.",
   },
   robots: { index: true, follow: true },
 };
 
 const content = String.raw`H1: Free Photo Editor Online - Edit, Filter & Batch Your Photos in the Browser.
 
-RepetiGo's photo editor is a free, all-in-one photo editor online that runs entirely in your browser. Upload a picture and you get eleven editing tools in one place - filters and light, resize, crop, transform, draw, text, shapes, stickers, frames, rounded corners, and merge - so you can do a whole edit without switching apps. Adjust it, style it, and download the result as a PNG, JPG, or WebP.
-It is a genuinely free photo editor: no account, no watermark, and nothing to install. Because this online photo editor works on your own device, your photos are never uploaded to a server. And when you have a whole folder to get through, the batch feature applies the same edits to every photo and hands them back as a single ZIP. It is built to be the quick, no-nonsense editor you reach for when you do not want to open heavy software.
+RepetiGo's photo editor is a free, all-in-one photo editor online that runs entirely in your browser. Upload a picture and you get thirteen editing tools in one place - background removal, filters and light, resize, crop (with passport/ID and print-size presets), transform, draw, text, an ID Caption tool for Name & DOB, shapes, stickers, frames, rounded corners, and merge - so you can do a whole edit without switching apps. Adjust it, style it, and download the result as a PNG, JPG, or WebP.
+It is a genuinely free photo editor: no account, no watermark, and nothing to install. Because most of this online photo editor works on your own device, your photos generally stay local - the one exception is the Background Removal tool, which sends the image to RepetiGo's AI service to cut out the background and returns the result to keep editing. When you have a whole folder to get through, the batch feature applies the same edits to every photo and hands them back as a single ZIP. It is built to be the quick, no-nonsense editor you reach for when you do not want to open heavy software.
 
-✓ Free · No sign-up · No watermark   ✓ 11 tools in one   ✓ Batch-edit + ZIP download   ✓ 100% in your browser - nothing uploaded
+✓ Free · No sign-up · No watermark   ✓ 13 tools in one, incl. background removal   ✓ Batch-edit + ZIP download   ✓ Editing happens in your browser
 
 H2: How to Edit a Photo in 3 Steps.
 Here is how to edit a photo with RepetiGo. Every tool lives in a tab, so you move through your edit at your own pace, and Undo/Redo has your back for up to 24 steps.
@@ -37,7 +37,7 @@ What You Do
 What Happens
 1. Upload your photo
 Click or drag-and-drop a JPG, PNG, or WebP image.
-The photo opens on the canvas with all 11 tool tabs ready.
+The photo opens on the canvas with all 13 tool tabs ready.
 2. Edit with any tools
 Adjust filters, crop, draw, add text, stickers, frames - in any order.
 Every change is live; Undo/Redo (up to 24 steps) and Reset are always there.
@@ -47,23 +47,27 @@ Your edited photo saves to your device with no watermark.
 
 🔒 Every edit happens in your browser using the Canvas engine - your photos are never uploaded to any server.
 
-H2: Eleven Editing Tools in One Place.
-Most quick edits need more than one tool, so RepetiGo puts eleven of them in a single editor. Here is what each tab does - you can use one, or chain several together in any order.
+H2: Thirteen Editing Tools in One Place.
+Most quick edits need more than one tool, so RepetiGo puts thirteen of them in a single editor. Here is what each tab does - you can use one, or chain several together in any order.
 
 Tab
 What it does
 Filter & Light
 Brightness, contrast, saturation, blur, grayscale, and sepia sliders
+Background
+AI background removal, plus a solid backdrop colour (white, grey, blue, red, or custom)
 Resize
 Set an exact output width and height
 Crop
-Manual crop or a preset (Passport 35×45mm, 1:1, 3:4, 4:3)
+Manual crop or a preset - passport/ID sizes, standard print sizes, and common aspect ratios
 Transform
 Rotate 90°, flip horizontal, flip vertical
 Draw
 Freehand brush with colour and width (1–40px)
 Text
 Add draggable text labels in any colour
+ID Caption
+Adds a Name & Date of Birth caption band under the photo, for exam-form requirements
 Shapes
 Draggable rectangle and circle outlines
 Stickers
@@ -107,8 +111,13 @@ Need a black and white photo editor? Slide Grayscale to 100 and your colour phot
 💡 The adjustments stack: drop Saturation to zero for black and white, then nudge Contrast up for a punchier monochrome. Undo/Redo lets you try combinations freely.
 
 H2: Crop, Resize & Transform.
-Getting the frame right is often the first edit. The Crop tab lets you crop by exact percentage, or pick a preset - including a Passport 35×45mm preset that auto-centres the right ratio, plus Square (1:1), Portrait (3:4), and Landscape (4:3). The Resize tab sets an exact output width and height, and Transform handles a 90° rotate and horizontal or vertical flip.
+Getting the frame right is often the first edit. The Crop tab lets you crop by exact percentage, or pick a preset that auto-centres the right ratio - passport/ID sizes (35×45mm, 1.2×1.6in, 1.3×1.7in, 2×2in), print sizes (4×6in, 5×7in, 8×10in), and common ratios (Square 1:1, Portrait 3:4, Landscape 4:3, 16:9, and more). The Resize tab sets an exact output width and height, and Transform handles a 90° rotate and horizontal or vertical flip.
 These tabs cover quick, in-context crops and resizes as part of a bigger edit. If cropping or resizing is the only thing you need - with more presets and precision - the dedicated Crop Image and Resize Image tools are linked below and are purpose-built for exactly that.
+
+H2: Background Removal & ID/Passport Photo Captions.
+The Background tab removes the background from your photo using RepetiGo's AI background-removal service, then lets you pick a solid backdrop colour - white, light grey, sky blue, red, or a custom colour picker - which is exactly what most ID, passport, and exam-form photos require. Made a mistake or want to compare? "Restore Original" brings back the untouched upload instantly, no re-upload needed.
+Pair it with the ID Caption tab, which stamps a Name & Date of Birth band under the photo - a common requirement on Indian government exam forms (SSC, Railway, Bank PO, and similar). Turn it on, type the name and DOB, and it renders directly onto the exported photo alongside whatever crop and colour adjustments you have already made.
+🔒 Every other tool in this editor runs entirely on your device - the Background tab is the one exception, since removing a background needs an AI model that sends the photo to RepetiGo's server and gets the cut-out result back.
 
 H2: Draw, Text, Shapes & Emoji Stickers.
 Beyond adjustments, you can add things to a photo. The Draw tool is a freehand brush with a colour picker and a width slider (1–40px) - good for annotations, arrows, or a quick doodle; "Clear drawing" wipes the brush layer if you want to start again. The Text tool adds draggable labels in any colour, and you can add as many as you like.
@@ -126,10 +135,10 @@ For anyone processing a set of images - a print shop editing a batch of customer
 
 ✅ Real batch support: build the edit once, apply it to every uploaded photo, preview each thumbnail, and download individually or as one ZIP. All in the browser.
 
-H2: Everything Runs in Your Browser - No Upload, No Watermark.
-RepetiGo's editor does all its work on your own device using the browser's Canvas engine. Your photos are never sent to a server, which keeps private pictures private, works on a weak connection, and is why there is no watermark and no account wall. The free online photo editor you use is the full editor - nothing is held back behind a paywall, and the file you download is clean.
+H2: Almost Everything Runs in Your Browser - No Watermark, No Paywall.
+RepetiGo's editor does nearly all of its work on your own device using the browser's Canvas engine - filters, crop, transform, draw, text, ID Caption, shapes, stickers, frames, corners, and merge never leave your device. The one exception is the Background tab: removing a background needs an AI model, so that specific action sends the photo to RepetiGo's server and gets the cut-out result back, and nothing else about the edit is uploaded. There is no watermark and no account wall either way. The free online photo editor you use is the full editor - nothing is held back behind a paywall, and the file you download is clean.
 
-🔒 Client-side means private: your photos stay on your device, nothing is uploaded, and no watermark is stamped on your result.
+🔒 Client-side by default: everything except the Background Removal tool stays on your device - and even that step only sends the photo, gets the cut-out image back, and nothing else about your edit ever leaves your browser.
 
 H2: ★ Indian Use Cases - Print Shops, Students & Small Business.
 An all-in-one editor that runs in the browser fits the everyday jobs at Indian print shops, cyber cafes, and small businesses - quick edits, in bulk, without buying software.
@@ -138,8 +147,8 @@ Who
 What they do
 Which tools
 Print shops & cyber cafes
-Touch up customer photos, add a border, crop to size
-Filters, Crop (Passport preset), Frame, Batch
+Touch up customer photos, remove backgrounds, crop to passport/ID size, add Name & DOB for exam forms
+Background, Crop (ID presets), ID Caption, Filters, Frame, Batch
 Students
 Edit assignment and project images
 Crop, Text labels, Draw, Resize
@@ -153,17 +162,15 @@ Offices
 Mark up screenshots for a report
 Shapes, Draw, Text, Frame
 
-🇮🇳 Print-shop tip: build your standard edit once (crop to Passport, add a white frame), then batch-apply it to a whole set of customer photos and download the ZIP. Need a plain white ID background first? Use /image-tools/background-remover.
+🇮🇳 Print-shop tip: remove the background and crop to a passport/ID preset first, add the Name & DOB caption if the form needs it, then build the rest of your standard edit (white frame, etc.) and batch-apply it to a whole set of customer photos before downloading the ZIP.
 
 H2: What This Photo Editor Does Not Do.
 So you know whether it fits before you start, here is what the editor is not built for - and where to go instead.
 
 People often ask for…
 The honest answer
-Background removal
-Not in this editor - use the dedicated Remove Background tool
-An AI photo editor
-No - this is a hands-on editor with sliders and tools, not AI
+A general AI photo editor
+No - only the Background Removal tool uses AI; every other tool is hands-on sliders and drags
 Instagram-style one-click presets
 No - you set brightness, contrast, and tone manually
 Red-eye, teeth-whitening, or green-screen
@@ -175,27 +182,27 @@ No - one built-in text font and eight preset emoji
 Curves / levels / vignette
 No - basic brightness, contrast, and saturation only
 
-For an everyday edit - adjust, crop, annotate, frame, merge, and batch - the eleven tools here cover it. For AI edits, background removal, or professional retouching, a specialised tool is the better fit, and the most useful ones are linked below.
+For an everyday edit - background removal, adjust, crop, annotate, frame, merge, and batch - the thirteen tools here cover it. For heavier AI edits or professional retouching, a specialised tool is the better fit, and the most useful ones are linked below.
 
 H2: Photo Editor - Frequently Asked Questions.
 H3: Is this photo editor free?
-Yes - RepetiGo's photo editor is completely free with no sign-up and no watermark. Because it runs entirely in your browser rather than on a paid server, every tool is available at no cost: filters, crop, text, stickers, frames, merge, and batch editing, all with PNG, JPG, or WebP export. There is no premium tier to unlock.
+Yes - RepetiGo's photo editor is completely free with no sign-up and no watermark. Every tool is available at no cost, including background removal: filters, crop, ID Caption, text, stickers, frames, merge, and batch editing, all with PNG, JPG, or WebP export. There is no premium tier to unlock.
 H3: How do I edit a photo online for free?
-Upload a JPG, PNG, or WebP image and use any of the eleven tabs - Filter & Light, Crop, Transform, Draw, Text, Shapes, Stickers, Frame, Corners, and Merge - in any order. Every change is live, Undo/Redo covers up to 24 steps, and when you are done you download the result. The whole thing happens on your device, so nothing is uploaded.
+Upload a JPG, PNG, or WebP image and use any of the thirteen tabs - Background, Filter & Light, Crop, Transform, Draw, Text, ID Caption, Shapes, Stickers, Frame, Corners, and Merge - in any order. Every change is live, Undo/Redo covers up to 24 steps, and when you are done you download the result.
 H3: How do I make a photo black and white?
 Open the Filter & Light tab and slide Grayscale up to 100 - your colour photo becomes clean black and white instantly. For a punchier monochrome, nudge Contrast up a little afterwards. You can preview it live, and Undo returns to colour if you change your mind. That is the full "photo editor colour to black and white" workflow.
 H3: Can I remove the background in the photo editor?
-No - background removal is not part of this editor. RepetiGo has a dedicated AI tool for that: the Remove Background tool at /image-tools/background-remover, which detects the subject and gives you a transparent PNG (or a white background for ID photos). Remove the background there first, then bring the result into the photo editor for any other edits.
+Yes. Open the Background tab, click Remove Background, and RepetiGo's AI cuts the subject out - then pick a solid backdrop colour (white, light grey, sky blue, red, or a custom colour) right there, which is exactly what most ID and passport photos need. "Restore Original" brings the untouched photo back if you want to redo it. A dedicated standalone Remove Background tool also exists at /image-tools/background-remover if that is the only thing you need.
 H3: Can I edit many photos at once?
-Yes. Build your edit on one photo - filters, crop, text, stickers, an overlay, anything - then use the batch feature to apply that same edit stack to more photos you upload. Each result appears as a thumbnail you can download on its own, or you can download them all together as one ZIP file. It all runs in your browser.
+Yes. Build your edit on one photo - filters, crop, text, stickers, an overlay, anything - then use the batch feature to apply that same edit stack to more photos you upload. Each result appears as a thumbnail you can download on its own, or you can download them all together as one ZIP file.
 H3: Is this an AI photo editor?
-No. RepetiGo's photo editor is a hands-on tool: you adjust sliders and use tabs like Crop, Draw, Text, and Merge yourself. It does not use AI to auto-edit, generate, or retouch your photo. That makes it fast and predictable for everyday edits - for AI-based enhancement, use a dedicated AI tool instead.
+Mostly no. RepetiGo's photo editor is a hands-on tool: you adjust sliders and use tabs like Crop, Draw, Text, and Merge yourself, and none of that uses AI to auto-edit, generate, or retouch your photo. The one exception is the Background tab, which uses an AI model specifically to cut out the subject - everything else stays manual and predictable.
 H3: What file formats can I use and export?
 You can upload JPG, PNG, and WebP images, and export your edited photo as PNG, JPG, or WebP. PNG keeps the sharpest quality and any transparency, JPG makes the smallest file for sharing, and WebP balances the two. If you need to shrink the file further afterwards, use the Compress Image tool.
 H3: Can I change the font of the text I add?
 The Text tool adds draggable labels in any colour using one clean built-in font, but it does not have a font-family picker. If you need to choose a specific font - for a caption, a quote, or a title - use the dedicated Add Text to Photo tool, which offers font options. For classic Impact-style meme captions, use the Meme Generator.
 H3: Are my photos uploaded to a server?
-No. The entire editor runs in your browser using the Canvas engine, so your photos never leave your device and nothing is sent to RepetiGo. That keeps private pictures private, lets the tool work even on a weak connection, and is why there is no watermark on your finished edit.
+Only for one step. Every tool except Background runs entirely in your browser using the Canvas engine, so that part of your photo never leaves your device. Removing a background needs an AI model, so that specific action sends the photo to RepetiGo's server and gets the cut-out image back - nothing else about your edit is ever uploaded, and there is no watermark on your finished result either way.
 H3: Can I merge or overlay two photos?
 Yes. The Merge tab lets you upload a second image and place it as a draggable overlay on the first - position and size it wherever you want. It sits at a set opacity so it blends over the base photo, which is ideal for adding a logo, a stamp, or blending two pictures. It is a single overlay rather than a multi-cell collage grid.
 
@@ -204,7 +211,7 @@ Tool
 What It Does
 Link
 Remove Background
-AI background removal → transparent PNG (not in this editor)
+Standalone AI background removal → transparent PNG (also built into this editor's Background tab)
 → /image-tools/background-remover
 Crop Image
 Dedicated crop tool with more presets
@@ -363,7 +370,7 @@ function getRouteLabel(href: string) {
 }
 
 function JsonLd() {
-  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Photo Editor", applicationCategory: "MultimediaApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free all-in-one browser-based photo editor with 11 tools - filters, crop, transform, draw, text, shapes, stickers, frames, rounded corners, and merge - plus batch editing with ZIP download. Runs 100% in the browser - no file is ever uploaded to a server.", url: pageUrl };
+  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Photo Editor", applicationCategory: "MultimediaApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free all-in-one photo editor with 13 tools - AI background removal, filters, crop with passport/ID presets, transform, draw, text, a Name & DOB ID caption, shapes, stickers, frames, rounded corners, and merge - plus batch editing with ZIP download. Every tool runs in the browser except background removal, which uses an AI model on RepetiGo's server.", url: pageUrl };
   const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to edit a photo", step: [{ "@type": "HowToStep", name: "Upload your photo", text: "Click or drag-and-drop a JPG, PNG, or WebP image." }, { "@type": "HowToStep", name: "Edit with any tools", text: "Adjust filters, crop, draw, add text, stickers, frames - in any order." }, { "@type": "HowToStep", name: "Download", text: "Choose PNG, JPG, or WebP and download - or batch-apply to more photos." }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
   const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "Image Tools", item: "https://repetigo.com/image-tools" }, { "@type": "ListItem", position: 3, name: "Photo Editor", item: pageUrl }] };

@@ -55,8 +55,8 @@ export function WalletLimitBanner() {
       <span>
         {blocked ? (
           <>
-            Service credits limit reached ({formatCurrency(wallet.balance)}, minimum allowed {formatCurrency(wallet.limits.creditLimit)}).
-            Paid jobs are paused until you top up.
+            Insufficient balance ({formatCurrency(wallet.balance)}). Please top up your wallet to continue - paid
+            jobs are paused until you do.
           </>
         ) : (
           <>

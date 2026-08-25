@@ -132,12 +132,14 @@ export function calculatePriceItemRate(item: PriceItem | undefined, pages: numbe
 }
 
 export function normalizePaymentMode(value: string) {
-  return value === "Both" || value === "Cash Counter" ? "Both" : "Online Payment";
+  return value === "Both" || value === "Cash Counter" ? value : "Online Payment";
 }
 
 export function getAllowedPaymentModes(service: PricingService | undefined) {
   const mode = normalizePaymentMode(String(service?.settings.paymentMode || "Online Payment"));
-  return mode === "Both" ? ["Online Payment", "Cash Counter"] : ["Online Payment"];
+  if (mode === "Both") return ["Online Payment", "Cash Counter"];
+  if (mode === "Cash Counter") return ["Cash Counter"];
+  return ["Online Payment"];
 }
 
 export type CashCounterStatus = {

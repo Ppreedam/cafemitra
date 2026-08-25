@@ -89,13 +89,12 @@ const serviceMenu = [
   // },
   {
     name: "Passport Photo",
-    href: "/dashboard",
+    href: "/passport-photo",
     icon: Users,
     color: "#5740ed",
     summary: "Government-size photo sheets with cropping and background assistance.",
     description: "Create consistent photo sheets for common ID requirements without opening separate tools.",
     metric: "Photo sheet",
-    comingSoon: true,
     toolKey: "passport_photo",
   },
   // {

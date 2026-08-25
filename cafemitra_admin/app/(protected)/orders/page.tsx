@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import Pagination from "@/components/Pagination";
 import { exportOrdersCsv, fetchOrders, type AdminOrder } from "@/lib/api";
-import { formatCurrency, orderResultMessage, orderStatusBadgeClass } from "@/lib/format";
+import { formatCurrency, orderResultMessage, orderStatusBadgeClass, orderEffectiveStatus } from "@/lib/format";
 
 const SERVICES = [
   { value: "", label: "All services" },
@@ -159,6 +159,7 @@ export default function OrdersPage() {
                   <Link href={`/shops/${order.shopId}`} className="hover:underline">
                     {order.shopName || order.shopEmail}
                   </Link>
+                  {order.shopName && <span className="text-xs text-slate-400"> ({order.shopEmail})</span>}
                 </td>
                 <td className="px-4 py-2 text-slate-700">{order.serviceName}</td>
                 <td className="px-4 py-2 text-slate-900 font-medium">{formatCurrency(order.totalAmount)}</td>
@@ -166,8 +167,8 @@ export default function OrdersPage() {
                   {order.paymentMode} <span className="text-xs text-slate-400">({order.paymentStatus})</span>
                 </td>
                 <td className="px-4 py-2">
-                  <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${orderStatusBadgeClass(order.status)}`}>
-                    {order.status}
+                  <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${orderStatusBadgeClass(orderEffectiveStatus({ order }))}`}>
+                    {orderEffectiveStatus({ order })}
                   </span>
                 </td>
                 <td className="px-4 py-2 max-w-xs truncate text-slate-600" title={orderResultMessage({ order })}>

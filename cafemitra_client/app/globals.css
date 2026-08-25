@@ -6030,6 +6030,15 @@ img.profile-photo {
   cursor: pointer;
 }
 
+.customer-upload.is-busy {
+  cursor: wait;
+  opacity: 0.7;
+}
+
+.customer-upload.is-busy input {
+  cursor: wait;
+}
+
 .customer-upload svg {
   color: #5740ed;
 }
@@ -6173,6 +6182,44 @@ img.profile-photo {
   color: #606a87;
   font-size: 0.8rem;
   font-weight: 800;
+}
+
+.manual-inline-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #111a44;
+  font-size: 0.8rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.manual-field-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.manual-field-grid-3 {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+
+.manual-field-grid label {
+  display: grid;
+  gap: 4px;
+  color: #606a87;
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.manual-field-grid input {
+  min-height: 40px;
+  border: 1px solid #d9deeb;
+  border-radius: 8px;
+  padding: 0 10px;
+  font: inherit;
+  font-size: 0.8rem;
 }
 
 .passport-attire-options {
@@ -6426,6 +6473,34 @@ img.profile-photo {
   color: #59658c;
   font-size: 0.8rem;
   font-weight: 740;
+}
+
+.passport-mode-tabs {
+  display: inline-grid;
+  grid-template-columns: repeat(2, minmax(140px, 1fr));
+  gap: 4px;
+  margin-bottom: 18px;
+  border-radius: 10px;
+  padding: 4px;
+  background: #eef1f5;
+}
+
+.passport-mode-tabs button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 8px;
+  color: #7a8498;
+  background: transparent;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.passport-mode-tabs button.active {
+  color: #0d1748;
+  background: #fff;
+  box-shadow: 0 2px 8px rgba(25, 35, 82, 0.08);
 }
 
 .passport-maker-grid {

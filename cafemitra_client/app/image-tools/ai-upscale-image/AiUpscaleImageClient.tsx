@@ -35,8 +35,8 @@ export default function AiUpscaleImageClient({ children }: { children?: ReactNod
   async function upscale() {
     if (!active || busy) return; setBusy(true); setError("");
     try {
-      if (active.result) URL.revokeObjectURL(active.result.url);
       const result = aiMode ? await aiUpscaleImage(active, scale, format) : await upscaleImage(active, scale, format); const url = URL.createObjectURL(result.blob);
+      if (active.result) URL.revokeObjectURL(active.result.url);
       setItems((current) => current.map((item) => item.id === active.id ? { ...item, result: { ...result, url } } : item));
     } catch (reason) { setError(reason instanceof Error ? reason.message : "This image could not be upscaled. Try a smaller image, JPG/PNG/WebP under 15 MB, or switch off AI mode."); }
     finally { setBusy(false); }

@@ -91,6 +91,7 @@ export default function CustomerScanPage() {
   const [showPdfPassword, setShowPdfPassword] = useState(false);
   const [cropRect, setCropRect] = useState<CropRect>(DEFAULT_CROP_RECT);
   const [isProcessingPdf, setIsProcessingPdf] = useState(false);
+  const [isCombiningFiles, setIsCombiningFiles] = useState(false);
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [isDeletingDocument, setIsDeletingDocument] = useState(false);
   const [order, setOrder] = useState<PrintOrder | null>(null);
@@ -344,9 +345,10 @@ export default function CustomerScanPage() {
         return;
       }
       // Generation hasn't started yet while a cash-counter order is waiting
-      // on the shop owner's approval - animating toward 92% here would
-      // read as "in progress" when nothing is actually happening.
-      if (order.status === "awaiting_approval") return;
+      // on the shop owner's approval, or an online-payment order is still
+      // waiting on the gateway - animating toward 92% here would read as
+      // "in progress" when nothing is actually happening.
+      if (order.status === "awaiting_approval" || order.status === "awaiting_payment") return;
     } else if (order.status === "printed") {
       setPrintProgress(100);
       return;
@@ -369,15 +371,11 @@ export default function CustomerScanPage() {
     setSelectedService(service.serviceKey);
     setPaymentMode(getAllowedPaymentModes(service)[0] || "Online Payment");
     setSelectedItemId(getPriceItems(service)[0]?.id || "");
-    setCopies(1);
-    setAttireCategory(passportAttireOptions[0].key);
     setOptionsTouched(false);
-    setOrder(null);
-    setOrderError("");
-    resetPaymentFlow();
-    if (service.serviceKey === "passport_photo" && hasUploadedFile && !hasImageFile) {
-      clearUpload();
-    }
+    // Switching services should start clean - an uploaded file, its price
+    // calculation, and any in-progress order/payment state all belonged to
+    // the previous service and don't carry over.
+    clearUpload();
   }
 
   function selectAttireCategory(category: string) {
@@ -402,8 +400,24 @@ export default function CustomerScanPage() {
     }
   }
 
-  async function handleUpload(file?: File) {
-    if (!file) return;
+  async function handleUpload(fileList?: FileList | null) {
+    const files = fileList ? Array.from(fileList) : [];
+    if (!files.length) return;
+
+    if (files.length === 1) {
+      await handleSingleUpload(files[0]);
+      return;
+    }
+
+    if (isPassportPhoto) {
+      alert("Please upload only one photo for passport size photo.");
+      return;
+    }
+
+    await handleMultipleUpload(files);
+  }
+
+  async function handleSingleUpload(file: File) {
     const isImageUpload = file.type.startsWith("image/") || /\.(jpg|jpeg|png)$/i.test(file.name);
     if (isPassportPhoto && !isImageUpload) {
       alert("Please upload only JPG, PNG, or JPEG images for passport photos.");
@@ -430,7 +444,70 @@ export default function CustomerScanPage() {
     await applyUploadedFile(file);
   }
 
-  async function applyUploadedFile(file: File) {
+  // Merges every selected file into one combined PDF (images become full-page
+  // scans) so the rest of the flow - page/price calculation, order creation,
+  // and the single-document print job the agent picks up - needs no changes
+  // at all to handle "multiple documents" as one bigger document.
+  async function handleMultipleUpload(files: File[]) {
+    const invalidFile = files.find((file) => {
+      const isImage = file.type.startsWith("image/") || /\.(jpg|jpeg|png)$/i.test(file.name);
+      const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+      return !isImage && !isPdf;
+    });
+    if (invalidFile) {
+      alert("Please upload only PDF, JPG, PNG, or JPEG files.");
+      return;
+    }
+
+    setIsCombiningFiles(true);
+    try {
+      const [{ PDFDocument }, { isEncrypted }] = await Promise.all([import("pdf-lib"), import("@pdfsmaller/pdf-decrypt")]);
+      const mergedDoc = await PDFDocument.create();
+
+      for (const file of files) {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+
+        if (isPdf) {
+          const encryptionStatus = await isEncrypted(bytes).catch(() => ({ encrypted: false }));
+          if (encryptionStatus.encrypted) {
+            alert(`"${file.name}" is password-protected. Please remove its password first, or upload it on its own.`);
+            return;
+          }
+          const sourceDoc = await PDFDocument.load(bytes);
+          const copiedPages = await mergedDoc.copyPages(sourceDoc, sourceDoc.getPageIndices());
+          copiedPages.forEach((page) => mergedDoc.addPage(page));
+        } else {
+          // Route every image through <canvas> and re-encode as PNG instead
+          // of calling embedJpg directly - pdf-lib's own JPEG decoder can't
+          // handle progressive JPEGs (common from phone cameras/screenshots)
+          // and throws, which was silently aborting the whole merge whenever
+          // a JPG was mixed in. The canvas re-encode uses the browser's own
+          // decoder instead, which handles any JPEG/PNG variant.
+          const pngBytes = await imageFileToPngBytes(file);
+          const image = await mergedDoc.embedPng(pngBytes);
+          const page = mergedDoc.addPage([image.width, image.height]);
+          page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
+        }
+      }
+
+      const totalPages = mergedDoc.getPageCount();
+      if (!totalPages) {
+        alert("Could not read any pages from the selected files. Please try again.");
+        return;
+      }
+
+      const mergedBytes = await mergedDoc.save();
+      const mergedFile = new File([mergedBytes], `${files.length} files combined.pdf`, { type: "application/pdf" });
+      await applyUploadedFile(mergedFile, totalPages);
+    } catch {
+      alert("Could not combine the selected files. Please try uploading them one at a time.");
+    } finally {
+      setIsCombiningFiles(false);
+    }
+  }
+
+  async function applyUploadedFile(file: File, knownPages?: number) {
     if (fileUrl) URL.revokeObjectURL(fileUrl);
     if (passportSheetUrl) URL.revokeObjectURL(passportSheetUrl);
     const nextUrl = URL.createObjectURL(file);
@@ -447,6 +524,11 @@ export default function CustomerScanPage() {
     setOptionsTouched(false);
     setPassportSheetUrl("");
     resetPaymentFlow();
+
+    if (knownPages !== undefined) {
+      setPages(knownPages);
+      return;
+    }
 
     if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
       const detectedPages = await detectPdfPages(file);
@@ -960,12 +1042,24 @@ export default function CustomerScanPage() {
               </div>
             </div>
           ) : (
-            <label className="customer-upload">
+            <label className={`customer-upload ${isCombiningFiles ? "is-busy" : ""}`}>
               <Upload size={24} />
               <strong>{isPassportPhoto ? "Upload Passport Photo" : "Upload PDF, JPG, PNG, JPEG"}</strong>
-              <span>{isPassportPhoto ? "Upload a JPG, PNG, or JPEG image. A 6-piece printable sheet will be created after cropping." : "Pages will be detected automatically. You will see a thumbnail and full preview after upload."}</span>
-              <em>Tap to choose a file</em>
-              <input accept={isPassportPhoto ? ".jpg,.jpeg,.png" : ".pdf,.jpg,.jpeg,.png"} type="file" onChange={(event) => handleUpload(event.target.files?.[0])} />
+              <span>
+                {isCombiningFiles
+                  ? "Combining your files into one document…"
+                  : isPassportPhoto
+                    ? "Upload a JPG, PNG, or JPEG image. A 6-piece printable sheet will be created after cropping."
+                    : "Pages will be detected automatically. You can also select multiple files at once - they'll be combined and priced together."}
+              </span>
+              <em>{isCombiningFiles ? "Please wait…" : "Tap to choose a file"}</em>
+              <input
+                accept={isPassportPhoto ? ".jpg,.jpeg,.png" : ".pdf,.jpg,.jpeg,.png"}
+                type="file"
+                multiple={!isPassportPhoto}
+                disabled={isCombiningFiles}
+                onChange={(event) => handleUpload(event.target.files)}
+              />
             </label>
           )}
         </article>
@@ -1412,6 +1506,24 @@ async function detectPdfPages(file: File) {
     return Math.max(matches?.length || 1, 1);
   } catch {
     return 1;
+  }
+}
+
+async function imageFileToPngBytes(file: File): Promise<Uint8Array> {
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = await loadImage(objectUrl);
+    const canvas = document.createElement("canvas");
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Canvas not supported");
+    context.drawImage(image, 0, 0);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+    if (!blob) throw new Error("Could not encode image as PNG");
+    return new Uint8Array(await blob.arrayBuffer());
+  } finally {
+    URL.revokeObjectURL(objectUrl);
   }
 }
 

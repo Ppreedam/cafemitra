@@ -626,6 +626,39 @@ export function updateAgent(
   return request<{ agent: AdminAgent }>(`/admin/agents/${id}/`, { method: "PUT", body: JSON.stringify(data) });
 }
 
+// --- Coupon Codes -----------------------------------------------------------
+
+export type AdminCoupon = {
+  id: number;
+  code: string;
+  amount: number;
+  message: string;
+  isActive: boolean;
+  maxRedemptions: number | null;
+  redeemedCount: number;
+  expiresAt: string | null;
+  createdBy: string;
+  createdAt: string;
+};
+
+export function fetchCoupons() {
+  return request<{ count: number; coupons: AdminCoupon[] }>("/admin/coupons/");
+}
+
+export function createCoupon(data: { code?: string; amount: number; message: string; maxRedemptions?: number | null; expiresAt?: string | null }) {
+  return request<{ coupon: AdminCoupon }>("/admin/coupons/", { method: "POST", body: JSON.stringify(data) });
+}
+
+export type CouponRedemptionEntry = { id: number; email: string; redeemedAt: string };
+
+export function fetchCouponDetail(id: number) {
+  return request<{ coupon: AdminCoupon; redemptions: CouponRedemptionEntry[] }>(`/admin/coupons/${id}/`);
+}
+
+export function updateCoupon(id: number, data: { isActive?: boolean; message?: string; maxRedemptions?: number | null; expiresAt?: string | null }) {
+  return request<{ coupon: AdminCoupon }>(`/admin/coupons/${id}/`, { method: "PUT", body: JSON.stringify(data) });
+}
+
 // --- Support Inbox (Phase 7) ----------------------------------------------
 
 export type ContactMessage = {
@@ -744,6 +777,24 @@ export function fetchSignupAnalytics(params: { from?: string; to?: string; granu
     if (value) query.set(key, value);
   });
   return request<SignupAnalytics>(`/admin/analytics/signups/?${query.toString()}`);
+}
+
+export type OrderAnalytics = {
+  from: string;
+  to: string;
+  granularity: string;
+  totalOrders: number;
+  failedOrders: number;
+  series: { date: string; count: number }[];
+  topShops: { shopId: number; shopName: string; shopEmail: string; shopPhone: string; orderCount: number; totalAmount: number }[];
+};
+
+export function fetchOrderAnalytics(params: { from?: string; to?: string; granularity?: string; limit?: number }) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.set(key, String(value));
+  });
+  return request<OrderAnalytics>(`/admin/analytics/orders/?${query.toString()}`);
 }
 
 // --- Admin activity log (V2-C) ---------------------------------------------

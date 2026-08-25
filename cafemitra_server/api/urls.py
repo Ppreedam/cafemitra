@@ -31,6 +31,8 @@ urlpatterns = [
     re_path(r"^admin/tool-visibility/(?P<tool_key>[\w-]+)/?$", admin_views.admin_tool_visibility_detail),  # PUT toggle one tool's isEnabled
     re_path(r"^admin/agents/?$", admin_views.admin_agents),  # GET list (status filter) / POST onboard an existing account as a referral agent
     re_path(r"^admin/agents/(?P<agent_id>[0-9]+)/?$", admin_views.admin_agent_detail),  # GET detail (referred shops + commission ledger) / PUT commission rate/type/status/offer
+    re_path(r"^admin/coupons/?$", admin_views.admin_coupons),  # GET list (with redemption counts) / POST create a coupon code
+    re_path(r"^admin/coupons/(?P<coupon_id>[0-9]+)/?$", admin_views.admin_coupon_detail),  # GET detail (redemption list) / PUT active/message/max redemptions/expiry
     re_path(r"^admin/contact-messages/?$", admin_views.admin_contact_messages),  # GET inbox (status=unread|resolved)
     re_path(r"^admin/contact-messages/(?P<message_id>[0-9]+)/?$", admin_views.admin_contact_message_detail),  # PUT mark resolved/unread + internal note
     re_path(r"^admin/print-agent/stats/?$", admin_views.admin_print_agent_stats),  # GET desktop Print Agent last-seen per shop + recent failed jobs
@@ -38,6 +40,7 @@ urlpatterns = [
     re_path(r"^admin/orders/export/?$", admin_views.admin_orders_export),  # GET CSV download of the filtered order list (same filters as the JSON list, capped at 5000 rows)
     re_path(r"^admin/notifications/?$", admin_views.admin_notifications),  # GET cheap poll-friendly counts for sidebar badges
     re_path(r"^admin/analytics/signups/?$", admin_views.admin_signup_analytics),  # GET signup time-series (from, to, granularity=day|week|month) + referral-agent breakdown
+    re_path(r"^admin/analytics/orders/?$", admin_views.admin_order_analytics),  # GET order time-series + top-10-shops leaderboard (from, to, granularity=day|week|month)
     re_path(r"^admin/activity-log/?$", admin_views.admin_activity_log),  # GET audit trail of admin-dashboard actions (targetType, action filters)
     re_path(r"^admin/shops/(?P<shop_id>[0-9]+)/send-password-reset/?$", admin_views.admin_shop_send_password_reset),  # POST trigger the standard password-reset email for a shop
     re_path(r"^admin/shops/(?P<shop_id>[0-9]+)/impersonate/?$", admin_views.admin_shop_impersonate),  # POST issue a fresh token pair for the shop's own account (logged, support/debug use)
@@ -92,6 +95,7 @@ urlpatterns = [
     re_path(r"^tools/visibility/?$", views.tool_visibility),  # GET public map of {toolKey: isEnabled} for the Automation Tools nav (navbar + dashboard sidebar)
     re_path(r"^wallet/?$", views.wallet),  # GET balance, collection summary, limits, and paginated transaction ledger
     re_path(r"^wallet/withdraw/?$", views.request_withdrawal),  # POST request a withdrawal against the withdrawable balance
+    re_path(r"^wallet/coupon/redeem/?$", views.redeem_coupon),  # POST redeem a coupon code, credits the wallet (not withdrawable)
     re_path(r"^wallet/topup/?$", views.create_wallet_topup),  # POST start a wallet top-up, returns {id, amount, gateway}
     re_path(r"^wallet/topup/(?P<topup_id>[0-9]+)/razorpay/order/?$", views.wallet_topup_razorpay_order),  # POST create a Razorpay order for a top-up
     re_path(r"^wallet/topup/(?P<topup_id>[0-9]+)/razorpay/verify/?$", views.wallet_topup_verify_razorpay),  # POST verify a completed Razorpay top-up payment signature
@@ -129,6 +133,7 @@ urlpatterns = [
 
     # --- Passport Photo (authenticated wizard flow) -------------------------
     re_path(r"^save-raw-passport-photo/?$", views.save_raw_passport_photo),  # POST upload raw photo + AI prompt, creates the order
+    re_path(r"^save-manual-passport-photo/?$", views.save_manual_passport_photo),  # POST upload a browser-edited final photo, creates the order already done
     re_path(r"^api-passport-photo-check/?$", views.check_passport_photo),  # POST poll for the AI-generated final passport photo
 
     # --- Agent Passport Jobs (desktop Print Agent, AI photo queue) ---------

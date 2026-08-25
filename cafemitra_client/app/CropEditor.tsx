@@ -20,7 +20,7 @@ type CropDrag = {
 
 export const DEFAULT_CROP_RECT: CropRect = { x: 10, y: 10, width: 80, height: 80 };
 
-export function CropEditor({ fileUrl, rect, onRectChange }: { fileUrl: string; rect: CropRect; onRectChange: (rect: CropRect) => void }) {
+export function CropEditor({ fileUrl, rect, onRectChange, aspectRatio }: { fileUrl: string; rect: CropRect; onRectChange: (rect: CropRect) => void; aspectRatio?: string }) {
   const stageRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<CropDrag | null>(null);
 
@@ -53,7 +53,7 @@ export function CropEditor({ fileUrl, rect, onRectChange }: { fileUrl: string; r
   }
 
   return (
-    <div className="crop-stage" ref={stageRef} onPointerMove={updateFromPointer} onPointerUp={stopDrag} onPointerCancel={stopDrag}>
+    <div className="crop-stage" ref={stageRef} style={aspectRatio ? { aspectRatio } : undefined} onPointerMove={updateFromPointer} onPointerUp={stopDrag} onPointerCancel={stopDrag}>
       <img src={fileUrl} alt="" draggable={false} />
       <div
         className="crop-selection"

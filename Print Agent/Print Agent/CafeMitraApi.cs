@@ -66,27 +66,50 @@ internal sealed class CafeMitraApi(HttpClient http, AgentConfig config, string c
         await SendJson<System.Text.Json.JsonElement>(HttpMethod.Post, $"api/orders/{orderId}/reject-cash/", null, token);
     }
 
+    // The one-off, non-401 failures seen in the field (a fresh download
+    // 404'ing immediately after the file was confirmed written, then
+    // succeeding seconds later on a manual retry of the exact same URL)
+    // point at a transient blip on the dev server's side rather than a bad
+    // URL, so a couple of short retries here clears them up without needing
+    // the job to wait for the agent's next full poll cycle.
+    private const int DownloadMaxAttempts = 3;
+    private static readonly TimeSpan DownloadRetryDelay = TimeSpan.FromSeconds(2);
+
     public async Task DownloadFile(string url, string destination, CancellationToken token)
     {
-        using var request = new HttpRequestMessage(HttpMethod.Get, url);
-        AddAuth(request);
-        using var response = await http.SendAsync(request, token);
-        if (response.StatusCode == HttpStatusCode.Unauthorized && await RefreshToken(token))
+        for (var attempt = 1; attempt <= DownloadMaxAttempts; attempt++)
         {
-            using var retry = new HttpRequestMessage(HttpMethod.Get, url);
-            AddAuth(retry);
-            using var retryResponse = await http.SendAsync(retry, token);
-            retryResponse.EnsureSuccessStatusCode();
-            await using var retryStream = await retryResponse.Content.ReadAsStreamAsync(token);
-            await using var retryFile = File.Create(destination);
-            await retryStream.CopyToAsync(retryFile, token);
+            using var request = new HttpRequestMessage(HttpMethod.Get, url);
+            AddAuth(request);
+            using var response = await http.SendAsync(request, token);
+
+            if (response.StatusCode == HttpStatusCode.Unauthorized && await RefreshToken(token))
+            {
+                using var retry = new HttpRequestMessage(HttpMethod.Get, url);
+                AddAuth(retry);
+                using var retryResponse = await http.SendAsync(retry, token);
+                retryResponse.EnsureSuccessStatusCode();
+                await using var retryStream = await retryResponse.Content.ReadAsStreamAsync(token);
+                await using var retryFile = File.Create(destination);
+                await retryStream.CopyToAsync(retryFile, token);
+                return;
+            }
+
+            if (!response.IsSuccessStatusCode)
+            {
+                if (attempt < DownloadMaxAttempts)
+                {
+                    await Task.Delay(DownloadRetryDelay, token);
+                    continue;
+                }
+                response.EnsureSuccessStatusCode();
+            }
+
+            await using var stream = await response.Content.ReadAsStreamAsync(token);
+            await using var file = File.Create(destination);
+            await stream.CopyToAsync(file, token);
             return;
         }
-
-        response.EnsureSuccessStatusCode();
-        await using var stream = await response.Content.ReadAsStreamAsync(token);
-        await using var file = File.Create(destination);
-        await stream.CopyToAsync(file, token);
     }
 
     private async Task<T?> SendJson<T>(

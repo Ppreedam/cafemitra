@@ -36,7 +36,7 @@ from .background_remover.passport_photo_processor import ProcessingError, enhanc
 from .background_remover.watermark_remover import remove_gemini_watermark
 # from .models import AuthToken, ContactMessage, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from .admin_roles import role_allows_section
-from .models import Agent, AuthToken, ContactMessage, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
+from .models import Agent, AuthToken, ContactMessage, Coupon, CouponRedemption, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from cafemitra_server.product_setting import PAYMENT_GATEWAYS, active_payment_gateway
 
 User = get_user_model()
@@ -1308,18 +1308,24 @@ def wallet_collection_summary(user):
         # can still draw on it) but must never itself be cashed out via
         # withdrawal.
         signup=Sum("amount", filter=Q(kind=WalletTransaction.KIND_SIGNUP_BONUS, direction=WalletTransaction.DIRECTION_CREDIT)),
+        # Coupon credit gets the exact same "promotional, not withdrawable"
+        # treatment as the signup bonus above - spendable on tools, never
+        # cashed out.
+        coupon=Sum("amount", filter=Q(kind=WalletTransaction.KIND_COUPON_CREDIT, direction=WalletTransaction.DIRECTION_CREDIT)),
     )
     online_collected = totals["online"] or Decimal("0.00")
     cash_collected = totals["cash"] or Decimal("0.00")
     signup_bonus_credited = totals["signup"] or Decimal("0.00")
+    coupon_credit_received = totals["coupon"] or Decimal("0.00")
     total_collected = (online_collected + cash_collected).quantize(Decimal("0.01"))
     balance = wallet_balance(user)
-    net_withdrawable = max(balance - signup_bonus_credited, Decimal("0.00")).quantize(Decimal("0.01"))
+    net_withdrawable = max(balance - signup_bonus_credited - coupon_credit_received, Decimal("0.00")).quantize(Decimal("0.01"))
     return {
         "onlineCollected": online_collected.quantize(Decimal("0.01")),
         "cashCounterCollected": cash_collected.quantize(Decimal("0.01")),
         "totalCollected": total_collected,
         "signupBonusCredited": signup_bonus_credited.quantize(Decimal("0.01")),
+        "couponCreditReceived": coupon_credit_received.quantize(Decimal("0.01")),
         "netWithdrawable": net_withdrawable,
     }
 
@@ -1415,10 +1421,11 @@ def charge_wallet_for_tool(user, tool_key, quantity=1, order=None):
     """Deduct RepetiGo's usage fee for a tool from the shop's wallet.
 
     Call this right after a tool's main action succeeds (HTTP 200). Enforces
-    the grace-credit floor (per-cafe UserProfile.credit_limit_override, or
-    else the global WalletSetting "credit_limit", e.g. -50) and the per-day
-    spend cap while the wallet is at/below zero (WalletSetting
-    "daily_grace_limit"). Returns (allowed: bool, message: str, transaction).
+    the balance floor (per-cafe UserProfile.credit_limit_override if an admin
+    has set one for this shop, else the global WalletSetting "credit_limit" -
+    0 by default, i.e. no negative balance allowed) and, only while a shop
+    is still under a negative override, the per-day spend cap
+    (WalletSetting "daily_grace_limit"). Returns (allowed: bool, message: str, transaction).
 
     A tool with no ToolPricing row, or is_billable=False, or an effective
     price of 0 is free - this is what keeps PDF/Image tools free today
@@ -1445,10 +1452,7 @@ def charge_wallet_for_tool(user, tool_key, quantity=1, order=None):
         projected_balance = (profile.balance - price_total).quantize(Decimal("0.01"))
 
         if projected_balance < credit_limit:
-            message = (
-                f"Your wallet balance is too low for {tool.label} (minimum allowed balance is Rs. {credit_limit}). "
-                "Please top up your wallet to continue."
-            )
+            message = f"Insufficient balance for {tool.label}. Please top up your wallet to continue."
             # Log the skipped charge even though nothing is deducted, so a
             # service delivered for free (e.g. a print already completed
             # before the wallet is checked) still leaves an audit trail.
@@ -1510,20 +1514,24 @@ def charge_wallet_for_tool(user, tool_key, quantity=1, order=None):
 
 def wallet_usage_gate(user, tool_key, quantity=1, order=None):
     """Pre-flight check only (no charge) - use before starting a job so a
-    shop already past its limit is blocked immediately, without waiting for
-    the job to run. The real deduction still happens via charge_wallet_for_tool
-    once the job actually succeeds.
+    shop that can't afford this specific job is blocked immediately, without
+    wasting the work of running it. The real deduction still happens via
+    charge_wallet_for_tool once the job actually succeeds - this checks the
+    same projected_balance < credit_limit condition ahead of time so the two
+    never disagree.
     """
     tool = ToolPricing.objects.filter(tool_key=tool_key, is_billable=True).first()
-    if not tool or tool_price_for_context(tool, order) <= 0:
+    if not tool:
         return True, ""
+    unit_price = tool_price_for_context(tool, order)
+    if unit_price <= 0:
+        return True, ""
+    price_total = (unit_price * Decimal(quantity)).quantize(Decimal("0.01"))
     profile, _ = UserProfile.objects.get_or_create(user=user, defaults={"phone": ""})
     credit_limit = profile.credit_limit_override if profile.credit_limit_override is not None else get_wallet_setting("credit_limit")
-    if profile.balance <= credit_limit:
-        return False, (
-            f"Wallet balance has reached the minimum allowed limit (Rs. {credit_limit}). "
-            "Please top up your wallet before starting new paid jobs."
-        )
+    projected_balance = (profile.balance - price_total).quantize(Decimal("0.01"))
+    if projected_balance < credit_limit:
+        return False, f"Insufficient balance for {tool.label}. Please top up your wallet to continue."
     return True, ""
 
 
@@ -2215,6 +2223,17 @@ def delete_user_files(user):
             order.document.delete(save=False)
 
 
+def delete_order_document(order):
+    """Frees the uploaded print file once an order is done with it (printed,
+    permanently failed, or rejected before printing) - media/print_orders/
+    would otherwise grow forever holding files nothing references anymore.
+    Mutates order.document in place; caller still needs to include
+    "document" in its own save(update_fields=...)."""
+    if order.document:
+        order.document.delete(save=False)
+        order.document = ""
+
+
 def client_ip(request):
     forwarded_for = request.META.get("HTTP_X_FORWARDED_FOR", "")
     if forwarded_for:
@@ -2621,6 +2640,7 @@ def wallet(request):
                 "cashCounterCollected": float(collection_summary["cashCounterCollected"]),
                 "totalCollected": float(collection_summary["totalCollected"]),
                 "signupBonusCredited": float(collection_summary["signupBonusCredited"]),
+                "couponCreditReceived": float(collection_summary["couponCreditReceived"]),
                 "netWithdrawable": float(collection_summary["netWithdrawable"]),
                 "pendingWithdrawal": float(pending_withdrawal),
                 "paidWithdrawal": float(paid_withdrawal),
@@ -2701,6 +2721,62 @@ def request_withdrawal(request):
         )
 
     return JsonResponse({"withdrawal": public_withdrawal(withdrawal), "balance": float(wallet_balance(user))}, status=201)
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def redeem_coupon(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    code = str(parse_body(request).get("code", "")).strip().upper()
+    if not code:
+        return JsonResponse({"message": "Enter a coupon code."}, status=400)
+
+    # Lock the coupon row for the whole check-then-redeem sequence so two
+    # concurrent redemptions (same shop double-submitting, or a
+    # max_redemptions coupon being redeemed by many shops at once) can't
+    # both pass the checks against the same stale redemption count.
+    with transaction.atomic():
+        coupon = Coupon.objects.select_for_update().filter(code__iexact=code).first()
+        if not coupon or not coupon.is_active:
+            return JsonResponse({"message": "This coupon code is not valid."}, status=404)
+        if coupon.expires_at and coupon.expires_at <= timezone.now():
+            return JsonResponse({"message": "This coupon code has expired."}, status=400)
+        if coupon.max_redemptions is not None and coupon.redemptions.count() >= coupon.max_redemptions:
+            return JsonResponse({"message": "This coupon code has reached its redemption limit."}, status=400)
+        if CouponRedemption.objects.filter(coupon=coupon, user=user).exists():
+            return JsonResponse({"message": "You have already redeemed this coupon."}, status=400)
+
+        txn = create_wallet_transaction(
+            user,
+            WalletTransaction.KIND_COUPON_CREDIT,
+            coupon.amount,
+            WalletTransaction.DIRECTION_CREDIT,
+            True,
+            note=f"Coupon {coupon.code} redeemed.",
+        )
+        if not txn:
+            return JsonResponse({"message": "This coupon could not be redeemed."}, status=400)
+
+        # No race to guard against here beyond what's already checked above -
+        # the select_for_update() on the coupon row already serializes every
+        # concurrent redemption of this same code, so the exists() check
+        # above is race-free. (A try/except IntegrityError here would be the
+        # wrong fix anyway: catching it without re-raising would let this
+        # atomic block commit normally, permanently keeping the wallet
+        # credit above while silently dropping the redemption record.)
+        CouponRedemption.objects.create(coupon=coupon, user=user, wallet_transaction=txn)
+
+    return JsonResponse({
+        "message": coupon.message,
+        "amount": float(coupon.amount),
+        "balance": float(wallet_balance(user)),
+    })
 
 
 @csrf_exempt
@@ -2796,7 +2872,7 @@ def pricing_settings(request):
     pricing.service_name = default_service["serviceName"]
     existing_settings = pricing.settings if isinstance(pricing.settings, dict) else {}
     merged_settings = {**default_service["settings"], **existing_settings, **settings}
-    if merged_settings.get("paymentMode") == "Both":
+    if merged_settings.get("paymentMode") in ("Both", "Cash Counter"):
         profile, _ = UserProfile.objects.get_or_create(user=user, defaults={"phone": ""})
         permission_reason = cash_counter_permission_reason(profile)
         if permission_reason:
@@ -3542,7 +3618,8 @@ def reject_cash_order(request, order_id):
 
     order.status = PrintOrder.STATUS_FAILED
     order.agent_message = "Cash counter print rejected by cafe owner."
-    order.save(update_fields=["status", "agent_message"])
+    delete_order_document(order)
+    order.save(update_fields=["status", "agent_message", "document"])
     return JsonResponse({"order": public_order(order)})
 
 
@@ -3683,9 +3760,14 @@ def agent_job_status(request, order_id):
 
     order.status = next_status
     order.agent_message = str(body.get("message", "")).strip()
+    # The uploaded document is only ever needed up to the point the agent
+    # reports a terminal outcome (printed or failed) - free it immediately
+    # instead of waiting for the customer to delete it manually.
+    if next_status in (PrintOrder.STATUS_PRINTED, PrintOrder.STATUS_FAILED):
+        delete_order_document(order)
     if next_status == PrintOrder.STATUS_PRINTED:
         order.printed_at = timezone.now()
-        order.save(update_fields=["status", "agent_message", "printed_at"])
+        order.save(update_fields=["status", "agent_message", "printed_at", "document"])
         # Row-locked check-and-set on the order itself so a retried
         # `status=printed` call (slow response, agent re-sends) can't run
         # settlement twice - see the settled_at field comment on PrintOrder.
@@ -3695,6 +3777,8 @@ def agent_job_status(request, order_id):
                 settle_printed_order_wallet(locked_order)
                 locked_order.settled_at = timezone.now()
                 locked_order.save(update_fields=["settled_at"])
+    elif next_status == PrintOrder.STATUS_FAILED:
+        order.save(update_fields=["status", "agent_message", "document"])
     else:
         order.save(update_fields=["status", "agent_message"])
 
@@ -3804,7 +3888,7 @@ def public_shop_by_code(request, code):
     services_payload = []
     for item in pricing:
         data = public_pricing(item)
-        if data["settings"].get("paymentMode") == "Both" and not cash_available:
+        if data["settings"].get("paymentMode") in ("Both", "Cash Counter") and not cash_available:
             data["settings"] = {**data["settings"], "paymentMode": "Online Payment"}
         services_payload.append(data)
 
@@ -3832,13 +3916,17 @@ def resolve_passport_photo(order):
     (dashboard tool or public scan-to-print page) - retries the fallback at
     most once every PASSPORT_PHOTO_FALLBACK_RETRY_SECONDS so a permanently
     broken fallback doesn't get hammered on every poll. A cash-counter order
-    still waiting on the shop owner's approval (STATUS_AWAITING_APPROVAL) is
-    excluded from the agent's job list on purpose (see agent_passport_jobs)
-    - without this guard, this "stale job" detector would treat that as an
-    abandoned agent job after PASSPORT_PHOTO_STALE_JOB_SECONDS and trigger
-    the paid Gemini fallback anyway, generating (and billing) the photo
-    before it was ever approved."""
-    if order.service_key != "passport_photo" or order.gemini_photo or order.status == PrintOrder.STATUS_AWAITING_APPROVAL:
+    still waiting on the shop owner's approval (STATUS_AWAITING_APPROVAL) or
+    an online-payment order still waiting on the gateway to confirm payment
+    (STATUS_AWAITING_PAYMENT) is excluded from the agent's job list on
+    purpose (see agent_passport_jobs) - without this guard, this "stale job"
+    detector would treat that as an abandoned agent job after
+    PASSPORT_PHOTO_STALE_JOB_SECONDS and trigger the paid Gemini fallback
+    anyway, generating (and billing) the photo before it was ever approved
+    or paid for."""
+    if order.service_key != "passport_photo" or order.gemini_photo or order.status in (
+        PrintOrder.STATUS_AWAITING_APPROVAL, PrintOrder.STATUS_AWAITING_PAYMENT
+    ):
         return
 
     just_failed = False
@@ -3909,6 +3997,65 @@ def save_raw_passport_photo(request):
         photo_updated_at=timezone.now(),
     )
     return JsonResponse({"id": order.id})
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def save_manual_passport_photo(request):
+    """Owner-side manual passport photo path: the browser has already done
+    all the editing (background removal, ratio-locked crop, color
+    adjustments, optional Name/DOB caption) on <canvas> and uploads the
+    finished image directly - no Gemini/agent pipeline involved, so the
+    order is created already-done instead of PHOTO_STATUS_PENDING like
+    save_raw_passport_photo. Billed the same as an AI-generated photo
+    (see apply_gemini_fallback) since it uses the same passport_photo tool.
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    photo = request.FILES.get("photo")
+    if not photo:
+        return JsonResponse({"message": "Upload a photo to continue."}, status=400)
+    original = request.FILES.get("original") or photo
+
+    allowed, gate_message = wallet_usage_gate(user, "passport_photo")
+    if not allowed:
+        return JsonResponse({"message": gate_message}, status=402)
+
+    ensure_service_pricing(user)
+    pricing = ServicePricing.objects.filter(user=user, service_key="passport_photo").first()
+    service_name = pricing.service_name if pricing else "Passport Size Photo"
+    rate = money(request.POST.get("rate"))
+    token_number, token_id = next_order_token(user)
+
+    order = PrintOrder.objects.create(
+        user=user,
+        shop_code=cafe_code_for_user(user),
+        token_number=token_number,
+        token_id=token_id,
+        service_key="passport_photo",
+        service_name=service_name,
+        price_item_id=str(request.POST.get("priceItemId", "")).strip(),
+        price_label=str(request.POST.get("priceLabel", "")).strip(),
+        rate=rate,
+        pages=1,
+        copies=1,
+        total_amount=rate,
+        payment_mode="No Payment",
+        payment_status=PrintOrder.PAYMENT_NO_PAYMENT,
+        status=PrintOrder.STATUS_QUEUED,
+        original_filename=file_to_data_uri(original),
+        gemini_photo=file_to_data_uri(photo),
+        attire_category="manual",
+        photo_status=PrintOrder.PHOTO_STATUS_DONE,
+        photo_updated_at=timezone.now(),
+    )
+    charge_wallet_for_tool(user, "passport_photo", quantity=1, order=order)
+    return JsonResponse({"id": order.id, "order": public_order(order)})
 
 
 def public_passport_job(order, request):
@@ -3996,10 +4143,15 @@ def agent_passport_jobs(request):
     # to confirm cash was collected. That confirmation only happens via the
     # shop's own dashboard (approve_cash_order/reject_cash_order) - a job
     # never reaches this shared pool, and never runs the AI generation that
-    # bills the shop's wallet, until then.
+    # bills the shop's wallet, until then. STATUS_AWAITING_PAYMENT is
+    # excluded for the same reason: an online-payment order must not run
+    # (and bill) the AI generation until the gateway actually confirms
+    # payment, which is what flips it to STATUS_QUEUED.
     jobs = PrintOrder.objects.filter(
         service_key="passport_photo", photo_status=PrintOrder.PHOTO_STATUS_PENDING,
-    ).exclude(status=PrintOrder.STATUS_AWAITING_APPROVAL).order_by("created_at")[:20]
+    ).exclude(
+        status__in=[PrintOrder.STATUS_AWAITING_APPROVAL, PrintOrder.STATUS_AWAITING_PAYMENT]
+    ).order_by("created_at")[:20]
     return JsonResponse({"jobs": [public_passport_job(job, request) for job in jobs]})
 
 
@@ -4024,6 +4176,8 @@ def claim_passport_job(request, job_id):
             # order from the pool - belt-and-suspenders against a client
             # that claims by id without going through the job list.
             return JsonResponse({"message": "This cash-counter order is still waiting for the shop owner's approval."}, status=409)
+        if order.status == PrintOrder.STATUS_AWAITING_PAYMENT:
+            return JsonResponse({"message": "This order is still waiting for online payment to be confirmed."}, status=409)
 
         order.photo_status = PrintOrder.PHOTO_STATUS_CLAIMED
         order.photo_updated_at = timezone.now()
@@ -4051,6 +4205,8 @@ def complete_passport_job(request, job_id):
         # its id (including the failure branch's Gemini fallback below)
         # generate/bill a photo that was never approved.
         return JsonResponse({"message": "This cash-counter order is still waiting for the shop owner's approval."}, status=409)
+    if order.status == PrintOrder.STATUS_AWAITING_PAYMENT:
+        return JsonResponse({"message": "This order is still waiting for online payment to be confirmed."}, status=409)
 
     if str(request.POST.get("status", "")).strip() == PrintOrder.PHOTO_STATUS_FAILED:
         order.photo_status = PrintOrder.PHOTO_STATUS_FAILED

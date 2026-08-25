@@ -10,7 +10,7 @@ from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncDate, TruncMonth, TruncWeek
 from django.utils import timezone
-from django.utils.dateparse import parse_date
+from django.utils.dateparse import parse_date, parse_datetime
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_http_methods
 from django.http import HttpResponse, JsonResponse
@@ -18,7 +18,7 @@ from django.http import HttpResponse, JsonResponse
 from .admin_activity import log_admin_activity
 from .admin_auth import get_admin_role, require_admin, require_section
 from .lead_scraper_runner import run_scrape_job
-from .models import AdminActivityLog, AdminRole, Agent, ContactMessage, GooglePlace, PrintOrder, ScrapeRun, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTransaction, WalletTopup, WithdrawalRequest
+from .models import AdminActivityLog, AdminRole, Agent, ContactMessage, Coupon, CouponRedemption, GooglePlace, PrintOrder, ScrapeRun, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTransaction, WalletTopup, WithdrawalRequest
 from .views import (
     create_password_reset,
     create_wallet_transaction,
@@ -1304,6 +1304,144 @@ def admin_agent_detail(request, agent_id):
     )
 
 
+# --- Coupon codes -------------------------------------------------------------
+
+def generate_coupon_code():
+    alphabet = string.ascii_uppercase + string.digits
+    for _ in range(20):
+        code = "".join(secrets.choice(alphabet) for _ in range(8))
+        if not Coupon.objects.filter(code=code).exists():
+            return code
+    raise RuntimeError("Could not generate a unique coupon code.")
+
+
+def parse_aware_datetime(value):
+    """Accepts an ISO-ish string (e.g. from an HTML datetime-local input)
+    and returns a timezone-aware datetime, or None if blank/unparsable."""
+    if not value:
+        return None
+    parsed = parse_datetime(str(value))
+    if not parsed:
+        return None
+    return timezone.make_aware(parsed) if timezone.is_naive(parsed) else parsed
+
+
+def public_admin_coupon(coupon):
+    return {
+        "id": coupon.id,
+        "code": coupon.code,
+        "amount": float(coupon.amount),
+        "message": coupon.message,
+        "isActive": coupon.is_active,
+        "maxRedemptions": coupon.max_redemptions,
+        "redeemedCount": coupon.redeemed_count if hasattr(coupon, "redeemed_count") else coupon.redemptions.count(),
+        "expiresAt": coupon.expires_at.isoformat() if coupon.expires_at else None,
+        "createdBy": coupon.created_by.email if coupon.created_by else "",
+        "createdAt": coupon.created_at.isoformat(),
+    }
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST", "OPTIONS"])
+def admin_coupons(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "coupons")
+    if err:
+        return err
+
+    if request.method == "POST":
+        body = parse_body(request)
+        amount = money(body.get("amount", 0))
+        message = str(body.get("message", "")).strip()
+        code = str(body.get("code", "")).strip().upper()
+        max_redemptions = body.get("maxRedemptions")
+        expires_at = parse_aware_datetime(body.get("expiresAt"))
+
+        if amount <= 0:
+            return JsonResponse({"message": "Enter a coupon amount greater than 0."}, status=400)
+        if not message:
+            return JsonResponse({"message": "Enter a message to show shops when they redeem this coupon."}, status=400)
+        if code and Coupon.objects.filter(code=code).exists():
+            return JsonResponse({"message": "That coupon code is already in use."}, status=409)
+        if max_redemptions not in (None, ""):
+            try:
+                max_redemptions = int(max_redemptions)
+                if max_redemptions <= 0:
+                    raise ValueError
+            except (TypeError, ValueError):
+                return JsonResponse({"message": "Max redemptions must be a positive whole number, or left blank for unlimited."}, status=400)
+        else:
+            max_redemptions = None
+
+        coupon = Coupon.objects.create(
+            code=code or generate_coupon_code(),
+            amount=amount,
+            message=message,
+            max_redemptions=max_redemptions,
+            expires_at=expires_at,
+            created_by=admin_user,
+        )
+        log_admin_activity(admin_user, "coupon.create", "coupon", coupon.id, f"code={coupon.code}, amount={coupon.amount}")
+        return JsonResponse({"coupon": public_admin_coupon(coupon)}, status=201)
+
+    coupons = Coupon.objects.select_related("created_by").annotate(redeemed_count=Count("redemptions")).order_by("-created_at")
+    return JsonResponse({"count": coupons.count(), "coupons": [public_admin_coupon(coupon) for coupon in coupons]})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "PUT", "OPTIONS"])
+def admin_coupon_detail(request, coupon_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "coupons")
+    if err:
+        return err
+
+    coupon = Coupon.objects.select_related("created_by").annotate(redeemed_count=Count("redemptions")).filter(id=coupon_id).first()
+    if not coupon:
+        return JsonResponse({"message": "Coupon not found."}, status=404)
+
+    if request.method == "PUT":
+        body = parse_body(request)
+        if "isActive" in body:
+            coupon.is_active = bool(body.get("isActive"))
+        if "message" in body:
+            message = str(body.get("message", "")).strip()
+            if not message:
+                return JsonResponse({"message": "Message cannot be blank."}, status=400)
+            coupon.message = message
+        if "maxRedemptions" in body:
+            value = body.get("maxRedemptions")
+            if value in (None, ""):
+                coupon.max_redemptions = None
+            else:
+                try:
+                    value = int(value)
+                    if value <= 0:
+                        raise ValueError
+                    coupon.max_redemptions = value
+                except (TypeError, ValueError):
+                    return JsonResponse({"message": "Max redemptions must be a positive whole number, or blank for unlimited."}, status=400)
+        if "expiresAt" in body:
+            coupon.expires_at = parse_aware_datetime(body.get("expiresAt"))
+        coupon.save()
+        log_admin_activity(admin_user, "coupon.update", "coupon", coupon.id, f"isActive={coupon.is_active}")
+        coupon.redeemed_count = coupon.redemptions.count()
+
+    redemptions = CouponRedemption.objects.filter(coupon=coupon).select_related("user").order_by("-redeemed_at")[:50]
+
+    return JsonResponse({
+        "coupon": public_admin_coupon(coupon),
+        "redemptions": [
+            {"id": redemption.id, "email": redemption.user.email, "redeemedAt": redemption.redeemed_at.isoformat()}
+            for redemption in redemptions
+        ],
+    })
+
+
 # --- Phase 7: Support Inbox (Contact-Us) -------------------------------------
 
 def public_admin_contact_message(message):
@@ -1624,6 +1762,67 @@ def admin_signup_analytics(request):
             "byReferralAgent": [
                 {"referralCode": row["shop__referred_by_agent__referral_code"] or "Direct (no agent)", "count": row["count"]}
                 for row in referral_breakdown
+            ],
+        }
+    )
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def admin_order_analytics(request):
+    """Order-volume time series + a top-shops leaderboard (ranked by order
+    count in the selected range) - the Orders-tab counterpart of
+    admin_signup_analytics above, same from/to/granularity params."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    _, err = require_section(request, "analytics")
+    if err:
+        return err
+
+    granularity = request.GET.get("granularity", "day").strip()
+    trunc_fn = TRUNC_BY_GRANULARITY.get(granularity)
+    if not trunc_fn:
+        return JsonResponse({"message": "granularity must be day, week, or month."}, status=400)
+
+    now = timezone.now()
+    date_from = parse_date(request.GET.get("from", "").strip()) or (now - timedelta(days=30)).date()
+    date_to = parse_date(request.GET.get("to", "").strip()) or now.date()
+    limit = max(1, min(int(request.GET.get("limit", 10) or 10), 100))
+
+    orders = PrintOrder.objects.filter(created_at__date__gte=date_from, created_at__date__lte=date_to)
+
+    series = (
+        orders.annotate(bucket=trunc_fn("created_at"))
+        .values("bucket")
+        .annotate(count=Count("id"))
+        .order_by("bucket")
+    )
+
+    top_shops = (
+        orders.values("user_id", "user__shop__shop_name", "user__email", "user__profile__phone")
+        .annotate(order_count=Count("id"), total_amount=Sum("total_amount"))
+        .order_by("-order_count")[:limit]
+    )
+
+    return JsonResponse(
+        {
+            "from": date_from.isoformat(),
+            "to": date_to.isoformat(),
+            "granularity": granularity,
+            "totalOrders": orders.count(),
+            "failedOrders": orders.filter(status=PrintOrder.STATUS_FAILED).count(),
+            "series": [{"date": row["bucket"].isoformat(), "count": row["count"]} for row in series],
+            "topShops": [
+                {
+                    "shopId": row["user_id"],
+                    "shopName": row["user__shop__shop_name"] or row["user__email"],
+                    "shopEmail": row["user__email"],
+                    "shopPhone": row["user__profile__phone"] or "",
+                    "orderCount": row["order_count"],
+                    "totalAmount": float(row["total_amount"] or 0),
+                }
+                for row in top_shops
             ],
         }
     )

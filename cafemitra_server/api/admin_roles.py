@@ -12,6 +12,7 @@ SECTION_ROLES = {
     "shops": {AdminRole.ROLE_FINANCE, AdminRole.ROLE_SUPPORT},
     "orders": {AdminRole.ROLE_SUPPORT},
     "wallet": {AdminRole.ROLE_FINANCE},
+    "coupons": {AdminRole.ROLE_FINANCE},
     "agents": {AdminRole.ROLE_FINANCE, AdminRole.ROLE_SALES},
     "support": {AdminRole.ROLE_SUPPORT},
     "leads": {AdminRole.ROLE_SALES},

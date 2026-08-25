@@ -28,24 +28,29 @@ type ProfileData = {
   };
 };
 
+// Blank, not sample data - this only shows while the real profile is
+// loading (or briefly if localStorage has nothing cached yet). It used to
+// be seeded with one specific real shop's actual name/address/phone, which
+// meant a brand-new session with no cache - or a failed fetch - silently
+// displayed that shop's details as if they were the current user's own.
 const defaultData: ProfileData = {
   user: {
-    id: "204927",
-    email: "sk6201184579@gmail.com",
-    fullName: "Shankar Kumar",
-    phone: "9876543210",
+    id: "",
+    email: "",
+    fullName: "",
+    phone: "",
     balance: 0,
     profilePhoto: "",
   },
   shop: {
-    shopName: "Cyber Cafe Shankar",
-    address: "Main Road, Near Market",
-    city: "Patna",
-    state: "Bihar",
-    pinCode: "800001",
-    mobile: "9876543210",
-    whatsapp: "9876543210",
-    email: "shop@example.com",
+    shopName: "",
+    address: "",
+    city: "",
+    state: "",
+    pinCode: "",
+    mobile: "",
+    whatsapp: "",
+    email: "",
     logo: "",
     banner: "",
   },
@@ -119,7 +124,7 @@ export function ProfileForms() {
         storeSession(profile);
         window.dispatchEvent(new Event("cafemitra:profile-updated"));
       })
-      .catch(() => undefined);
+      .catch(() => setError("Could not load your latest profile - showing the last saved copy on this device."));
   }, []);
 
   function updateUser(field: keyof ProfileData["user"], value: string) {

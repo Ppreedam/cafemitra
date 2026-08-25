@@ -41,6 +41,7 @@ import {
 const paymentModeOptions = [
   { value: "Online Payment", label: "Online Payment" },
   { value: "Both", label: "Online Payment + Cash Counter" },
+  { value: "Cash Counter", label: "Only Cash Counter" },
 ];
 
 type NavItem = {
@@ -322,8 +323,8 @@ export default function PricingSettingsPage() {
                     </label>
                     <div className="payment-mode-list">
                       {paymentModeOptions.map((option) => {
-                        const isBothOption = option.value === "Both";
-                        const isLocked = isBothOption && !cashCounterAvailable;
+                        const needsCashCounter = option.value === "Both" || option.value === "Cash Counter";
+                        const isLocked = needsCashCounter && !cashCounterAvailable;
                         const currentMode = normalizePaymentMode(String(activeService.settings.paymentMode ?? "Online Payment"));
                         return (
                           <button
@@ -339,7 +340,7 @@ export default function PricingSettingsPage() {
                         );
                       })}
                     </div>
-                    <p className="payment-mode-note">Online Payment is always available to customers. Turn on "Online Payment + Cash Counter" to also let customers pay at your counter.</p>
+                    <p className="payment-mode-note">Online Payment is available to customers by default. Turn on "Online Payment + Cash Counter" to also let customers pay at your counter, or pick "Only Cash Counter" to accept counter payment only.</p>
                     {!cashCounterAvailable ? <p className="payment-mode-note payment-mode-locked">{cashCounterReason}</p> : null}
                   </div>
 

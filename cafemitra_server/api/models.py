@@ -265,6 +265,7 @@ class WalletTransaction(models.Model):
     KIND_TOPUP = "topup"
     KIND_ADMIN_ADJUSTMENT = "admin_adjustment"
     KIND_REFERRAL_COMMISSION = "referral_commission"
+    KIND_COUPON_CREDIT = "coupon_credit"
 
     DIRECTION_CREDIT = "credit"
     DIRECTION_DEBIT = "debit"
@@ -290,6 +291,50 @@ class WalletTransaction(models.Model):
 
     def __str__(self) -> str:
         return f"{self.kind} {self.amount} for {self.user_id}"
+
+
+class Coupon(models.Model):
+    """Admin-issued promotional wallet credit. Redeeming one credits the
+    shop's wallet balance immediately (spendable on tools) but the amount is
+    excluded from wallet_collection_summary()'s net_withdrawable figure -
+    the same "promotional, not withdrawable" treatment already given to the
+    signup bonus (see ensure_signup_wallet_bonus / KIND_SIGNUP_BONUS)."""
+
+    code = models.CharField(max_length=32, unique=True)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    message = models.CharField(max_length=255, help_text="Shown to the shop when they redeem this coupon.")
+    is_active = models.BooleanField(default=True)
+    # Null = unlimited total redemptions across all shops.
+    max_redemptions = models.PositiveIntegerField(null=True, blank=True)
+    expires_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="created_coupons")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"Coupon {self.code} (Rs. {self.amount})"
+
+
+class CouponRedemption(models.Model):
+    """One shop's use of one coupon. unique_together is the DB-level
+    guarantee a shop can't redeem the same code twice - checked under a
+    row lock on the Coupon itself at redemption time (see
+    public_redeem_coupon in views.py), so this is belt-and-suspenders
+    against any race the lock might miss."""
+
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE, related_name="redemptions")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="coupon_redemptions")
+    wallet_transaction = models.ForeignKey(WalletTransaction, on_delete=models.SET_NULL, null=True, blank=True, related_name="coupon_redemption")
+    redeemed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-redeemed_at"]
+        constraints = [models.UniqueConstraint(fields=["coupon", "user"], name="unique_coupon_per_user")]
+
+    def __str__(self) -> str:
+        return f"{self.coupon.code} redeemed by {self.user_id}"
 
 
 class WalletSetting(models.Model):

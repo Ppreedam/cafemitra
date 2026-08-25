@@ -20,7 +20,7 @@ import {
   type ShopDetailResponse,
   type ShopOrder,
 } from "@/lib/api";
-import { formatCurrency, orderResultMessage, orderStatusBadgeClass } from "@/lib/format";
+import { formatCurrency, orderResultMessage, orderStatusBadgeClass, orderEffectiveStatus } from "@/lib/format";
 
 const TABS = ["Profile", "Orders", "Wallet", "Pricing", "Timeline"] as const;
 type Tab = (typeof TABS)[number];
@@ -388,8 +388,8 @@ export default function ShopDetailPage({ params }: { params: Promise<{ id: strin
                       {order.paymentMode} <span className="text-xs text-slate-400">({order.paymentStatus})</span>
                     </td>
                     <td className="px-4 py-2">
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${orderStatusBadgeClass(order.status)}`}>
-                        {order.status}
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${orderStatusBadgeClass(orderEffectiveStatus({ order }))}`}>
+                        {orderEffectiveStatus({ order })}
                       </span>
                     </td>
                     <td className="px-4 py-2 max-w-xs truncate text-slate-600" title={orderResultMessage({ order })}>

@@ -4,7 +4,7 @@ import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { fetchOrderDetail, type AdminOrder } from "@/lib/api";
-import { formatCurrency, orderResultMessage } from "@/lib/format";
+import { formatCurrency, orderResultMessage, orderEffectiveStatus } from "@/lib/format";
 
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -31,7 +31,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     ["Amount", formatCurrency(order.totalAmount)],
     ["Payment mode", order.paymentMode],
     ["Payment status", order.paymentStatus],
-    ["Status", order.status],
+    ["Status", orderEffectiveStatus({ order })],
     ["Result / Message", orderResultMessage({ order })],
     ["Created", new Date(order.createdAt).toLocaleString("en-IN")],
   ];
