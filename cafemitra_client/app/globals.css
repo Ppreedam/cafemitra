@@ -17706,10 +17706,174 @@ img.profile-photo {
   color: #fff;
 }
 
+.idcard-type-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 16px;
+}
+
+.idcard-type-tile {
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid rgba(20, 25, 60, 0.08);
+  box-shadow: 0 10px 24px rgba(20, 25, 60, 0.05);
+  text-decoration: none;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.idcard-type-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 16px 30px rgba(20, 25, 60, 0.1);
+}
+
+.idcard-type-tile-band {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: linear-gradient(120deg, var(--doc-color, var(--violet)), color-mix(in srgb, var(--doc-color, var(--violet)) 70%, #000 15%));
+  color: #fff;
+}
+
+.idcard-type-tile-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.idcard-type-tile-code {
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  opacity: 0.92;
+}
+
+.idcard-type-tile-body {
+  padding: 14px 16px 16px;
+}
+
+.idcard-type-tile-body h2 {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #14193c;
+  margin: 0 0 4px;
+}
+
+.idcard-type-tile-body p {
+  font-size: 0.78rem;
+  color: #6b7094;
+  margin: 0;
+  line-height: 1.4;
+}
+
 .idcard-field-form {
   display: grid;
   gap: 14px;
   margin-top: 16px;
+}
+
+.idcard-back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .78rem;
+  font-weight: 700;
+  color: #5b42e6;
+  margin-bottom: 8px;
+}
+
+.idcard-extracting-panel {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 48px 24px;
+  text-align: center;
+  color: #4b4f6b;
+}
+
+.idcard-dev-json-panel {
+  border: 1px dashed #d69e2e;
+  background: #fffbeb;
+  margin-bottom: 16px;
+}
+
+.idcard-dev-json-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #92650a;
+  cursor: pointer;
+}
+
+.idcard-dev-json-toggle svg:last-child {
+  margin-left: auto;
+}
+
+.idcard-dev-json-body {
+  display: grid;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.idcard-dev-json-textarea {
+  width: 100%;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+  font-size: 0.78rem;
+  border-radius: 10px;
+  border: 1px solid rgba(146, 101, 10, 0.35);
+  background: #fff;
+  padding: 10px 12px;
+  resize: vertical;
+}
+
+.idcard-dev-json-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.idcard-dev-json-actions button {
+  border-radius: 10px;
+  border: 1px solid rgba(146, 101, 10, 0.35);
+  background: #fff;
+  color: #92650a;
+  font-weight: 700;
+  font-size: 0.78rem;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.idcard-dev-json-actions button.idcard-dev-json-load {
+  background: #d69e2e;
+  border-color: #d69e2e;
+  color: #fff;
+}
+
+.idcard-dev-json-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.idcard-ocr-json {
+  background: #10142b;
+  color: #b7c4ff;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: .78rem;
+  line-height: 1.5;
+  overflow-x: auto;
+  margin-top: 14px;
 }
 
 .idcard-photo-slot {
@@ -17804,7 +17968,7 @@ img.profile-photo {
   justify-content: space-between;
   padding: 6px 10px;
   color: #fff;
-  background: var(--brand-hero-gradient);
+  background: var(--doc-color, var(--brand-hero-gradient));
   font-size: 0.72rem;
   font-weight: 800;
 }
