@@ -1627,7 +1627,7 @@ def print_order_tool_usage(order):
     tool_key = resolve_print_tool_key(order.service_key, order.price_item_id)
     if not tool_key:
         return None, 0
-    quantity = 1 if order.service_key in ("passport_photo", "id_card_print") else max(order.pages, 1) * max(order.copies, 1)
+    quantity = 1 if order.service_key == "passport_photo" else max(order.pages, 1) * max(order.copies, 1)
     return tool_key, quantity
 
 
@@ -2972,7 +2972,7 @@ def public_print_order(request, code):
 
     gate_tool_key = resolve_print_tool_key(service_key, price_item_id)
     if gate_tool_key:
-        gate_quantity = 1 if service_key in ("passport_photo", "id_card_print") else max(pages, 1) * max(copies, 1)
+        gate_quantity = 1 if service_key == "passport_photo" else max(pages, 1) * max(copies, 1)
         allowed, gate_message = wallet_usage_gate(user, gate_tool_key, quantity=gate_quantity)
         if not allowed:
             return JsonResponse({"message": gate_message}, status=402)

@@ -51,6 +51,8 @@ const serviceIcons: Record<string, typeof FileText> = {
   id_card_print: IdCard,
 };
 
+const NOOP = () => {};
+
 function loadScript(src: string) {
   return new Promise<void>((resolve, reject) => {
     const existing = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
@@ -994,27 +996,29 @@ export default function CustomerScanPage() {
             <h2>{isIdCardPrint ? "Upload Your ID Card" : "Upload Document"}</h2>
           </div>
           {isIdCardPrint && !hasUploadedFile ? (
-            <IdCardPrintUpload onComposed={(file) => applyUploadedFile(file, 1)} busy={isCombiningFiles} />
+            <IdCardPrintUpload onComposed={(file, cardCount) => applyUploadedFile(file, cardCount)} busy={isCombiningFiles} />
           ) : hasUploadedFile ? (
             <div className="customer-document-preview">
               <div className="document-thumb">
-                {isImageFile(fileType, fileName) ? <img src={fileUrl} alt="" /> : <PdfThumb fileName={fileName} fileUrl={fileUrl} pages={pages} onPageCount={setPages} />}
+                {isImageFile(fileType, fileName) ? <img src={fileUrl} alt="" /> : <PdfThumb fileName={fileName} fileUrl={fileUrl} pages={pages} onPageCount={isIdCardPrint ? NOOP : setPages} unitLabel={isIdCardPrint ? "card" : "page"} />}
                 <button className="document-thumb-preview" type="button" onClick={() => setIsPreviewOpen(true)} aria-label="Preview document">
                   <Eye size={17} />
                 </button>
               </div>
               <div>
                 <strong>{fileName}</strong>
-                <span>{pages ? `${pages} page${pages > 1 ? "s" : ""} detected` : "Detecting pages..."}</span>
+                <span>{isIdCardPrint ? `${pages} ID card${pages > 1 ? "s" : ""} in this order` : pages ? `${pages} page${pages > 1 ? "s" : ""} detected` : "Detecting pages..."}</span>
                 <p className="customer-inline-help">
-                  {hasPdfFile
-                    ? "If there is a wrong page, use Remove Page. Preview the file before continuing."
-                    : canCropImage
-                      ? "Use Crop if you only want to print a specific part of the image."
-                      : "Preview the file before continuing."}
+                  {isIdCardPrint
+                    ? "To add, remove, or edit a card, use Remove below and upload again."
+                    : hasPdfFile
+                      ? "If there is a wrong page, use Remove Page. Preview the file before continuing."
+                      : canCropImage
+                        ? "Use Crop if you only want to print a specific part of the image."
+                        : "Preview the file before continuing."}
                 </p>
                 <div className="document-actions">
-                  {hasPdfFile ? (
+                  {hasPdfFile && !isIdCardPrint ? (
                     <button type="button" onClick={() => setIsPageManagerOpen(true)} disabled={pages <= 1 || isProcessingPdf}>
                       <Trash2 size={16} /> Remove Page
                     </button>
@@ -1117,6 +1121,11 @@ export default function CustomerScanPage() {
               ))}
             </div>
           </div>
+          {isIdCardPrint && hasUploadedFile ? (
+            <p className="customer-inline-help">
+              {pages} ID card{pages > 1 ? "s" : ""} × Rs. {selectedRate} each
+            </p>
+          ) : null}
           {!isPassportPhoto && !isIdCardPrint ? (
             <label>
               <span>Pages</span>
@@ -1205,8 +1214,16 @@ export default function CustomerScanPage() {
             <strong>{selectedItem?.label} Rs. {selectedRate}</strong>
           </div>
           <div className="customer-summary-row">
-            <span>{isPassportPhoto || isIdCardPrint ? "Package x Copies" : "Pages x Copies"}</span>
-            <strong>{hasUploadedFile ? (isPassportPhoto || isIdCardPrint ? `${selectedItem?.label || "1"} x ${copies}` : `${pages} x ${copies}`) : "Upload pending"}</strong>
+            <span>{isPassportPhoto ? "Package x Copies" : isIdCardPrint ? "Cards x Copies" : "Pages x Copies"}</span>
+            <strong>
+              {hasUploadedFile
+                ? isPassportPhoto
+                  ? `${selectedItem?.label || "1"} x ${copies}`
+                  : isIdCardPrint
+                    ? `${pages} card${pages > 1 ? "s" : ""} x ${copies}`
+                    : `${pages} x ${copies}`
+                : "Upload pending"}
+            </strong>
           </div>
           {isPassportPhoto ? (
             <div className="customer-summary-row">
@@ -1618,7 +1635,7 @@ function drawPassportPhoto(context: CanvasRenderingContext2D, image: HTMLImageEl
   context.strokeRect(x, y, width, height);
 }
 
-function PdfThumb({ fileName, fileUrl, pages, onPageCount }: { fileName: string; fileUrl: string; pages: number; onPageCount: (pages: number) => void }) {
+function PdfThumb({ fileName, fileUrl, pages, onPageCount, unitLabel = "page" }: { fileName: string; fileUrl: string; pages: number; onPageCount: (pages: number) => void; unitLabel?: string }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -1674,7 +1691,7 @@ function PdfThumb({ fileName, fileUrl, pages, onPageCount }: { fileName: string;
   return (
     <div className="pdf-thumb">
       {failed ? <FileText size={34} /> : <canvas ref={canvasRef} aria-label={`${fileName} preview`} />}
-      <span>{pages || 1} page{pages > 1 ? "s" : ""}</span>
+      <span>{pages || 1} {unitLabel}{pages > 1 ? "s" : ""}</span>
     </div>
   );
 }
