@@ -4,151 +4,199 @@ import PdfEditTool from "../PdfEditTool";
 
 const pageUrl = "https://repetigo.com/pdf-tools/watermark-pdf";
 
-const content = String.raw`H1: Add Watermark to Any PDF. Free. DRAFT, CONFIDENTIAL, or Your Own Text.
-Sending out a document that isn't ready to be treated as final? Sharing something that must stay confidential? Mark it correctly before it leaves your hands. RepetiGo's free PDF watermark tool stamps any text - DRAFT, CONFIDENTIAL, FOR REVIEW, SAMPLE, or your own custom message - diagonally across every page of your PDF in under a minute.
-Upload. Set your text. Choose opacity and angle. Download. Your file is never uploaded - processed in your browser. No sign-up. No Adobe Acrobat needed.
-✓ DRAFT · CONFIDENTIAL · COPY · custom text  ✓ Adjustable angle - diagonal or horizontal  ✓ Adjustable opacity up to 80%  ✓ No sign-up  ✓ Browser-only - never uploaded
+export const metadata: Metadata = {
+  title: "Add Watermark to PDF Free - DRAFT/CONFIDENTIAL | RepetiGo",
+  description: "Add watermark to PDF free - custom text (DRAFT, CONFIDENTIAL, company name), opacity 5-80%, rotation, font size and colour. Apply to any pages. Text-only. Browser-only. No sign-up.",
+  alternates: { canonical: pageUrl },
+  openGraph: {
+    title: "Add Watermark to PDF Free - DRAFT/CONFIDENTIAL | RepetiGo",
+    description: "Add watermark to PDF free - custom text (DRAFT, CONFIDENTIAL, company name), opacity 5-80%, rotation, font size and colour. Apply to any pages. Text-only. Browser-only. No sign-up.",
+    type: "website",
+    url: pageUrl,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Add Watermark to PDF Free - RepetiGo",
+    description: "Custom text watermark, opacity 5-80%, rotation, font size and colour. No sign-up, browser-only.",
+  },
+  robots: { index: true, follow: true },
+};
 
-➜  [ Add Watermark to PDF - Free, No Sign-Up → repetigo.com/tools/pdf/add-watermark/ ]
+const content = String.raw`H1: Add Watermark to PDF Free. Text Watermarks. Custom Opacity and Angle.
+RepetiGo's free add watermark to PDF tool stamps any text watermark across your PDF pages - DRAFT, CONFIDENTIAL, COPY, your company name, or any custom label. Set the opacity, rotation angle, font size, and colour. Apply to any pages you choose.
+The watermark is centred on the page and embedded directly into the page content - not a removable overlay. Processing runs entirely in your browser. Your file is never uploaded to any server.
+✓ Custom Text - Up to 60 Characters  ✓ Opacity 5-80%  ✓ Rotation -90° to 90°  ✓ Any Colour  ✓ No Adobe Required  ✓ Browser-Only - Never Uploaded
 
-H2: What Is a PDF Watermark and Why Do You Need One?
-A PDF watermark is a visible text overlay stamped across every page of a document - semi-transparent so the document content is still readable underneath, but unmistakably present so anyone looking at the page immediately knows its status.
-Watermarks serve two functions: they communicate status and they control perception. A DRAFT watermark tells anyone who receives the document that this version is not final - preventing a recipient from acting on preliminary content, making decisions based on numbers that haven't been finalised, or sharing the document further as if it were complete. A CONFIDENTIAL watermark signals that the document should not be shared, printed, or forwarded beyond the intended recipient. A SAMPLE watermark protects work products and templates from being used without authorisation.
-They are not a technical lock - a determined person can still read the document. But they are a clear, legally recognisable signal of intent. In legal and regulatory contexts, a watermark is often the required way to distinguish between a working copy and an executed, signed original.
-💡  A watermark is different from a password. A password prevents someone from opening the PDF at all. A watermark lets people read the document but marks its status clearly. For a document you want recipients to read but not treat as final or confidential, a watermark is the right tool - not a password.
+➜  [ Add Watermark Free - No Sign-Up → repetigo.com/tools/pdf/add-watermark/ ]
+
+H2: What Is a PDF Watermark and When Do You Need One?
+A PDF watermark is a semi-transparent text overlay that appears across the page - typically at a diagonal angle - visible to the reader while still allowing the underlying document content to show through.
+Watermarks serve a clear communication purpose: they tell the reader the status or sensitivity of the document before they read a single word of content. A DRAFT watermark tells a reviewer they are reading a preliminary version. A CONFIDENTIAL watermark signals the content should not be shared. A COPY watermark distinguishes a reproduction from an original.
+Common situations where a PDF watermark is needed:
+•  DRAFT documents: Mark contracts, reports, proposals, and specifications that are still being reviewed - prevent recipients from treating a working version as the final approved document
+•  CONFIDENTIAL documents: Salary slips, board meeting minutes, financial statements, legal agreements - signal that the content is restricted and should not be distributed beyond the intended recipient
+•  COPY or SAMPLE: Mark template documents, sample contracts, or specimen copies to distinguish them from originals that carry legal force
+•  Company branding: Add a company name or logo text as a faint background watermark on documents shared externally - establishes ownership and brand presence
+•  VOID or CANCELLED: Mark superseded documents, invalidated certificates, or cancelled invoices to prevent misuse
+•  FOR REVIEW: Mark documents sent for stakeholder review to distinguish them from the final version pending sign-off
+💡  A watermark communicates intent at a glance. A DRAFT watermark on a contract prevents a counterparty from acting on preliminary terms as if they were final. A CONFIDENTIAL watermark on a salary slip discourages redistribution without a single word of instruction.
 
 H2: How to Add a Watermark to a PDF in 3 Steps.
-Fast, straightforward, no software to install.
-H3: Step 1 - Upload Your PDF
-Click Upload or drag and drop your PDF into the tool. Any PDF works - typed documents, scanned files, merged reports, exported presentations. Nothing is uploaded - your file is read directly in your browser. No account required.
-H3: Step 2 - Set Your Watermark
-Configure your watermark:
-•  Text: type DRAFT, CONFIDENTIAL, COPY, SAMPLE, FOR INTERNAL USE ONLY, or any custom phrase up to 60 characters.
-•  Opacity: a slider from 5% to 80% - lower is faint but visible, higher is bold and unmistakable. Most users choose 30-50% for a professional, non-intrusive look.
-•  Angle: a slider from -90° to 90° - drag toward 45° for the classic diagonal watermark look, or toward 0° for a horizontal stamp.
-•  Font size and colour: adjust to fit your document.
-The watermark is always centred on the page - there's currently no separate top/bottom position setting. Preview shows exactly what your watermark will look like before you commit to downloading.
+The entire process takes under one minute. No account, no software, no server upload.
+H3: Step 1 - Upload Your PDF and Select Pages
+Click Upload or drag your PDF into the tool. All pages are rendered as thumbnails. Click individual page thumbnails to toggle which pages will receive the watermark. Use Select All to apply to every page, or click individual thumbnails to apply selectively - for example, watermarking only the first page of a document, or every page except the cover.
+H3: Step 2 - Enter Watermark Text and Customise Settings
+Type your watermark text - up to 60 characters. Common choices: DRAFT, CONFIDENTIAL, COPY, FOR REVIEW, VOID, SAMPLE, or your company name. Then set your appearance preferences: Opacity (5% to 80%) - how strongly the watermark shows through the page content. Rotation (-90° to 90°) - the angle of the text across the page. 45° diagonal is the most common professional standard. Font size (6 to 96) - scaled to your page size. A font size of 24-48 works well for most A4 documents. Colour - open the colour picker and select any colour. Grey works for subtle watermarks; red commands attention for CONFIDENTIAL or URGENT labels. A live preview shows the watermark positioned on the page thumbnails as you adjust these settings.
 H3: Step 3 - Download Your Watermarked PDF
-Click Download. Your watermarked PDF is ready - every page you kept selected now carries your chosen text at the opacity and angle you set. The watermark is embedded directly into the PDF file, so it appears in print, in every PDF reader, and on every device without additional settings. Your file never leaves your browser - it is processed locally and never uploaded.
-📱  The PDF watermark tool works on mobile browsers - Safari on iPhone, Chrome on Android - without any app. Useful when you need to mark a document as DRAFT on your phone before forwarding in a meeting.
+Click Add Watermark. The watermark is embedded into every selected page's content - not placed as an annotation that can be toggled off. Download your watermarked PDF. The file processes entirely in your browser - nothing is uploaded at any stage.
 
-➜  [ Add Watermark to PDF Now - Free → repetigo.com/tools/pdf/add-watermark/ ]
+H2: Watermark Settings - What Each Control Does.
 
-H2: How to Add a DRAFT Watermark to a PDF.
-DRAFT is the most common PDF watermark - and for good reason. When a document is still in review, circulating a version without a DRAFT mark creates real risk: recipients might treat preliminary content as approved, make decisions based on numbers that haven't been finalised, or share the document further as if it were complete.
-To add a DRAFT watermark to your PDF: upload the document, type DRAFT in the watermark text field, set opacity to around 30-40% (visible without overpowering the text), choose an angle around 45° for the classic diagonal look, and download. The result is a professional DRAFT-marked document that clearly communicates its status to every reader.
-•  For legal documents: use 50-60% opacity so the DRAFT mark is unambiguously prominent - important when sharing redlines, contracts under negotiation, or settlement drafts.
-•  For financial documents: DRAFT on a balance sheet, P&L, or audit report makes clear the figures have not been signed off - important for CA, audit, and regulatory contexts.
-•  For reports and presentations: lower opacity (25-35%) keeps the content readable while clearly marking the version as preliminary.
-💡  Replace the DRAFT watermark with your final version once the document is approved. Simply upload the final PDF, leave the watermark field empty, and download - or use a different watermark like FINAL or APPROVED to distinguish versions in an archive.
+Setting
+Range
+What It Controls
+Best Practice
+Text
+Up to 60 characters
+The watermark label shown on the page
+DRAFT · CONFIDENTIAL · COPY · Company Name · FOR REVIEW
+Opacity
+5%-80%
+Transparency of the watermark (5% = nearly invisible, 80% = strongly visible)
+50-65% for most documents - visible but not obscuring the content
+Rotation
+-90° to 90°
+Angle of the text across the page
+45° diagonal - the standard professional watermark orientation
+Font size
+6-96
+Size of the watermark text as rendered on the page
+24-48 for A4 documents; 36-60 for A3 or landscape
+Colour
+Any (colour picker)
+Colour of the watermark text
+Grey for subtle; Red for urgent/confidential; Blue for draft
 
-H2: How to Add a CONFIDENTIAL Watermark to a PDF.
-A CONFIDENTIAL watermark is not just cosmetic - in many professional and legal contexts it is a formal signal that creates a documented record of how the information was classified when it was shared. Law firms, HR departments, CA firms, and government agencies routinely require it.
-To add a CONFIDENTIAL watermark: upload the PDF, type CONFIDENTIAL (or STRICTLY CONFIDENTIAL, PRIVATE AND CONFIDENTIAL, or your organisation's standard phrasing), set opacity to 30-50%, choose your angle, and download. Some organisations combine CONFIDENTIAL with a date or reference number - the custom text field accepts any string up to 60 characters.
-•  Employee records, performance reviews, and offer letters: HR teams watermark these before sharing with line managers or external recruiters.
-•  Legal case files and settlement documents: law firms mark all client files CONFIDENTIAL before sharing between counsel or with courts.
-•  Due diligence documents in M&A: investor decks, financial models, and valuation reports shared under NDA carry CONFIDENTIAL marks to reinforce the legal agreement.
-•  Government and regulatory submissions: agencies and companies mark internal reports before submission to oversight bodies.
-⚠️  A CONFIDENTIAL watermark signals intent but does not technically prevent the PDF from being forwarded. For documents that must be restricted from being opened without authorisation, combine a watermark with PDF password protection using RepetiGo's Protect PDF tool.
-
-H2: Who Uses PDF Watermarks - and Why.
-Every professional who shares documents in progress - or needs to control how a document is perceived - eventually reaches for a watermark tool. Here are the most common users:
-Who
-What They Watermark
-Typical Text Used
-🎓 Student / Researcher
-Thesis drafts shared with supervisors; assignment versions before final submission
-DRAFT, FOR REVIEW, NOT FOR SUBMISSION
-⚖️ Legal Professional
-Contracts under negotiation; court documents before filing; settlement discussions
-DRAFT, CONFIDENTIAL, WITHOUT PREJUDICE, PRIVILEGED
-🏢 CA / Finance Professional
-Financial statements before sign-off; ITR computation drafts; audit working papers
-DRAFT, WORKING COPY, PROVISIONAL
-📋 HR Professional
-Offer letters before approval; salary revision letters; performance review drafts
-DRAFT, CONFIDENTIAL, FOR MANAGER REVIEW ONLY
-🏛️ Government Official
-Policy documents before gazette notification; internal working papers
-DRAFT, CONFIDENTIAL, FOR INTERNAL CIRCULATION
-🎨 Designer / Freelancer
-Design mockups and prototypes shared for client approval; watermark protects work before payment
-SAMPLE, NOT FOR PRINT, PROOF ONLY
-🖨️ Print Shop Operator
-Proof prints sent to customers for approval before running the full job
-PROOF, SAMPLE, NOT FINAL
+⚠️  The watermark is always centred on the page - custom X/Y positioning is not currently available. Image or logo watermarks are also not supported - text only. Tiled or repeating watermarks and multiple watermarks per page are not available in this tool.
 
 H2: Add Watermark to PDF Without Adobe Acrobat.
-Adobe Acrobat Pro has a watermark function - but Acrobat Pro requires a paid subscription. RepetiGo does the same job free, in any browser, on any device.
-For Mac users specifically: macOS Preview does not support adding watermarks to PDFs. Safari's built-in print-to-PDF also has no watermark function. The only browser-based, no-install, no-upload option for adding a watermark to a PDF on Mac is RepetiGo.
-•  RepetiGo: free, no account, browser-only, adjustable opacity up to 80% and angle, works on Mac + Windows + phone
-•  Adobe Acrobat Pro: paid subscription, desktop app required, best for batch/enterprise watermarking
-•  ilovepdf / Smallpdf: free (limited daily), browser-based, files uploaded to their servers
-•  LibreOffice Draw: free, requires download + install, good quality
-✅  RepetiGo is the only free, no-account option that never uploads your file at all - the right choice when the document you're watermarking is itself confidential.
+Adobe Acrobat Pro includes a watermark function under Tools → Edit PDF → Watermark - but requires a paid subscription. For most people who occasionally need to mark a document as DRAFT or CONFIDENTIAL, paying a subscription for that one task is not practical.
+RepetiGo lets you add a watermark to PDF without Adobe for free, in any browser, without installing anything:
 
-H2: Add Watermark to PDF in India - Documents Need Protecting Too.
-India's professional document culture generates enormous volumes of drafts, working copies, and confidential materials that need clear visual marking before they are shared. The PDF watermark is a professional standard - and in many regulatory and legal contexts, a requirement:
-•  CA and audit practices: draft financial statements, provisional tax computations, and audit working papers shared with clients or colleagues must be marked DRAFT until signed off by the engagement partner.
-•  Law firms and litigants: documents shared without prejudice in settlement discussions, draft pleadings, and internal briefs carry CONFIDENTIAL or WITHOUT PREJUDICE marks as standard practice in Indian High Courts and the Supreme Court.
-•  Government and PSU offices: internal policy notes, budget working papers, and tender evaluation documents are marked CONFIDENTIAL before circulation among approving officers.
-•  Startup and investor community: pitch decks, financial models, and term sheets shared with investors are watermarked CONFIDENTIAL to reinforce NDAs and signal document classification.
-•  Educational institutions: exam papers shared with moderators, evaluation schemes, and internal assessment records are marked DRAFT or CONFIDENTIAL before distribution among faculty.
-With RepetiGo you can add a watermark to a PDF online free in India - upload the document, stamp it with the right text, and download in seconds. Because nothing is stored and no sign-up is needed, your draft financial statement or confidential legal document never sits on a stranger's server.
-⚠️  Under India's DPDP Act 2023, documents containing financial records, personal data, or legal information deserve careful handling. RepetiGo processes your file entirely in your browser - nothing is uploaded.
+Feature
+RepetiGo
+Adobe Acrobat Pro
+Smallpdf / iLovePDF
+Cost
+Free
+₹1,500-₹3,500/month
+Free (limited) or paid
+Server upload
+No - browser-only
+Cloud sync
+Yes - server upload
+Watermark type
+Text only
+Text and image
+Text and image
+Position control
+Centred only
+Full X/Y positioning
+Limited
+Opacity control
+5-80%
+Full range
+Limited
+Works without install
+Yes (browser)
+No (desktop app)
+Yes (browser)
+No sign-up
+✅ Yes
+Adobe ID required
+Account required for full features
 
-H2: Your PDF Never Leaves Your Browser.
-The files most often watermarked - draft contracts, confidential financial statements, privileged legal documents - are also the files that need the most careful treatment online. Here is exactly what happens to your document on RepetiGo:
-•  🔒 Stays in your browser: Your PDF is processed entirely within your browser - it is never uploaded to any server.
-•  🔐 Local processing: Your file is processed locally with no link to any account, user ID, or persistent identifier. We do not know who you are.
-•  🗑️ Never uploaded: Both your original PDF and the watermarked output are processed locally in your browser. There is no archive, no backup, and no trace.
-•  👁️ No content is read: The watermarking engine adds a text layer on top of your PDF pages - it never reads, stores, or analyses the content of your document for any other purpose. Your draft financial figures and confidential legal text stay between you and your intended recipient.
-•  🚫 No account = no data profile: No sign-up means we hold zero personal data about you. No name, no email, no usage history.
-🔒  The irony of watermarking a CONFIDENTIAL PDF is not lost on us - which is why browser-only processing, with no upload at all, is non-negotiable, not optional.
-Read our Privacy Policy → /security/ | Browser-only processing - no upload, no storage
+H2: Watermark Use Cases - Who Uses PDF Watermarks?
+Watermarks are used across a wide range of professional and personal contexts. Here are the most common:
+•  Legal professionals: Mark draft contracts, pleadings, and legal opinions as DRAFT or FOR REVIEW before circulating to clients or opposing counsel. Prevent any version being acted upon before final sign-off.
+•  HR departments: Watermark salary slips, offer letters, and employment contracts as CONFIDENTIAL before distributing to employees or third-party verification agencies. Mark samples and templates as SAMPLE to prevent use as actual documents.
+•  Finance and accounts teams: Mark financial statements, audit reports, and budgets as DRAFT during review cycles. Mark shared reports as CONFIDENTIAL before distribution to investors or board members.
+•  Academic institutions: Mark examination papers and answer keys as CONFIDENTIAL before the exam. Mark student reports and certificates as COPY or SAMPLE when sharing examples.
+•  Businesses sharing proprietary documents: Add a faint company name watermark to price lists, technical specifications, and product documentation sent to external parties - establishes ownership without obscuring the content.
+•  Individual professionals: Mark portfolio samples, proposals, and presentations as SAMPLE or DRAFT when sharing with prospective clients before engagement is confirmed.
 
-H2: Watermarked PDFs for Print Shops - The Automated Way.
-Print shops and CSC centres handle sensitive documents every day - customer Aadhaar cards, salary slips, legal filings, educational certificates. Before printing a customer's confidential document, some shops add a COPY or FOR INTERNAL USE watermark to the printed version to distinguish it from the customer's original. The standalone tool handles this one file at a time.
-For shops handling hundreds of daily print jobs, PrintPilot - RepetiGo's print shop automation platform - handles watermarking, compression, orientation correction, and AI quality enhancement as part of the automated print queue. When a customer uploads via QR code, the document is processed and print-ready before the operator even sees it.
-🖨️  PrintPilot processes every customer document automatically - watermarking, page numbering, compression, and AI enhancement all happen in the background before the job hits the print queue.
-Learn about PrintPilot → /products/printpilot/
+H2: Add Watermark to PDF in India - Common Applications.
+India's professional and regulatory environment creates several specific watermarking needs that are distinct from global use cases:
+•  Tender documents: Government and corporate tender responses must often be marked DRAFT during the preparation phase to distinguish working versions from the final submitted bid
+•  CA and legal firm documents: Audit reports, tax filings, and legal opinions shared for review between partners or with clients carry DRAFT or CONFIDENTIAL watermarks as standard professional practice
+•  Property documents: Sale deeds, lease agreements, and property valuation reports shared for review - mark as DRAFT or FOR REVIEW before the final registered version is executed
+•  Academic marksheets and certificates (sample): Educational institutions sharing sample documents for reference mark them as SAMPLE to prevent misuse as authentic certificates
+•  MSME and startup documentation: Business plans, financial projections, and investor pitch decks shared during fundraising marked as CONFIDENTIAL to restrict external distribution
+With RepetiGo you can add watermark to PDF free in India - type your watermark text, set opacity and rotation, and download in seconds. No subscription, no account, browser-only.
+📋  Under India's DPDP Act 2023, marking documents as CONFIDENTIAL and restricting their distribution is a data handling best practice - particularly for documents containing personal data (employee records, client details, financial information). A visible watermark communicates sensitivity even when formal access controls are not in place.
 
-➜  [ Try PrintPilot Free - Full Print Shop Automation → repetigo.com/pricing/ ]
-[ Or Just Add a Watermark Now → repetigo.com/tools/pdf/add-watermark/ ]
+H2: Why Is the Watermark Always Centred?
+The current implementation automatically centres the watermark horizontally and vertically on the page. This is the most common and visually clean placement for text watermarks - a centred diagonal watermark is immediately recognisable as a watermark, not as a content element.
+Custom X/Y positioning - placing a watermark in a specific corner or at a specific coordinate - is not currently available. If you need watermarks at specific positions (for example, a bottom-right corner stamp), alternative approaches include:
+•  Use the Add Page Numbers tool for sequential stamp-style text in 6 fixed positions (header/footer)
+•  Use the Edit PDF tool to place text boxes at specific positions on any page
+•  Use Adobe Acrobat Pro or LibreOffice for full positioning control over watermark placement
+
+H2: Your Files Never Leave Your Browser.
+RepetiGo's PDF tools run entirely in your browser. Your PDF is never uploaded to any server - it is processed locally on your device.
+
+Protection Layer
+What It Means in Practice
+🔒 Browser-only processing
+Your file never travels over any network. No server receives it. No upload of any kind occurs.
+🔐 No server session
+There is no remote processing session or isolated server workspace. Everything runs inside your browser tab.
+🚫 No account = no data
+No sign-up means we hold zero personal data. No file history, no name, no email stored anywhere.
+👁️ Content never leaves device
+No text, image, or document content is sent to or read by any external system or person.
+✅ Cleared on tab close
+All local working data is cleared when you close or refresh the browser tab. Nothing persists.
+
+🔒  Your file never leaves your device - not for 60 minutes, not ever. Browser-only processing is stronger privacy than any server-side deletion policy.
+Privacy Policy → /security/ | Browser-only processing - no upload, no storage
+
+H2: Add Watermark for Print Shops - Built into PrintPilot.
+Print shop operators and CSC centre staff who regularly process customer documents can use the watermark tool as part of PrintPilot - RepetiGo's print shop management software.
+Common print shop watermarking workflows:
+•  Apply a shop name or COPY watermark to printed documents before handing them back to customers - establishes that the printed copy is a reproduction of the original
+•  Mark customer-submitted drafts as DRAFT before editing or scanning, to distinguish working copies from originals
+•  Apply SAMPLE watermarks to template documents used as printing references
+🖨️  PrintPilot integrates all 30 PDF tools into the print shop workflow. Customer documents uploaded via QR code can be watermarked, compressed, rotated, and printed without switching between separate tools.
+
+➜  [ Try PrintPilot Free - Print Shop Automation for India → repetigo.com/products/printpilot/ ]
 
 H2: Common Questions About Adding Watermarks to PDFs.
 H3: Q1: How do I add a watermark to a PDF for free?
-Upload your PDF to repetigo.com/tools/pdf/add-watermark/, type your watermark text (DRAFT, CONFIDENTIAL, or custom), set the opacity and angle, and download. No account, no software, no watermark-on-the-output irony. Works on any browser. Files never uploaded - processed in your browser.
-H3: Q2: Can I add a DRAFT watermark to a PDF?
-Yes - type DRAFT in the text field. Set opacity to 30-40% for a professional, readable result. Set the angle slider around 45° for the classic diagonal look, or toward 0° for a cleaner horizontal look. The DRAFT mark is embedded on every page you keep selected. When the document is final, simply upload the approved version and download without the watermark, or replace it with APPROVED or FINAL.
-H3: Q3: Can I add a CONFIDENTIAL watermark to a PDF?
-Yes. Type CONFIDENTIAL - or STRICTLY CONFIDENTIAL, PRIVATE AND CONFIDENTIAL, or your organisation's standard phrasing - in the text field. The watermark is embedded on every page you keep selected. Combine with RepetiGo's Protect PDF tool (password protection) if you also need to restrict who can open the file.
-H3: Q4: How do I add a watermark to a PDF on Mac?
-Open RepetiGo in Safari or Chrome on your Mac, upload your PDF, set the watermark text and settings, and download. macOS Preview does not have a watermark function, so a browser-based tool like RepetiGo is the practical free alternative. No software installation needed.
-H3: Q5: How do I add a watermark to a PDF without Adobe Acrobat?
-RepetiGo provides a free PDF watermarking tool - no Adobe Acrobat licence required. Upload, configure text, opacity, and angle, and download. The output quality is equivalent to Acrobat's watermark function for text-based watermarks.
-H3: Q6: What opacity should I use for a watermark?
-30-40% is the most common choice - visible enough to be immediately noticed, light enough that the document content remains easily readable underneath. For legal or regulatory documents where the watermark must be unmistakable, use 50-60%. For watermarks that should be subtle - a designer's PROOF mark on a mockup - 20-25% is appropriate. The slider tops out at 80%, which is already bold and unmistakable.
-H3: Q7: Does the watermark appear on every page?
-It appears on every page you have selected in the page picker - all pages are selected by default, so leaving them selected watermarks the whole document in a single step. If you need different watermarks on different sections, process each section separately (deselecting the pages you don't want marked each time) and merge the results using RepetiGo's Merge PDF tool.
-H3: Q8: Can I add an image or logo as a watermark instead of text?
-Not currently - RepetiGo's watermark tool only supports text watermarks; there's no option to upload a logo or image as a watermark. For text-based watermarks (DRAFT, CONFIDENTIAL, custom phrases up to 60 characters), the tool handles adjustable opacity, angle, size, and colour.
-H3: Q9: Is it safe to upload a confidential PDF to add a watermark?
-With RepetiGo, yes - and the irony is intentional. Your file is processed entirely within your browser - never uploaded to any server. The watermarking engine adds text on top of page layouts - it never reads, stores, or analyses your document's content. No sign-up means no data profile. This is the privacy standard a confidential document deserves.
-H3: Q10: Does the watermark get removed if someone converts the PDF to Word?
-A text watermark embedded by RepetiGo is stamped at the PDF rendering layer - it is not a removable annotation. If someone converts the PDF to Word using a converter tool, the watermark typically appears as a text element in the converted document. It is not easily removed from a well-embedded PDF. For the highest level of protection, combine the watermark with a PDF password using RepetiGo's Protect PDF tool.
+Go to repetigo.com/tools/pdf/add-watermark/, upload your PDF, select the pages to watermark, enter your watermark text (up to 60 characters), set opacity, rotation, font size and colour, and click Add Watermark. Download the watermarked PDF. No account needed, browser-only processing - your file is never uploaded to any server.
+H3: Q2: How do I add a DRAFT watermark to a PDF?
+Upload your PDF to the watermark tool, type 'DRAFT' in the watermark text field, set opacity to around 50-60% so it is clearly visible but not obscuring the content, set rotation to 45° for the standard diagonal orientation, and click Add Watermark. The DRAFT label appears diagonally centred across every selected page. The same process works for CONFIDENTIAL, COPY, FOR REVIEW, SAMPLE, or any custom text.
+H3: Q3: Can I add an image or logo as a watermark?
+No - RepetiGo's watermark tool supports text watermarks only. You can enter up to 60 characters of text as your watermark label. For image or logo watermarks, you would need a tool that supports image overlays - such as Adobe Acrobat Pro or a desktop PDF editor.
+H3: Q4: Can I position the watermark in a specific corner or location?
+The watermark is automatically centred on the page. Custom X/Y positioning - placing the watermark in a specific corner or at specific coordinates - is not currently available. For precisely positioned text, use the Edit PDF tool to place a text box at any location on the page.
+H3: Q5: Is the watermark permanent - can it be removed?
+The watermark is embedded directly into the PDF page content at the pixel/vector level - not placed as a removable annotation or comment layer. In a standard PDF reader, there is no 'remove watermark' option. However, with professional PDF editing tools, a determined user could potentially redraw the page or use image editing to remove a watermark. For documents where tamper-resistance is critical, combine the watermark with password protection using the Protect PDF tool at /tools/pdf/protect-pdf/.
+H3: Q6: What is the maximum opacity for the watermark?
+The opacity slider ranges from 5% (nearly transparent - very subtle, barely noticeable) to 80% (clearly visible, strong overlay). 100% opacity is not available - at maximum 80%, the watermark is strongly visible while still allowing the underlying page content to be read through it. For most professional watermarking purposes, 50-65% opacity is the standard recommended range.
+H3: Q7: How do I add a watermark to only specific pages?
+The page selector shows thumbnails of every page in your PDF. Click any page thumbnail to toggle whether it receives the watermark. Pages with a selected/highlighted state receive the watermark; unselected pages pass through unchanged. This lets you apply the watermark only to the main content pages while skipping the cover, index, or appendix pages.
+H3: Q8: Does adding a watermark change the file size?
+Adding a text watermark increases the file size slightly - the additional text content and positioning data adds a small amount to the file. For typical A4 documents, the increase is minimal (usually less than 5-10 KB per page). If you need to reduce the file size after watermarking, use the Compress PDF tool at /tools/pdf/compress-pdf/.
 
-H2: More Free PDF Tools from RepetiGo.
-Other tools in the Edit PDF suite:
-•  Add Page Numbers to PDF → /tools/pdf/add-page-numbers/ - stamp page numbers on every page
-•  Protect PDF → /tools/pdf/protect-pdf/ - password-protect the PDF from being opened
-•  Crop PDF → /tools/pdf/crop-pdf/ - trim margins and resize pages
-•  Sign PDF → /tools/pdf/sign-pdf/ - add a digital signature
-•  Merge PDF → /tools/pdf/merge-pdf/ - combine multiple PDFs before watermarking
-•  All PDF Tools → /tools/pdf/ - complete free PDF tools library
+H2: More Free PDF Editing Tools from RepetiGo.
+•  Add Page Numbers → /tools/pdf/add-page-numbers/ - add sequential numbers in 6 positions
+•  Edit PDF → /tools/pdf/edit-pdf/ - add text boxes at specific positions on any page
+•  Protect PDF → /tools/pdf/protect-pdf/ - combine with watermark for stronger document control
+•  Rotate PDF → /tools/pdf/rotate-pdf/ - fix page orientation before watermarking
+•  All PDF Tools → /tools/pdf/ - complete free PDF toolkit
 
-➜  [ Add Watermark to PDF Free Now → repetigo.com/tools/pdf/add-watermark/ ]
-No sign-up · DRAFT · CONFIDENTIAL · Custom text · Browser-only processing`;
+➜  [ Add Watermark to Your PDF Free - No Sign-Up → repetigo.com/tools/pdf/add-watermark/ ]`;
 
 const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
@@ -157,7 +205,7 @@ export default function WatermarkPdfPage() {
 }
 
 type SeoTableData = { headers: string[]; rows: string[][] };
-const CALLOUT_EMOJI = ["💡", "📱", "🇮🇳", "🔒", "🖨️", "✅", "⚠️"];
+const CALLOUT_EMOJI = ["💡", "📱", "🇮🇳", "🔒", "🖨️", "✅", "⚠️", "📋"];
 
 function StructuredSeoCopy({ content: source }: { content: string }) {
   const blocks = source.replace(/(^|\n)(H[123]: [^\n]+)\n/g, "$1\n$2\n\n").split(/\n{2,}/).map((block) => block.trim()).filter(Boolean);
@@ -200,6 +248,9 @@ function StructuredSeoCopy({ content: source }: { content: string }) {
 
 function getKnownTable(lines: string[]): SeoTableData | null {
   if (lines[0] === "Who" && lines[1] === "What They Watermark" && lines[2] === "Typical Text Used") return { headers: ["Who", "What They Watermark", "Typical Text Used"], rows: chunkRows(lines.slice(3), 3) };
+  if (lines[0] === "Setting" && lines[1] === "Range" && lines[2] === "What It Controls" && lines[3] === "Best Practice") return { headers: lines.slice(0, 4), rows: chunkRows(lines.slice(4), 4) };
+  if (lines[0] === "Feature" && lines[1] === "RepetiGo" && lines[2] === "Adobe Acrobat Pro" && lines[3] === "Smallpdf / iLovePDF") return { headers: lines.slice(0, 4), rows: chunkRows(lines.slice(4), 4) };
+  if (lines[0] === "Protection Layer" && lines[1] === "What It Means in Practice") return { headers: ["Protection Layer", "What It Means in Practice"], rows: chunkRows(lines.slice(2), 2) };
   return null;
 }
 
@@ -257,6 +308,9 @@ function mapSeoRoute(route: string) {
     "/pdf-tools/crop-pdf": "/pdf-tools/crop-pdf",
     "/pdf-tools/sign-pdf": "/pdf-tools/sign-pdf",
     "/pdf-tools/merge-pdf": "/pdf-tools/merge-pdf",
+    "/pdf-tools/edit-pdf": "/pdf-tools/edit-pdf",
+    "/pdf-tools/rotate-pdf": "/pdf-tools/rotate-pdf",
+    "/pdf-tools/compress-pdf": "/pdf-tools/compress-pdf",
     "/products/printpilot": "/print-automation",
     "/features/auto-delete": "/privacy-policy",
     "/security": "/privacy-policy",
@@ -276,6 +330,9 @@ function getRouteLabel(href: string) {
     "/pdf-tools/crop-pdf": "Open Crop PDF",
     "/pdf-tools/sign-pdf": "Open Sign PDF",
     "/pdf-tools/merge-pdf": "Open Merge PDF",
+    "/pdf-tools/edit-pdf": "Open Edit PDF",
+    "/pdf-tools/rotate-pdf": "Open Rotate PDF",
+    "/pdf-tools/compress-pdf": "Open Compress PDF",
     "/print-automation": "Learn About PrintPilot",
     "/privacy-policy": "Read Privacy Policy",
     "/pricing": "Start Free Trial",
@@ -284,8 +341,8 @@ function getRouteLabel(href: string) {
 }
 
 function JsonLd() {
-  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo PDF Watermark Tool", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online PDF watermark tool - stamp DRAFT, CONFIDENTIAL, COPY, or custom text (up to 60 characters) on every page you select, with adjustable opacity (up to 80%), angle, size, and colour. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl };
-  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Add a Watermark to a PDF", step: [{ "@type": "HowToStep", name: "Upload PDF", text: "Upload Your PDF" }, { "@type": "HowToStep", name: "Set watermark text, opacity, and angle", text: "Set Your Watermark" }, { "@type": "HowToStep", name: "Download watermarked PDF", text: "Download Your Watermarked PDF" }] };
+  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo PDF Watermark Tool", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online PDF watermark tool - stamp custom text (up to 60 characters) on selected pages, with adjustable opacity (5-80%), rotation, font size, and colour. Text-only, always centred. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl };
+  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Add a Watermark to a PDF", step: [{ "@type": "HowToStep", name: "Upload Your PDF and Select Pages", text: "Upload Your PDF and Select Pages" }, { "@type": "HowToStep", name: "Enter Watermark Text and Customise Settings", text: "Enter Watermark Text and Customise Settings" }, { "@type": "HowToStep", name: "Download Your Watermarked PDF", text: "Download Your Watermarked PDF" }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
   const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "PDF Tools", item: "https://repetigo.com/pdf-tools" }, { "@type": "ListItem", position: 3, name: "Add Watermark", item: pageUrl }] };
   return <>{[softwareApplication, howTo, faqPage, breadcrumb].map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>;

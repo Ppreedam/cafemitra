@@ -6,164 +6,169 @@ import PdfEditTool from "../PdfEditTool";
 const pageUrl = "https://repetigo.com/pdf-tools/crop-pdf";
 
 export const metadata: Metadata = {
-  title: "Crop PDF Online Free - Trim Margins, Remove White Space | RepetiGo",
-  description: "Crop any PDF free online - trim white margins, remove borders, and resize page dimensions. Works on Mac, Windows, and iPhone. No sign-up. Files never uploaded - processed in your browser.",
+  title: "Crop PDF Online Free - Trim Margins | RepetiGo",
+  description: "Crop PDF free - trim margins by entering Top, Right, Bottom, Left values in points (72pt = 1 inch). Same values apply to all selected pages. Browser-only. No sign-up.",
   alternates: { canonical: pageUrl },
   openGraph: {
-    title: "Crop PDF Online Free - Trim Margins, Remove White Space | RepetiGo",
-    description: "Crop any PDF free - trim white margins, remove borders, resize pages. Mac, Windows, iPhone. No sign-up, browser-only - never uploaded.",
+    title: "Crop PDF Online Free - Trim Margins | RepetiGo",
+    description: "Crop PDF free - trim margins by entering Top, Right, Bottom, Left values in points (72pt = 1 inch). Same values apply to all selected pages. Browser-only. No sign-up.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
     card: "summary_large_image",
     title: "Crop PDF Online Free - RepetiGo",
-    description: "Trim PDF margins and remove white space free. Mac, Windows, iPhone. No sign-up, browser-only - never uploaded.",
+    description: "Trim margins with Top/Right/Bottom/Left point values. No sign-up, browser-only.",
   },
   robots: { index: true, follow: true },
 };
 
-const content = String.raw`H1: Crop PDF Free Online. Trim Margins, Remove White Space, Resize Pages.
-A scanned document with wide grey borders. A presentation with excessive white margins. A report where the page is A4 but the content fits on A5. These are the problems RepetiGo's free PDF cropping tool solves in seconds - upload your PDF, set your margins in points, and download a cleanly trimmed document.
-No Adobe Acrobat. No software install. Works on Mac, Windows, and iPhone. Files never uploaded - processed in your browser.
-✓ Trim margins in points on each side  ✓ Same crop applied to every page you select  ✓ No sign-up  ✓ Browser-only processing
+const content = String.raw`H1: Crop PDF Online Free. Trim Margins by Entering Values. Apply to Any Pages.
+RepetiGo's free crop PDF tool removes unwanted margins from any PDF - enter your crop values for Top, Right, Bottom, and Left margins, apply to all or selected pages, and download a trimmed PDF.
+Crop values are entered in points - the standard PDF coordinate unit. 72 points equals one inch. A reference table on this page shows common conversions so you can work in the measurements you are comfortable with.
+✓ Top / Right / Bottom / Left Margin Control  ✓ Apply to All or Specific Pages  ✓ Same Crop on All Selected Pages  ✓ No Adobe Required  ✓ Browser-Only - Never Uploaded
 
-➜  [ Crop PDF Now - Free, No Sign-Up → repetigo.com/tools/pdf/crop-pdf/ ]
+➜  [ Crop Your PDF Free - No Sign-Up → repetigo.com/tools/pdf/crop-pdf/ ]
 
-H2: What Does Cropping a PDF Actually Do?
-When you crop a PDF, you set a new visible page boundary - trimming content or whitespace from the edges of the page so PDF readers display a smaller page. The result is a PDF that looks and prints like it has smaller page dimensions, with the unwanted edge content hidden from view.
-Cropping a PDF is not the same as:
-•  Editing text inside the PDF - that is /tools/pdf/edit-pdf/
-•  Removing specific pages - that is /tools/pdf/organize-pdf/
-•  Extracting an image from inside the PDF - that is a separate extraction tool
-•  Removing printer's crop marks - those are trim marks used in commercial print design, an unrelated feature
-The primary use cases for cropping a PDF are:
-•  Removing scanner border noise: Flatbed scanners often add a dark grey or black border around the scanned image. Cropping hides this, leaving only the document content visible.
-•  Trimming excessive white margins: Documents exported from Word, PowerPoint, or InDesign sometimes have far more white margin than needed. Cropping tightens the page to the content area.
-•  Resizing a page to a standard format: A document with irregular page dimensions can be cropped down toward A4, A5, Letter, or any custom size by trimming the right amount of margin.
-•  Removing headers/footers before reuse: Cropping from the top or bottom hides unwanted headers, date stamps, or page footers added by software.
-💡  RepetiGo's crop works the same way as macOS Preview's crop: it sets a new visible page boundary (called a 'CropBox') that tells PDF readers to display only the selected area. The trimmed content is hidden, not deleted from the underlying file - so file size doesn't meaningfully shrink, and the crop could technically be reversed by adjusting the CropBox in another PDF tool. For nearly every real-world use - viewing, printing, submitting to a portal - this is exactly what you want: a cleanly trimmed page. See the Mac section below for more on this.
-
-H2: When Do You Need to Crop a PDF?
-Here are the most common real-world situations where cropping is the right tool:
-•  Thesis or research paper submission: University portals often require specific page dimensions. A scanned reference document or a PDF exported with incorrect margins needs cropping before upload.
-•  Scan cleanup: A document scanned on a flatbed or MFP printer typically has a 10-15mm dark border on all sides from the glass edges. One crop hides all of it across every page.
-•  Presentation PDF trimming: A 16:9 slide deck exported to PDF on an A4 page has massive white top and bottom margins. Cropping gives each slide its natural widescreen proportions.
-•  Before printing: Removing white margins before printing reduces paper waste and makes the document fit better on the intended paper size. Print shops often need a properly cropped PDF to run a bleed-free job.
-•  Page size standardisation: A collection of documents with mixed page sizes (some A4, some Letter, some A5) can each be individually cropped toward a consistent dimension before merging into a single PDF.
+H2: What Does Cropping a PDF Do?
+PDF cropping changes the visible area of each page by applying a crop box - a rectangle that defines which portion of the page content is displayed and printed. Content outside the crop box is hidden from view in standard PDF readers.
+Important distinction: cropping does not delete the content outside the crop area. The hidden content remains in the PDF file - it is simply not displayed. If you open the cropped PDF in a full PDF editor, the hidden content may still be accessible. For permanent removal of content, use the Redact PDF tool at /tools/pdf/redact-pdf/.
+Common reasons to crop a PDF:
+•  Remove excessive white borders: Scanned documents often have large white margins around the content area - cropping removes the border and makes the content fill more of the page when printed
+•  Remove headers or footers: PDFs exported from web pages, applications, or software often include headers or footers with website URLs, timestamps, or application branding - cropping removes these before sharing
+•  Standardise margins: Documents created with inconsistent margins across pages - from different source files or scanning setups - can be standardised to a consistent visible area
+•  Resize presentation slides: PowerPoint or Keynote slides exported as PDFs often have significant white space around the slide content - cropping reduces this to focus on the actual slide area
+•  Prepare for print: Remove printer-unfriendly margins before printing to maximise the printable area on A4 or letter-size paper
 
 H2: How to Crop a PDF in 3 Steps.
-The complete crop workflow - from upload to download - takes under a minute.
-
-H3: Step 1 - Upload Your PDF
-Click Upload or drag your PDF into the cropping tool. Any PDF works - scanned documents, exported presentations, text-based reports. Multi-page PDFs are supported: you can crop several pages in a single pass. Nothing is uploaded - your file is read directly in your browser. No account required.
-H3: Step 2 - Set Your Crop Area
-Enter the number of points to remove from each side - top, right, bottom, and left (72 points is about one inch). This is the only way to set the crop right now - there's no drag-to-select handle on the page preview. Every page is selected by default in the page picker; deselect any page you want to leave untouched, and your margin values apply to the rest.
+H3: Step 1 - Upload Your PDF and Select Pages
+Click Upload or drag your PDF into the tool. All pages are rendered as thumbnails. Click individual thumbnails to select which pages will be cropped. Use Select All if you want the same crop applied to every page in the document.
+H3: Step 2 - Enter Your Margin Values in Points
+Four input fields appear for Top, Right, Bottom, and Left. Enter the amount you want to remove from each edge, in points. For reference: 72 points = 1 inch = approximately 2.54 cm. To remove a 1cm border, enter approximately 28 points. To remove a 2cm border, enter approximately 57 points. The maximum crop per side is one-third of that page dimension - the tool prevents you from cropping so much that less than 10 points of page remain. The same crop values apply to all selected pages - there is no per-page customisation in one pass.
 H3: Step 3 - Download Your Cropped PDF
-Click Download. Your cropped PDF saves to your device - opened in a normal PDF reader, it displays at the trimmed page size. Nothing was uploaded - the file was processed locally in your browser throughout. As with any CropBox-based crop (including macOS Preview's), the hidden margins remain in the file's underlying data - see the note above if that distinction matters for your use case.
-📱  The PDF crop tool works on mobile browsers - Safari on iPhone, Chrome on Android - without any app download. Upload a scanned PDF from your Files app, set the crop margins, and download. Useful for trimming scanner borders when no desktop is available.
+Click Crop PDF. The crop box is applied to all selected pages. Download your trimmed PDF. Unselected pages pass through unchanged with their original margins intact. Processing runs entirely in your browser - nothing is uploaded.
 
-➜  [ Crop Your PDF Now - Free → repetigo.com/tools/pdf/crop-pdf/ ]
+H2: Understanding Points - The PDF Measurement Unit.
+PDF files use points as their native coordinate and measurement unit. One point equals 1/72 of an inch. This is a typographic measurement inherited from print design - the same unit used for font sizes.
 
-H2: What Crop Options Are Available?
-Different documents need different cropping approaches. Here's what RepetiGo supports today:
+Measurement
+In Points
+Approximate Equivalent
+Use Case
+1 inch
+72 pt
+2.54 cm
+Removing a standard 1-inch border
+1 cm
+~28 pt
+0.39 inches
+Removing a 10mm border
+2 cm
+~57 pt
+0.79 inches
+Removing a 20mm border
+0.5 cm
+~14 pt
+0.20 inches
+Removing a small 5mm border
+A4 width (210mm)
+595 pt
+8.27 inches
+Full A4 page width for reference
+A4 height (297mm)
+842 pt
+11.69 inches
+Full A4 page height for reference
+A4 left margin 25mm
+71 pt
+~1 inch
+Typical document left margin
 
-H3: Crop All Pages at Once
-For multi-page documents, the most common need is applying the same crop to every page simultaneously - particularly for scanned documents where every page has the same scanner border. Every page is selected by default in RepetiGo's page picker, so leaving them all selected applies your margin values to the whole document in one pass. Deselect any page you want to leave untouched.
-H3: Crop by Entering Margin Values
-Enter exact point measurements for each side independently:
-•  Crop all sides equally: e.g., remove 30pt from all four sides - useful for removing uniform scanner borders (72 points is about an inch, so 30pt is a little under half an inch)
-•  Crop one side only: e.g., remove 85pt from the bottom to eliminate a footer - leave the other sides at 0
-•  Asymmetric crop: Remove different amounts from each side - e.g., left-heavy scanner bias, or a document with binding gutters on one side
-There's no 'crop to A4' or 'crop to Letter' auto-calculation - you set margins in points and see the resulting page size after cropping. To hit an exact target size, work out the difference between your current page size and the target size in points, then split that across the sides you want to trim. You can only trim margins down from the current size - the tool can't add margins to make a page larger.
-💡  Cropping (via CropBox) barely changes file size at all, since the hidden content is still stored in the file - compression is what actually reduces file size. Run the cropped PDF through RepetiGo's Compress PDF tool afterward if size matters.
-
-H2: How to Crop a PDF on Mac Free.
-Mac users have two options for cropping a PDF: the built-in macOS Preview app, and RepetiGo in a browser. It's worth knowing upfront that both work the same fundamental way.
-H3: A Note About How PDF Cropping Actually Works
-macOS Preview has a crop function (Tools → Rectangular Selection, then Tools → Crop). Like RepetiGo, Preview's crop sets a 'CropBox' instruction that tells PDF readers to display only the selected area - it does not delete the trimmed content from the underlying file.
-This means, for both Preview and RepetiGo:
-•  File size doesn't meaningfully reduce - the original page data is still there
-•  A PDF reader or tool that ignores the CropBox will display the full, uncropped page
-•  The full page can, in principle, be recovered by adjusting the CropBox in another PDF editor
-•  For everyday use - viewing, printing, submitting a cleanly trimmed document - this is exactly what you want, and it's how most PDF crop tools (including Adobe Acrobat's) actually work
-✅  If you're on a Mac and just need a quick crop without opening Preview, RepetiGo works the same way, in any browser, with no software to open: go to repetigo.com/tools/pdf/crop-pdf/, upload your PDF, and enter your margins.
-Steps to crop a PDF on Mac with RepetiGo:
-1.  Open Safari or Chrome on your Mac
-2.  Go to repetigo.com/tools/pdf/crop-pdf/ and upload your PDF from Finder
-3.  Enter your margin values in points for each side
-4.  Leave the pages you want cropped selected in the page picker
-5.  Click Download - the cropped PDF saves to your Mac
+💡  To find the right crop value for your document: open the original PDF in any PDF reader, check the page dimensions, and calculate: crop amount = (page dimension in inches × 72). For most standard margin removal, 28-72 points (1-2.5 cm) covers the most common use cases.
 
 H2: Crop PDF Without Adobe Acrobat.
-Adobe Acrobat Pro has a PDF cropping tool (Edit → Crop Pages) that works the same CropBox way most PDF crop tools do. Acrobat Pro requires a paid subscription; RepetiGo provides the same style of cropping free, in any browser, without a licence.
-The difference between the options:
-•  RepetiGo: free, browser-based, no install, CropBox-based crop, browser-only processing, works on Mac/Windows/Linux/phone
-•  Adobe Acrobat Pro: paid subscription, desktop app, CropBox-based crop, full-featured professional PDF editor
-•  macOS Preview: free, built-in on Mac, CropBox-based crop - the same underlying approach as RepetiGo and Acrobat
-•  LibreOffice Draw: free, requires download and install, can crop PDFs
-✅  For a one-time or occasional crop task, RepetiGo gives you the same result as Acrobat Pro or Preview, without the subscription cost or the software install.
+Adobe Acrobat Pro includes a Crop Pages tool - but requires a paid subscription. RepetiGo lets you crop PDF without Adobe for free, in any browser, with no software to install.
 
-H2: Crop PDF for Free in India.
-PDF cropping is a regular task in India's academic, professional, and print ecosystems:
-•  Thesis and dissertation formatting: UGC and university guidelines specify page margins. A PDF exported with incorrect margins must be cropped to exact specifications before submission to INFLIBNET or the university portal.
-•  Government document scans: Documents scanned at e-Seva, CSC centres, or office MFPs typically have 10-20mm scanner borders on all sides. These must be removed before submission to UIDAI, MCA, IT Department, or other portals that check for clean, properly formatted documents.
-•  CA and audit documents: Scanned physical documents - balance sheets, partner agreements, MOUs - need their scan borders removed before being attached to ITR filings, GST submissions, or audit annexures.
-•  Print shop pre-press: Before printing visiting cards, pamphlets, or brochures, print shop operators crop PDFs to remove white margins and ensure the print bleeds correctly to the paper edge.
-•  Presentation trimming: College project presentations exported from PowerPoint to PDF on A4 paper have large top and bottom margins. Cropping tightens them to the slide's natural 16:9 or 4:3 ratio for cleaner sharing.
-With RepetiGo you can crop a PDF free online in India - process the document in your browser - set your margins and download a clean trimmed PDF in seconds. No account required, and your file is never uploaded.
-⚠️  Under India's DPDP Act 2023, documents submitted for cropping may contain personal data from scanned government IDs or financial records. RepetiGo processes your file entirely in your browser - nothing is uploaded.
+Feature
+RepetiGo
+Adobe Acrobat Pro
+PDF24 / Smallpdf
+Cost
+Free
+₹1,500-₹3,500/month
+Free (limited) or paid
+Server upload
+No - browser-only
+Cloud sync
+Yes - server upload
+Crop method
+Numeric margin inputs (points)
+Visual drag + numeric
+Numeric or visual
+Per-page different crops
+No - same values on all selected
+Yes - full per-page control
+Limited
+Works without install
+Yes (browser)
+No (desktop app)
+Yes (browser)
+No sign-up
+✅ Yes
+Adobe ID required
+Account for full features
 
-H2: Your PDF Never Leaves Your Browser.
-When you upload a PDF to crop, you may be trimming a scanned government document, a financial statement, or a confidential report. Here is exactly what happens:
-•  🔒 Stays in your browser: Your file is processed entirely within your browser - it is never uploaded to any server.
-•  🔐 Local processing: Your file is processed locally in your browser with no link to any account or identifier.
-•  🔒 Never uploaded: Both your original file and the cropped output stay in your browser and are never sent to any server.
-•  👁️ Content never leaves your device: The cropping engine adjusts the page boundary - it never reads, stores, or analyses the content of your document.
-•  🚫 No account, no data profile: No sign-up means we hold zero personal data about you.
-🔒  Files are never uploaded - processed locally whether you finish the download or not. Your original file on your device is never affected.
+H2: Crop PDF Use Cases - When Does This Help?
+Cropping is a routine document preparation step in many workflows:
+•  Scanned document cleanup: Scanners often capture a border of the scanner bed or paper edge around the actual document content. Cropping 20-40 points from each side removes this dead border and produces a cleaner, tighter scan
+•  Web-to-PDF export cleanup: Browser print-to-PDF exports frequently include the website URL, print date, and browser chrome in the header and footer. Cropping 50-80 points from the top and bottom removes these automatically added elements
+•  Slide deck tightening: PowerPoint slides exported as PDF often have wide white borders around the slide content. Cropping reduces these borders and makes slides fill more of each page when shared as a PDF document
+•  Multi-source document standardisation: When merging PDFs from different sources with inconsistent margins into one document, cropping each source PDF to consistent margins before merging produces a uniform-looking output
+•  Print shop document preparation: Before printing customer documents, a consistent crop ensures the printable content area is correctly sized for the paper and printer settings
+
+H2: Crop PDF in India - Common Applications.
+•  Government form submissions: Many Indian government portal PDF forms have wide white borders from the original template design - cropping before submission makes the document more professional and avoids unnecessary blank space in the printed output
+•  DigiLocker and Aadhaar document exports: PDFs downloaded from DigiLocker or the Aadhaar portal sometimes include application headers and footers - cropping removes these for clean document sharing
+•  Scanned certificate cleanup: Educational certificates, marksheets, and official documents scanned for online submission often have scanner-bed borders - a uniform 20-30 point crop cleans these before uploading to admission or verification portals
+•  Bank statement PDFs: Bank statements exported as PDFs often have large header areas with bank branding and footer areas with disclaimers - cropping to the transaction data area creates a cleaner document for CA or accountant submission
+With RepetiGo you can crop PDF online free in India - enter your margin values, apply to all pages, and download in seconds. No account, no software, browser-only.
+
+H2: Your Files Never Leave Your Browser.
+RepetiGo's PDF tools run entirely in your browser. Your PDF is never uploaded to any server - it is processed locally on your device.
+•  🔒 Browser-only processing: Your file never travels over any network. No server receives it. No upload of any kind occurs.
+•  🔐 No server session: There is no remote processing session or isolated server workspace. Everything runs inside your browser tab.
+•  🚫 No account = no data: No sign-up means we hold zero personal data. No file history, no name, no email stored anywhere.
+•  👁️ Content never leaves device: No text, image, or document content is sent to or read by any external system or person.
+•  ✅ Cleared on tab close: All local working data is cleared when you close or refresh the browser tab. Nothing persists.
+🔒  Your file never leaves your device - not for 60 minutes, not ever. Browser-only processing is stronger privacy than any server-side deletion policy.
 Privacy Policy → /security/ | Browser-only processing - no upload, no storage
 
-H2: Cropping PDFs for Print Shops.
-Print shop operators crop PDFs constantly - hiding scanner borders before reprinting customer documents, trimming presentation margins before binding, standardising page sizes before running a batch job. The standalone crop tool handles one file at a time. For shops processing dozens of documents daily, PrintPilot - RepetiGo's print shop automation platform - handles cropping, compression, orientation correction, and AI quality enhancement automatically as part of the print queue workflow.
-🖨️  PrintPilot automatically processes every customer document - detecting and cropping out scanner borders, correcting orientation, applying AI quality enhancement, and delivering a print-ready PDF to the queue. What the standalone crop tool does manually, PrintPilot does for every job automatically.
-Learn about PrintPilot → /products/printpilot/
-
-➜  [ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Just Crop a PDF Now → repetigo.com/tools/pdf/crop-pdf/ ]
-
-H2: Common Questions About Cropping PDFs Online Free.
-H3: Q1: How do I crop a PDF for free?
-Go to repetigo.com/tools/pdf/crop-pdf/, upload your PDF, set the crop margins in points for the pages you want cropped, and download. Free. No account. Files never uploaded - processed in your browser.
-H3: Q2: What does cropping a PDF actually do?
-Cropping a PDF changes the visible page boundary (technically called the CropBox) so PDF readers display a smaller page - the same technique macOS Preview and Adobe Acrobat use. The trimmed edges are hidden from view but not deleted from the underlying file, so file size stays about the same, and the crop can technically be reversed by adjusting the CropBox in another PDF tool. For everyday purposes - viewing, printing, submitting a document - the result looks and behaves exactly like a trimmed page.
-H3: Q3: How do I remove white space or margins from a PDF?
-Upload your PDF to RepetiGo's crop tool. Enter equal margin values in points on all sides (e.g., 40pt for each of top/right/bottom/left - 72 points is about an inch). There's no drag-to-select handle currently, just numeric entry. Leave the pages you want trimmed selected and download. The result is a PDF where the white margins are hidden and the displayed page dimensions are reduced accordingly.
-H3: Q4: How do I crop a PDF on Mac?
-Open RepetiGo in Safari or Chrome on your Mac, upload your PDF, enter your margins in points, and download the cropped file. macOS Preview also has a crop tool that works the same way - both set a CropBox that hides the trimmed edges without deleting them from the file. RepetiGo's advantage on Mac is convenience: no need to open Preview and use its Rectangular Selection tool, just enter numbers in a browser tab.
-H3: Q5: Can I crop all pages of a PDF at the same time?
-Yes. Every page is selected by default in RepetiGo's page picker - leave them selected and your margin values apply to the whole document in one pass. Deselect any page you want to leave untouched. This is the standard approach for scanned multi-page documents where every page has the same border to remove.
-H3: Q6: Can I crop a PDF to a specific page size like A4 or Letter?
-Not directly - RepetiGo doesn't have a 'crop to A4' or 'crop to Letter' auto-calculation. You enter margins in points for each side, and the tool trims that amount, showing you the resulting page size after cropping. To hit an exact target size, work out the difference between your current page size and the target size in points, then split that across the sides you want to trim. You can only trim margins down from the current size - you cannot use the crop tool to add margins.
-H3: Q7: Does cropping a PDF reduce the file size?
-Not meaningfully. RepetiGo's crop - like Preview's and Acrobat's - works by setting a new visible page boundary rather than deleting the trimmed content from the file, so the underlying data, and the file size, stays about the same. If you need a smaller file, use RepetiGo's Compress PDF tool after cropping; that's what actually reduces size.
-H3: Q8: How is cropping different from removing pages?
-Cropping adjusts the visible dimensions of each page - hiding content from the edges of existing pages. Removing (or extracting) pages deletes entire pages from the document. If you have a 20-page document and want to cut out pages 5-10, use RepetiGo's Organize PDF tool. If you want to trim the white margin from all 20 pages, use the Crop PDF tool.
-H3: Q9: Can I crop a scanned PDF to remove scanner borders?
-Yes - this is one of the most common crop use cases. When a flatbed or MFP scanner creates a PDF, it typically adds a dark grey or black border on the edges from the scanner glass frame. Upload the scanned PDF, enter margin values in points that cover the border width (roughly 30-55pt covers a typical 10-20mm scanner border), leave the pages selected, and download. Every page's scanner border is hidden in one step.
-H3: Q10: Is there a way to crop a PDF without Adobe Acrobat?
-Yes. RepetiGo's crop tool works entirely in the browser - no Adobe Acrobat licence required. Upload your PDF, enter your margin values in points, download the cropped PDF. The result works the same way as Acrobat Pro's or Preview's crop function, without the subscription cost or any software to install.
+H2: Common Questions About Cropping a PDF.
+H3: Q1: How do I crop a PDF online for free?
+Go to repetigo.com/tools/pdf/crop-pdf/, upload your PDF, select the pages to crop, enter crop values for Top, Right, Bottom, and Left in points (72pt = 1 inch), and click Crop PDF. Download the cropped result. Browser-only - no upload, no sign-up, no software.
+H3: Q2: Why are the units in points instead of millimetres?
+PDF files use points as their native coordinate system (1 point = 1/72 inch). The crop tool works directly with PDF coordinates, so inputs are in the same unit. Common conversions: 28pt ≈ 1cm, 72pt = 1 inch. For most document margin trimming, entering 28-57 points (1-2cm) covers the most common use cases.
+H3: Q3: Can I crop different amounts on different pages?
+The same Top/Right/Bottom/Left values apply to all selected pages in one operation. To crop different pages with different values, process the PDF in multiple passes - crop pages 1-5 with one set of values, then process the same PDF again for pages 6-10 with different values, and merge the results using the Merge PDF tool.
+H3: Q4: Does cropping delete the content outside the crop area?
+No. PDF cropping sets a visual boundary (the CropBox) that hides content beyond the crop edges - but the content remains in the file. If you open the cropped PDF in Adobe Acrobat or another full PDF editor, you may still be able to access the hidden content. For permanent, irreversible removal of content, use the Redact PDF tool instead.
+H3: Q5: How much can I crop from each edge?
+The maximum crop per side is one-third of that page dimension. For a standard A4 page (595pt wide), you can crop a maximum of approximately 198pt (about 7cm) from each side. The minimum resulting page must be at least 10 points in each dimension - the tool prevents you from cropping to the point where nothing visible remains.
+H3: Q6: Can I use this tool on a scanned PDF to remove scanner borders?
+Yes - this is one of the most common use cases. Scanners often capture the edge of the scanner bed as a dark or grey border around the document. Crop 20-50 points from each side to remove this border. The optimal amount depends on your scanner - start with 28pt (about 1cm) and increase if the border is still visible.
+H3: Q7: What happens to the pages I did not select?
+Pages you did not select pass through the tool unchanged - they appear in the output PDF with their original margins intact. Only the pages you selected receive the crop. This allows you to crop only specific sections of a document (for example, cropping only the scanned pages in a mixed document that also contains clean digital pages).
+H3: Q8: Is there a maximum file size for cropping?
+The crop tool processes your PDF locally in your browser using your device's resources. Very large PDFs (above 50-100MB) may process slowly on older or lower-memory devices. For large files, consider compressing the PDF first using the Compress PDF tool at /tools/pdf/compress-pdf/, then crop the compressed version.
 
 H2: More Free PDF Tools from RepetiGo.
+•  Rotate PDF → /tools/pdf/rotate-pdf/ - fix page orientation
+•  Edit PDF → /tools/pdf/edit-pdf/ - add or edit text anywhere on the page
+•  Redact PDF → /tools/pdf/redact-pdf/ - permanently remove content (vs crop which hides it)
 •  Compress PDF → /tools/pdf/compress-pdf/ - reduce file size after cropping
-•  Edit PDF → /tools/pdf/edit-pdf/ - edit text, fill forms, annotate pages
-•  Add Watermark → /tools/pdf/add-watermark/ - stamp DRAFT or CONFIDENTIAL on pages
-•  Add Page Numbers → /tools/pdf/add-page-numbers/ - number pages after cropping
-•  Organize PDF → /tools/pdf/organize-pdf/ - reorder or remove pages
-•  All PDF Tools → /tools/pdf/ - complete free PDF tools library
+•  All PDF Tools → /tools/pdf/
 
-➜  [ Crop PDF Free Now → repetigo.com/tools/pdf/crop-pdf/ ]
-No sign-up · Trim margins · All pages at once · Browser-only processing`;
+➜  [ Crop Your PDF Free - No Sign-Up → repetigo.com/tools/pdf/crop-pdf/ ]`;
 
 const routeMap: Record<string, string> = {
   "/tools/pdf": "/pdf-tools",
@@ -174,6 +179,8 @@ const routeMap: Record<string, string> = {
   "/pdf-tools/compress-pdf": "/pdf-tools/compress-pdf",
   "/pdf-tools/watermark-pdf": "/pdf-tools/watermark-pdf",
   "/pdf-tools/add-page-numbers": "/pdf-tools/page-numbers",
+  "/pdf-tools/rotate-pdf": "/pdf-tools/rotate-pdf",
+  "/pdf-tools/redact-pdf": "/pdf-tools/redact-pdf",
   "/products/printpilot": "/print-automation",
   "/use-cases/bulk-printing": "/print-automation",
   "/features/auto-delete": "/privacy-policy",
@@ -189,6 +196,8 @@ const routeLabels: Record<string, string> = {
   "/pdf-tools/compress-pdf": "Open Compress PDF",
   "/pdf-tools/watermark-pdf": "Open Add Watermark",
   "/pdf-tools/page-numbers": "Open Add Page Numbers",
+  "/pdf-tools/rotate-pdf": "Open Rotate PDF",
+  "/pdf-tools/redact-pdf": "Open Redact PDF",
   "/print-automation": "Learn About PrintPilot",
   "/privacy-policy": "Read Privacy Policy",
   "/pricing": "Start Free Trial",
@@ -266,6 +275,33 @@ function normalizeContent(source: string) {
   return source.replace(/(^|\n)(H[123]: [^\n]+)\n/g, "\n\n$2\n\n").replace(/\n{3,}/g, "\n\n");
 }
 
+type SeoTableData = { headers: string[]; rows: string[][] };
+
+function getKnownTable(lines: string[]): SeoTableData | null {
+  if (lines[0] === "Measurement" && lines[1] === "In Points" && lines[2] === "Approximate Equivalent" && lines[3] === "Use Case") return { headers: lines.slice(0, 4), rows: chunkRows(lines.slice(4), 4) };
+  if (lines[0] === "Feature" && lines[1] === "RepetiGo" && lines[2] === "Adobe Acrobat Pro" && lines[3] === "PDF24 / Smallpdf") return { headers: lines.slice(0, 4), rows: chunkRows(lines.slice(4), 4) };
+  return null;
+}
+
+function chunkRows(values: string[], size: number) {
+  const rows: string[][] = [];
+  for (let index = 0; index < values.length; index += size) rows.push(values.slice(index, index + size));
+  return rows;
+}
+
+function SeoTable({ headers, rows }: SeoTableData) {
+  return (
+    <div className="tool-seo-table-wrap">
+      <table>
+        <thead><tr>{headers.map((header) => <th key={header}>{header}</th>)}</tr></thead>
+        <tbody>
+          {rows.map((row) => <tr key={row.join("|")}>{row.map((cell, index) => <td key={cell + "-" + index}>{renderInline(cell)}</td>)}</tr>)}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function StructuredSeoCopy() {
   const blocks = normalizeContent(content).split(/\n{2,}/).map((block) => block.trim()).filter(Boolean);
   return <>{blocks.map((block, index) => {
@@ -274,17 +310,19 @@ function StructuredSeoCopy() {
     if (first.startsWith("H1: ")) return <h1 key={index}>{first.slice(4)}</h1>;
     if (first.startsWith("H2: ")) return <h2 key={index}>{first.slice(4)}</h2>;
     if (first.startsWith("H3: ")) return <h3 key={index}>{first.slice(4)}</h3>;
+    const table = getKnownTable(lines);
+    if (table) return <SeoTable key={index} {...table} />;
     return <div className={index === 1 ? "tool-seo-copy-paragraph tool-seo-hero" : "tool-seo-copy-paragraph"} key={index}>{renderLines(lines, `${index}`)}</div>;
   })}</>;
 }
 
 function JsonLd() {
-  const faqStart = content.indexOf("H2: Common Questions About Cropping PDFs Online Free.");
+  const faqStart = content.indexOf("H2: Common Questions About Cropping a PDF.");
   const faqEnd = content.indexOf("H2: More Free PDF Tools from RepetiGo.", faqStart);
   const faqQuestions = Array.from(content.slice(faqStart, faqEnd).matchAll(/H3: ([^\n]+)\n([\s\S]*?)(?=\nH3: |\nH2:|$)/g)).map((match) => ({ "@type": "Question", name: match[1], acceptedAnswer: { "@type": "Answer", text: match[2].trim() } }));
   const schemas = [
-    { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Crop PDF", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online PDF cropping tool that trims margins in points on selected pages by setting the PDF's CropBox, entirely in the browser. Runs entirely client-side; no file is ever uploaded to a server.", url: pageUrl },
-    { "@context": "https://schema.org", "@type": "HowTo", name: "How to Crop a PDF Online", step: [{ "@type": "HowToStep", name: "Upload your PDF" }, { "@type": "HowToStep", name: "Set your crop margins" }, { "@type": "HowToStep", name: "Download your cropped PDF" }] },
+    { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Crop PDF", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online PDF cropping tool - enter Top/Right/Bottom/Left margin values in points and apply to selected pages by setting the PDF's CropBox, entirely in the browser. No file is ever uploaded to a server.", url: pageUrl },
+    { "@context": "https://schema.org", "@type": "HowTo", name: "How to Crop a PDF in 3 Steps", step: [{ "@type": "HowToStep", name: "Upload Your PDF and Select Pages" }, { "@type": "HowToStep", name: "Enter Your Margin Values in Points" }, { "@type": "HowToStep", name: "Download Your Cropped PDF" }] },
     { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqQuestions },
     { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "PDF Tools", item: "https://repetigo.com/pdf-tools" }, { "@type": "ListItem", position: 3, name: "Crop PDF", item: pageUrl }] },
   ];

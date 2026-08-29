@@ -5,26 +5,165 @@ import PdfSecurityTool from "../PdfSecurityTool";
 const pageUrl = "https://repetigo.com/pdf-tools/compare-pdf";
 
 export const metadata: Metadata = {
-  title: "Compare PDF Files Free Online - Highlight Differences | RepetiGo",
-  description: "Compare two PDF files free online - see every text addition, deletion, and change highlighted instantly. Compare contracts, drafts, and documents. No sign-up. Files deleted in browser-only.",
+  title: "Compare PDF Files Free - Similarity Score | RepetiGo",
+  description: "Compare PDF files free - upload two PDFs and get a page-by-page word-overlap similarity score (0-100%) with side-by-side thumbnails. Text-layer comparison. Browser-only. No sign-up.",
   alternates: { canonical: pageUrl },
   openGraph: {
-    title: "Compare PDF Files Free Online - Highlight Differences | RepetiGo",
-    description: "Compare two PDF files free - see every text addition, deletion, and change highlighted. Compare contracts, drafts, documents. No sign-up, browser-only - never uploaded.",
+    title: "Compare PDF Files Free - Similarity Score | RepetiGo",
+    description: "Compare PDF files free - upload two PDFs and get a page-by-page word-overlap similarity score (0-100%) with side-by-side thumbnails. Text-layer comparison. Browser-only. No sign-up.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
     card: "summary_large_image",
-    title: "Compare PDF Files Free Online - RepetiGo",
-    description: "Compare two PDFs free, highlight every difference. No sign-up, browser-only - never uploaded.",
+    title: "Compare PDF Files Free - RepetiGo",
+    description: "Word-overlap similarity score with side-by-side thumbnails. No sign-up, browser-only.",
   },
   robots: { index: true, follow: true },
 };
 
-const content = "H1: Compare Two PDF Files Free. Get a Similarity Score Instantly.\nYou have two versions of a PDF. A contract that was 'just lightly revised'. A report someone said 'nothing changed'. A document where you suspect something was altered.\nRepetiGo's free PDF comparison tool analyses both files and gives you a word-level similarity score showing how much the two documents overlap - useful for version comparison and document verification. No guessing. No reading both documents line by line.\n✓ Overall similarity percentage  ✓ Per-page similarity breakdown  ✓ Side-by-side thumbnails  ✓ Compare contracts, drafts, reports  ✓ No sign-up  ✓ Files never uploaded - processed in your browser\n\n➜  [ Compare PDF Files Free → repetigo.com/tools/pdf/compare-pdf/ ]\n\n\nH2: What PDF Comparison Shows - Similarity Scoring Per Page.\nWhen you upload two PDFs to RepetiGo's comparison tool, the tool analyses the text content of each page and produces a similarity report. Here is what you get:\n\nWhat You Get\nWhat It Shows\nWhen It's Useful\nText added\nA percentage (0–100%) showing overall text overlap between the two documents\nA high score means the documents are largely the same; a low score indicates significant differences\nText deleted\nEach page pair gets its own similarity percentage\nUseful for pinpointing which sections changed most between versions\nText modified\nBoth PDFs' pages shown together visually\nAllows visual scanning of each page pair for layout or content differences\nContent moved\nPages missing on one side are scored as 0% similar\nUseful when one version has pages added or removed\nFormatting changed\nThe comparison works on the text layer only. Scanned PDFs with no text layer will show limited similarity results\nFor scanned PDFs, run the PDF Text Extractor tool first to add a text layer\nPage-level changes\nNo downloadable report - results are shown on-screen only\nTake a screenshot to save or share your comparison results\n\n\n💡  The comparison works on the text layer of each PDF. For PDFs with no text layer (scanned image PDFs), results will be limited. The comparison gives you a similarity percentage - it does not produce colour-coded diff highlights or a downloadable comparison PDF.\n\nH2: How to Compare Two PDF Files Free Online.\nThree steps. The comparison result is ready in seconds for most documents.\n\n\n\nH3: Step 1 - Upload Your First PDF\nClick the first Upload button and select the original or older version of your document - the baseline you are comparing against. This might be the first draft of a contract, last month's report, or the version you sent for review. Nothing is uploaded - your file is read directly in your browser.\nH3: Step 2 - Upload Your Second PDF\nClick the second Upload button and select the revised or newer version - the document that was returned, updated, or is suspected of changes. The tool aligns the two documents and identifies every difference between them.\nH3: Step 3 - Review the Differences\nThe comparison result shows an overall similarity score plus a per-page breakdown, with both documents' pages shown side by side so you can scan each pair visually. There is no downloadable comparison report - take a screenshot of the results if you need to share them with your team, legal counsel, or client.\n📋  Results are shown on-screen only - there is no downloadable comparison file. Take a screenshot of the similarity score and page thumbnails if you need to file or share them as part of a review.\n\n➜  [ Compare Your PDFs Now - Free → repetigo.com/tools/pdf/compare-pdf/ ]\n\n\nH2: Who Uses PDF Comparison - and Why.\nPDF comparison is a specialist workflow. The people who need it, need it precisely.\n•  Legal professionals: Contract redlining is the most common use case. A lawyer sends a draft contract, the counterparty returns a 'revised' version. Instead of reading both documents to find changes, the comparison tool shows a similarity score and flags exactly which pages differ most between what was sent and what came back. Irreplaceable for high-stakes agreements.\n•  Auditors and CA firms: Comparing a draft financial statement against the final signed version, or a prior-year report against the current year's figures. The tool identifies every number, note, and disclosure that was changed between versions - critical for ensuring only agreed changes were incorporated.\n•  Procurement and compliance teams: Tender documents, policy versions, and regulatory submissions often go through multiple revision cycles. Comparing the issued version against the returned or updated version confirms that only authorised changes were made.\n•  Academic and publishing workflows: Research papers, thesis drafts, and book manuscripts submitted for review come back with edits. Comparing the original against the reviewed version shows exactly what the reviewer or editor changed.\n•  Software and product documentation: Technical specification PDFs, user manuals, and API documentation updated between product releases. Version comparison identifies every changed parameter, new feature description, or removed function.\n•  HR and operations teams: Employment contracts, policy documents, and process manuals - comparing versions after update cycles to confirm that only intended changes were applied and nothing was accidentally removed.\n\n\nH2: Compare a PDF and a Word Document.\nA common workflow in legal and business settings: you draft a document in Word, convert it to PDF and send it out, and the counterparty returns it as a PDF. To compare what changed between your Word source and the returned PDF, you have two options:\n•  Option 1 - Convert the Word document to PDF first: Export your Word document as a PDF (File → Save As → PDF in Microsoft Word), then upload both PDFs to RepetiGo's comparison tool. This is the cleanest approach - both files are in the same format and the comparison is accurate at the text level.\n•  Option 2 - Use a Word-to-PDF comparison tool: Some enterprise tools (Microsoft Word Track Changes, Adobe Acrobat Pro) can directly compare a Word document against a PDF. These work well if you have access to them, but they are paid tools with subscription requirements.\n✅  The fastest free approach: export your Word document to PDF in Word (takes 10 seconds), then upload both PDFs to RepetiGo. You get a full text-level comparison without any paid software.\nRepetiGo works entirely with PDF files - to compare a PDF and a Word document, convert the Word file to PDF first, then upload both PDFs for comparison.\n\nH2: Compare PDF Without Adobe Acrobat.\nAdobe Acrobat Pro has a built-in document comparison feature - but it requires a paid subscription. Adobe Reader (the free version) cannot compare PDF files. For occasional or one-off PDF comparison without a subscription, RepetiGo gives you a similarity score and page-by-page breakdown - free, in any browser.\n•  RepetiGo: Free · browser-based · similarity score + per-page breakdown · browser-only, nothing uploaded · no account\n•  Adobe Acrobat Pro: Paid subscription · desktop app · full-featured document comparison · best for enterprise high-volume review workflows\n•  Adobe Reader: Free · cannot compare PDFs · read-only\n•  Microsoft Word (Track Changes): Compares Word documents natively · requires converting PDF to Word first · sometimes loses formatting in conversion\n✅  For comparing a contract, a report, or any PDF where you need to know exactly what changed, RepetiGo gives you the complete result without any paid subscription.\n\nH2: Compare PDF Documents Free in India.\nPDF document comparison is high-value in India's legal, financial, and procurement sectors - and there are currently zero well-established free tools targeting this need with India-specific context:\n•  Legal firms and in-house counsel: Contract negotiation in India involves multiple rounds of redlining. When a counterparty returns a 'revised' agreement, comparing the sent and received versions identifies every change - critical for ensuring no clause was altered without discussion.\n•  Chartered accountants and audit teams: Comparing draft financial statements with final signed versions, or year-on-year reports, to verify that only agreed adjustments were incorporated. The comparison serves as a quality-check audit trail.\n•  Government and PSU procurement: Tender document comparison - confirming that the issued tender document matches the version that bidders received, or that amendments were correctly incorporated into the final contract.\n•  Court submissions and e-filing: Legal teams submitting documents to courts can compare draft pleadings against filed versions to verify the correct version was submitted and no last-minute changes are unaccounted for.\n•  Banking and NBFC documentation: Loan agreements, security documents, and facility letters compared between the term sheet stage and the executed document to confirm all agreed terms are correctly reflected.\nWith RepetiGo you can compare PDF files free online in India - upload both versions and get a similarity score and page-by-page breakdown in seconds. Files are never uploaded - processed locally in your browser.\n⚠️  Under India's DPDP Act 2023, contract PDFs and financial documents contain personal data. RepetiGo processes all files locally in your browser - they are never uploaded to any server.\n\nH2: Your PDFs Never Leave Your Browser.\nThe documents you are comparing are almost always sensitive - contracts under negotiation, confidential financial statements, proprietary specifications. Here is exactly what happens to them:\n•  🔒 Stays in your browser: Both PDF files are processed entirely within your browser - they are never uploaded to any server.\n•  🔐 Local processing: Your files are processed locally in your browser with no link to any account or persistent identifier.\n•  🔒 Stays in your browser: Both uploaded PDFs and your comparison report are never uploaded - processed locally in your browser.\n•  👁️ Content never leaves your device: The comparison engine maps text differences between the two files. It does not read, extract, store, or analyse the substantive content of your documents.\n•  🚫 No account, no server, no data: No sign-up means we hold zero information about you, your documents, or your comparison sessions.\n🔒  A contract under active negotiation is among the most sensitive documents in any transaction. RepetiGo's browser-only processing means neither party's information persists after your comparison session ends.\nPrivacy Policy → /security/ | Browser-only processing - no upload, no storage\n\nH2: PDF Comparison for Print Shops and Document Services.\nDocument service centres and high-street legal print shops increasingly handle document comparison requests - a customer brings two contracts and needs a marked-up comparison printed. Doing this manually (printing both, reading them side by side, marking differences by hand) is slow and error-prone. PrintPilot - RepetiGo's document shop automation platform - can run automated PDF comparison as part of the service workflow: upload both documents, generate the comparison report, send it to the print queue.\n🖨️  PrintPilot turns PDF comparison into a two-minute counter service - the customer gets a printed comparison report without the operator spending 30 minutes reading both documents.\nLearn about PrintPilot → /products/printpilot/\n\n➜  [ Try PrintPilot Free → repetigo.com/pricing/ ]\n[ Or Compare PDFs Now - Free → repetigo.com/tools/pdf/compare-pdf/ ]\n\nH2: Common Questions About Comparing PDF Files.\nH3: Q1: Can I compare two PDF documents online for free?\nYes. Go to repetigo.com/tools/pdf/compare-pdf/, upload your two PDF files, and the tool gives you an overall similarity score plus a page-by-page breakdown so you can see exactly where the documents differ. Free, no account, browser-only processing. Works in any browser on Mac, Windows, and mobile.\nH3: Q2: What exactly does the PDF comparison show?\nAn overall similarity percentage showing how much text overlaps between the two documents, plus a similarity score for each page pair so you can see which sections changed most. Both PDFs' pages are shown side by side so you can scan them visually. The comparison works on the text layer of both PDFs - it does not produce colour-coded diff highlights or a downloadable comparison file.\nH3: Q3: How do I compare a PDF and a Word document?\nExport your Word document to PDF first: in Microsoft Word, go to File → Save As and choose PDF format. Then upload both PDF files to RepetiGo's comparison tool. The comparison will show every text difference between the Word-derived PDF and the other PDF. This takes under a minute and requires no paid software.\nH3: Q4: Can I compare PDFs to find redline changes in a contract?\nYes - contract redline comparison is one of the primary use cases. Upload the version you sent as the first PDF and the returned 'revised' version as the second. Review the overall similarity score and the per-page breakdown to see which sections changed most. Take a screenshot of the results if you need to share them with your legal team or client.\nH3: Q5: What if my PDF is a scanned document - will the comparison work?\nScanned PDFs are images of pages - they do not have a searchable text layer, so the comparison tool cannot detect text-level differences. To compare scanned PDFs, first run RepetiGo's OCR PDF tool at /tools/pdf/ocr-pdf/ on each scanned file to add a text layer, then upload the OCR-processed PDFs for comparison.\nH3: Q6: What if the PDF I want to compare is locked or permission-restricted?\nPermission-restricted PDFs cannot be processed for text comparison. First remove the editing restrictions using RepetiGo's Unlock PDF tool at /tools/pdf/unlock-pdf/ (no password needed for permissions-locked PDFs), then upload the unrestricted files for comparison.\nH3: Q7: How accurate is the PDF comparison?\nThe comparison works at the word level: it compares the words on each page pair and scores how much they overlap, so any real text change - a clause added, a figure changed, a paragraph rewritten - lowers the similarity score for that page. It does not track exact word order or minor punctuation and spacing differences, so open the page thumbnails if you need to confirm the specifics of a low-scoring page. For most business documents, the score is a reliable signal of how much actually changed.\nH3: Q8: Can I compare more than two PDFs at once?\nThe current tool compares two PDFs per session - a baseline and a revised version. To compare multiple versions (draft 1 vs draft 2, draft 2 vs draft 3), run separate comparisons for each pair. After comparing, use RepetiGo's Edit PDF tool at /tools/pdf/edit-pdf/ to make corrections to the older version based on your comparison findings.\nH3: Q9: Does Adobe Reader compare PDF files?\nAdobe Reader (the free version) cannot compare PDF files. Adobe Acrobat Pro (the paid subscription) has a built-in document comparison feature. RepetiGo provides a free, browser-based alternative - an overall similarity score and page-by-page breakdown - without any Adobe subscription.\nH3: Q10: Is it safe to upload confidential contracts and financial documents for comparison?\nWith RepetiGo, yes. Both PDFs are processed entirely within your browser - never uploaded to any server. The comparison engine detects differences between text layers; it does not read, store, or extract the content of your documents. No sign-up means we hold no information about you or your files.\n\nH2: More Free PDF Tools from RepetiGo.\n•  Edit PDF → /tools/pdf/edit-pdf/ - after comparing, correct the older version\n•  OCR PDF → /tools/pdf/ocr-pdf/ - add a text layer to scanned PDFs before comparing\n•  Unlock PDF → /tools/pdf/unlock-pdf/ - remove restrictions from locked PDFs before comparing\n•  Protect PDF → /tools/pdf/protect-pdf/ - lock the final agreed version after comparison\n•  Sign PDF → /tools/pdf/sign-pdf/ - sign the verified document after confirming it is unchanged\n•  Merge PDF → /tools/pdf/merge-pdf/ - combine PDFs after comparison and approval\n•  All PDF Tools → /tools/pdf/ - complete free PDF tools library\n\n➜  [ Compare PDF Files Free Now → repetigo.com/tools/pdf/compare-pdf/ ]\nSee your similarity score and page-by-page differences · No sign-up · Browser-only processing";
+const content = String.raw`H1: Compare PDF Files Free. Upload Two PDFs and Get a Similarity Score.
+RepetiGo's free compare PDF tool analyses two PDF documents and gives you a similarity score - showing how much the text content of the two documents overlaps, page by page and overall.
+Upload both PDFs, view the overall similarity percentage and per-page breakdown, and review side-by-side thumbnails of each page pair. Useful for version checking, draft comparison, contract review, and duplicate detection.
+✓ Overall Similarity Score (0-100%)  ✓ Per-Page Breakdown  ✓ Side-by-Side Thumbnails  ✓ No Adobe Required  ✓ Browser-Only - Never Uploaded
 
-const faqStart = content.indexOf("H2: Common Questions About Comparing PDF Files.");
+➜  [ Compare Your PDFs Free - No Sign-Up → repetigo.com/tools/pdf/compare-pdf/ ]
+
+H2: What Does PDF Comparison Actually Show?
+The tool compares the text content of each page pair using word-overlap scoring (Jaccard similarity). For each page pair, it calculates: the number of words in common ÷ total unique words across both pages × 100 = similarity percentage.
+Here is what the results display shows:
+
+Result Element
+What It Shows
+How to Use It
+Overall similarity score
+A single percentage (0-100%) showing average text overlap across all page pairs
+Quick check: are these two PDFs substantially the same or different?
+Per-page breakdown
+A similarity percentage for each individual page pair
+Identifies which specific pages changed between versions
+Side-by-side thumbnails
+Visual preview of both PDFs' pages placed next to each other
+Spot layout changes, added/removed pages, or structural shifts visually
+Different page counts
+Pages that exist on one side but not the other score 0% similar
+Identifies when a version has pages added or removed relative to the other
+
+⚠️  This tool produces a similarity percentage score - not colour-coded diff highlighting. Changed words are not highlighted individually in red or green. A downloadable comparison report PDF is not generated. For word-level change tracking, Microsoft Word's Compare Documents (for DOCX files) or dedicated legal document comparison tools provide more granular output.
+
+H2: How to Compare Two PDF Files in 3 Steps.
+H3: Step 1 - Upload Both PDF Files
+Click Upload and select your first PDF, then your second PDF. Or drag both files into the upload area at the same time. Exactly two PDFs are required - the tool compares a pair, not a batch.
+H3: Step 2 - Wait for Analysis
+The tool extracts the text content from each page of both PDFs and calculates the word-overlap similarity score for each page pair. For most documents, this takes 5-30 seconds depending on page count and file size. Processing runs entirely in your browser - nothing is uploaded.
+H3: Step 3 - Review the Similarity Results
+The overall similarity percentage appears at the top. Below it, each page pair is displayed side-by-side with its individual score. A score above 85% means the pages are mostly the same text. A score below 50% indicates significant content differences. Review side-by-side thumbnails for a visual comparison of layout and content.
+
+H2: Interpreting Similarity Scores - What Do the Numbers Mean?
+
+Score Range
+What It Typically Indicates
+Common Scenario
+95-100%
+Virtually identical content - same text with at most minor punctuation or spacing differences
+Same document saved twice, or a version with only a date or reference number changed
+80-94%
+Largely the same with some differences - paragraphs added, removed, or modified
+Draft vs near-final version - most clauses the same, some updated
+50-79%
+Significant differences - substantial sections changed, replaced, or rewritten
+Major revision between versions - same structure but much of the content updated
+20-49%
+Partial overlap - some shared sections but substantially different documents
+Different documents in the same domain that share some standard clauses
+0-19%
+Minimal or no overlap - essentially different documents
+Unrelated documents, or documents using completely different terminology
+
+Note: similarity scores measure word overlap, not meaning overlap. A page that has been heavily paraphrased (same meaning, different words) will score low even if the intent is unchanged. A page with identical formatting but different numbers in a table will score high because the non-numeric words match - while the substantive differences (the numbers) may be missed by the text comparison.
+
+H2: Compare PDF Without Adobe Acrobat.
+Adobe Acrobat Pro includes a Compare Documents function that produces a colour-coded side-by-side comparison with individual change markers. It is powerful but requires a paid subscription. RepetiGo provides a free similarity score alternative:
+
+Feature
+RepetiGo
+Adobe Acrobat Pro
+Cost
+Free
+₹1,500-₹3,500/month
+Server upload
+No - browser-only
+Cloud sync
+Comparison result
+Similarity % score per page
+Colour-coded word-level diff
+Downloadable comparison report
+No - on-screen only
+Yes - marked-up PDF
+Move detection
+No
+Yes
+Works on scanned PDFs
+Limited (no text layer = limited results)
+Requires OCR first
+Works without install
+Yes (browser)
+No (desktop app)
+
+H2: Compare PDF in India - Common Use Cases.
+Document comparison is a frequent need across Indian legal, financial, and administrative workflows:
+•  Contract version review: Legal teams reviewing redlined contracts between two parties - check which pages changed between the draft sent and the version returned
+•  Tender document verification: Compare the final submitted tender document against the working draft to confirm no unauthorised changes occurred before submission
+•  Property document comparison: Compare sale deed drafts between iterations to confirm only the agreed changes were incorporated by the opposite party's lawyer
+•  Regulatory filing verification: Compare the PDF submitted to a regulator against the approved internal version - confirm the documents are identical before filing
+•  Academic and research: Compare thesis drafts or research paper versions to identify which sections were substantially revised between rounds of supervisor feedback
+•  HR policy documents: Compare the current employee handbook against the previous version - identify which policies changed for the annual employee communication
+
+H2: Limitations - When PDF Comparison Has Reduced Accuracy.
+The word-overlap comparison works best on text-based PDFs. Several conditions reduce the accuracy of the similarity score:
+•  Scanned image PDFs: PDFs created by scanning physical documents have no text layer - only image data. The comparison has no text to compare and falls back to checking whether page images are byte-identical (100% if identical, 50% if different). For scanned PDFs, run them through the OCR PDF tool first to add a text layer before comparing
+•  PDF/A and complex structured PDFs: Some compliance PDFs and structured forms use non-standard text encoding that reduces extraction accuracy
+•  Number-heavy documents: Tables of financial data where the key differences are in the numbers (not the surrounding words) may show high similarity despite substantive differences in the underlying values
+•  Multi-column layouts: PDFs with complex multi-column page layouts may have text extracted in a non-linear reading order, reducing comparison accuracy for column-heavy documents
+•  PDFs with significant images: Documents where a large portion of the page content is image-based (charts, diagrams, photographs) are compared only on their text content - image differences are not detected
+
+H2: Your Files Never Leave Your Browser.
+RepetiGo's PDF tools run entirely in your browser. Your PDF is never uploaded to any server - it is processed locally on your device.
+•  🔒 Browser-only processing: Your file never travels over any network to any server. No upload occurs at any stage.
+•  🔐 No server session: There is no remote processing session, no isolated server workspace. Everything happens inside your browser tab.
+•  🚫 No account = no data: No sign-up means we hold zero personal data about you. No file history, no email, no usage tracking.
+•  👁️ Content never leaves device: No text, image, or document content is sent to or read by any external system or person.
+•  ✅ Cleared on tab close: All local working data clears when you close or refresh the tab. Nothing persists on your device or any server.
+🔒  Your file never leaves your device - not for 60 minutes, not ever. Browser-only processing is stronger privacy than any server-side deletion policy.
+Privacy Policy → /security/ | Browser-only processing - no upload, no storage
+
+H2: Common Questions About Comparing PDFs.
+H3: Q1: How do I compare two PDF files for free?
+Go to repetigo.com/tools/pdf/compare-pdf/, upload your two PDF files, and the tool analyses their text content and produces a similarity score. You get an overall percentage and a per-page breakdown with side-by-side thumbnails. Browser-only - no upload, no sign-up, no software.
+H3: Q2: Does it highlight the differences between the two PDFs?
+No - the comparison produces a similarity percentage score. Individual changed words are not highlighted in red or green. The result shows how much the content overlaps as a number, not a visual diff. For word-level change highlighting, Microsoft Word's Compare Documents (File → Compare → Compare) works on DOCX files; for PDF-specific visual diffs, Adobe Acrobat Pro's Compare Documents tool provides colour-coded output.
+H3: Q3: Can I compare scanned PDFs?
+The comparison works on the text layer of PDFs. Scanned image PDFs with no text layer cannot be meaningfully compared using text analysis - the tool falls back to checking whether pages are byte-identical (score 100%) or different (score 50%), which is not a real textual comparison. For better results with scanned PDFs, run them through the OCR PDF tool at /tools/pdf/ocr-pdf/ to extract and embed a text layer, then compare.
+H3: Q4: Can I compare more than two PDFs at once?
+No - exactly two PDFs are compared per session. For multiple comparisons, run the tool once for each pair. There is no batch comparison mode.
+H3: Q5: What does a score of 0% mean?
+A score of 0% means no words in common between the two pages - they share zero text content. This happens when the pages are completely different in wording, or when one or both pages have no text layer and their scanned images also differ. It also occurs when pages exist on one side of the comparison but not the other - missing pages always score 0%.
+H3: Q6: Can I download the comparison results?
+The comparison results are displayed on-screen - overall score and per-page breakdown. A downloadable comparison report PDF is not generated. To save your results, take a screenshot of the results page or note the key scores manually.
+H3: Q7: Is a high similarity score always good?
+It depends on the context. For confirming a document was not changed between sending and receiving, a high score (95-100%) confirms the documents are identical. For confirming that agreed changes were correctly incorporated into a revised draft, you would expect a score slightly below 100% - and the per-page breakdown helps identify which pages changed as expected.
+H3: Q8: What if the two PDFs have different numbers of pages?
+If PDF A has 10 pages and PDF B has 12 pages, the extra 2 pages in PDF B score 0% (no matching pages in PDF A). The tool handles different page counts - it pairs matching pages and scores unmatched pages as 0% similar. The per-page breakdown shows clearly which pages are paired and which have no match.
+
+H2: More Free PDF Tools from RepetiGo.
+•  Redact PDF → /tools/pdf/redact-pdf/ - permanently remove sensitive information
+•  Sign PDF → /tools/pdf/sign-pdf/ - sign the confirmed final version
+•  Protect PDF → /tools/pdf/protect-pdf/ - lock the final document
+•  All PDF Tools → /tools/pdf/
+
+➜  [ Compare Your PDFs Free - Browser-Only → repetigo.com/tools/pdf/compare-pdf/ ]`;
+
+const faqStart = content.indexOf("H2: Common Questions About Comparing PDFs.");
 const faqEnd = content.indexOf("H2: More Free PDF Tools from RepetiGo.", faqStart);
 const faqSchemaQuestions = Array.from(
   content.slice(faqStart, faqEnd).matchAll(/H3: ([^\n]+)\n([\s\S]*?)(?=\nH3: |\nH2:|$)/g),
@@ -32,17 +171,39 @@ const faqSchemaQuestions = Array.from(
 
 type SeoTable = { headers: string[]; rows: string[][] };
 
-const changesTable: SeoTable = {
-  headers: ["What You Get", "What It Shows", "When It's Useful"],
-  rows: [
-    ["Text added", "A percentage (0–100%) showing overall text overlap between the two documents", "A high score means the documents are largely the same; a low score indicates significant differences"],
-    ["Text deleted", "Each page pair gets its own similarity percentage", "Useful for pinpointing which sections changed most between versions"],
-    ["Text modified", "Both PDFs' pages shown together visually", "Allows visual scanning of each page pair for layout or content differences"],
-    ["Content moved", "Pages missing on one side are scored as 0% similar", "Useful when one version has pages added or removed"],
-    ["Formatting changed", "The comparison works on the text layer only. Scanned PDFs with no text layer will show limited similarity results", "For scanned PDFs, run the PDF Text Extractor tool first to add a text layer"],
-    ["Page-level changes", "No downloadable report - results are shown on-screen only", "Take a screenshot to save or share your comparison results"],
-  ],
-};
+const tables: SeoTable[] = [
+  {
+    headers: ["Result Element", "What It Shows", "How to Use It"],
+    rows: [
+      ["Overall similarity score", "A single percentage (0-100%) showing average text overlap across all page pairs", "Quick check: are these two PDFs substantially the same or different?"],
+      ["Per-page breakdown", "A similarity percentage for each individual page pair", "Identifies which specific pages changed between versions"],
+      ["Side-by-side thumbnails", "Visual preview of both PDFs' pages placed next to each other", "Spot layout changes, added/removed pages, or structural shifts visually"],
+      ["Different page counts", "Pages that exist on one side but not the other score 0% similar", "Identifies when a version has pages added or removed relative to the other"],
+    ],
+  },
+  {
+    headers: ["Score Range", "What It Typically Indicates", "Common Scenario"],
+    rows: [
+      ["95-100%", "Virtually identical content - same text with at most minor punctuation or spacing differences", "Same document saved twice, or a version with only a date or reference number changed"],
+      ["80-94%", "Largely the same with some differences - paragraphs added, removed, or modified", "Draft vs near-final version - most clauses the same, some updated"],
+      ["50-79%", "Significant differences - substantial sections changed, replaced, or rewritten", "Major revision between versions - same structure but much of the content updated"],
+      ["20-49%", "Partial overlap - some shared sections but substantially different documents", "Different documents in the same domain that share some standard clauses"],
+      ["0-19%", "Minimal or no overlap - essentially different documents", "Unrelated documents, or documents using completely different terminology"],
+    ],
+  },
+  {
+    headers: ["Feature", "RepetiGo", "Adobe Acrobat Pro"],
+    rows: [
+      ["Cost", "Free", "₹1,500-₹3,500/month"],
+      ["Server upload", "No - browser-only", "Cloud sync"],
+      ["Comparison result", "Similarity % score per page", "Colour-coded word-level diff"],
+      ["Downloadable comparison report", "No - on-screen only", "Yes - marked-up PDF"],
+      ["Move detection", "No", "Yes"],
+      ["Works on scanned PDFs", "Limited (no text layer = limited results)", "Requires OCR first"],
+      ["Works without install", "Yes (browser)", "No (desktop app)"],
+    ],
+  },
+];
 
 function normalizeContent(source: string) {
   return source.replace(/(^|\n)(H[123]: [^\n]+)\n/g, "$1\n$2\n\n");
@@ -63,6 +224,7 @@ function mapRoute(value: string) {
     "/pdf-tools/protect-pdf": "/pdf-tools/protect-pdf",
     "/pdf-tools/sign-pdf": "/pdf-tools/sign-pdf",
     "/pdf-tools/merge-pdf": "/pdf-tools/merge-pdf",
+    "/pdf-tools/redact-pdf": "/pdf-tools/redact-pdf",
     "/products/printpilot": "/print-automation",
     "/features/auto-delete": "/privacy-policy",
     "/security": "/privacy-policy",
@@ -87,6 +249,7 @@ function labelFor(route: string) {
     "/pdf-tools/protect-pdf": "Open Protect PDF",
     "/pdf-tools/sign-pdf": "Open Sign PDF",
     "/pdf-tools/merge-pdf": "Open Merge PDF",
+    "/pdf-tools/redact-pdf": "Open Redact PDF",
     "/print-automation": "Learn About PrintPilot",
     "/privacy-policy": "Read Privacy Policy",
     "/pricing": "Start Free Trial",
@@ -177,11 +340,11 @@ function renderLines(lines: string[], keyPrefix: string): React.ReactNode[] {
 }
 
 function findTable(lines: string[]) {
-  const headers = changesTable.headers;
-  const start = lines.findIndex((line, index) => headers.every((header, offset) => lines[index + offset] === header));
-  if (start < 0) return null;
-  const end = start + headers.length + changesTable.rows.length * headers.length;
-  return { start, end };
+  for (const table of tables) {
+    const start = lines.findIndex((line, index) => table.headers.every((header, offset) => lines[index + offset] === header));
+    if (start >= 0) return { table, start, end: start + table.headers.length + table.rows.length * table.headers.length };
+  }
+  return null;
 }
 
 function StructuredSeoCopy({ source }: { source: string }) {
@@ -195,7 +358,7 @@ function StructuredSeoCopy({ source }: { source: string }) {
     if (first.startsWith("H3: ")) return <h3 key={index}>{first.slice(4)}</h3>;
     const table = findTable(lines);
     if (table) {
-      return <div key={index}>{table.start > 0 ? <div className="tool-seo-copy-paragraph">{renderLines(lines.slice(0, table.start), `${index}-before-table`)}</div> : null}{renderTable(changesTable)}{table.end < lines.length ? <div className="tool-seo-copy-paragraph">{renderLines(lines.slice(table.end), `${index}-after-table`)}</div> : null}</div>;
+      return <div key={index}>{table.start > 0 ? <div className="tool-seo-copy-paragraph">{renderLines(lines.slice(0, table.start), `${index}-before-table`)}</div> : null}{renderTable(table.table)}{table.end < lines.length ? <div className="tool-seo-copy-paragraph">{renderLines(lines.slice(table.end), `${index}-after-table`)}</div> : null}</div>;
     }
     return <div className={index === 1 ? "tool-seo-copy-paragraph tool-seo-hero" : "tool-seo-copy-paragraph"} key={index}>{renderLines(lines, `${index}`)}</div>;
   })}</>;
@@ -210,17 +373,17 @@ function JsonLd() {
       applicationCategory: "UtilitiesApplication",
       operatingSystem: "Web",
       offers: { "@type": "Offer", price: "0", priceCurrency: "INR" },
-      description: "Free online PDF comparison tool that gives a similarity score and page-by-page breakdown for two PDF files, processed entirely in the browser.",
+      description: "Free online PDF comparison tool - Jaccard word-overlap similarity score and page-by-page breakdown with side-by-side thumbnails for two PDF files, processed entirely in the browser.",
       url: pageUrl,
     },
     {
       "@context": "https://schema.org",
       "@type": "HowTo",
-      name: "How to Compare Two PDF Files Online Free",
+      name: "How to Compare Two PDF Files in 3 Steps",
       step: [
-        { "@type": "HowToStep", name: "Upload your first PDF" },
-        { "@type": "HowToStep", name: "Upload your second PDF" },
-        { "@type": "HowToStep", name: "Review the similarity score" },
+        { "@type": "HowToStep", name: "Upload Both PDF Files" },
+        { "@type": "HowToStep", name: "Wait for Analysis" },
+        { "@type": "HowToStep", name: "Review the Similarity Results" },
       ],
     },
     {

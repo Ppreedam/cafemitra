@@ -3,155 +3,209 @@ import type { ReactNode } from "react";
 import { DashboardShell } from "../../DashboardShell";
 import PdfEditTool from "../PdfEditTool";
 
-const pageUrl = "https://repetigo.com/pdf-tools/pdf-forms";
+const pageUrl = "https://repetigo.com/pdf-tools/pdf-form";
 
 export const metadata: Metadata = {
-  title: "PDF Form Filler - Fill or Create Fillable PDFs Free | RepetiGo",
-  description: "Fill any PDF form online free - or create a new fillable PDF with text fields. Type in fields, check boxes. No sign-up, no Adobe needed. Browser-only processing.",
+  title: "Fill PDF Form Online Free - Fill or Create Fields | RepetiGo",
+  description: "Fill PDF form free - detect and fill existing text fields, checkboxes, and dropdowns. Or create a new text field at a custom position. Browser-only. No Adobe. No sign-up.",
   alternates: { canonical: pageUrl },
   openGraph: {
-    title: "PDF Form Filler - Fill or Create Fillable PDFs Free | RepetiGo",
-    description: "Fill any PDF form online free - or create a new fillable PDF. Type in fields, check boxes. No sign-up, browser-only - never uploaded.",
+    title: "Fill PDF Form Online Free - Fill or Create Fields | RepetiGo",
+    description: "Fill PDF form free - detect and fill existing text fields, checkboxes, and dropdowns. Or create a new text field at a custom position. Browser-only. No Adobe. No sign-up.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
     card: "summary_large_image",
-    title: "PDF Form Filler Free Online - RepetiGo",
-    description: "Fill any PDF form free or create fillable PDFs. No sign-up, browser-only - never uploaded.",
+    title: "Fill PDF Form Online Free - RepetiGo",
+    description: "Fill existing fields or create one new text field on a flat PDF. No sign-up, browser-only.",
   },
   robots: { index: true, follow: true },
 };
 
-const content = String.raw`H1: Fill Any PDF Form Free. Or Create One Others Can Fill. No Adobe, No Sign-Up.
-Two of the most common PDF frustrations, solved in one place.
-You have a PDF form that won't let you type into it. Or you need to build a form that your team, clients, or applicants can fill out and return. Either way, RepetiGo's free PDF form tool handles both - fill in the fields on an existing interactive PDF form in your browser, or add a fillable text field to a flat PDF that has none.
-✓ Fill existing interactive PDF form fields  ✓ Add a fillable text field to a flat PDF  ✓ Works on Mac, Windows, iPhone  ✓ No sign-up  ✓ Browser-only processing
+const content = String.raw`H1: Fill PDF Form Online Free. Fill Existing Fields or Add a New Text Field.
+RepetiGo's free fill PDF form tool lets you complete interactive PDF forms in your browser - type into text fields, check checkboxes, and select dropdown options. Download a filled PDF ready for submission without printing, signing by hand, and scanning back.
+If your PDF has no existing form fields - it is a flat or scanned form - the tool switches to creation mode, where you can add one new text field at a custom position on the page.
+✓ Fill Text Fields, Checkboxes, and Dropdowns  ✓ Create a New Text Field on Flat PDFs  ✓ No Adobe Required  ✓ No Printing or Scanning  ✓ Browser-Only - Never Uploaded
 
-➜  [ Fill or Create PDF Forms Free → repetigo.com/tools/pdf/pdf-form/ ]
+➜  [ Fill Your PDF Form Free - No Sign-Up → repetigo.com/tools/pdf/pdf-form/ ]
 
-H2: Fillable vs Flat PDF Forms: What's the Difference?
-Not all PDF forms are the same. When you open a PDF and can click directly into a field and start typing, that is a fillable PDF - it has interactive form fields built in by the original creator. When you try to click and nothing happens, that is a flat PDF - the form design is visible but there are no interactive fields, just a printed layout.
-The distinction matters because each type needs a different approach:
-•  Interactive fillable PDF: Fields are already defined. RepetiGo detects every field on upload and lists them for editing. Most digital government forms, USCIS applications, and corporate HR forms fall into this category.
-•  Flat PDF (non-interactive): No fields to detect. These are typically scanned forms, printed forms that were photographed, or PDFs exported from a layout programme without form fields. RepetiGo lets you add one new text field at a position you choose - it does not turn the whole page into a click-anywhere overlay.
-💡  RepetiGo checks your PDF automatically. Upload it and the tool detects whether it already has interactive fields or is a flat layout, then shows the matching panel - a list of fields to edit, or a single new field to place.
+H2: What Is a Fillable PDF Form?
+A fillable PDF form is a PDF document that contains interactive form fields - defined areas where the reader can type, check boxes, or make selections without printing the document. Form fields are embedded in the PDF structure with specific properties: field name, field type, current value, and position on the page.
+Common types of interactive PDF form fields:
+•  Text fields: Single-line or multi-line boxes where the user types text - for names, addresses, dates, signatures, or any written response
+•  Checkboxes: Toggle fields that are either checked (true) or unchecked (false) - for yes/no options, consent agreements, or multi-select lists
+•  Dropdown menus: Selection lists with predefined options - for choosing from a fixed set of values (state, category, type)
+•  Radio button groups: Single-select groups where only one option in the group can be selected at a time
+Not all PDFs are fillable. Many PDF forms are 'flat' - they look like forms (with lines and boxes) but contain no interactive fields. These are essentially images of forms. For flat forms, see the Create New Text Field section below.
 
-H2: How to Fill Out a PDF Form Online Free.
-Whether it's a job application, a government form, a rental agreement, or a college admission form - the process for a PDF that already has interactive fields is the same.
+H2: Two Modes - Fill Existing Form or Add a New Text Field.
+When you upload a PDF, the tool automatically detects whether interactive form fields exist and switches to the appropriate mode:
+H3: Mode 1 - Fill Existing Interactive Form Fields
+If the PDF has interactive fields, every field is detected and listed with its field name and current value. Three field types are fillable:
+•  Text fields: Click the field in the list and type your response. The text is placed in the PDF at the field's defined position
+•  Checkboxes: Click the checkbox field in the list to toggle it on or off. The check mark appears at the field's defined position
+•  Dropdowns: Click the dropdown in the list and select from the predefined options already in the PDF form
+H3: Mode 2 - Create a New Text Field on a Flat PDF
+If the PDF has no interactive fields (a flat, static, or scanned PDF), the tool switches to creation mode. You can add one new text field per session:
+•  Enter a field name (used as a label identifier - not shown on the PDF page)
+•  Enter the default text value for the field
+•  Set the horizontal position: From-left (as a % of page width)
+•  Set the vertical position: From-top (as a % of page height)
+The new text field is embedded in the PDF as an interactive field - the recipient can also type in it. Only one text field can be created per session. Checkboxes, radio buttons, dropdown menus, and signature fields cannot be created - those field types require the fields to already exist in the PDF when uploaded.
+💡  Mode 2 is useful for adding a text overlay (name, date, reference number) to a flat PDF that cannot be typed into. For full form creation with multiple fields of different types, a dedicated PDF form creator tool is more appropriate.
 
+H2: How to Fill a PDF Form in 3 Steps.
 H3: Step 1 - Upload Your PDF Form
-Click Upload or drag the PDF form into the tool. Nothing is uploaded to a server - your file is read directly in your browser. No account required.
-H3: Step 2 - Fill in the Fields
-If the PDF has interactive fields, RepetiGo lists every field it finds as an editable box labelled with the field's name and type. Type your answer into a text field's box; for a checkbox, type true to check it or false to leave it unchecked; for a dropdown, type the exact option text you want selected.
-•  Type text into detected text fields (name, address, date, amount)
-•  Set a detected checkbox by typing true or false into its box
-•  Set a detected dropdown by typing the exact option text
-•  Radio button groups are not currently supported and are left unchanged
-•  There is no in-tool signature drawing - use RepetiGo's Sign PDF tool afterwards to add one
-H3: Step 3 - Download Your Completed Form
-Click Save PDF form. Your filled form saves to your device - all entries are permanently embedded in the PDF. It opens correctly in every PDF reader, on every device, exactly as you filled it. Your file is never sent to any server - processed locally in your browser.
-📱  The PDF form filler works in mobile browsers - Safari on iPhone, Chrome on Android. Upload a form from your Files app, fill it on your phone, and download. No app installation required.
+Click Upload and select your PDF form. The tool detects whether interactive fields exist. If fields are found, they are listed automatically. If no fields are found, the creation mode appears.
+H3: Step 2 - Fill the Fields or Set Up Your New Text Field
+Mode 1: Scroll through the field list. Each field shows its name, type, and current value. Click a text field and type your content. Toggle checkboxes. Select dropdown options. Mode 2: Enter your field name, default text value, and position (From-left and From-top as percentages of the page dimensions). The tool shows a preview of where the field will be placed.
+H3: Step 3 - Download Your Completed PDF
+Click Complete Form (Mode 1) or Add Field (Mode 2). Your filled or field-added PDF downloads. For Mode 1, field values are embedded in the PDF structure. For Mode 2, the new text field is embedded as an interactive element. Your file is processed entirely in your browser - nothing is uploaded.
 
-➜  [ Fill a PDF Form Now - Free → repetigo.com/tools/pdf/pdf-form/ ]
+H2: Common PDF Form Scenarios - When to Use This Tool.
 
-H2: How to Create a Fillable PDF Form Free.
-You have a flat PDF - a brochure, a designed document, a scanned form with no interactive fields - and you want to add somewhere for someone to type. RepetiGo can add one new text field to it.
-H3: Building Your Fillable Form
-1.  Upload your flat PDF (it must not already have interactive fields) to RepetiGo's form builder.
-2.  Name the field and set an optional default value.
-3.  Position it using the from-left and from-top sliders - there is no drag-and-drop placement.
-4.  Click Save PDF form. Share the result by email, embed it on a website, or print it for distribution. Anyone with a PDF reader can fill it - or send it back through RepetiGo for digital completion.
-💡  Today's builder adds one text field per document - useful for a single signature-adjacent detail like a date or reference number on an otherwise flat form. For a multi-field HR onboarding form or a full application form, design it with checkboxes, dropdowns, and multiple fields in a dedicated form-authoring tool, then use RepetiGo to fill it in afterwards.
+Situation
+Best Approach
+You received an interactive PDF form with fillable text boxes
+Upload → Mode 1 → fill fields → download
+Your PDF form has checkboxes - you need to tick some
+Upload → Mode 1 → toggle checkboxes → download
+You have a flat PDF form (printed look, no interactive fields)
+Upload → Mode 2 → add one text field → download
+You need to add a date or reference number to a document
+Upload → Mode 2 → position text field over the date line → download
+You need to complete a government form PDF
+Upload → if fields detected: Mode 1; if flat: Mode 2 for text overlay
+You need a form with 10 different fields created from scratch
+Use a dedicated PDF form creator - this tool supports one new field per session
+You need to add a signature to the completed form
+After filling, use Sign PDF at /tools/pdf/sign-pdf/
 
-➜  [ Create a Fillable PDF Form Free → repetigo.com/tools/pdf/pdf-form/ ]
+H2: Fill PDF Form in India - Government and Institutional Forms.
+India's government portals and institutional processes involve a large volume of PDF forms - many of which are fillable interactive PDFs, while others are flat scanned or printed-design PDFs:
+•  Government service forms: Central and state government service forms (RTI applications, utility connections, property registrations) are often interactive PDFs - Mode 1 fills them directly
+•  Bank and financial forms: KYC forms, loan application forms, account opening forms from banks and NBFCs - these are typically interactive PDFs with named fields for personal details, address, and income information
+•  Insurance claim forms: Health, vehicle, and life insurance claim forms sent as PDF - fill in-browser and download for submission without printing
+•  Educational institution forms: College application forms, examination registration forms, and scholarship applications - many are interactive PDFs designed for digital completion
+•  MSME and startup registration: Many DPIIT, MCA, and state government startup scheme application forms are PDF-based - fill and submit digitally
+With RepetiGo you can fill PDF forms free in India - complete any interactive PDF in your browser, add text overlays to flat forms, and download the filled document in seconds. No account, no software, browser-only.
 
-H2: Who Uses PDF Forms - and What They Actually Need.
-PDF forms appear in almost every professional and personal context. Here are the most common real scenarios:
-•  Job applicants: Received a job application as an interactive PDF. Fill each field directly instead of printing, handwriting, and scanning. Upload → fill detected fields → download.
-•  Students: College admission form, scholarship application, or hostel allocation form issued as an interactive PDF. Fill each detected field, download, and email to the admissions office.
-•  HR professionals: Need to distribute an employee onboarding form, leave request form, or reimbursement form that employees can fill digitally. If the existing form is already interactive, edit the field values directly; if it's flat, add a single field or move to a dedicated form builder for a multi-field version.
-•  Small businesses: Client intake forms, project brief forms, quote request forms - if the PDF already has interactive fields, RepetiGo fills them cleanly and returns a machine-readable form.
-•  Legal and CA offices: Draft agreements, declaration forms, and affidavits sent to clients who need to fill in specific fields (name, date, amount). Filling detected fields directly eliminates transcription errors from handwritten entries.
-•  Educators: Worksheets, assessment rubrics, and feedback forms that already have interactive fields, filled digitally by students or parents. No printing, no scanning.
+H2: Fill PDF Form Without Adobe Acrobat.
+Adobe Acrobat Reader (free) can fill interactive PDF forms - but requires installation. Adobe Acrobat Pro adds form creation capabilities but requires a paid subscription. RepetiGo lets you fill PDF forms without any Adobe installation, in any browser:
 
-H2: Fill and Create PDF Forms Without Adobe Acrobat.
-Adobe Acrobat Pro has form filling and form creation tools - but the subscription costs more than most individuals and small teams can justify for occasional use. Adobe Reader (the free version) can fill interactive forms but cannot create new fillable forms.
-RepetiGo fills the interactive fields it detects on any PDF, lets you add one new text field to a flat PDF, and runs entirely in the browser - no installation, no licence, free. The output files open correctly in Adobe Reader, Preview, and every other PDF viewer. For one-off and occasional form work, it is the practical alternative.
-•  RepetiGo: Free · browser-based · fills detected interactive fields · adds one field to flat PDFs · browser-only · no account
-•  Adobe Acrobat Pro: Paid subscription · desktop app · full multi-field form creation · best for high-volume professional form design
-•  Adobe Reader (free): Free · fills interactive PDFs only · cannot create forms
-✅  For filling government forms, job applications, and rental agreements that already have interactive fields, RepetiGo is a free browser-based alternative to Adobe Reader.
+Feature
+RepetiGo
+Adobe Acrobat Reader (Free)
+Adobe Acrobat Pro
+Cost
+Free
+Free
+₹1,500-₹3,500/month
+Fill existing fields
+✅ Yes
+✅ Yes
+✅ Yes
+No install required
+✅ Yes (browser)
+❌ Requires desktop install
+❌ Requires desktop install
+Create new text field
+✅ Yes (one per session)
+❌ No
+✅ Yes (unlimited)
+Create checkboxes/radio/dropdown
+❌ No
+❌ No
+✅ Yes
+Server upload
+No - browser-only
+Local file processing
+Cloud sync
 
-H2: PDF Forms in India - From Job Applications to Government Submissions.
-India's professional and government ecosystem runs on PDF forms. But the majority of these forms - from state government application PDFs to private company HR documents - are issued as flat, non-interactive files that cannot be filled digitally in standard PDF readers. People print them, fill them by hand, and either scan-and-email them back or physically submit them. RepetiGo eliminates that paper loop.
-•  Government application forms: State and central government schemes, ration card applications, income certificate requests, and benefit scheme applications - when issued as interactive PDFs, fill the detected fields and submit without printing.
-•  College admission and scholarship forms: University and college admission forms, scholarship application PDFs from AICTE, UGC, and state scholarship boards - fill detected fields on a phone or laptop before the submission deadline.
-•  Job application forms: Fill the interactive fields on a company's application PDF with typed entries rather than handwritten answers.
-•  HR and onboarding documents: Growing Indian companies building digital-first HR workflows can fill interactive joining documents, declaration forms, and policy acknowledgements directly, or add a single field to a flat one.
-•  CA and legal offices: Chartered accountant firms sending engagement letters, consent forms, and declaration PDFs with existing interactive fields can have clients fill and return them without the scan-back step.
-With RepetiGo you can fill PDF forms free online in India - open the tool on a phone or laptop, fill in the detected fields, and download a submission-ready document in seconds. Files are processed locally and never uploaded.
-⚠️  Under India's DPDP Act 2023, PDF forms often contain personal data - name, Aadhaar number, income details. Always use a tool that never uploads the file in the first place.
-
-H2: Your PDF Form Data Is Safe. Always.
-PDF forms routinely carry personal data: names and addresses, income figures, identity numbers, medical details, employment history. Here is what happens to your data:
-•  🔒 Stays in your browser: Never uploaded to any server.
-•  🔐 Local processing: Your form is processed locally in your browser with no link to any account or identifier.
-•  👁️ Content never leaves your device: The form filler positions your text entries on the PDF layout. It does not read, store, or analyse the values you type - your income figure, your Aadhaar number, your address.
-•  🚫 No account = no data profile: No sign-up means we hold zero information about you. No usage history, no form history.
-🔒  Every form you fill contains personal data you would not want stored on a stranger's server. RepetiGo's browser-only processing means it isn't.
+H2: Your Files Never Leave Your Browser.
+RepetiGo's PDF tools run entirely in your browser. Your PDF is never uploaded to any server - it is processed locally on your device.
+•  🔒 Browser-only processing: Your file never travels over any network to any server. No upload occurs at any stage.
+•  🔐 No server session: There is no remote processing session, no isolated server workspace. Everything happens inside your browser tab.
+•  🚫 No account = no data: No sign-up means we hold zero personal data about you. No file history, no email, no usage tracking.
+•  👁️ Content never leaves device: No text, image, or document content is sent to or read by any external system or person.
+•  ✅ Cleared on tab close: All local working data clears when you close or refresh the tab. Nothing persists on your device or any server.
+🔒  Your file never leaves your device - not for 60 minutes, not ever. Browser-only processing is stronger privacy than any server-side deletion policy.
 Privacy Policy → /security/ | Browser-only processing - no upload, no storage
 
-H2: PDF Forms for Print Shops.
-Print shops and CSC centres help customers fill and print PDF forms every day - government application forms, job applications, bank forms. Typically this involves the customer bringing a printout or a phone with the PDF, the shop operator typing on their counter PC, printing, and the customer signing. It is slow, creates a data handling responsibility, and ties up counter time.
-PrintPilot - RepetiGo's print shop automation platform - can handle PDF form filling as part of the customer self-service workflow. The customer uploads their form via QR code, fills it on their own phone, and the completed form goes directly to the print queue. The operator prints; the customer collects. Zero operator involvement in the personal data.
-🖨️  PrintPilot keeps your shop's customers moving and keeps your counter staff out of customers' personal data. Faster service, cleaner compliance.
-Learn about PrintPilot → /products/printpilot/
+H2: PDF Forms for Print Shops - Built into PrintPilot.
+Print shop owners, cyber cafe operators, and CSC centre managers use RepetiGo's pdf forms tool as part of their customer document processing workflow - without switching to separate applications.
+PrintPilot - RepetiGo's print shop management platform - integrates all 30 PDF tools directly into the shop dashboard. Customer documents uploaded by QR code are processed automatically before reaching the print queue.
+•  Help customers fill government service applications and bank forms on the counter computer
+•  Add reference numbers or dates to flat form PDFs before printing for customers
+•  Complete KYC forms for customers at CSC centres without printing, writing, and scanning back
+🖨️  PrintPilot gives you all 30 PDF tools plus QR code document upload, AI document enhancement, secure print queue, UPI payments, and auto-delete compliance - built into one platform.
 
-➜  [ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Just Fill a PDF Form Now → repetigo.com/tools/pdf/pdf-form/ ]
+➜  [ Try PrintPilot Free - Print Shop Automation for India → repetigo.com/products/printpilot/ ]
 
-H2: Common Questions About Filling and Creating PDF Forms.
+H2: Common Questions About Filling PDF Forms.
 H3: Q1: How do I fill out a PDF form online for free?
-Go to repetigo.com/tools/pdf/pdf-form/, upload your PDF form, and type your answers into the detected fields (or add one field if it's a flat PDF), then download the completed form. Free. No account. Works on any device. Your file is never uploaded - processed in your browser.
-H3: Q2: What's the difference between a fillable and a flat PDF form?
-A fillable PDF has interactive form fields built in - you click a field and type. A flat PDF looks like a form but has no clickable fields - it's a static image of form lines without any interactive layer. RepetiGo handles both differently: for a fillable PDF it lists every detected field for you to edit; for a flat PDF it lets you add one new text field at a position you choose, rather than a full click-anywhere overlay across the page.
-H3: Q3: How do I create a fillable PDF form for free?
-Upload a flat PDF - one with no existing interactive fields - to RepetiGo's form builder. Name your field, set a default value, and position it with the left/top sliders, then download. This adds one text field per document today; for a multi-field form with checkboxes, dropdowns, and required flags, use a dedicated form-authoring tool and bring the result back to RepetiGo to fill it in.
-H3: Q4: How do I fill out a PDF form on iPhone?
-Open Safari on your iPhone, go to repetigo.com/tools/pdf/pdf-form/, and upload your PDF form from the Files app. Type into the detected fields, or set the position for a new field on a flat form. Download the completed form to your iPhone's Files app. No App Store installation required.
-H3: Q5: How do I fill out a PDF form on Mac without Adobe?
-macOS Preview can fill interactive PDF forms but cannot add a new field to a flat PDF. For flat PDFs, open RepetiGo in Safari on your Mac, upload the form, position and save your new text field, and download the completed document. The filled PDF opens correctly in Preview and every other Mac PDF viewer.
-H3: Q6: Can I fill a government form PDF online?
-Yes - RepetiGo fills the interactive fields on any PDF form, including government-issued forms that have them. Upload the form, edit each detected field, and download the completed form. The tool does not supply the government form files themselves - you would download the official form from the relevant government website (USCIS.gov, income tax portal, etc.) and then bring it to RepetiGo to complete it.
-H3: Q7: Can I convert an existing PDF into a fillable form?
-If the PDF is flat - no existing interactive fields - yes, upload it to RepetiGo's form builder and add one new text field at the position you choose. The original PDF design is preserved underneath. For adding several fields at once, use a dedicated form-authoring tool instead.
-H3: Q8: Can I sign the PDF form after filling it?
-The form filler itself doesn't add signatures. After downloading your filled or completed form, run it through RepetiGo's Sign PDF tool at /tools/pdf/sign-pdf/ to type your name in a signature font or upload an image of your signature.
-H3: Q9: Is it safe to fill a PDF form that contains personal information?
-With RepetiGo, yes. Your file and the data you type are processed locally in your browser - never uploaded, never stored in any database. The tool positions your text on the PDF layout - it does not extract, store, or read the values you enter. No account sign-up means we hold no information about you or your form submissions.
-H3: Q10: Can I make a PDF form fillable in Word?
-Microsoft Word can create fillable form controls and export to PDF, but the process is complex: you must use the Developer tab to insert content controls, then export. If your Word document already has those content controls, the exported PDF will have real interactive fields - upload it to RepetiGo and fill them in directly, no extra setup needed.
+Go to repetigo.com/tools/pdf/pdf-form/, upload your PDF. If it has interactive fields, they are detected and listed automatically - click each field to fill it. If it has no interactive fields, creation mode appears where you can add one text field. Download when complete. Browser-only - no upload, no sign-up, no software.
+H3: Q2: My PDF looks like a form but I cannot type in it. What do I do?
+Your PDF is a flat form - it looks like a form but has no interactive fields. It may have been created by scanning a paper form, or by exporting from Word/Excel without adding form fields. In creation mode, RepetiGo lets you add one new text field at a custom position on the page. For more complex overlays, use the Edit PDF tool at /tools/pdf/edit-pdf/ to place text boxes anywhere on flat PDF pages.
+H3: Q3: Can I create a fillable PDF form with multiple fields?
+One new text field can be created per session in creation mode. For a full fillable form with multiple text fields, checkboxes, dropdowns, and signature fields, you would need a dedicated PDF form creation tool (such as Adobe Acrobat Pro, PDF.js Express, or Jotform's PDF Editor).
+H3: Q4: What types of form fields can I fill?
+In Mode 1 (interactive fields detected), you can fill: text fields (type any content), checkboxes (toggle on/off), and dropdown menus (select from predefined options). Radio button groups are detected but may behave as individual checkboxes depending on the PDF's field structure.
+H3: Q5: Can I fill a PDF form on my phone?
+Yes. The PDF form tool works in any mobile browser - Safari on iPhone, Chrome on Android. Upload from your Files app, type in text fields, toggle checkboxes, and download the filled form. No app download required. The interface adapts to mobile screen widths.
+H3: Q6: Why can't I create a checkbox or dropdown in Mode 2?
+Mode 2 (creation mode) supports adding one new text field only. Checkboxes, radio buttons, dropdown menus, and signature fields require additional properties (predefined options, grouping, value lists) that are not available in the current creation interface. These field types can only be filled in Mode 1 if they already exist in the PDF when uploaded.
+H3: Q7: Is the filled form saved permanently?
+The filled values are embedded in the PDF file that you download. That PDF retains the filled values when shared with others or re-opened in any PDF reader. The Mode 2 text field is embedded as an interactive field that the recipient can also edit. For Mode 1 filled forms, some PDF creators lock the form after filling - in that case, the values are visible but the fields may appear read-only to subsequent readers.
+H3: Q8: How do I sign the form after filling it?
+After filling the form and downloading it, open the Sign PDF tool at /tools/pdf/sign-pdf/. Upload the filled form, choose your signature method (type, draw, or upload), position it on the signature line, and download the signed PDF. This two-step process - fill then sign - covers the complete digital form workflow.
 
 H2: More Free PDF Tools from RepetiGo.
-•  Sign PDF → /tools/pdf/sign-pdf/ - add a signature after filling your form
-•  Edit PDF → /tools/pdf/edit-pdf/ - edit text and content directly in any PDF
-•  OCR PDF → /tools/pdf/ocr-pdf/ - make scanned forms text-selectable before filling
-•  Add Watermark → /tools/pdf/add-watermark/ - stamp DRAFT or CONFIDENTIAL on forms
-•  Compress PDF → /tools/pdf/compress-pdf/ - reduce file size of completed forms before emailing
-•  All PDF Tools → /tools/pdf/ - complete free PDF tools library
+•  Sign PDF → /tools/pdf/sign-pdf/ - add your signature after filling the form
+•  Edit PDF → /tools/pdf/edit-pdf/ - add text boxes at any position on flat PDF pages
+•  Protect PDF → /tools/pdf/protect-pdf/ - lock the filled form before sending
+•  All PDF Tools → /tools/pdf/
 
-➜  [ Fill or Create PDF Forms Free Now → repetigo.com/tools/pdf/pdf-form/ ]
-No sign-up · Mac · iPhone · Windows · Browser-only processing`;
+➜  [ Fill Your PDF Form Free - No Sign-Up → repetigo.com/tools/pdf/pdf-form/ ]`;
+
+type SeoTable = { headers: string[]; rows: string[][] };
+
+const tables: SeoTable[] = [
+  {
+    headers: ["Situation", "Best Approach"],
+    rows: [
+      ["You received an interactive PDF form with fillable text boxes", "Upload → Mode 1 → fill fields → download"],
+      ["Your PDF form has checkboxes - you need to tick some", "Upload → Mode 1 → toggle checkboxes → download"],
+      ["You have a flat PDF form (printed look, no interactive fields)", "Upload → Mode 2 → add one text field → download"],
+      ["You need to add a date or reference number to a document", "Upload → Mode 2 → position text field over the date line → download"],
+      ["You need to complete a government form PDF", "Upload → if fields detected: Mode 1; if flat: Mode 2 for text overlay"],
+      ["You need a form with 10 different fields created from scratch", "Use a dedicated PDF form creator - this tool supports one new field per session"],
+      ["You need to add a signature to the completed form", "After filling, use Sign PDF at /tools/pdf/sign-pdf/"],
+    ],
+  },
+  {
+    headers: ["Feature", "RepetiGo", "Adobe Acrobat Reader (Free)", "Adobe Acrobat Pro"],
+    rows: [
+      ["Cost", "Free", "Free", "₹1,500-₹3,500/month"],
+      ["Fill existing fields", "✅ Yes", "✅ Yes", "✅ Yes"],
+      ["No install required", "✅ Yes (browser)", "❌ Requires desktop install", "❌ Requires desktop install"],
+      ["Create new text field", "✅ Yes (one per session)", "❌ No", "✅ Yes (unlimited)"],
+      ["Create checkboxes/radio/dropdown", "❌ No", "❌ No", "✅ Yes"],
+      ["Server upload", "No - browser-only", "Local file processing", "Cloud sync"],
+    ],
+  },
+];
 
 const routeMap: Record<string, string> = {
   "/pdf-tools": "/pdf-tools",
-  "/pdf-tools/pdf-forms": "/pdf-tools/pdf-forms",
+  "/pdf-tools/pdf-form": "/pdf-tools/pdf-form",
   "/pdf-tools/sign-pdf": "/pdf-tools/sign-pdf",
   "/pdf-tools/edit-pdf": "/pdf-tools/edit-pdf",
   "/pdf-tools/ocr-pdf": "/pdf-tools/ocr-pdf",
   "/pdf-tools/watermark-pdf": "/pdf-tools/watermark-pdf",
   "/pdf-tools/compress-pdf": "/pdf-tools/compress-pdf",
+  "/pdf-tools/protect-pdf": "/pdf-tools/protect-pdf",
   "/products/printpilot": "/print-automation",
   "/features/auto-delete": "/privacy-policy",
   "/security": "/privacy-policy",
@@ -160,12 +214,13 @@ const routeMap: Record<string, string> = {
 
 const routeLabels: Record<string, string> = {
   "/pdf-tools": "Explore All PDF Tools",
-  "/pdf-tools/pdf-forms": "Open PDF Form",
+  "/pdf-tools/pdf-form": "Open PDF Form",
   "/pdf-tools/sign-pdf": "Open Sign PDF",
   "/pdf-tools/edit-pdf": "Open Edit PDF",
   "/pdf-tools/ocr-pdf": "Open OCR PDF",
   "/pdf-tools/watermark-pdf": "Open Add Watermark",
   "/pdf-tools/compress-pdf": "Open Compress PDF",
+  "/pdf-tools/protect-pdf": "Open Protect PDF",
   "/print-automation": "Learn About PrintPilot",
   "/privacy-policy": "Read Privacy Policy",
   "/pricing": "Start Free Trial",
@@ -234,8 +289,8 @@ function renderLines(lines: string[], keyPrefix: string): ReactNode[] {
       const inner = line.trim().replace(/^(?:➜|➤|→)\s*/, "").replace(/^\[/, "").replace(/\]$/, "");
       const arrow = inner.indexOf("→");
       const label = arrow >= 0 ? inner.slice(0, arrow).trim() : inner.trim();
-      const href = arrow >= 0 ? mapRoute(inner.slice(arrow + 1)) : "/pdf-tools/pdf-forms";
-      output.push(<div className="tool-seo-cta-stack" key={`${keyPrefix}-cta-${index}`}><a className="tool-seo-inline-cta" href={href || "/pdf-tools/pdf-forms"}>{label} <span>→</span></a></div>);
+      const href = arrow >= 0 ? mapRoute(inner.slice(arrow + 1)) : "/pdf-tools/pdf-form";
+      output.push(<div className="tool-seo-cta-stack" key={`${keyPrefix}-cta-${index}`}><a className="tool-seo-inline-cta" href={href || "/pdf-tools/pdf-form"}>{label} <span>→</span></a></div>);
       index += 1;
       continue;
     }
@@ -243,6 +298,18 @@ function renderLines(lines: string[], keyPrefix: string): ReactNode[] {
     index += 1;
   }
   return output;
+}
+
+function findTable(lines: string[]) {
+  for (const table of tables) {
+    const start = lines.findIndex((line, index) => table.headers.every((header, offset) => lines[index + offset] === header));
+    if (start >= 0) return { table, start, end: start + table.headers.length + table.rows.length * table.headers.length };
+  }
+  return null;
+}
+
+function renderTable(table: SeoTable) {
+  return <div className="tool-seo-table-wrap"><table><thead><tr>{table.headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{table.rows.map((row) => <tr key={row.join("|")}>{row.map((cell, index) => <td key={`${cell}-${index}`}>{renderInline(cell)}</td>)}</tr>)}</tbody></table></div>;
 }
 
 function normalizeContent(source: string) {
@@ -257,17 +324,21 @@ function StructuredSeoCopy() {
     if (first.startsWith("H1: ")) return <h1 key={index}>{first.slice(4)}</h1>;
     if (first.startsWith("H2: ")) return <h2 key={index}>{first.slice(4)}</h2>;
     if (first.startsWith("H3: ")) return <h3 key={index}>{first.slice(4)}</h3>;
+    const table = findTable(lines);
+    if (table) {
+      return <div key={index}>{table.start > 0 ? <div className="tool-seo-copy-paragraph">{renderLines(lines.slice(0, table.start), `${index}-before-table`)}</div> : null}{renderTable(table.table)}{table.end < lines.length ? <div className="tool-seo-copy-paragraph tool-seo-table-followup">{renderLines(lines.slice(table.end), `${index}-after-table`)}</div> : null}</div>;
+    }
     return <div className={index === 1 ? "tool-seo-copy-paragraph tool-seo-hero" : "tool-seo-copy-paragraph"} key={index}>{renderLines(lines, `${index}`)}</div>;
   })}</>;
 }
 
 function JsonLd() {
-  const faqStart = content.indexOf("H2: Common Questions About Filling and Creating PDF Forms.");
+  const faqStart = content.indexOf("H2: Common Questions About Filling PDF Forms.");
   const faqEnd = content.indexOf("H2: More Free PDF Tools from RepetiGo.", faqStart);
   const faqQuestions = Array.from(content.slice(faqStart, faqEnd).matchAll(/H3: ([^\n]+)\n([\s\S]*?)(?=\nH3: |\nH2:|$)/g)).map((match) => ({ "@type": "Question", name: match[1], acceptedAnswer: { "@type": "Answer", text: match[2].trim() } }));
   const schemas = [
-    { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo PDF Forms", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online PDF form filler and form builder for interactive and flat PDFs.", url: pageUrl },
-    { "@context": "https://schema.org", "@type": "HowTo", name: "How to Fill a PDF Form Online", step: [{ "@type": "HowToStep", name: "Upload your PDF form" }, { "@type": "HowToStep", name: "Fill in the fields" }, { "@type": "HowToStep", name: "Download your completed form" }] },
+    { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo PDF Forms", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online PDF form tool - fills detected text fields, checkboxes, and dropdowns on interactive PDFs, or creates one new text field on a flat PDF, entirely in the browser. No file is ever uploaded to a server.", url: pageUrl },
+    { "@context": "https://schema.org", "@type": "HowTo", name: "How to Fill a PDF Form in 3 Steps", step: [{ "@type": "HowToStep", name: "Upload Your PDF Form" }, { "@type": "HowToStep", name: "Fill the Fields or Set Up Your New Text Field" }, { "@type": "HowToStep", name: "Download Your Completed PDF" }] },
     { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqQuestions },
     { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "PDF Tools", item: "https://repetigo.com/pdf-tools" }, { "@type": "ListItem", position: 3, name: "PDF Form", item: pageUrl }] },
   ];

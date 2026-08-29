@@ -4,162 +4,157 @@ import PdfSecurityTool from "../PdfSecurityTool";
 
 const pageUrl = "https://repetigo.com/pdf-tools/sign-pdf";
 
-const content = String.raw`H1: Sign Any PDF Free. Type or Upload Your Signature. No Adobe, No Printer.
-You have a PDF that needs your signature. No printer nearby. No scanner. No Adobe Acrobat subscription. No problem.
-RepetiGo's free PDF signing tool lets you sign any PDF directly in your browser - type your name in a signature-style font, or upload a photo of your handwritten signature, then position and size it exactly where you need it. Works on Mac, iPhone, Android, and Windows. Sign and send in under two minutes.
-✓ Type or upload your signature  ✓ Works on Mac, iPhone, Android  ✓ Sign contracts, forms, agreements  ✓ No Adobe  ✓ No sign-up  ✓ Files never uploaded - processed in your browser
+export const metadata: Metadata = {
+  title: "Sign PDF Online Free - Draw, Type or Upload | RepetiGo",
+  description: "Sign PDF online free - draw your signature, type it, or upload a photo. Apply to one page or all pages. No Adobe. No sign-up. Browser-only - files never uploaded.",
+  alternates: { canonical: pageUrl },
+  openGraph: {
+    title: "Sign PDF Online Free - Draw, Type or Upload | RepetiGo",
+    description: "Sign PDF online free - draw your signature, type it, or upload a photo. Apply to one page or all pages. No Adobe. No sign-up. Browser-only - files never uploaded.",
+    type: "website",
+    url: pageUrl,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Sign PDF Online Free - RepetiGo",
+    description: "Draw, type, or upload your signature - apply it to any PDF for free. No Adobe, no sign-up, browser-only.",
+  },
+  robots: { index: true, follow: true },
+};
 
-➜  [ Sign PDF Free Now → repetigo.com/tools/pdf/sign-pdf/ ]
+const content = String.raw`H1: Sign PDF Online Free. Draw, Type, or Upload Your Signature. No Adobe.
+RepetiGo's free sign PDF online tool lets you add your signature to any PDF document in seconds - without installing Adobe Acrobat, without creating an account, and without uploading anything to a server.
+Choose how you want to sign: type your name in a signature font, draw your signature using your mouse or finger, or upload a photo of your actual handwritten signature. Apply it to one page or every page. Download the signed PDF.
+✓ Three Signature Methods  ✓ Apply to Any or All Pages  ✓ No Adobe Required  ✓ No Sign-Up  ✓ Browser-Only - Never Uploaded
 
-H2: Two Ways to Sign a PDF - Type or Upload.
-You can add your signature to a PDF in two ways. Both work on every device - choose whichever fits how you work:
+➜  [ Sign Your PDF Now - Free, No Sign-Up → repetigo.com/tools/pdf/sign-pdf/ ]
 
-Method
-How It Works
-Best For
-Works On
-Type
-Type your name and choose a signature-style font. Position and size it with on-screen sliders.
-Business agreements, HR documents, forms where legibility matters more than handwriting style.
-All devices - keyboard input on any platform
-Upload
-Photo or image of your existing handwritten signature (JPG or PNG). Position and size it with on-screen sliders.
-Legal documents requiring your verified signature, formal agreements, situations where signature consistency matters.
-All devices - upload any existing signature image file
+H2: What Is an Electronic Signature on a PDF?
+An electronic signature on a PDF is a visual mark - your name, initials, or a drawn or uploaded image of your handwriting - placed on the page to indicate agreement, approval, or authorisation.
+This is different from a digital signature, which is a cryptographic certificate issued by a Certificate Authority that mathematically proves the document was signed by a specific person and has not been modified since signing. Cryptographic digital signatures are required for government e-filings, court submissions, and regulated financial instruments.
+For the vast majority of everyday professional and personal documents - employment contracts, NDAs, rental agreements, offer letters, vendor agreements, consent forms - an electronic visual signature is accepted. Legal enforceability depends on your jurisdiction and the specific document type; for documents where legal certainty is critical, consult a legal professional.
+⚠️  RepetiGo's Sign PDF tool adds a visual signature stamp to your PDF. It is not a PKI-based cryptographic digital signature. For Aadhaar-based eSign (legally binding under the IT Act 2000), see RepetiGo's eSign product - coming soon.
 
-💡  For a natural handwritten look without drawing on-screen, upload a clear photo of your own signature - written on paper, photographed with good lighting, and cropped close - then position it with the sliders. Typed signatures are the fastest option when legibility matters more than handwriting style.
+H2: Three Ways to Sign a PDF with RepetiGo.
+H3: Option 1 - Type Your Signature
+Type your name and RepetiGo renders it in a signature-style italic font (HelveticaOblique). Clean, professional, and consistent across documents. Choose your font size (12-72px) and position on the page. This option works best when you need a consistent signature across multiple documents.
+H3: Option 2 - Draw Your Signature
+Use your mouse on a laptop or your finger on a touchscreen to draw your signature in the signature pad. Your drawn signature is captured as a PNG image and placed on the PDF exactly as drawn. This option feels closest to a physical pen signature.
+H3: Option 3 - Upload a Signature Image
+Upload a PNG or JPG photo of your existing handwritten signature. The tool places it on the PDF at your chosen position and size. For the best result, photograph your signature on white paper in good lighting - this gives the cleanest image for overlay on the PDF.
 
-H2: Electronic Signature vs Digital Signature - What Is the Difference?
-These terms are used interchangeably in everyday speech, but they mean different things. Knowing the distinction helps you choose the right approach for your situation:
-
-Type
-What It Is
-Legal Status
-When to Use
-Electronic Signature
-A visual representation of your signature applied to a PDF - typed or uploaded. No cryptographic certificate involved.
-Accepted for most everyday professional and personal document workflows. Note: legal validity depends on jurisdiction, document type, and whether both parties have agreed to electronic signing. For professionally accepted requirements, consult a legal professional.
-Employment contracts, NDAs, rental agreements, purchase orders, HR onboarding, vendor agreements - everyday professional and personal documents.
-Digital Signature (Cryptographic)
-A mathematically verified signature using a public/private key certificate (PKI). Provides tamper-evidence and identity verification. Issued by a Certificate Authority.
-Required for specific regulated contexts - government e-filings, notarised documents, certain financial instruments. Provides cryptographic identity verification.
-Government e-filing, MCA21 filings, Aadhaar-based eSign workflows (India), court e-filings, regulated financial documents.
-
-✅  RepetiGo provides electronic signatures - typed or uploaded. For the vast majority of professional and personal document signing, an electronic signature is exactly what is required and fully accepted for professional use. If your institution specifically requires a PKI-based digital signature (such as for government e-filing), you will need a Digital Signature Certificate from a licensed CA.
-
-H2: How to Sign a PDF Free Online.
-Three steps. Under two minutes for any PDF.
-
+H2: How to Sign a PDF in 3 Steps.
 H3: Step 1 - Upload Your PDF
-Click Upload or drag your PDF into the tool. Any PDF works - contracts, forms, agreements, offer letters. Nothing is uploaded - your file is read directly in your browser. No account required.
-H3: Step 2 - Add Your Signature
-Choose Type or Upload as your signature source. For Type, type your name and it renders in a signature-style font. For Upload, upload a JPG or PNG image of your handwritten signature - it's placed on the page as-is (the tool doesn't remove a white background automatically, so a signature photographed on plain white paper usually blends in well already). Use the on-screen From Left / From Top sliders to position your signature, and the size slider to scale it to fit.
+Click Upload or drag your PDF into the tool. All pages are rendered as thumbnails. Select which pages will receive your signature - any combination, or all pages at once.
+H3: Step 2 - Choose Your Signature Method and Position
+Select Type, Draw, or Upload. Set the signature position using the From-left and From-top percentage sliders - a live preview overlay shows exactly where the signature will land on the page. Adjust the size (12-72px) until it looks right.
 H3: Step 3 - Download Your Signed PDF
-Click Download. Your signed PDF saves to your device - signature permanently embedded in the document. Opens correctly in every PDF reader. Nothing was uploaded - the file was processed locally in your browser throughout.
-📋  Need to fill in form fields before signing? Use RepetiGo's PDF Form tool at /tools/pdf/pdf-form/ to complete all fields first, then come back to Sign PDF to add your signature.
+Click Sign PDF. The signature is applied to all selected pages. Download your signed PDF. The file is processed locally in your browser - nothing is uploaded.
 
-➜  [ Sign Your PDF Now - Free → repetigo.com/tools/pdf/sign-pdf/ ]
-
-H2: How to Sign a PDF on Mac Free.
-macOS has two built-in options - Preview and Safari - but neither offers RepetiGo's flexibility for typed or uploaded signatures. Here is how each option compares:
-•  Preview (free, built-in): Can create a signature using your Mac's camera (show your handwritten signature on paper) or the trackpad's drawing mode. Limited font/style options. Works for basic signing.
-•  RepetiGo (free, browser): Type your name in a styled font, or upload an existing signature image - then position and size it with sliders. Works in Safari or Chrome - no installation.
-•  Adobe Acrobat Pro (paid): Full-featured, including drawing and cryptographic signatures. Subscription required.
-To sign a PDF on Mac with RepetiGo: open Safari or Chrome, go to repetigo.com/tools/pdf/sign-pdf/, upload your PDF, type your name or upload a signature image, position it with the sliders, and download the signed document. The whole process takes under two minutes.
-✅  If you want your actual handwritten signature rather than a typed font, photograph it on plain paper first and upload the photo - RepetiGo doesn't currently support drawing directly with a trackpad or finger.
-
-H2: How to Sign a PDF on iPhone and Android.
-Signing PDFs on mobile is seamless with RepetiGo - no app installation required. Open the tool directly in your phone's browser.
-H3: Sign a PDF on iPhone
-1.  Open Safari on your iPhone
-2.  Go to repetigo.com/tools/pdf/sign-pdf/
-3.  Tap Upload and select your PDF from the Files app
-4.  Type your name for a styled signature, or upload a photo of your handwritten signature
-5.  Use the position and size sliders to place it exactly where you need it
-6.  Download the signed PDF to your iPhone's Files app - share immediately via email or messaging
-H3: Sign a PDF on Android
-The process is identical on Android - open Chrome, go to repetigo.com/tools/pdf/sign-pdf/, upload your PDF from Files, type or upload your signature, position it with the sliders, and download. No Play Store app needed. Works on Samsung, Google Pixel, OnePlus, and all other Android phones.
-📱  On iPhone or Android, uploading a photo of your actual handwritten signature is the closest you'll get to a natural pen-on-paper look - RepetiGo doesn't currently support drawing a signature with your finger on-screen.
+H2: Which Pages Get Your Signature?
+The page selector shows a thumbnail grid of every page in your PDF. Click any page to toggle whether it receives the signature. The same signature position and size applies to all selected pages.
+•  Sign page 1 only - for a single-page contract or cover sheet
+•  Sign the last page only - for multi-page agreements where only the final page needs signing
+•  Sign every page - for multi-page documents where each page needs individual sign-off
+•  Sign specific pages - select any combination by clicking the thumbnails
+💡  The signature position is a percentage of the page dimensions, not a fixed pixel value. This means the same From-left/From-top settings will place the signature in the same relative position on every selected page, regardless of page size.
 
 H2: Sign PDF Without Adobe Acrobat.
-Adobe Acrobat Pro and Adobe Sign can add signatures to PDFs, but both require a paid subscription. Adobe Reader (the free version) can sign interactive forms with a signature field, but cannot add a signature to a flat PDF that does not already have a signature field.
-RepetiGo signs any PDF without Adobe - regardless of whether it has a signature field or not. Type or upload your signature, position it anywhere on the document with the sliders, and download. Free, in any browser, no installation.
-•  RepetiGo: Free · type/upload · any PDF · browser-only · no account · Mac, iPhone, Android
-•  Adobe Acrobat Pro: Paid · full e-signature + digital certificate features · best for enterprise volume
-•  Adobe Reader: Free · interactive signature fields only · cannot sign flat PDFs
-•  macOS Preview: Free · camera or trackpad signature only · limited placement control
-✅  For signing a contract, an offer letter, a rental agreement, or any professional PDF - RepetiGo gives you the same result as Acrobat Pro, without the subscription.
+Adobe Acrobat Pro includes electronic signature tools - but it requires a paid subscription (₹1,500-₹3,500/month). Most people need to sign a PDF occasionally, not professionally, and paying a subscription for that one task is not practical.
+RepetiGo lets you sign PDF without Adobe for free, in any browser, on any device:
 
-H2: Who Needs to Sign a PDF?
-PDF signing is now a daily workflow for almost every professional:
-•  Employees: Offer letters, employment contracts, non-disclosure agreements, appraisal forms - HR sends a PDF, employee signs and returns. RepetiGo makes this a two-minute task on any device.
-•  Freelancers and contractors: Client agreements, project scope documents, and invoices requiring client sign-off. Sign from anywhere - client does not need to print, scan, or install anything.
-•  Businesses and vendors: Purchase orders, vendor agreements, terms and conditions, partner contracts - signed without a printer in the workflow.
-•  Legal professionals: Client engagement letters, consent forms, and declarations sent to clients for electronic signature. Fill in the form fields with PDF Form first, then add the signature.
-•  Students and individuals: Scholarship applications, consent forms, apartment rental agreements, insurance documents - all increasingly issued as PDFs requiring a signature.
-•  Government and compliance: Application forms, declarations, and statutory documents requiring a signature for submission. RepetiGo's electronic signature is valid for the vast majority of administrative submissions.
+Method
+Cost
+Install Required?
+Works on All Devices?
+Server Upload?
+RepetiGo Sign PDF
+Free
+No (browser)
+Yes - phone, tablet, laptop
+No - browser only
+Adobe Acrobat Pro
+₹1,500-₹3,500/month
+Yes (desktop app)
+Desktop only
+Cloud sync
+Adobe Acrobat Free
+Free (limited)
+No (browser/app)
+Limited
+Yes - Adobe servers
+Preview on Mac
+Free (built-in)
+No (Mac only)
+Mac only
+No
+iPhone Mail / Files
+Free
+No (iOS only)
+iPhone/iPad only
+No
 
-H2: Sign PDF for Free in India.
-India's rapid shift to digital documentation has made electronic PDF signing a daily professional requirement:
-•  Employment and HR documents: Offer letters, appointment orders, joining formalities - HR teams email PDFs that new employees sign electronically and return. No courier or physical meeting required.
-•  Client agreements and engagements: Law firms, CA firms, and consulting practices send engagement letters and client consent forms for electronic signature. Signed and returned within minutes.
-•  Rental and property agreements: Lease agreements, leave-and-licence contracts, and rental forms increasingly signed electronically, especially for properties let to employees of tech companies or managed accommodation.
-•  Educational institutions: Admission forms, undertakings, scholarship applications, and consent letters sent to students and parents for signature and return.
-•  Aadhaar eSign context: For documents that specifically require an Aadhaar-based cryptographic digital signature (government filings, certain regulated documents), you will need the Aadhaar eSign service. For all other professional and personal documents, RepetiGo's electronic signature is what you need.
-With RepetiGo you can sign PDF documents free online in India - upload your PDF, add your signature in seconds, and download a signed document ready to email, WhatsApp, or share. Files are never uploaded - processed locally in your browser.
-⚠️  Under India's IT Act 2000 and IT (Amendment) Act 2008, electronic signatures are accepted for professional use for most commercial contracts and agreements. The Information Technology Act recognises electronic records and signatures for the purposes of contract formation.
+H2: Sign PDF in India - Common Use Cases.
+Electronic signatures on PDFs are used across India for a wide range of professional and personal documents:
+•  Employment documents: Offer letters, appointment letters, NDAs, and contractor agreements sent by HR teams as PDFs for candidate signature
+•  Vendor and service agreements: Small business owners and freelancers signing service contracts, purchase orders, and invoice acknowledgements
+•  Rental agreements: Landlords and tenants signing rental agreements drafted as PDFs before the formal stamp paper registration
+•  Academic and institutional forms: College admission forms, scholarship applications, and consent letters that require a parent or guardian signature
+•  Government portal submissions: Some state portal submissions require a self-attested signature on a scanned PDF - the Sign PDF tool adds it without a printer
+📋  For formal government e-signatures (income tax, MCA21, EPFO, UIDAI) that legally require an Aadhaar-based DSC or USB token signature, the standard electronic stamp from this tool may not be sufficient. Check the portal's specific requirements. For Aadhaar eSign, see RepetiGo's eSign product - coming soon.
 
-H2: Your PDF Never Leaves Your Browser.
-The documents you sign - employment contracts, agreements, legal forms - are among the most sensitive files you handle. Here is exactly what happens:
-•  🔒 Stays in your browser: Your PDF is processed entirely within your browser - it is never uploaded to any server.
-•  🔐 Local processing: Your file is processed locally in your browser with no link to any account or identifier.
-•  🔒 Never uploaded: Both your PDF and the signed output stay in your browser and are never sent to any server.
-•  👁️ Content never leaves your device: The signing engine places your signature image at the specified position on the PDF. It does not read, store, or extract the content of your document.
-•  🚫 No account, no server, no data: No sign-up, no server upload - we hold no data about you or your documents whatsoever.
-🔒  A signed contract is a binding legal document. RepetiGo's browser-only processing means the document is never at risk on our servers, because it was never there.
+H2: Your Files Never Leave Your Browser.
+RepetiGo's PDF tools run entirely in your browser. Your file is never uploaded to any server.
+
+Protection Layer
+What It Means in Practice
+🔒 Stays in your browser
+Your PDF is processed entirely within your browser tab - it never travels over any network to any server.
+🔐 No server, no session
+There is no server-side processing session, no isolated workspace, no upload of any kind. The tool runs using your device's own computing resources.
+🚫 No account = no data
+No sign-up means we hold zero personal data about you. No name, email, usage history, or file history is stored anywhere.
+👁️ Content never leaves device
+The processing engine runs inside your browser. No text, image, or document content is ever sent to or read by any external system.
+✅ Files cleared on tab close
+When you close or refresh the browser tab, all local working data is cleared. Nothing persists.
+
+🔒  Unlike tools that upload your file to a server and promise to delete it - RepetiGo's tool never uploads it at all. Your file stays on your device throughout the entire process.
 Privacy Policy → /security/ | Browser-only processing - no upload, no storage
 
-H2: PDF Signing for Print Shops.
-Print shops and CSC centres increasingly field requests from customers who need to sign a PDF and have it printed immediately - a job application, a government form, an agreement. The manual workflow: the customer produces the PDF on their phone, the operator handles it, prints it, and the customer signs on paper. PrintPilot - RepetiGo's document shop automation platform - allows customers to sign digitally via QR-code upload, so the fully signed PDF goes directly to the print queue without the operator touching the customer's personal document.
-🖨️  PrintPilot: customer signs digitally on their own device → signed PDF queued for printing → customer collects. The operator never handles the customer's private document.
-Learn about PrintPilot → /products/printpilot/
+H2: Sign PDF for Print Shops - Built into PrintPilot.
+If you run a print shop, cyber cafe, or CSC centre, you can access the sign pdf tool directly from the PrintPilot dashboard - no separate browser tab, no manual upload.
+When a customer uploads a document via QR code, PrintPilot routes it through the relevant tools automatically before it reaches the print queue. You get consistent results for every customer document without running tools one file at a time.
+🖨️  PrintPilot - RepetiGo's print shop software - gives you all 30 PDF tools plus QR code document upload, AI document enhancement, secure print queue, UPI payments, and auto-delete compliance built in.
 
-➜  [ Try PrintPilot Free → repetigo.com/pricing/ ]
-[ Or Sign a PDF Now → repetigo.com/tools/pdf/sign-pdf/ ]
+➜  [ Try PrintPilot Free - Print Shop Automation for India → repetigo.com/products/printpilot/ ]
 
-H2: Common Questions About Signing PDFs.
-H3: Q1: How do I sign a PDF for free without Adobe?
-Go to repetigo.com/tools/pdf/sign-pdf/, upload your PDF, and choose your signature method - type your name or upload a signature image. Place the signature on the document with the position sliders and download. Free, no account, no Adobe. Files never uploaded - processed in your browser.
-H3: Q2: What are the ways to sign a PDF with RepetiGo?
-Two ways: Type your name in a signature-style font - clean and consistent. Or Upload a JPG or PNG photo of your handwritten signature - places your actual signature on the document, positioned and sized with on-screen sliders. Both work on every device; RepetiGo doesn't currently support drawing a signature freehand on-screen.
-H3: Q3: Is an electronic signature on a PDF accepted professionally?
-Electronic signatures - typed or uploaded - are widely accepted for everyday professional and personal documents: employment contracts, NDAs, rental agreements, and general business correspondence. Legal validity varies by jurisdiction and document type. For documents where legal enforceability is critical (court filings, government forms, regulated financial instruments), consult a legal professional about whether a PKI-based digital signature certificate is required.
-H3: Q4: How do I sign a PDF on iPhone?
-Open Safari on your iPhone, go to repetigo.com/tools/pdf/sign-pdf/, and upload your PDF from the Files app. Type your name or upload a photo of your signature, position it with the sliders, and download the signed PDF. No App Store installation required. The signed file goes directly to your iPhone's Files app for sharing.
-H3: Q5: How do I sign a PDF on Mac without Adobe?
-Open Safari or Chrome on your Mac, go to repetigo.com/tools/pdf/sign-pdf/, upload your PDF, and type your name in a signature font, or upload a photo of your signature, positioning it with the sliders. Download the signed PDF. No software installation, no Adobe licence. The entire process takes under two minutes.
-H3: Q6: Can I sign a PDF on Android?
-Yes. Open Chrome on your Android phone, go to repetigo.com/tools/pdf/sign-pdf/, upload your PDF from the Files app, type or upload your signature, position it with the sliders, and download the signed document. Works on all Android phones - Samsung, Google Pixel, OnePlus, and others. No app installation required.
-H3: Q7: What is the difference between an electronic signature and a digital signature?
-An electronic signature is a visual representation of your signature placed on a PDF - typed or uploaded. Widely accepted for most contracts. A digital signature is a cryptographic certificate-based signature that provides mathematical verification of identity and tamper-evidence - required for specific regulated use cases like government e-filing. For everyday professional and personal documents, an electronic signature is exactly what you need.
-H3: Q8: Can I fill in a PDF form and sign it in one step?
-Yes - use both tools in sequence. First, go to RepetiGo's PDF Form tool at /tools/pdf/pdf-form/ to fill in all the form fields (name, date, address, checkboxes). Download the filled form. Then upload the filled PDF to the Sign PDF tool, add your signature, and download the fully completed and signed document.
-H3: Q9: Can I edit a PDF after signing it?
-Signed PDFs are typically locked against editing - this is a deliberate feature that protects document integrity after signing. If you need to make changes to a signed PDF: open the PDF in RepetiGo's Edit PDF tool at /tools/pdf/edit-pdf/, make your corrections, download the edited (unsigned) version, and then re-sign the corrected document using the Sign PDF tool. Never alter a document after signing without re-signing it - this is legally important.
-H3: Q10: Is it safe to upload a contract or legal agreement to sign online?
-With RepetiGo, yes. Your file is processed entirely within your browser - never uploaded to any server. The signing engine places your signature on the PDF without reading, storing, or analysing the document content. No sign-up means we hold no data about you or your documents.
+H2: Common Questions About Sign PDF Online Free.
+H3: Q1: How do I sign a PDF online for free?
+Go to repetigo.com/tools/pdf/sign-pdf/, upload your PDF, choose your signature method (Type, Draw, or Upload), position the signature on the selected pages, and click Sign PDF. Download your signed PDF. No account needed, no software to install, and the file is processed entirely in your browser - never uploaded to any server.
+H3: Q2: Is an electronic signature on a PDF legally accepted?
+Electronic visual signatures are accepted for the vast majority of everyday professional and personal documents: employment contracts, NDAs, rental agreements, vendor agreements, and general business correspondence. Legal enforceability depends on your jurisdiction and document type. For documents where legal certainty is critical - court filings, government forms, regulated financial instruments - a PKI-based digital signature certificate from a Certificate Authority may be required. Check your specific requirements.
+H3: Q3: What is the difference between an electronic signature and a digital signature?
+An electronic signature is a visual mark on the PDF - a typed name, a drawn signature, or an uploaded image. It shows intent to sign but provides no cryptographic proof. A digital signature uses a certificate from a Certificate Authority to mathematically prove the signer's identity and certify the document has not been changed. For Aadhaar-based eSign in India (legally binding under the IT Act 2000), see RepetiGo's eSign product - coming soon.
+H3: Q4: Can I sign a PDF on my iPhone or Android phone?
+Yes. The Sign PDF tool works in any mobile browser - Safari on iPhone, Chrome on Android. Upload your PDF from your Files app, draw your signature with your finger in the Draw mode, position it on the selected pages, and download. No app download required.
+H3: Q5: How do I sign a PDF without printing it?
+Open RepetiGo's Sign PDF tool at repetigo.com/tools/pdf/sign-pdf/, upload the PDF, add your signature electronically using Type, Draw, or Upload - and download the signed PDF. You never need to print, physically sign, and scan back. The entire process is done digitally in your browser.
+H3: Q6: Is it safe to upload my documents for signing?
+With RepetiGo, your file is never uploaded. The Sign PDF tool runs entirely within your browser - your PDF is processed locally on your device. No file travels over any network. No server receives your document. Nothing is stored. You can sign contracts, agreements, and legal documents without any privacy risk from the tool itself.
+H3: Q7: Can I sign multiple pages at once?
+Yes. The page selector lets you click individual pages to toggle them on or off. Select any combination - a single page, the last page only, or all pages. The same signature position and size applies to all selected pages simultaneously.
+H3: Q8: What file format is the output?
+The output is a standard PDF file. The signature is embedded directly onto the page content - it is not an annotation layer that can be removed by another PDF reader. The signed PDF can be opened in any PDF viewer on any device and the signature will appear exactly as it was placed.
 
 H2: More Free PDF Tools from RepetiGo.
-•  PDF Form → /tools/pdf/pdf-form/ - fill in form fields before signing
-•  Protect PDF → /tools/pdf/protect-pdf/ - lock the signed document with a password
-•  Edit PDF → /tools/pdf/edit-pdf/ - edit content before signing
-•  Compare PDF → /tools/pdf/compare-pdf/ - verify the signed version matches what was agreed
-•  Unlock PDF → /tools/pdf/unlock-pdf/ - remove restrictions if the PDF is locked
-•  Redact PDF → /tools/pdf/redact-pdf/ - black out sensitive content before signing
+•  Protect PDF → /tools/pdf/protect-pdf/ - add a password to your signed PDF
+•  Redact PDF → /tools/pdf/redact-pdf/ - permanently remove sensitive information before signing
+•  Edit PDF → /tools/pdf/edit-pdf/ - add text, notes, or corrections before signing
+•  Fill PDF Form → /tools/pdf/pdf-form/ - complete form fields before signing
 •  All PDF Tools → /tools/pdf/ - complete free PDF tools library
 
-➜  [ Sign PDF Free Now → repetigo.com/tools/pdf/sign-pdf/ ]
-Type · Upload · Mac · iPhone · Android · No sign-up · Browser-only processing`;
+➜  [ Sign Your PDF Now - Free, No Sign-Up → repetigo.com/tools/pdf/sign-pdf/ ]`;
 
 const faqSchemaQuestions = Array.from(content.matchAll(/H3: (Q\d+: [^\n]+)\n([\s\S]*?)(?=\nH3: Q\d+:|\nH2:|$)/g)).map((match) => [match[1], match[2].trim()] as const);
 
@@ -212,6 +207,8 @@ function StructuredSeoCopy({ content: source }: { content: string }) {
 function getKnownTable(lines: string[]): SeoTableData | null {
   if (lines[0] === "Method" && lines[1] === "How It Works" && lines[2] === "Best For" && lines[3] === "Works On") return { headers: ["Method", "How It Works", "Best For", "Works On"], rows: chunkRows(lines.slice(4), 4) };
   if (lines[0] === "Type" && lines[1] === "What It Is" && lines[2] === "Legal Status" && lines[3] === "When to Use") return { headers: ["Type", "What It Is", "Legal Status", "When to Use"], rows: chunkRows(lines.slice(4), 4) };
+  if (lines[0] === "Method" && lines[1] === "Cost" && lines[2] === "Install Required?" && lines[3] === "Works on All Devices?" && lines[4] === "Server Upload?") return { headers: lines.slice(0, 5), rows: chunkRows(lines.slice(5), 5) };
+  if (lines[0] === "Protection Layer" && lines[1] === "What It Means in Practice") return { headers: ["Protection Layer", "What It Means in Practice"], rows: chunkRows(lines.slice(2), 2) };
   return null;
 }
 
@@ -298,8 +295,8 @@ function getRouteLabel(href: string) {
 }
 
 function JsonLd() {
-  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Sign PDF", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online PDF signing tool - type or upload a signature and position it on any PDF, entirely in the browser. No file is ever uploaded to a server.", url: pageUrl };
-  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Sign a PDF Free Online", step: [{ "@type": "HowToStep", name: "Upload Your PDF", text: "Upload Your PDF" }, { "@type": "HowToStep", name: "Add Your Signature", text: "Add Your Signature" }, { "@type": "HowToStep", name: "Download Your Signed PDF", text: "Download Your Signed PDF" }] };
+  const softwareApplication = { "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo Sign PDF", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online PDF signing tool - draw, type, or upload a signature and apply it to any or all pages, entirely in the browser. No file is ever uploaded to a server.", url: pageUrl };
+  const howTo = { "@context": "https://schema.org", "@type": "HowTo", name: "How to Sign a PDF Online Free", step: [{ "@type": "HowToStep", name: "Upload PDF", text: "Upload PDF" }, { "@type": "HowToStep", name: "Choose signature method and apply", text: "Choose signature method and apply" }, { "@type": "HowToStep", name: "Download signed PDF", text: "Download signed PDF" }] };
   const faqPage = { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) };
   const breadcrumb = { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "PDF Tools", item: "https://repetigo.com/pdf-tools" }, { "@type": "ListItem", position: 3, name: "Sign PDF", item: pageUrl }] };
   return <>{[softwareApplication, howTo, faqPage, breadcrumb].map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>;
