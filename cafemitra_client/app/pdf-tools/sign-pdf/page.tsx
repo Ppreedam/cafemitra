@@ -3,7 +3,6 @@ import { DashboardShell } from "../../DashboardShell";
 import PdfSecurityTool from "../PdfSecurityTool";
 
 const pageUrl = "https://repetigo.com/pdf-tools/sign-pdf";
-export const metadata: Metadata = { title: "Sign PDF Free Online - Draw, Type or Upload Signature | RepetiGo", description: "Sign any PDF free online - draw, type, or upload your signature. Sign contracts, agreements, and forms on Mac, iPhone, or Android. No Adobe. No sign-up. Files deleted in browser-only.", alternates: { canonical: pageUrl }, openGraph: { title: "Sign PDF Free Online - Draw, Type or Upload Signature | RepetiGo", description: "Sign any PDF free online - draw, type, or upload signature. Sign on Mac, iPhone, Android. No Adobe. No sign-up. Browser-only processing.", type: "website", url: pageUrl, images: ["https://repetigo.com/og-sign-pdf.jpg"] }, twitter: { card: "summary_large_image", title: "Sign PDF Free Online - RepetiGo", description: "Draw, type or upload signature to any PDF free. No Adobe, no sign-up." }, robots: { index: true, follow: true } };
 
 const content = String.raw`H1: Sign Any PDF Free. Type or Upload Your Signature. No Adobe, No Printer.
 You have a PDF that needs your signature. No printer nearby. No scanner. No Adobe Acrobat subscription. No problem.

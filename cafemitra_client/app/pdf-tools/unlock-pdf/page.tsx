@@ -14,7 +14,6 @@ export const metadata: Metadata = {
     description: "Unlock any PDF free with its password - remove editing, printing, copying restrictions. Enable edits without Adobe Acrobat. No sign-up, browser-only - never uploaded.",
     type: "website",
     url: pageUrl,
-    images: ["https://repetigo.com/og-unlock-pdf.jpg"],
   },
   twitter: {
     card: "summary_large_image",

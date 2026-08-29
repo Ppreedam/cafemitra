@@ -9,6 +9,7 @@ import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attir
 import { CropEditor, cropImage, loadImage, DEFAULT_CROP_RECT, type CropRect } from "../../CropEditor";
 import PublicResumeBuilder from "./PublicResumeBuilder";
 import PublicBiodataMaker from "./PublicBiodataMaker";
+import IdCardPrintUpload from "./IdCardPrintUpload";
 
 type PublicShop = {
   code: string;
@@ -34,12 +35,14 @@ type PrintOrder = {
   orderNumber: string;
   tokenId: string;
   tokenNumber: number;
+  serviceKey: string;
   paymentStatus: string;
   paymentGateway: string;
   status: string;
   totalAmount: number;
   documentDeleted?: boolean;
   geminiPhoto?: string;
+  photoErrorMessage?: string;
 };
 
 const serviceIcons: Record<string, typeof FileText> = {
@@ -125,7 +128,13 @@ export default function CustomerScanPage() {
         const services = mergePricingDefaults(result.services).filter((service) => returnedKeys.has(service.serviceKey));
         setData({ ...result, services });
         setError("");
-        setSelectedService(services[0]?.serviceKey || "auto_document_print");
+        // Skip the default-service pick when a ?order= link is being
+        // recovered (PayU redirect, or a reopened/bookmarked link) - the
+        // sibling effect below sets selectedService from the recovered
+        // order instead, and whichever of these two effects' fetches
+        // resolves last would otherwise win the race and could stomp on it.
+        const isRecoveringOrder = !!new URLSearchParams(window.location.search).get("order");
+        if (!isRecoveringOrder) setSelectedService(services[0]?.serviceKey || "auto_document_print");
         const firstItem = getPriceItems(services[0])[0];
         setSelectedItemId(firstItem?.id || "");
         setPaymentMode(getAllowedPaymentModes(services[0])[0] || "Online Payment");
@@ -152,6 +161,12 @@ export default function CustomerScanPage() {
       })
       .then((result: { order: PrintOrder }) => {
         setOrder(result.order);
+        // isPassportPhoto (and thus which status/progress UI renders below)
+        // is driven by selectedService, which only exists as in-memory React
+        // state from Step 1 - a PayU redirect (or any reload of this ?order=
+        // link) loses that state entirely, so it must be restored from the
+        // recovered order itself or the passport-specific status UI never shows.
+        setSelectedService(result.order.serviceKey);
         if (paymentResult === "success" || result.order.paymentStatus === "paid") {
           setPaymentMessage("Payment received. Your document has been sent to the print queue.");
         } else if (paymentResult === "failure") {
@@ -166,6 +181,7 @@ export default function CustomerScanPage() {
   const priceItems = activeService ? getPriceItems(activeService) : [];
   const selectedItem = priceItems.find((item) => item.id === selectedItemId) || priceItems[0];
   const isPassportPhoto = selectedService === "passport_photo";
+  const isIdCardPrint = selectedService === "id_card_print";
   const hasUploadedFile = Boolean(fileUrl);
   const selectedRate = calculatePriceItemRate(selectedItem, isPassportPhoto ? 1 : pages);
   const amount = hasUploadedFile ? Math.max(0, selectedRate * (isPassportPhoto ? copies : pages * copies)) : 0;
@@ -347,8 +363,10 @@ export default function CustomerScanPage() {
       // Generation hasn't started yet while a cash-counter order is waiting
       // on the shop owner's approval, or an online-payment order is still
       // waiting on the gateway - animating toward 92% here would read as
-      // "in progress" when nothing is actually happening.
-      if (order.status === "awaiting_approval" || order.status === "awaiting_payment") return;
+      // "in progress" when nothing is actually happening. Same for "failed" -
+      // both the agent and the Gemini fallback have given up, so there is no
+      // "in progress" left to animate toward.
+      if (order.status === "awaiting_approval" || order.status === "awaiting_payment" || order.status === "failed") return;
     } else if (order.status === "printed") {
       setPrintProgress(100);
       return;
@@ -973,9 +991,11 @@ export default function CustomerScanPage() {
         <article className={`customer-panel ${activeStep === (showServiceSelector ? 2 : 1) ? "is-guided" : ""}`}>
           <div className="customer-panel-head">
             <span>Step {showServiceSelector ? 2 : 1}</span>
-            <h2>Upload Document</h2>
+            <h2>{isIdCardPrint ? "Upload Your ID Card" : "Upload Document"}</h2>
           </div>
-          {hasUploadedFile ? (
+          {isIdCardPrint && !hasUploadedFile ? (
+            <IdCardPrintUpload onComposed={(file) => applyUploadedFile(file, 1)} busy={isCombiningFiles} />
+          ) : hasUploadedFile ? (
             <div className="customer-document-preview">
               <div className="document-thumb">
                 {isImageFile(fileType, fileName) ? <img src={fileUrl} alt="" /> : <PdfThumb fileName={fileName} fileUrl={fileUrl} pages={pages} onPageCount={setPages} />}
@@ -1074,7 +1094,7 @@ export default function CustomerScanPage() {
             <span>{hasUploadedFile ? "Now confirm the print type, pages, and copies." : "After upload, you can edit pages and copies."}</span>
           </div> */}
           <div className="print-type-control">
-            <span>{isPassportPhoto ? "Package" : "Charge Type"}</span>
+            <span>{isPassportPhoto || isIdCardPrint ? "Package" : "Charge Type"}</span>
             <div className="print-type-options">
               {priceItems.map((item) => (
                 <label className={selectedItem?.id === item.id ? "active" : ""} key={item.id}>
@@ -1097,7 +1117,7 @@ export default function CustomerScanPage() {
               ))}
             </div>
           </div>
-          {!isPassportPhoto ? (
+          {!isPassportPhoto && !isIdCardPrint ? (
             <label>
               <span>Pages</span>
               <input
@@ -1185,8 +1205,8 @@ export default function CustomerScanPage() {
             <strong>{selectedItem?.label} Rs. {selectedRate}</strong>
           </div>
           <div className="customer-summary-row">
-            <span>{isPassportPhoto ? "Package x Sets" : "Pages x Copies"}</span>
-            <strong>{hasUploadedFile ? (isPassportPhoto ? `${selectedItem?.label || "6 pcs"} x ${copies}` : `${pages} x ${copies}`) : "Upload pending"}</strong>
+            <span>{isPassportPhoto || isIdCardPrint ? "Package x Copies" : "Pages x Copies"}</span>
+            <strong>{hasUploadedFile ? (isPassportPhoto || isIdCardPrint ? `${selectedItem?.label || "1"} x ${copies}` : `${pages} x ${copies}`) : "Upload pending"}</strong>
           </div>
           {isPassportPhoto ? (
             <div className="customer-summary-row">
@@ -1235,6 +1255,10 @@ export default function CustomerScanPage() {
                     </>
                   ) : order.status === "awaiting_approval" ? (
                     <span>Waiting for the cafe owner to confirm your cash counter payment before your photo is generated.</span>
+                  ) : order.status === "failed" ? (
+                    <span className="customer-photo-failed">
+                      {order.photoErrorMessage || "We couldn't generate your passport photo. Please contact the cafe owner."}
+                    </span>
                   ) : (
                     <div className="print-progress-box">
                       <div className="print-progress-head">

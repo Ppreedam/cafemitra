@@ -8,7 +8,6 @@ export const metadata: Metadata = {
   title: "HTML to PDF Converter - Free Online, No Sign-Up | RepetiGo",
   description: "Convert HTML to PDF free online - upload an .html file and download a clean text PDF in seconds. No sign-up, no install. Files browser-only - never uploaded.",
   alternates: { canonical: pageUrl },
-  openGraph: { title: "HTML to PDF Converter - Free Online, No Sign-Up | RepetiGo", description: "Free HTML to PDF converter - upload your .html file, download a clean text PDF. No sign-up, browser-only - never uploaded.", type: "website", url: pageUrl, images: ["https://repetigo.com/og-html-to-pdf.jpg"] },
   twitter: { card: "summary_large_image", title: "HTML to PDF Converter Free Online - RepetiGo", description: "Convert HTML to PDF free - upload your file. No sign-up, no install, browser-only - never uploaded." },
   robots: { index: true, follow: true },
 };

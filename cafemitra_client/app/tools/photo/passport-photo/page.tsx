@@ -25,7 +25,6 @@ export const metadata: Metadata = {
       "Make a passport size photo at home - upload selfie, choose Casual/Normal/Official look, AI processes it, print on any paper size. No studio.",
     type: "website",
     url: pageUrl,
-    images: [`${siteUrl}/og-passport-photo-maker.jpg`],
   },
   twitter: {
     card: "summary_large_image",

@@ -13,7 +13,6 @@ export const metadata: Metadata = {
     description: "Compare two PDF files free - see every text addition, deletion, and change highlighted. Compare contracts, drafts, documents. No sign-up, browser-only - never uploaded.",
     type: "website",
     url: pageUrl,
-    images: ["https://repetigo.com/og-compare-pdf.jpg"],
   },
   twitter: {
     card: "summary_large_image",

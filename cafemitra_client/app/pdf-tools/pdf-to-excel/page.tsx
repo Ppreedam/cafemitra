@@ -8,7 +8,6 @@ export const metadata: Metadata = {
   title: "Convert PDF to Excel Free - Extract Tables & Data | RepetiGo",
   description: "Convert PDF to Excel free online - extract tables, data, and financial information from PDF into editable Excel spreadsheets. No sign-up. Files auto-deleted after 60 min.",
   alternates: { canonical: pageUrl },
-  openGraph: { title: "Convert PDF to Excel Free - Extract Tables & Data | RepetiGo", description: "Free PDF to Excel converter. Extract tables, data, financial info from PDF into editable spreadsheets. No sign-up, auto-deleted 60 min.", type: "website", url: pageUrl, images: ["https://repetigo.com/og-pdf-to-excel.jpg"] },
   twitter: { card: "summary_large_image", title: "PDF to Excel Converter Free - RepetiGo", description: "Convert PDF to Excel free. Extract tables and data. No sign-up, auto-deleted. India-built." },
   robots: { index: true, follow: true },
 };

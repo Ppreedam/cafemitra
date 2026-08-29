@@ -649,7 +649,7 @@ export function createCoupon(data: { code?: string; amount: number; message: str
   return request<{ coupon: AdminCoupon }>("/admin/coupons/", { method: "POST", body: JSON.stringify(data) });
 }
 
-export type CouponRedemptionEntry = { id: number; email: string; redeemedAt: string };
+export type CouponRedemptionEntry = { id: number; shopCode: string; shopName: string; email: string; phone: string; redeemedAt: string };
 
 export function fetchCouponDetail(id: number) {
   return request<{ coupon: AdminCoupon; redemptions: CouponRedemptionEntry[] }>(`/admin/coupons/${id}/`);

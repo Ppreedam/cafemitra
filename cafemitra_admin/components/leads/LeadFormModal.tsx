@@ -9,6 +9,7 @@ export type LeadFormValues = {
   name: string;
   address: string;
   phone: string;
+  email: string;
   website: string;
   maps_url: string;
   rating: string;
@@ -33,6 +34,7 @@ export default function LeadFormModal({
     name: initial?.name ?? "",
     address: initial?.address ?? "",
     phone: initial?.phone ?? "",
+    email: initial?.email ?? "",
     website: initial?.website ?? "",
     maps_url: initial?.maps_url ?? "",
     rating: initial?.rating?.toString() ?? "",
@@ -74,7 +76,10 @@ export default function LeadFormModal({
       <form onSubmit={handleSubmit} className="space-y-3">
         <Field label="Name" value={values.name} onChange={(v) => update("name", v)} required />
         <Field label="Maps URL" value={values.maps_url} onChange={(v) => update("maps_url", v)} required />
-        <Field label="Phone" value={values.phone} onChange={(v) => update("phone", v)} />
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Phone" value={values.phone} onChange={(v) => update("phone", v)} />
+          <Field label="Email" value={values.email} onChange={(v) => update("email", v)} />
+        </div>
         <Field label="Website" value={values.website} onChange={(v) => update("website", v)} />
         <Field label="Address" value={values.address} onChange={(v) => update("address", v)} textarea />
         <div className="grid grid-cols-2 gap-3">

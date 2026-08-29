@@ -1,5 +1,7 @@
 import { request } from "./api";
 
+export type LeadTag = { id: number; name: string; color: string };
+
 export type Lead = {
   id: number;
   name: string;
@@ -9,12 +11,14 @@ export type Lead = {
   longitude: number | null;
   maps_url: string;
   phone: string;
+  email: string;
   rating: number | null;
   reviews: number | null;
   website: string;
   status: string;
   notes: string;
   next_follow_up_at: string | null;
+  tags: LeadTag[];
   createdAt: string;
   updatedAt: string;
 };
@@ -46,6 +50,10 @@ export function fetchLeads(search: string) {
   return request<{ count: number; placeDetails: Lead[] }>(`/google-place-details/${query}`);
 }
 
+export function fetchConvertedLeads() {
+  return request<{ count: number; placeDetails: Lead[] }>(`/google-place-details/?status=converted`);
+}
+
 export function updateLeadStatus(id: number, status: string) {
   return updateLead(id, { status });
 }
@@ -64,11 +72,15 @@ export function importLeads(items: Partial<Lead>[]) {
   );
 }
 
-export function updateLead(id: number, data: Partial<Lead>) {
+export function updateLead(id: number, data: Partial<Lead> & { tagIds?: number[] }) {
   return request<{ message: string; placeDetail: Lead }>(`/google-place-details/${id}/`, {
     method: "PATCH",
     body: JSON.stringify(data),
   });
+}
+
+export function setLeadTags(id: number, tagIds: number[]) {
+  return updateLead(id, { tagIds });
 }
 
 export function deleteLead(id: number) {
@@ -84,6 +96,30 @@ export function addLeadNote(id: number, note: string) {
     method: "POST",
     body: JSON.stringify({ note }),
   });
+}
+
+// --- Lead tags (follow-up labels, many-to-many with leads) -------------
+
+export function fetchLeadTags() {
+  return request<{ count: number; tags: LeadTag[] }>(`/lead-tags/`);
+}
+
+export function createLeadTag(name: string, color: string) {
+  return request<{ message: string; tag: LeadTag }>(`/lead-tags/`, {
+    method: "POST",
+    body: JSON.stringify({ name, color }),
+  });
+}
+
+export function updateLeadTag(id: number, data: { name?: string; color?: string }) {
+  return request<{ message: string; tag: LeadTag }>(`/lead-tags/${id}/`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export function deleteLeadTag(id: number) {
+  return request<{ message: string }>(`/lead-tags/${id}/`, { method: "DELETE" });
 }
 
 // --- Scrape queue (GooglePlace) ----------------------------------------

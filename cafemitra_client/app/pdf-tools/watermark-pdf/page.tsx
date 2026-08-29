@@ -3,7 +3,6 @@ import { DashboardShell } from "../../DashboardShell";
 import PdfEditTool from "../PdfEditTool";
 
 const pageUrl = "https://repetigo.com/pdf-tools/watermark-pdf";
-export const metadata: Metadata = { title: "Add Watermark to PDF - Free Online, DRAFT/CONFIDENTIAL | RepetiGo", description: "Add a watermark to any PDF free online - stamp DRAFT, CONFIDENTIAL, or custom text on every page. Choose opacity and position. No sign-up. Files processed in your browser - never uploaded.", alternates: { canonical: pageUrl }, openGraph: { title: "Add Watermark to PDF - Free Online, DRAFT & CONFIDENTIAL | RepetiGo", description: "Add watermark to PDF free - stamp DRAFT, CONFIDENTIAL, or custom text on every page. Choose opacity and position. No sign-up, browser-only - never uploaded.", type: "website", url: pageUrl, images: ["https://repetigo.com/og-add-watermark.jpg"] }, twitter: { card: "summary_large_image", title: "Add Watermark to PDF Free Online - RepetiGo", description: "Stamp DRAFT, CONFIDENTIAL, or custom text on any PDF free. No sign-up, browser-only - never uploaded." }, robots: { index: true, follow: true } };
 
 const content = String.raw`H1: Add Watermark to Any PDF. Free. DRAFT, CONFIDENTIAL, or Your Own Text.
 Sending out a document that isn't ready to be treated as final? Sharing something that must stay confidential? Mark it correctly before it leaves your hands. RepetiGo's free PDF watermark tool stamps any text - DRAFT, CONFIDENTIAL, FOR REVIEW, SAMPLE, or your own custom message - diagonally across every page of your PDF in under a minute.

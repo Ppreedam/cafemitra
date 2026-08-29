@@ -46,7 +46,7 @@ class SimpleCorsMiddleware:
 
         if origin_allowed:
             response["Access-Control-Allow-Origin"] = origin
-            response["Access-Control-Allow-Methods"] = "GET, POST, PUT, OPTIONS"
+            response["Access-Control-Allow-Methods"] = "GET, POST, PUT, PATCH, DELETE, OPTIONS"
             response["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
             response["Vary"] = "Origin"
 

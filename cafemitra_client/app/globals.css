@@ -6149,6 +6149,18 @@ img.profile-photo {
   line-height: 1.45;
 }
 
+.customer-photo-failed {
+  display: block;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(220, 38, 38, 0.08);
+  color: #b91c1c;
+  font-size: 0.82rem;
+  font-weight: 720;
+  line-height: 1.45;
+}
+
 .document-actions {
   display: flex;
   flex-wrap: wrap;
@@ -17912,46 +17924,155 @@ img.profile-photo {
   font-weight: 720;
 }
 
-.idcard-stepper {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.idcard-stepper button {
-  display: grid;
-  place-items: center;
-  width: 30px;
-  height: 30px;
-  border: 1px solid var(--soft-line);
-  border-radius: 999px;
-  color: #18214d;
-  background: #fff;
-  cursor: pointer;
-}
-
-.idcard-stepper strong {
-  min-width: 18px;
-  color: #18214d;
-  font-size: 0.9rem;
-  text-align: center;
-}
-
 .idcard-photo-pair {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 24px;
 }
 
 .idcard-side-slot {
   display: grid;
   gap: 8px;
+  width: 100%;
+  max-width: 340px;
 }
 
 .idcard-side-label {
   color: #6b7598;
   font-size: 0.78rem;
   font-weight: 800;
+}
+
+.idcard-side-label em {
+  color: #9aa1bd;
+  font-style: normal;
+  font-weight: 650;
+}
+
+.idcard-card-rows {
+  display: grid;
+  gap: 20px;
+}
+
+.idcard-card-row {
+  display: grid;
+  gap: 10px;
+}
+
+.idcard-card-row-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.idcard-card-row-head > span {
+  color: #18214d;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.idcard-card-row-remove {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: none;
+  background: none;
+  color: #c7354d;
+  font-size: 0.74rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.idcard-add-card {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: 18px;
+  border: 1.5px dashed #cfd5e8;
+  border-radius: 8px;
+  color: var(--violet);
+  background: #fbfcff;
+  font-size: 0.84rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.idcard-add-card:hover {
+  border-color: var(--violet);
+  background: #f6f5ff;
+}
+
+.idcard-filter-preview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 320px;
+  border: 1px solid #d9deeb;
+  border-radius: 8px;
+  background: #111827;
+  overflow: hidden;
+}
+
+.idcard-filter-preview img {
+  max-width: 100%;
+  max-height: 400px;
+  object-fit: contain;
+}
+
+.idcard-filter-controls {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+}
+
+.idcard-filter-controls label {
+  display: grid;
+  gap: 6px;
+}
+
+.idcard-filter-controls label span {
+  display: flex;
+  justify-content: space-between;
+  color: #3f496d;
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.idcard-filter-controls label span b {
+  color: var(--violet);
+}
+
+.idcard-filter-controls input[type="range"] {
+  width: 100%;
+  accent-color: var(--violet);
+}
+
+.idcard-filter-controls button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  border: 0;
+  border-radius: 8px;
+  margin-top: 4px;
+  color: #fff;
+  background: var(--brand-hero-gradient);
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.26);
+  font-weight: 850;
+  cursor: pointer;
+}
+
+.idcard-filter-controls button:first-of-type {
+  margin-top: 0;
+  border: 1px solid var(--line);
+  color: var(--dash-navy);
+  background: #fff;
+  box-shadow: none;
 }
 
 .idcard-photo-pair .customer-upload {
@@ -17965,6 +18086,157 @@ img.profile-photo {
 
 .idcard-photo-pair .document-thumb {
   width: 92px;
+}
+
+/* The upload target IS the card, at its true 85.6x53.98mm ratio - what you
+   see here is what prints, instead of a generic upload box that only later
+   turns into a differently-shaped preview. */
+.idcard-card-slot {
+  position: relative;
+  width: 100%;
+  max-width: 340px;
+  aspect-ratio: 85.6 / 53.98;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.idcard-card-slot.empty {
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  border: 1.5px dashed #cfd5e8;
+  background: #fbfcff;
+  color: #4d587a;
+  text-align: center;
+}
+
+.idcard-card-slot.empty:hover {
+  border-color: var(--violet);
+  background: #f6f5ff;
+}
+
+.idcard-card-slot.filled {
+  border: 1px solid #d9deeb;
+  box-shadow: 0 6px 18px rgba(25, 35, 82, 0.1);
+}
+
+.idcard-card-slot img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.idcard-card-slot input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.idcard-card-slot svg {
+  color: var(--violet);
+}
+
+.idcard-card-slot strong {
+  font-size: 0.86rem;
+}
+
+.idcard-card-slot span {
+  max-width: 220px;
+  color: #6b7598;
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.idcard-card-slot.active {
+  outline: 2px solid var(--violet);
+  outline-offset: 2px;
+}
+
+/* Toolbar bar mirrors the Photo Editor's tool-tab pattern (photo-editor.css
+   .photo-toolbar-bar) so the two editors feel like the same product: tool
+   tabs on the left, settings/actions on the right, divided by a border. */
+.idcard-toolbar-bar {
+  display: flex;
+  align-items: stretch;
+  flex-wrap: wrap;
+  min-height: 64px;
+  margin: 0 0 16px;
+  border: 1px solid var(--soft-line);
+  border-radius: 10px;
+  background: #fff;
+  overflow: hidden;
+}
+
+.idcard-toolbar {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  align-items: stretch;
+  overflow-x: auto;
+}
+
+.idcard-toolbar button {
+  display: flex;
+  min-width: 78px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 5px;
+  border: 0;
+  border-right: 1px solid var(--soft-line);
+  color: #3d4657;
+  background: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.idcard-toolbar button:disabled {
+  color: #b7bdd6;
+  cursor: not-allowed;
+}
+
+.idcard-toolbar-actions {
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  border-left: 1px solid var(--soft-line);
+}
+
+.idcard-toolbar-divider {
+  width: 1px;
+  height: 26px;
+  background: var(--soft-line);
+}
+
+.idcard-toolbar-actions .idcard-toggle-group button {
+  min-height: 32px;
+}
+
+.idcard-print-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  border: none;
+  border-radius: 8px;
+  padding: 0 16px;
+  background: var(--brand-hero-gradient);
+  color: #fff;
+  font-weight: 800;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.idcard-print-cta:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .idcard-sheet-preview {
@@ -18013,10 +18285,6 @@ img.profile-photo {
 @media (max-width: 900px) {
   .idcard-doctype-tabs {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-  .idcard-photo-pair {
-    grid-template-columns: 1fr;
   }
 
   .idcard-preview {

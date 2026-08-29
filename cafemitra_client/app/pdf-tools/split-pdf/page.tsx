@@ -16,7 +16,6 @@ export const metadata: Metadata = {
       "Free PDF splitter - divide by page range, select individual pages, or split by size. No sign-up, browser-only - never uploaded. Works on any device.",
     type: "website",
     url: pageUrl,
-    images: ["https://repetigo.com/og-split-pdf.jpg"],
   },
   twitter: {
     card: "summary_large_image",

@@ -159,6 +159,10 @@ urlpatterns = [
     re_path(r"^google-place-details/?$", views.google_place_details),  # GET list (optional ?name=, ?status=, ?follow_up= search/filter) / POST create (unique maps_url)
     re_path(r"^google-place-details/(?P<detail_id>[0-9]+)/?$", views.google_place_detail_item),  # GET one, PUT/PATCH update fields, DELETE remove
     re_path(r"^google-place-details/(?P<detail_id>[0-9]+)/activities/?$", views.lead_activities),  # GET timeline, POST add a manual note
+
+    # --- Lead Tags (follow-up labels on converted leads) --------------------
+    re_path(r"^lead-tags/?$", views.lead_tags),  # GET list / POST create {name, color}
+    re_path(r"^lead-tags/(?P<tag_id>[0-9]+)/?$", views.lead_tag_item),  # PUT/PATCH rename/recolor, DELETE remove
     # --- Agent Installer (Download Agent button on PrintPilot Setup) --------
     re_path(r"^agent/installer/?$", views.agent_installer_download),  # GET download RepetigoInstaller.exe
 ]

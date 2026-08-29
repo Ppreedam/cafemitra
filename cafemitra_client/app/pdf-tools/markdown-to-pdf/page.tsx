@@ -16,7 +16,6 @@ export const metadata: Metadata = {
       "Convert Markdown to PDF free online - paste .md or upload file, get clean PDF. No Pandoc, no CLI, no setup. Also PDF to Markdown. No sign-up.",
     type: "website",
     url: pageUrl,
-    images: ["https://repetigo.com/og-markdown-to-pdf.jpg"],
   },
   twitter: {
     card: "summary_large_image",

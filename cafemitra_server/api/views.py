@@ -36,7 +36,7 @@ from .background_remover.passport_photo_processor import ProcessingError, enhanc
 from .background_remover.watermark_remover import remove_gemini_watermark
 # from .models import AuthToken, ContactMessage, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from .admin_roles import role_allows_section
-from .models import Agent, AuthToken, ContactMessage, Coupon, CouponRedemption, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
+from .models import Agent, AuthToken, ContactMessage, Coupon, CouponRedemption, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, LeadTag, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from cafemitra_server.product_setting import PAYMENT_GATEWAYS, active_payment_gateway
 
 User = get_user_model()
@@ -83,6 +83,16 @@ DEFAULT_SERVICE_PRICING = {
         "settings": {
             "paymentMode": "Online Payment",
             "priceItems": [{"id": "six_pcs", "label": "6 pcs", "rate": 30}],
+        },
+    },
+    "id_card_print": {
+        "serviceName": "ID Card Print",
+        "settings": {
+            "paymentMode": "Online Payment",
+            # Flat per-card pricing, same shape as passport_photo - the
+            # customer uploads one existing ID (front + back, back optional),
+            # not a per-page document, so there's no page-count dimension.
+            "priceItems": [{"id": "single_card", "label": "ID Card (Front + Back)", "rate": 20}],
         },
     },
     "resume_builder": {
@@ -1607,6 +1617,8 @@ def resolve_print_tool_key(service_key, price_item_id):
         return "print_color_page" if price_item_id == "color" else "print_bw_page"
     if service_key == "passport_photo":
         return "passport_photo"
+    if service_key == "id_card_print":
+        return "id_card_print"
     return None
 
 
@@ -1615,7 +1627,7 @@ def print_order_tool_usage(order):
     tool_key = resolve_print_tool_key(order.service_key, order.price_item_id)
     if not tool_key:
         return None, 0
-    quantity = 1 if order.service_key == "passport_photo" else max(order.pages, 1) * max(order.copies, 1)
+    quantity = 1 if order.service_key in ("passport_photo", "id_card_print") else max(order.pages, 1) * max(order.copies, 1)
     return tool_key, quantity
 
 
@@ -2095,14 +2107,35 @@ def apply_gemini_fallback(order):
     from the server via the Gemini API so the customer still gets their
     photo instead of a bare error. Mutates and saves `order` in place.
     Returns True if the fallback produced a usable photo."""
-    if not order.original_filename:
+    if order.status in (PrintOrder.STATUS_AWAITING_APPROVAL, PrintOrder.STATUS_AWAITING_PAYMENT):
+        # Every current caller (resolve_passport_photo, complete_passport_job)
+        # already excludes these statuses before getting here - this is a
+        # last-line-of-defense repeat of that same check inside the function
+        # that actually makes the billed Gemini call, so a future caller that
+        # forgets the check can't accidentally generate (and bill) a photo
+        # before a cash order is approved or an online payment is confirmed.
         return False
+
+    def give_up():
+        # Both the PrintPilot Agent and this Gemini fallback have now failed -
+        # there is no way left to ever produce a photo for this order, so
+        # reflect that in the order's own status instead of leaving it
+        # looking like a normal in-progress "Queued" order forever (it would
+        # otherwise just sit there silently retrying every
+        # PASSPORT_PHOTO_FALLBACK_RETRY_SECONDS on every future poll).
+        if order.status != PrintOrder.STATUS_FAILED:
+            order.status = PrintOrder.STATUS_FAILED
+            order.save(update_fields=["status"])
+        return False
+
+    if not order.original_filename:
+        return give_up()
 
     content_type, image_bytes = data_uri_to_bytes(order.original_filename)
     result_type, result = generate_passport_photo_with_gemini(order.passport_prompt, image_bytes, content_type)
     if not result_type:
         logger.warning("Gemini fallback failed for passport order %s: %s", order.id, result)
-        return False
+        return give_up()
 
     cleaned_bytes = remove_gemini_watermark(result, result_type)
     encoded = base64.b64encode(cleaned_bytes).decode("ascii")
@@ -2111,7 +2144,14 @@ def apply_gemini_fallback(order):
     order.photo_status = PrintOrder.PHOTO_STATUS_DONE
     order.photo_error_message = ""
     order.photo_updated_at = timezone.now()
-    order.save(update_fields=["gemini_photo", "photo_status", "photo_error_message", "photo_updated_at"])
+    update_fields = ["gemini_photo", "photo_status", "photo_error_message", "photo_updated_at"]
+    if order.status == PrintOrder.STATUS_FAILED:
+        # A previous attempt had already given up and marked the order
+        # failed - this retry succeeded after all, so put it back in the
+        # normal queue instead of leaving it stuck as failed forever.
+        order.status = PrintOrder.STATUS_QUEUED
+        update_fields.append("status")
+    order.save(update_fields=update_fields)
     charge_wallet_for_tool(order.user, "passport_photo", quantity=1, order=order)
     return True
 
@@ -2932,7 +2972,7 @@ def public_print_order(request, code):
 
     gate_tool_key = resolve_print_tool_key(service_key, price_item_id)
     if gate_tool_key:
-        gate_quantity = 1 if service_key == "passport_photo" else max(pages, 1) * max(copies, 1)
+        gate_quantity = 1 if service_key in ("passport_photo", "id_card_print") else max(pages, 1) * max(copies, 1)
         allowed, gate_message = wallet_usage_gate(user, gate_tool_key, quantity=gate_quantity)
         if not allowed:
             return JsonResponse({"message": gate_message}, status=402)
@@ -4394,6 +4434,10 @@ def int_or_none(value):
         return None
 
 
+def public_lead_tag(tag):
+    return {"id": tag.id, "name": tag.name, "color": tag.color}
+
+
 def public_google_place_detail(detail):
     return {
         "id": detail.id,
@@ -4404,12 +4448,14 @@ def public_google_place_detail(detail):
         "longitude": float(detail.longitude) if detail.longitude is not None else None,
         "maps_url": detail.maps_url,
         "phone": detail.phone,
+        "email": detail.email,
         "rating": float(detail.rating) if detail.rating is not None else None,
         "reviews": detail.reviews,
         "website": detail.website,
         "status": detail.status,
         "notes": detail.notes,
         "next_follow_up_at": detail.next_follow_up_at.isoformat() if detail.next_follow_up_at else None,
+        "tags": [public_lead_tag(tag) for tag in detail.tags.all()],
         "createdAt": detail.created_at.isoformat(),
         "updatedAt": detail.updated_at.isoformat(),
     }
@@ -4473,6 +4519,7 @@ def google_place_details(request):
                 longitude=decimal_or_none(item.get("longitude")),
                 maps_url=maps_url,
                 phone=str(item.get("phone") or "").strip(),
+                email=str(item.get("email") or "").strip(),
                 rating=decimal_or_none(item.get("rating")),
                 reviews=int_or_none(item.get("reviews")),
                 website=str(item.get("website") or "").strip(),
@@ -4503,7 +4550,7 @@ def google_place_details(request):
     query = request.GET.get("name", "").strip()
     status_filter = request.GET.get("status", "").strip()
     follow_up_filter = request.GET.get("follow_up", "").strip()
-    details = GooglePlaceDetail.objects.all()
+    details = GooglePlaceDetail.objects.prefetch_related("tags")
     if query:
         details = details.filter(name__icontains=query)
     if status_filter and status_filter != "all":
@@ -4570,7 +4617,7 @@ def google_place_detail_item(request, detail_id):
             return JsonResponse({"message": "name cannot be empty."}, status=400)
         detail.name = name
 
-    for field in ("address", "image", "phone", "website"):
+    for field in ("address", "image", "phone", "email", "website"):
         if field in body:
             setattr(detail, field, str(body.get(field) or "").strip())
 
@@ -4612,7 +4659,94 @@ def google_place_detail_item(request, detail_id):
             to_status=detail.status,
         )
 
+    if "tagIds" in body:
+        tag_ids = body.get("tagIds") or []
+        if not isinstance(tag_ids, list):
+            return JsonResponse({"message": "tagIds must be a list of tag IDs."}, status=400)
+        detail.tags.set(LeadTag.objects.filter(id__in=tag_ids))
+
     return JsonResponse({"message": "Place detail updated.", "placeDetail": public_google_place_detail(detail)})
+
+
+# Fixed palette of tag colors - kept in sync with cafemitra_admin/lib/tagColors.ts.
+# Storing a palette key (not a hex value) keeps every tag chip rendering with the
+# same Tailwind classes the rest of the admin UI already uses (LEAD_STATUSES follows
+# the same pattern), instead of arbitrary inline colors that could clash.
+LEAD_TAG_COLORS = {"emerald", "amber", "blue", "violet", "rose", "slate", "cyan", "orange"}
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST", "OPTIONS"])
+def lead_tags(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    staff_user = auth_user(request)
+    if not staff_user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+    if not staff_user.is_staff:
+        return JsonResponse({"message": "Not authorized for admin access."}, status=403)
+    if not role_allows_section(staff_user, "leads"):
+        return JsonResponse({"message": "Your admin role does not have access to this section."}, status=403)
+
+    if request.method == "POST":
+        body = parse_body(request)
+        name = str(body.get("name", "")).strip()
+        color = str(body.get("color", "")).strip()
+        if not name:
+            return JsonResponse({"message": "Tag name is required."}, status=400)
+        if color not in LEAD_TAG_COLORS:
+            return JsonResponse({"message": "Invalid tag color."}, status=400)
+        if LeadTag.objects.filter(name__iexact=name).exists():
+            return JsonResponse({"message": "A tag with this name already exists."}, status=409)
+        tag = LeadTag.objects.create(name=name, color=color)
+        return JsonResponse({"message": "Tag created.", "tag": public_lead_tag(tag)}, status=201)
+
+    tags = LeadTag.objects.all()
+    return JsonResponse({"count": tags.count(), "tags": [public_lead_tag(tag) for tag in tags]})
+
+
+@csrf_exempt
+@require_http_methods(["PUT", "PATCH", "DELETE", "OPTIONS"])
+def lead_tag_item(request, tag_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    staff_user = auth_user(request)
+    if not staff_user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+    if not staff_user.is_staff:
+        return JsonResponse({"message": "Not authorized for admin access."}, status=403)
+    if not role_allows_section(staff_user, "leads"):
+        return JsonResponse({"message": "Your admin role does not have access to this section."}, status=403)
+
+    tag = LeadTag.objects.filter(id=tag_id).first()
+    if not tag:
+        return JsonResponse({"message": "Tag not found."}, status=404)
+
+    if request.method == "DELETE":
+        tag.delete()
+        return JsonResponse({"message": "Tag deleted."})
+
+    body = parse_body(request)
+    if not isinstance(body, dict):
+        return JsonResponse({"message": "Provide an object with the fields to update."}, status=400)
+
+    if "name" in body:
+        name = str(body.get("name", "")).strip()
+        if not name:
+            return JsonResponse({"message": "Tag name cannot be empty."}, status=400)
+        if LeadTag.objects.filter(name__iexact=name).exclude(id=tag.id).exists():
+            return JsonResponse({"message": "A tag with this name already exists."}, status=409)
+        tag.name = name
+    if "color" in body:
+        color = str(body.get("color", "")).strip()
+        if color not in LEAD_TAG_COLORS:
+            return JsonResponse({"message": "Invalid tag color."}, status=400)
+        tag.color = color
+    tag.save()
+
+    return JsonResponse({"message": "Tag updated.", "tag": public_lead_tag(tag)})
 
 
 @csrf_exempt

@@ -7,7 +7,6 @@ export const metadata: Metadata = {
   title: "Excel to PDF Converter Free - Save Spreadsheets as PDF | RepetiGo",
   description: "Convert Excel to PDF free - save spreadsheet data as PDF text. Works without Microsoft Excel. No sign-up. Files browser-only - never uploaded. Try free.",
   alternates: { canonical: pageUrl },
-  openGraph: { title: "Excel to PDF Converter Free - Save Spreadsheets as PDF | RepetiGo", description: "Convert Excel to PDF free online. Works without Microsoft Excel. No sign-up, browser-only - never uploaded.", type: "website", url: pageUrl, images: ["https://repetigo.com/og-excel-to-pdf.jpg"] },
   twitter: { card: "summary_large_image", title: "Excel to PDF Converter Free - RepetiGo", description: "Convert Excel to PDF free. Works without Excel. No sign-up, browser-only." },
   robots: { index: true, follow: true },
 };

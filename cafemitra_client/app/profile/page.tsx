@@ -15,8 +15,14 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
+import type { Metadata } from "next";
 import { ProfileForms } from "./ProfileForms";
 import { DashboardShell } from "../DashboardShell";
+
+export const metadata: Metadata = {
+  title: "Profile | RepetiGo",
+  robots: { index: false, follow: false },
+};
 
 type NavItem = {
   name: string;

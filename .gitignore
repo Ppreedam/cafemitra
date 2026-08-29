@@ -25,3 +25,6 @@ printpilot_agent_csharp/obj/
 # Local build archives/logs
 *.zip
 *.log
+
+# Local planning/reference docs - not part of the shipped repo
+docs/

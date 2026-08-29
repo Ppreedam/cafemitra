@@ -1,13 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createCoupon, fetchCoupons, updateCoupon, type AdminCoupon } from "@/lib/api";
+import React, { useEffect, useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
+import { createCoupon, fetchCoupons, fetchCouponDetail, updateCoupon, type AdminCoupon, type CouponRedemptionEntry } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
 
 export default function CouponsPage() {
   const [coupons, setCoupons] = useState<AdminCoupon[]>([]);
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [expandedCouponId, setExpandedCouponId] = useState<number | null>(null);
+  const [redemptionsByCoupon, setRedemptionsByCoupon] = useState<Record<number, CouponRedemptionEntry[]>>({});
+  const [loadingRedemptions, setLoadingRedemptions] = useState(false);
   const [code, setCode] = useState("");
   const [amount, setAmount] = useState("50");
   const [message, setMessage] = useState("");
@@ -56,6 +60,25 @@ export default function CouponsPage() {
       load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not update coupon.");
+    }
+  }
+
+  async function toggleRedemptions(coupon: AdminCoupon) {
+    if (expandedCouponId === coupon.id) {
+      setExpandedCouponId(null);
+      return;
+    }
+    setExpandedCouponId(coupon.id);
+    if (redemptionsByCoupon[coupon.id]) return;
+    setLoadingRedemptions(true);
+    setError("");
+    try {
+      const res = await fetchCouponDetail(coupon.id);
+      setRedemptionsByCoupon((prev) => ({ ...prev, [coupon.id]: res.redemptions }));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not load who redeemed this coupon.");
+    } finally {
+      setLoadingRedemptions(false);
     }
   }
 
@@ -165,28 +188,90 @@ export default function CouponsPage() {
               </tr>
             )}
             {coupons.map((coupon) => (
-              <tr key={coupon.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+              <React.Fragment key={coupon.id}>
+              <tr className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
                 <td className="px-4 py-2 font-mono font-medium text-slate-900">{coupon.code}</td>
                 <td className="px-4 py-2 text-slate-900 font-medium">{formatCurrency(coupon.amount)}</td>
                 <td className="px-4 py-2 text-slate-700 max-w-xs truncate" title={coupon.message}>
                   {coupon.message}
                 </td>
-                <td className="px-4 py-2 text-slate-700">
-                  {coupon.redeemedCount}
-                  {coupon.maxRedemptions ? ` / ${coupon.maxRedemptions}` : ""}
+                <td className="px-4 py-2">
+                  <span className="inline-flex items-center gap-1.5 text-slate-700">
+                    {coupon.redeemedCount}
+                    {coupon.maxRedemptions ? ` / ${coupon.maxRedemptions}` : ""}
+                    {coupon.redeemedCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => toggleRedemptions(coupon)}
+                        title={expandedCouponId === coupon.id ? "Hide who redeemed this" : "See who redeemed this"}
+                        className="text-slate-400 hover:text-indigo-600"
+                      >
+                        {expandedCouponId === coupon.id ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    )}
+                  </span>
                 </td>
                 <td className="px-4 py-2 text-slate-700">{coupon.expiresAt ? new Date(coupon.expiresAt).toLocaleDateString() : "-"}</td>
                 <td className="px-4 py-2">
                   <button
+                    type="button"
+                    role="switch"
+                    aria-checked={coupon.isActive}
                     onClick={() => toggleActive(coupon)}
-                    className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                      coupon.isActive ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"
-                    }`}
+                    className="inline-flex items-center gap-2"
                   >
-                    {coupon.isActive ? "Active" : "Disabled"}
+                    <span
+                      className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
+                        coupon.isActive ? "bg-green-500" : "bg-slate-300"
+                      }`}
+                    >
+                      <span
+                        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                          coupon.isActive ? "translate-x-4" : "translate-x-0.5"
+                        }`}
+                      />
+                    </span>
+                    <span className={`text-xs font-medium ${coupon.isActive ? "text-green-700" : "text-slate-500"}`}>
+                      {coupon.isActive ? "Active" : "Disabled"}
+                    </span>
                   </button>
                 </td>
               </tr>
+              {expandedCouponId === coupon.id && (
+                <tr className="border-b border-slate-100 last:border-0 bg-slate-50">
+                  <td colSpan={6} className="px-4 py-3">
+                    {loadingRedemptions && !redemptionsByCoupon[coupon.id] ? (
+                      <p className="text-xs text-slate-500">Loading...</p>
+                    ) : (redemptionsByCoupon[coupon.id] || []).length === 0 ? (
+                      <p className="text-xs text-slate-500">No redemptions yet.</p>
+                    ) : (
+                      <table className="w-full text-xs">
+                        <thead>
+                          <tr className="text-left text-slate-500">
+                            <th className="pb-1 pr-4 font-medium">Shop</th>
+                            <th className="pb-1 pr-4 font-medium">Shop code</th>
+                            <th className="pb-1 pr-4 font-medium">Email</th>
+                            <th className="pb-1 pr-4 font-medium">Phone</th>
+                            <th className="pb-1 font-medium">Redeemed at</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {(redemptionsByCoupon[coupon.id] || []).map((redemption) => (
+                            <tr key={redemption.id} className="border-t border-slate-200">
+                              <td className="py-1 pr-4 text-slate-900">{redemption.shopName || "-"}</td>
+                              <td className="py-1 pr-4 font-mono text-slate-700">{redemption.shopCode}</td>
+                              <td className="py-1 pr-4 text-slate-700">{redemption.email}</td>
+                              <td className="py-1 pr-4 text-slate-700">{redemption.phone || "-"}</td>
+                              <td className="py-1 text-slate-700">{new Date(redemption.redeemedAt).toLocaleString()}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </td>
+                </tr>
+              )}
+              </React.Fragment>
             ))}
           </tbody>
         </table>

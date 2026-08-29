@@ -47,6 +47,14 @@ export const defaultPricingServices: PricingService[] = [
     },
   },
   {
+    serviceKey: "id_card_print",
+    serviceName: "ID Card Print",
+    settings: {
+      paymentMode: "Online Payment",
+      priceItems: [{ id: "single_card", label: "ID Card (Front + Back)", rate: 20 }],
+    },
+  },
+  {
     serviceKey: "resume_builder",
     serviceName: "Resume Builder",
     settings: {

@@ -479,6 +479,23 @@ class GooglePlace(models.Model):
         return self.name
 
 
+class LeadTag(models.Model):
+    """A sales-defined label (e.g. "VIP", "Needs Call") that can be applied to any
+    number of converted leads, many-to-many, for follow-up tracking. `color` stores a
+    palette key (e.g. "emerald"), not a hex value - the frontend's fixed color list
+    (mirroring LEAD_STATUSES) is the source of truth for what it actually renders as."""
+
+    name = models.CharField(max_length=60, unique=True)
+    color = models.CharField(max_length=20, default="slate")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+
 class GooglePlaceDetail(models.Model):
     """Full scraped detail record for a Google Maps place (post-extraction)."""
 
@@ -507,12 +524,21 @@ class GooglePlaceDetail(models.Model):
     longitude = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
     maps_url = models.CharField(max_length=1000, unique=True)
     phone = models.CharField(max_length=40, blank=True, default="")
+    email = models.CharField(max_length=255, blank=True, default="")
     rating = models.DecimalField(max_digits=3, decimal_places=1, null=True, blank=True)
     reviews = models.PositiveIntegerField(null=True, blank=True)
     website = models.TextField(blank=True, default="")
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_NEW)
     notes = models.TextField(blank=True, default="")
     next_follow_up_at = models.DateField(null=True, blank=True)
+    tags = models.ManyToManyField(LeadTag, blank=True, related_name="leads")
+    # Set only for a record that was backfilled from (or later matched to) an
+    # already-registered shop account, instead of coming from the Google Maps
+    # scraper - lets the one-time backfill command detect "already synced"
+    # without having to parse the synthetic maps_url it assigns those rows.
+    linked_user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="lead_detail"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

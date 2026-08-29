@@ -8,7 +8,6 @@ export const metadata: Metadata = {
   title: "PDF to Word Converter - Free Online, No Sign-Up | RepetiGo",
   description: "Convert PDF to Word free online - turn any PDF into an editable .docx file in seconds - text content extracted, ready to edit. No sign-up, no install. Files browser-only - never uploaded.",
   alternates: { canonical: pageUrl },
-  openGraph: { title: "PDF to Word Converter - Free Online, No Sign-Up | RepetiGo", description: "Convert PDF to Word free - turn any PDF into an editable .docx in seconds. Layout preserved. No sign-up, browser-only - never uploaded.", type: "website", url: pageUrl, images: ["https://repetigo.com/og-pdf-to-word.jpg"] },
   twitter: { card: "summary_large_image", title: "PDF to Word Converter Free Online - RepetiGo", description: "Convert PDF to editable Word free. No sign-up, no install, browser-only - never uploaded." },
   robots: { index: true, follow: true },
 };

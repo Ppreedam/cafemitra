@@ -41,14 +41,12 @@ export const metadata: Metadata = {
       "AI-powered print automation software. QR upload, secure document printing, auto-delete in 15 min. Built for cyber cafes & print shops.",
     type: "website",
     url: pageUrl,
-    images: [`${siteUrl}/og-printpilot.jpg`],
   },
   twitter: {
     card: "summary_large_image",
     title: "PrintPilot - Print Automation Software by RepetiGo",
     description:
       "QR upload. AI processing. Auto-delete. The complete print automation software for Indian print shops and cyber cafes.",
-    images: [`${siteUrl}/og-printpilot.jpg`],
   },
   robots: {
     index: true,

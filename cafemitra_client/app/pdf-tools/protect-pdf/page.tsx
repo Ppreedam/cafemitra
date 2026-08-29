@@ -13,7 +13,6 @@ export const metadata: Metadata = {
     description: "Password protect any PDF free - add an open password, restrict editing, printing, and copying. No Adobe Acrobat needed. No sign-up, browser-only - never uploaded.",
     type: "website",
     url: pageUrl,
-    images: ["https://repetigo.com/og-protect-pdf.jpg"],
   },
   twitter: {
     card: "summary_large_image",

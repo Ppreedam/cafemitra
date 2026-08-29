@@ -13,7 +13,6 @@ export const metadata: Metadata = {
     description: "Convert PDF to PDF/A free - ISO 19005 archival format for courts, governments, and academic repositories. PDF/A-1b and PDF/A-2 best-effort preparation supported. No sign-up, auto-deleted.",
     type: "website",
     url: pageUrl,
-    images: ["https://repetigo.com/og-pdf-to-pdfa.jpg"],
   },
   twitter: {
     card: "summary_large_image",

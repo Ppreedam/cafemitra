@@ -7,7 +7,6 @@ export const metadata: Metadata = {
   title: "PowerPoint to PDF Converter - Free Online, No Sign-Up | RepetiGo",
   description: "Convert PowerPoint to PDF free online - upload your .ppt or .pptx file and download a PDF in seconds. Text content from slides extracted as PDF. No sign-up. Browser-only processing.",
   alternates: { canonical: pageUrl },
-  openGraph: { title: "PowerPoint to PDF Converter - Free Online, No Sign-Up | RepetiGo", description: "Convert PowerPoint to PDF free - upload .ppt or .pptx, download PDF with fonts and text content extracted. No sign-up, browser-only - never uploaded.", type: "website", url: pageUrl, images: ["https://repetigo.com/og-powerpoint-to-pdf.jpg"] },
   twitter: { card: "summary_large_image", title: "PowerPoint to PDF Free Online - RepetiGo", description: "Convert PPT/PPTX to PDF free. Fonts and text content extracted. No sign-up, browser-only - never uploaded." },
   robots: { index: true, follow: true },
 };

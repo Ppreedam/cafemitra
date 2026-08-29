@@ -9,7 +9,6 @@ export const metadata: Metadata = {
   title: "Rotate PDF Online Free - Fix Sideways Pages Permanently | RepetiGo",
   description: "Rotate PDF pages online free - turn sideways or upside-down pages 90°, 180°, or counter-clockwise. Changes saved permanently. No sign-up. Files browser-only - never uploaded.",
   alternates: { canonical: pageUrl },
-  openGraph: { title: "Rotate PDF Online Free - Fix Sideways Pages Permanently | RepetiGo", description: "Fix sideways or upside-down PDF pages. Rotate 90°, 180°, or counter-clockwise. Saved permanently. No sign-up, browser-only - never uploaded.", type: "website", url: pageUrl, images: ["https://repetigo.com/og-rotate-pdf.jpg"] },
   twitter: { card: "summary_large_image", title: "Rotate PDF Free - Fix Pages Permanently | RepetiGo", description: "Rotate PDF pages free online. 90°, 180°, counter-clockwise. Saved permanently. No sign-up." },
   robots: { index: true, follow: true },
 };

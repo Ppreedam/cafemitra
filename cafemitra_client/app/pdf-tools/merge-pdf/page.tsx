@@ -16,7 +16,6 @@ export const metadata: Metadata = {
       "Free PDF merger - combine multiple PDFs into one in seconds. No sign-up, browser-only - never uploaded. Works on phone & laptop.",
     type: "website",
     url: pageUrl,
-    images: ["https://repetigo.com/og-merge-pdf.jpg"],
   },
   twitter: {
     card: "summary_large_image",

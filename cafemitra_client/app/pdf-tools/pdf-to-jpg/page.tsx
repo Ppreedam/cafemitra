@@ -8,7 +8,6 @@ export const metadata: Metadata = {
   title: "PDF to JPG Converter Free India - Extract Pages as Images | RepetiGo",
   description: "Convert PDF to JPG online free - extract every PDF page as a JPG image with an adjustable quality slider. No sign-up. Files browser-only - never uploaded. Works on any device.",
   alternates: { canonical: pageUrl },
-  openGraph: { title: "PDF to JPG Converter Free India - Extract Pages as Images | RepetiGo", description: "Free PDF to JPG converter. Extract every page as an image with adjustable JPG quality. No sign-up, browser-only - never uploaded.", type: "website", url: pageUrl, images: ["https://repetigo.com/og-pdf-to-jpg.jpg"] },
   twitter: { card: "summary_large_image", title: "PDF to JPG Converter Free - RepetiGo", description: "Convert PDF to JPG free. Adjustable quality slider. No sign-up, browser-only. India-built." },
   robots: { index: true, follow: true },
 };

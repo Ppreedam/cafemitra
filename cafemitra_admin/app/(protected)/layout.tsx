@@ -57,9 +57,9 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen">
       <Sidebar user={user} role={role} notifications={notifications} />
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col min-w-0">
         <Topbar notifications={notifications} />
-        <main className="flex-1 p-6">{children}</main>
+        <main className="flex-1 min-w-0 p-6">{children}</main>
       </div>
     </div>
   );

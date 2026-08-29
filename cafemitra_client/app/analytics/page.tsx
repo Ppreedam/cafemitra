@@ -24,7 +24,13 @@ import {
   Wallet,
   type LucideIcon,
 } from "lucide-react";
+import type { Metadata } from "next";
 import { DashboardShell } from "../DashboardShell";
+
+export const metadata: Metadata = {
+  title: "Analytics | RepetiGo",
+  robots: { index: false, follow: false },
+};
 
 type NavItem = {
   name: string;

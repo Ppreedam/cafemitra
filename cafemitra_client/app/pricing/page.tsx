@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import {
   BadgeCheck,
@@ -12,6 +13,28 @@ import {
 import { LandingNavbar } from "../LandingNavbar";
 import { PublicFooter } from "../PublicFooter";
 import { apiUrl } from "../../lib/api";
+
+const pageUrl = "https://repetigo.com/pricing";
+
+export const metadata: Metadata = {
+  title: "Pricing - Pay Only When You Earn | RepetiGo PrintPilot",
+  description:
+    "RepetiGo pricing for print shops and cyber cafes: everyday PDF, image, and document tools stay free. Prepaid service credits are only spent on completed PrintPilot print jobs - no fixed monthly software fee.",
+  alternates: { canonical: pageUrl },
+  openGraph: {
+    title: "Pricing - Pay Only When You Earn | RepetiGo PrintPilot",
+    description:
+      "Prepaid service credits, spent only on completed print jobs. Everyday tools stay free for every print shop and cyber cafe.",
+    type: "website",
+    url: pageUrl,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Pricing - Pay Only When You Earn | RepetiGo",
+    description: "No fixed monthly fee. Prepaid service credits are only spent on completed PrintPilot print jobs.",
+  },
+  robots: { index: true, follow: true },
+};
 
 type WalletConfig = {
   signupBonus: number;

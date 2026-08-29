@@ -8,7 +8,6 @@ export const metadata: Metadata = {
   title: "PDF to PowerPoint Converter - Free Online, No Sign-Up | RepetiGo",
   description: "Convert PDF to PowerPoint free online - turn any PDF into a .pptx file in seconds - each page becomes a visual slide. No sign-up, no install. Files browser-only - never uploaded.",
   alternates: { canonical: pageUrl },
-  openGraph: { title: "PDF to PowerPoint Converter - Free Online, No Sign-Up | RepetiGo", description: "Convert PDF to PowerPoint free - turn any PDF into editable .pptx slides. Layout preserved. No sign-up, browser-only - never uploaded.", type: "website", url: pageUrl, images: ["https://repetigo.com/og-pdf-to-ppt.jpg"] },
   twitter: { card: "summary_large_image", title: "PDF to PowerPoint Converter Free Online - RepetiGo", description: "Convert PDF to editable PowerPoint slides free. No sign-up, no install, browser-only - never uploaded." },
   robots: { index: true, follow: true },
 };

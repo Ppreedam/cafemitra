@@ -46,6 +46,7 @@ function toPayload(values: LeadFormValues) {
     name: values.name.trim(),
     address: values.address.trim(),
     phone: values.phone.trim(),
+    email: values.email.trim(),
     website: values.website.trim(),
     maps_url: values.maps_url.trim(),
     rating: values.rating.trim() === "" ? null : Number(values.rating),
@@ -419,14 +420,20 @@ export default function LeadsPipelinePage() {
                         </div>
                         <div className="min-w-0">
                           <p className="truncate font-medium text-slate-900">{lead.name}</p>
-                          <a
-                            href={lead.maps_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline"
-                          >
-                            View on Maps <ExternalLink size={11} />
-                          </a>
+                          {lead.maps_url.startsWith("internal://") ? (
+                            <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-600">
+                              <Users size={11} /> Registered customer
+                            </span>
+                          ) : (
+                            <a
+                              href={lead.maps_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:underline"
+                            >
+                              View on Maps <ExternalLink size={11} />
+                            </a>
+                          )}
                         </div>
                       </div>
                     </td>

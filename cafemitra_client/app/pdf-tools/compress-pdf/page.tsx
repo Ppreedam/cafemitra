@@ -14,7 +14,6 @@ export const metadata: Metadata = {
       "Free PDF compressor - reduce PDF size in seconds. No sign-up, browser-only - never uploaded. Works on phone, tablet, laptop.",
     type: "website",
     url: pageUrl,
-    images: ["https://repetigo.com/og-compress-pdf.jpg"],
   },
   twitter: {
     card: "summary_large_image",

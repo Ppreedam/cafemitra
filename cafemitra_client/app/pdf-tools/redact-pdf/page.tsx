@@ -14,7 +14,6 @@ export const metadata: Metadata = {
     description: "Redact any PDF free - permanently black out names, SSNs, account numbers, and sensitive data. No Adobe. No sign-up. Browser-only processing.",
     type: "website",
     url: pageUrl,
-    images: ["https://repetigo.com/og-redact-pdf.jpg"],
   },
   twitter: {
     card: "summary_large_image",

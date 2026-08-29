@@ -9,7 +9,6 @@ export const metadata: Metadata = {
   title: "JPG to PDF Converter Online Free India | RepetiGo",
   description: "Convert JPG to PDF online free - turn photos, Aadhaar scans, PAN cards and PNG files into PDF instantly. No sign-up. Files browser-only - never uploaded.",
   alternates: { canonical: pageUrl },
-  openGraph: { title: "JPG to PDF Converter Online Free India | RepetiGo", description: "Convert JPG and PNG images to PDF free. No sign-up, browser-only - never uploaded. Works on phone, iPhone, laptop.", type: "website", url: pageUrl, images: ["https://repetigo.com/og-jpg-to-pdf.jpg"] },
   twitter: { card: "summary_large_image", title: "JPG to PDF Converter Free - RepetiGo", description: "Convert photos to PDF free. JPG and PNG supported. No sign-up, browser-only. India-built." },
   robots: { index: true, follow: true },
 };

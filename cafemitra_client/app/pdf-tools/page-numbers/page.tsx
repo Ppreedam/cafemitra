@@ -15,7 +15,6 @@ export const metadata: Metadata = {
     description: "Add page numbers to any PDF free - choose position, format, and start number. No sign-up, browser-only - never uploaded.",
     type: "website",
     url: pageUrl,
-    images: ["https://repetigo.com/og-add-page-numbers.jpg"],
   },
   twitter: {
     card: "summary_large_image",

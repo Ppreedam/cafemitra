@@ -28,3 +28,13 @@ export function followUpState(dateStr: string | null): FollowUpState {
 export function formatFollowUp(dateStr: string) {
   return new Date(`${dateStr}T00:00:00`).toLocaleDateString(undefined, { day: "numeric", month: "short" });
 }
+
+// wa.me needs digits-only, full international format (no "+", no leading "0") -
+// Indian numbers are stored as plain 10-digit locals, so default to prefixing "91"
+// unless the number already looks like it has a country code on it.
+export function whatsappLink(phone: string, name: string) {
+  const digits = phone.replace(/\D/g, "").replace(/^0+/, "");
+  const withCountryCode = digits.length === 10 ? `91${digits}` : digits;
+  const message = `Hi ${name.trim() || "there"}, this is the RepetiGo team! Just checking in - let us know if you need any help with your print shop tools.`;
+  return `https://wa.me/${withCountryCode}?text=${encodeURIComponent(message)}`;
+}

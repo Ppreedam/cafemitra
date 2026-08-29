@@ -3,7 +3,6 @@ import { DashboardShell } from "../../DashboardShell";
 import InPlacePdfEditor from "../InPlacePdfEditor";
 
 const pageUrl = "https://repetigo.com/pdf-tools/edit-pdf";
-export const metadata: Metadata = { title: "Edit PDF Online Free - Change Text & Add Text | RepetiGo", description: "Edit any PDF free online - click existing text to change it, or add new text boxes, directly in your browser. No Adobe Acrobat. Works on Mac, iPhone, and Windows. No sign-up. Files never uploaded - processed in your browser.", alternates: { canonical: pageUrl }, openGraph: { title: "Edit PDF Online Free - Change Text & Add Text | RepetiGo", description: "Edit any PDF free - change existing text or add new text, without Adobe Acrobat. Mac, iPhone, Windows. No sign-up, browser-only - never uploaded.", type: "website", url: pageUrl, images: ["https://repetigo.com/og-edit-pdf.jpg"] }, twitter: { card: "summary_large_image", title: "Edit PDF Online Free - RepetiGo", description: "Edit PDFs free - change text or add new text. No sign-up, browser-only - never uploaded." }, robots: { index: true, follow: true } };
 
 const editPdfContent = String.raw`H1: Edit Any PDF Free. Change Text. Fill Forms. No Adobe Acrobat.
 You have a PDF. You need to change something in it. And you just discovered that PDFs - unlike Word documents - don't simply open and let you type. They fight back.

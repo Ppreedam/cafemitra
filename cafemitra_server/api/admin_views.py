@@ -20,6 +20,7 @@ from .admin_auth import get_admin_role, require_admin, require_section
 from .lead_scraper_runner import run_scrape_job
 from .models import AdminActivityLog, AdminRole, Agent, ContactMessage, Coupon, CouponRedemption, GooglePlace, PrintOrder, ScrapeRun, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTransaction, WalletTopup, WithdrawalRequest
 from .views import (
+    cafe_code_for_user,
     create_password_reset,
     create_wallet_transaction,
     delete_user_files,
@@ -1431,12 +1432,23 @@ def admin_coupon_detail(request, coupon_id):
         log_admin_activity(admin_user, "coupon.update", "coupon", coupon.id, f"isActive={coupon.is_active}")
         coupon.redeemed_count = coupon.redemptions.count()
 
-    redemptions = CouponRedemption.objects.filter(coupon=coupon).select_related("user").order_by("-redeemed_at")[:50]
+    redemptions = (
+        CouponRedemption.objects.filter(coupon=coupon)
+        .select_related("user", "user__profile", "user__shop")
+        .order_by("-redeemed_at")[:50]
+    )
 
     return JsonResponse({
         "coupon": public_admin_coupon(coupon),
         "redemptions": [
-            {"id": redemption.id, "email": redemption.user.email, "redeemedAt": redemption.redeemed_at.isoformat()}
+            {
+                "id": redemption.id,
+                "shopCode": cafe_code_for_user(redemption.user),
+                "shopName": getattr(getattr(redemption.user, "shop", None), "shop_name", "") or "",
+                "email": redemption.user.email,
+                "phone": getattr(getattr(redemption.user, "profile", None), "phone", "") or "",
+                "redeemedAt": redemption.redeemed_at.isoformat(),
+            }
             for redemption in redemptions
         ],
     })
