@@ -20,6 +20,7 @@ from .admin_auth import get_admin_role, require_admin, require_section
 from .lead_scraper_runner import run_scrape_job
 from .models import AdminActivityLog, AdminRole, Agent, ContactMessage, Coupon, CouponRedemption, GooglePlace, PrintOrder, ScrapeRun, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTransaction, WalletTopup, WithdrawalRequest
 from .views import (
+    ORDER_LIST_DEFERRED_FIELDS,
     cafe_code_for_user,
     create_password_reset,
     create_wallet_transaction,
@@ -318,7 +319,7 @@ def shops_queryset():
     return User.objects.filter(is_staff=False, shop__isnull=False).select_related("profile", "shop", "shop__referred_by_agent")
 
 
-def public_admin_shop(user):
+def public_admin_shop(user, needs_attention=False):
     profile = getattr(user, "profile", None)
     shop = getattr(user, "shop", None)
     agent = getattr(shop, "referred_by_agent", None) if shop else None
@@ -334,6 +335,7 @@ def public_admin_shop(user):
         "isActive": user.is_active,
         "dateJoined": user.date_joined.isoformat(),
         "referredByAgent": {"id": agent.id, "referralCode": agent.referral_code} if agent else None,
+        "needsAttention": needs_attention,
     }
 
 
@@ -386,14 +388,21 @@ def admin_shops(request):
     shops = shops.order_by("-date_joined")
     count = shops.count()
     start = (page - 1) * page_size
-    page_items = shops[start : start + page_size]
+    page_items = list(shops[start : start + page_size])
+
+    attention_user_ids = set(
+        PrintOrder.objects.filter(
+            user_id__in=[user.id for user in page_items],
+            status__in=[PrintOrder.STATUS_FAILED, PrintOrder.STATUS_QUEUED],
+        ).values_list("user_id", flat=True)
+    )
 
     return JsonResponse(
         {
             "count": count,
             "page": page,
             "pageSize": page_size,
-            "shops": [public_admin_shop(user) for user in page_items],
+            "shops": [public_admin_shop(user, needs_attention=user.id in attention_user_ids) for user in page_items],
         }
     )
 
@@ -445,9 +454,13 @@ def admin_shop_detail(request, shop_id):
     recent_orders = order_list_queryset(PrintOrder.objects.filter(user=shop_user).order_by("-created_at"))[:20]
     recent_transactions = WalletTransaction.objects.filter(user=shop_user).order_by("-created_at")[:20]
 
+    needs_attention = PrintOrder.objects.filter(
+        user=shop_user, status__in=[PrintOrder.STATUS_FAILED, PrintOrder.STATUS_QUEUED]
+    ).exists()
+
     return JsonResponse(
         {
-            "shop": public_admin_shop(shop_user),
+            "shop": public_admin_shop(shop_user, needs_attention=needs_attention),
             "profile": public_shop(shop_user.shop),
             "pricing": [public_pricing(item) for item in pricing],
             "recentOrders": [public_order(order, include_media=False) for order in recent_orders],
@@ -1392,7 +1405,7 @@ def admin_coupons(request):
 
 
 @csrf_exempt
-@require_http_methods(["GET", "PUT", "OPTIONS"])
+@require_http_methods(["GET", "PUT", "DELETE", "OPTIONS"])
 def admin_coupon_detail(request, coupon_id):
     if request.method == "OPTIONS":
         return JsonResponse({})
@@ -1405,8 +1418,31 @@ def admin_coupon_detail(request, coupon_id):
     if not coupon:
         return JsonResponse({"message": "Coupon not found."}, status=404)
 
+    if request.method == "DELETE":
+        if coupon.redeemed_count:
+            return JsonResponse(
+                {"message": "This coupon has already been redeemed and can't be deleted - disable it instead."},
+                status=409,
+            )
+        code = coupon.code
+        coupon.delete()
+        log_admin_activity(admin_user, "coupon.delete", "coupon", coupon_id, f"code={code}")
+        return JsonResponse({"message": "Coupon deleted."})
+
     if request.method == "PUT":
         body = parse_body(request)
+        if "code" in body:
+            code = str(body.get("code", "")).strip().upper()
+            if not code:
+                return JsonResponse({"message": "Code cannot be blank."}, status=400)
+            if Coupon.objects.filter(code=code).exclude(id=coupon.id).exists():
+                return JsonResponse({"message": "That coupon code is already in use."}, status=409)
+            coupon.code = code
+        if "amount" in body:
+            amount = money(body.get("amount", 0))
+            if amount <= 0:
+                return JsonResponse({"message": "Enter a coupon amount greater than 0."}, status=400)
+            coupon.amount = amount
         if "isActive" in body:
             coupon.is_active = bool(body.get("isActive"))
         if "message" in body:
@@ -1680,6 +1716,221 @@ def admin_orders_export(request):
     return csv_response(
         "orders.csv",
         ["Date", "Order", "Shop", "Email", "Service", "Amount", "Payment Mode", "Payment Status", "Status"],
+        rows,
+    )
+
+
+# --- Order Issues (unsuccessful orders needing admin follow-up) -------------
+# Lives under the Leads CRM nav group (as a one-by-one work queue, same
+# pattern as the scrape queue) even though it reads from PrintOrder/shops -
+# a deliberate placement choice, not a data-model relationship.
+
+def order_issues_queryset():
+    """Every order that hasn't reached STATUS_PRINTED - failed, still queued,
+    stuck awaiting approval/payment, or mid-print - is "unsuccessful" here.
+
+    Must defer the same big columns order_list_queryset() defers (not a bare
+    select_related): most of this set is passport_photo orders stuck in
+    queue, which store the customer's photo as a multi-megabyte base64 data
+    URI directly in original_filename. Pulling that for every row here blew
+    straight through the Supabase pooler's statement timeout (confirmed:
+    120s+ undeferred vs. <1s deferred for the same 289 rows) - skipping
+    order_list_queryset() itself and deferring directly, since its extra
+    _list_* annotations still detoast original_filename to compute a
+    Substr() and aren't needed here anyway.
+    """
+    return (
+        PrintOrder.objects.exclude(status=PrintOrder.STATUS_PRINTED)
+        .select_related("user", "user__shop", "user__profile")
+        .defer(*ORDER_LIST_DEFERRED_FIELDS)
+    )
+
+
+def public_order_issue(order):
+    shop = getattr(order.user, "shop", None)
+    profile = getattr(order.user, "profile", None)
+    return {
+        "id": order.id,
+        "orderNumber": order.token_id or f"{order.shop_code}-{order.id:05d}",
+        "shopId": order.user_id,
+        "shopName": shop.shop_name if shop else "",
+        "email": order.user.email,
+        "phone": profile.phone if profile else "",
+        "address": ", ".join(filter(None, [shop.address if shop else "", shop.city if shop else "", shop.state if shop else "", shop.pin_code if shop else ""])),
+        "serviceName": order.service_name,
+        "status": order.status,
+        "paymentMode": order.payment_mode,
+        "paymentStatus": order.payment_status,
+        "totalAmount": float(order.total_amount),
+        "agentMessage": order.agent_message,
+        "createdAt": order.created_at.isoformat(),
+        "adminReviewed": order.admin_reviewed,
+        "adminReviewedAt": order.admin_reviewed_at.isoformat() if order.admin_reviewed_at else None,
+    }
+
+
+def apply_order_issue_filters(queryset, request):
+    date_from = parse_date(request.GET.get("from", "").strip())
+    if date_from:
+        queryset = queryset.filter(created_at__date__gte=date_from)
+    date_to = parse_date(request.GET.get("to", "").strip())
+    if date_to:
+        queryset = queryset.filter(created_at__date__lte=date_to)
+    return queryset
+
+
+def public_order_issue_group(shop_id, order_user, issues):
+    shop = getattr(order_user, "shop", None)
+    profile = getattr(order_user, "profile", None)
+    return {
+        "shopId": shop_id,
+        "shopName": shop.shop_name if shop else "",
+        "email": order_user.email,
+        "phone": profile.phone if profile else "",
+        "address": ", ".join(filter(None, [shop.address if shop else "", shop.city if shop else "", shop.state if shop else "", shop.pin_code if shop else ""])),
+        "issueCount": len(issues),
+        "issues": issues,
+    }
+
+
+# Same-shop unsuccessful orders are grouped into one row in the UI (a shop
+# retrying the same broken upload shows up 10 times otherwise) - the whole
+# matching set is small enough (hundreds, see order_issues_queryset's
+# perf note) to fetch and group in Python rather than needing a DB-level
+# GROUP BY; this cap just keeps that assumption from silently going bad.
+ORDER_ISSUES_GROUP_FETCH_CAP = 3000
+
+
+def group_order_issues_by_shop(queryset):
+    """One entry per shop, most-recently-active shop first (a shop's
+    position comes from its single most recent matching order), each
+    carrying its own issues newest-first - shared by the JSON list and the
+    CSV export so both group identically."""
+    groups_by_shop = {}
+    shop_order = []
+    for order in queryset.order_by("-created_at")[:ORDER_ISSUES_GROUP_FETCH_CAP]:
+        shop_id = order.user_id
+        if shop_id not in groups_by_shop:
+            groups_by_shop[shop_id] = {"user": order.user, "issues": []}
+            shop_order.append(shop_id)
+        groups_by_shop[shop_id]["issues"].append(public_order_issue(order))
+    return [public_order_issue_group(sid, groups_by_shop[sid]["user"], groups_by_shop[sid]["issues"]) for sid in shop_order]
+
+
+def filter_by_reviewed(queryset, request):
+    reviewed = request.GET.get("reviewed", "false").strip()
+    if reviewed == "true":
+        return queryset.filter(admin_reviewed=True)
+    if reviewed == "false":
+        return queryset.filter(admin_reviewed=False)
+    return queryset
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def admin_order_issues(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    _, err = require_section(request, "leads")
+    if err:
+        return err
+
+    base = apply_order_issue_filters(order_issues_queryset(), request)
+    issues = filter_by_reviewed(base, request)
+
+    try:
+        page = max(1, int(request.GET.get("page", 1)))
+    except (TypeError, ValueError):
+        page = 1
+    try:
+        page_size = min(MAX_PAGE_SIZE, max(1, int(request.GET.get("pageSize", 20))))
+    except (TypeError, ValueError):
+        page_size = 20
+
+    all_groups = group_order_issues_by_shop(issues)
+    count = len(all_groups)
+    start = (page - 1) * page_size
+    page_groups = all_groups[start : start + page_size]
+
+    return JsonResponse(
+        {
+            "count": count,
+            "page": page,
+            "pageSize": page_size,
+            "openCount": base.filter(admin_reviewed=False).count(),
+            "reviewedCount": base.filter(admin_reviewed=True).count(),
+            "groups": page_groups,
+        }
+    )
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def admin_order_issue_review(request, order_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "leads")
+    if err:
+        return err
+
+    order = order_issues_queryset().filter(id=order_id).first()
+    if not order:
+        return JsonResponse({"message": "Order issue not found."}, status=404)
+
+    body = parse_body(request)
+    reviewed = bool(body.get("reviewed", True))
+    order.admin_reviewed = reviewed
+    order.admin_reviewed_at = timezone.now() if reviewed else None
+    order.save(update_fields=["admin_reviewed", "admin_reviewed_at"])
+    log_admin_activity(
+        admin_user, "order_issue.review", "print_order", order.id, f"reviewed={reviewed}"
+    )
+    return JsonResponse({"issue": public_order_issue(order)})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def admin_order_issues_export(request):
+    """Same grouping as the JSON list (one shop's orders together, most
+    recently active shop first) - the shop's own columns are only filled in
+    on that shop's first row and left blank on its later rows, the usual
+    spreadsheet convention for a grouped export, so the CSV reads the same
+    way the on-screen grouped table looks instead of repeating the shop on
+    every single row."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    _, err = require_section(request, "leads")
+    if err:
+        return err
+
+    base = apply_order_issue_filters(order_issues_queryset(), request)
+    issues = filter_by_reviewed(base, request)
+    groups = group_order_issues_by_shop(issues)
+
+    rows = []
+    for group in groups:
+        for index, issue in enumerate(group["issues"]):
+            rows.append([
+                group["shopName"] if index == 0 else "",
+                group["email"] if index == 0 else "",
+                group["phone"] if index == 0 else "",
+                group["address"] if index == 0 else "",
+                issue["createdAt"],
+                issue["orderNumber"],
+                issue["serviceName"],
+                issue["status"],
+                issue["paymentMode"],
+                issue["paymentStatus"],
+                str(issue["totalAmount"]),
+                "Yes" if issue["adminReviewed"] else "No",
+            ])
+
+    return csv_response(
+        "unsuccessful-orders.csv",
+        ["Shop", "Email", "Phone", "Address", "Date", "Order", "Service", "Status", "Payment Mode", "Payment Status", "Amount", "Reviewed"],
         rows,
     )
 

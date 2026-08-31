@@ -167,7 +167,7 @@ export default function IdCardPrintClient() {
             <p>Upload one or more ID cards - each photo fills its slot at true print size, so what you see here is what comes out of the printer.</p>
           </div>
           <div className="auto-print-hero-actions">
-            <span className="status-pill warning">Wireframe preview</span>
+            <span className="status-pill">Print via Browser</span>
           </div>
         </div>
 

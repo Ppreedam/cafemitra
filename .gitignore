@@ -27,4 +27,5 @@ printpilot_agent_csharp/obj/
 *.log
 
 # Local planning/reference docs - not part of the shipped repo
-# docs/
+docs/
+ocr_experiments/

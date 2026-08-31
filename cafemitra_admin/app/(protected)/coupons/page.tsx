@@ -1,14 +1,22 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Eye, EyeOff } from "lucide-react";
-import { createCoupon, fetchCoupons, fetchCouponDetail, updateCoupon, type AdminCoupon, type CouponRedemptionEntry } from "@/lib/api";
+import { Eye, EyeOff, Pencil, Trash2 } from "lucide-react";
+import { createCoupon, deleteCoupon, fetchCoupons, fetchCouponDetail, updateCoupon, type AdminCoupon, type CouponRedemptionEntry } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
+
+function toDatetimeLocal(value: string | null) {
+  if (!value) return "";
+  const d = new Date(value);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 export default function CouponsPage() {
   const [coupons, setCoupons] = useState<AdminCoupon[]>([]);
   const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [editingCoupon, setEditingCoupon] = useState<AdminCoupon | null>(null);
   const [expandedCouponId, setExpandedCouponId] = useState<number | null>(null);
   const [redemptionsByCoupon, setRedemptionsByCoupon] = useState<Record<number, CouponRedemptionEntry[]>>({});
   const [loadingRedemptions, setLoadingRedemptions] = useState(false);
@@ -18,6 +26,7 @@ export default function CouponsPage() {
   const [maxRedemptions, setMaxRedemptions] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
 
   function load() {
     fetchCoupons()
@@ -27,27 +36,52 @@ export default function CouponsPage() {
 
   useEffect(load, []);
 
-  async function handleCreate(e: React.FormEvent) {
+  function resetForm() {
+    setCode("");
+    setAmount("50");
+    setMessage("");
+    setMaxRedemptions("");
+    setExpiresAt("");
+    setEditingCoupon(null);
+    setShowForm(false);
+  }
+
+  function startEdit(coupon: AdminCoupon) {
+    setEditingCoupon(coupon);
+    setCode(coupon.code);
+    setAmount(String(coupon.amount));
+    setMessage(coupon.message);
+    setMaxRedemptions(coupon.maxRedemptions ? String(coupon.maxRedemptions) : "");
+    setExpiresAt(toDatetimeLocal(coupon.expiresAt));
+    setShowForm(true);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     setError("");
     try {
-      await createCoupon({
-        code: code.trim() || undefined,
-        amount: Number(amount),
-        message,
-        maxRedemptions: maxRedemptions ? Number(maxRedemptions) : null,
-        expiresAt: expiresAt || null,
-      });
-      setCode("");
-      setAmount("50");
-      setMessage("");
-      setMaxRedemptions("");
-      setExpiresAt("");
-      setShowForm(false);
+      if (editingCoupon) {
+        await updateCoupon(editingCoupon.id, {
+          code: code.trim(),
+          amount: Number(amount),
+          message,
+          maxRedemptions: maxRedemptions ? Number(maxRedemptions) : null,
+          expiresAt: expiresAt || null,
+        });
+      } else {
+        await createCoupon({
+          code: code.trim() || undefined,
+          amount: Number(amount),
+          message,
+          maxRedemptions: maxRedemptions ? Number(maxRedemptions) : null,
+          expiresAt: expiresAt || null,
+        });
+      }
+      resetForm();
       load();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Could not create coupon.");
+      setError(err instanceof Error ? err.message : `Could not ${editingCoupon ? "update" : "create"} coupon.`);
     } finally {
       setSubmitting(false);
     }
@@ -60,6 +94,21 @@ export default function CouponsPage() {
       load();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not update coupon.");
+    }
+  }
+
+  async function handleDelete(coupon: AdminCoupon) {
+    if (!window.confirm(`Delete coupon ${coupon.code}? This cannot be undone.`)) return;
+    setDeletingId(coupon.id);
+    setError("");
+    try {
+      await deleteCoupon(coupon.id);
+      if (editingCoupon?.id === coupon.id) resetForm();
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not delete coupon.");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -87,10 +136,17 @@ export default function CouponsPage() {
       <div className="flex items-center justify-between mb-1">
         <h1 className="text-xl font-semibold text-slate-900">Coupon Codes</h1>
         <button
-          onClick={() => setShowForm((v) => !v)}
+          onClick={() => {
+            if (showForm) {
+              resetForm();
+            } else {
+              setEditingCoupon(null);
+              setShowForm(true);
+            }
+          }}
           className="rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
         >
-          Create coupon
+          {showForm ? "Cancel" : "Create coupon"}
         </button>
       </div>
       <p className="text-sm text-slate-500 mb-4">
@@ -99,9 +155,12 @@ export default function CouponsPage() {
       </p>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="mb-4 rounded-xl border border-slate-200 bg-white p-4 max-w-md flex flex-col gap-3">
+        <form onSubmit={handleSubmit} className="mb-4 rounded-xl border border-slate-200 bg-white p-4 max-w-md flex flex-col gap-3">
+          <h2 className="text-sm font-semibold text-slate-900">{editingCoupon ? `Edit coupon ${editingCoupon.code}` : "New coupon"}</h2>
           <div>
-            <label className="block text-xs font-medium text-slate-700 mb-1">Code (optional - auto-generated if left blank)</label>
+            <label className="block text-xs font-medium text-slate-700 mb-1">
+              {editingCoupon ? "Code" : "Code (optional - auto-generated if left blank)"}
+            </label>
             <input
               type="text"
               value={code}
@@ -155,13 +214,24 @@ export default function CouponsPage() {
               className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm"
             />
           </div>
-          <button
-            type="submit"
-            disabled={submitting}
-            className="self-start rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
-          >
-            {submitting ? "Creating..." : "Create coupon"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="submit"
+              disabled={submitting}
+              className="self-start rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+            >
+              {submitting ? (editingCoupon ? "Saving..." : "Creating...") : editingCoupon ? "Save changes" : "Create coupon"}
+            </button>
+            {editingCoupon && (
+              <button
+                type="button"
+                onClick={resetForm}
+                className="self-start rounded-md border border-slate-300 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
+              >
+                Cancel
+              </button>
+            )}
+          </div>
         </form>
       )}
 
@@ -177,12 +247,13 @@ export default function CouponsPage() {
               <th className="px-4 py-2 font-medium">Redeemed</th>
               <th className="px-4 py-2 font-medium">Expires</th>
               <th className="px-4 py-2 font-medium">Status</th>
+              <th className="px-4 py-2 font-medium">Actions</th>
             </tr>
           </thead>
           <tbody>
             {coupons.length === 0 && (
               <tr>
-                <td colSpan={6} className="px-4 py-6 text-center text-slate-500">
+                <td colSpan={7} className="px-4 py-6 text-center text-slate-500">
                   No coupons yet.
                 </td>
               </tr>
@@ -236,10 +307,31 @@ export default function CouponsPage() {
                     </span>
                   </button>
                 </td>
+                <td className="px-4 py-2">
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(coupon)}
+                      title="Edit coupon"
+                      className="text-slate-400 hover:text-indigo-600"
+                    >
+                      <Pencil size={15} />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDelete(coupon)}
+                      disabled={deletingId === coupon.id}
+                      title="Delete coupon"
+                      className="text-slate-400 hover:text-red-600 disabled:opacity-50"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                </td>
               </tr>
               {expandedCouponId === coupon.id && (
                 <tr className="border-b border-slate-100 last:border-0 bg-slate-50">
-                  <td colSpan={6} className="px-4 py-3">
+                  <td colSpan={7} className="px-4 py-3">
                     {loadingRedemptions && !redemptionsByCoupon[coupon.id] ? (
                       <p className="text-xs text-slate-500">Loading...</p>
                     ) : (redemptionsByCoupon[coupon.id] || []).length === 0 ? (

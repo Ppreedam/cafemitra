@@ -48,6 +48,7 @@ const links: NavLink[] = [
       { href: "/leads/pipeline", label: "Pipeline", section: "leads" },
       { href: "/leads/queue", label: "Scrape Queue", section: "leads" },
       { href: "/leads/converted", label: "Converted Customers", section: "leads" },
+      { href: "/leads/order-issues", label: "Order Issues", section: "leads" },
     ],
   },
   { href: "/print-agent", label: "Print Agent", section: "print_agent" },

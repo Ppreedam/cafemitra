@@ -251,6 +251,7 @@ export type Shop = {
   isActive: boolean;
   dateJoined: string;
   referredByAgent: { id: number; referralCode: string } | null;
+  needsAttention: boolean;
 };
 
 export type ShopListResponse = {
@@ -655,8 +656,15 @@ export function fetchCouponDetail(id: number) {
   return request<{ coupon: AdminCoupon; redemptions: CouponRedemptionEntry[] }>(`/admin/coupons/${id}/`);
 }
 
-export function updateCoupon(id: number, data: { isActive?: boolean; message?: string; maxRedemptions?: number | null; expiresAt?: string | null }) {
+export function updateCoupon(
+  id: number,
+  data: { code?: string; amount?: number; isActive?: boolean; message?: string; maxRedemptions?: number | null; expiresAt?: string | null }
+) {
   return request<{ coupon: AdminCoupon }>(`/admin/coupons/${id}/`, { method: "PUT", body: JSON.stringify(data) });
+}
+
+export function deleteCoupon(id: number) {
+  return request<{ message: string }>(`/admin/coupons/${id}/`, { method: "DELETE" });
 }
 
 // --- Support Inbox (Phase 7) ----------------------------------------------
@@ -745,6 +753,72 @@ export function exportOrdersCsv(params?: { shop?: string; service?: string; paym
   });
   const qs = query.toString();
   return downloadCsv(`/admin/orders/export/${qs ? `?${qs}` : ""}`, "orders.csv");
+}
+
+// --- Order Issues (Leads CRM > Order Issues) --------------------------------
+
+export type OrderIssue = {
+  id: number;
+  orderNumber: string;
+  shopId: number;
+  shopName: string;
+  email: string;
+  phone: string;
+  address: string;
+  serviceName: string;
+  status: string;
+  paymentMode: string;
+  paymentStatus: string;
+  totalAmount: number;
+  agentMessage: string;
+  createdAt: string;
+  adminReviewed: boolean;
+  adminReviewedAt: string | null;
+};
+
+export type OrderIssueGroup = {
+  shopId: number;
+  shopName: string;
+  email: string;
+  phone: string;
+  address: string;
+  issueCount: number;
+  issues: OrderIssue[];
+};
+
+export type OrderIssueListResponse = {
+  count: number;
+  page: number;
+  pageSize: number;
+  openCount: number;
+  reviewedCount: number;
+  groups: OrderIssueGroup[];
+};
+
+export function fetchOrderIssues(params: { from?: string; to?: string; reviewed?: "true" | "false" | "all"; page?: number; pageSize?: number }) {
+  const query = new URLSearchParams();
+  if (params.from) query.set("from", params.from);
+  if (params.to) query.set("to", params.to);
+  if (params.reviewed) query.set("reviewed", params.reviewed);
+  if (params.page) query.set("page", String(params.page));
+  if (params.pageSize) query.set("pageSize", String(params.pageSize));
+  return request<OrderIssueListResponse>(`/admin/order-issues/?${query.toString()}`);
+}
+
+export function setOrderIssueReviewed(id: number, reviewed: boolean) {
+  return request<{ issue: OrderIssue }>(`/admin/order-issues/${id}/review/`, {
+    method: "POST",
+    body: JSON.stringify({ reviewed }),
+  });
+}
+
+export function exportOrderIssuesCsv(params?: { from?: string; to?: string; reviewed?: "true" | "false" | "all" }) {
+  const query = new URLSearchParams();
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value) query.set(key, String(value));
+  });
+  const qs = query.toString();
+  return downloadCsv(`/admin/order-issues/export/${qs ? `?${qs}` : ""}`, "unsuccessful-orders.csv");
 }
 
 // --- Notification badges (V2-A) --------------------------------------------

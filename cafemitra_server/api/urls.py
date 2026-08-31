@@ -53,6 +53,9 @@ urlpatterns = [
     re_path(r"^admin/recent-activity/?$", admin_views.admin_recent_activity),  # GET paginated merged orders+topups+withdrawals feed
     re_path(r"^admin/leads/scrape/run/?$", admin_views.admin_leads_scrape_run),  # POST start the Selenium scrape-queue extractor in the background
     re_path(r"^admin/leads/scrape/status/?$", admin_views.admin_leads_scrape_status),  # GET latest extractor run's progress/status
+    re_path(r"^admin/order-issues/export/?$", admin_views.admin_order_issues_export),  # GET CSV of unsuccessful orders (shop name/email/phone/address + order columns), same filters as the JSON list
+    re_path(r"^admin/order-issues/(?P<order_id>[0-9]+)/review/?$", admin_views.admin_order_issue_review),  # POST {reviewed} mark/unmark one unsuccessful order as handled
+    re_path(r"^admin/order-issues/?$", admin_views.admin_order_issues),  # GET unsuccessful (non-printed) orders across all shops grouped one row per shop, paginated by shop, filterable by from/to/reviewed
 
     # --- System -------------------------------------------------------
     re_path(r"^check/server/status/?$", views.check_server_status),  # GET  health check, returns {status, message}

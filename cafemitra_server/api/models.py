@@ -221,6 +221,12 @@ class PrintOrder(models.Model):
     attire_category = models.CharField(max_length=40, blank=True, default="")
     gemini_photo = models.TextField(blank=True, default="")
 
+    # Admin-side triage flag for the Order Issues queue (unsuccessful orders
+    # an admin has looked into and handled/contacted the shop about) -
+    # independent of `status`, which reflects the print pipeline itself.
+    admin_reviewed = models.BooleanField(default=False)
+    admin_reviewed_at = models.DateTimeField(null=True, blank=True)
+
     PHOTO_STATUS_PENDING = "pending"
     PHOTO_STATUS_CLAIMED = "claimed"
     PHOTO_STATUS_DONE = "done"

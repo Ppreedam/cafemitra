@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { AlertTriangle } from "lucide-react";
 import Pagination from "@/components/Pagination";
 import { bulkSetShopsActive, fetchShops, type Shop } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
@@ -153,9 +154,7 @@ export default function ShopsPage() {
               <th className="px-4 py-2 font-medium">Shop</th>
               <th className="px-4 py-2 font-medium">Owner</th>
               <th className="px-4 py-2 font-medium">Balance</th>
-              <th className="px-4 py-2 font-medium">Credit limit</th>
               <th className="px-4 py-2 font-medium">Cash counter</th>
-              <th className="px-4 py-2 font-medium">Referred by</th>
               <th className="px-4 py-2 font-medium">Signed up</th>
               <th className="px-4 py-2 font-medium">Status</th>
             </tr>
@@ -163,7 +162,7 @@ export default function ShopsPage() {
           <tbody>
             {!loading && shops.length === 0 && (
               <tr>
-                <td colSpan={9} className="px-4 py-6 text-center text-slate-500">
+                <td colSpan={7} className="px-4 py-6 text-center text-slate-500">
                   No shops match these filters.
                 </td>
               </tr>
@@ -174,8 +173,11 @@ export default function ShopsPage() {
                   <input type="checkbox" checked={selectedIds.has(shop.id)} onChange={() => toggleSelected(shop.id)} />
                 </td>
                 <td className="px-4 py-2">
-                  <Link href={`/shops/${shop.id}`} className="font-medium text-indigo-700 hover:underline">
+                  <Link href={`/shops/${shop.id}`} className="inline-flex items-center gap-1.5 font-medium text-indigo-700 hover:underline">
                     {shop.shopName || "(unnamed)"}
+                    {shop.needsAttention && (
+                      <AlertTriangle size={14} className="text-red-500" aria-label="Has a failed or queued order - click to view order history" />
+                    )}
                   </Link>
                 </td>
                 <td className="px-4 py-2 text-slate-700">
@@ -184,9 +186,6 @@ export default function ShopsPage() {
                 </td>
                 <td className={`px-4 py-2 font-medium ${shop.balance < 0 ? "text-red-600" : "text-slate-900"}`}>
                   {formatCurrency(shop.balance)}
-                </td>
-                <td className="px-4 py-2 text-slate-700">
-                  {shop.creditLimitOverride !== null ? formatCurrency(shop.creditLimitOverride) : "-"}
                 </td>
                 <td className="px-4 py-2">
                   <span
@@ -197,7 +196,6 @@ export default function ShopsPage() {
                     {shop.cashCounterPermitted ? "On" : "Off"}
                   </span>
                 </td>
-                <td className="px-4 py-2 text-slate-700">{shop.referredByAgent?.referralCode ?? "-"}</td>
                 <td className="px-4 py-2 text-slate-500">{new Date(shop.dateJoined).toLocaleDateString("en-IN")}</td>
                 <td className="px-4 py-2">
                   <span
