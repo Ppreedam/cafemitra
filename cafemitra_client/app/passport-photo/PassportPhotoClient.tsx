@@ -3,13 +3,15 @@
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Check, ChevronLeft, ChevronRight, Circle, Crop, Eye, IdCard, Laugh, Loader2, Printer, RefreshCw, Settings, Sparkles, Trash2, Upload, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
 import { WalletLimitBanner } from "../WalletLimitBanner";
 import { apiFetch, apiUrl, dataUriToBlob } from "@/lib/api";
 import { fetchPricingServiceByKey, type PriceItem } from "@/lib/pricing";
 import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
-import { CropEditor, cropImage, DEFAULT_CROP_RECT, type CropRect } from "../CropEditor";
+import { stashPhotoForPrintSheet } from "@/lib/printSheetHandoff";
+import { CropEditor, cropImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, warpPerspectiveCrop, type CropQuad, type CropRect } from "../CropEditor";
 import { buildPrintSheetHtml, maxTilesForPaper, openPrintSheet as openManualPrintSheet, parsePhotoCount, type PaperSize } from "./printSheet";
 
 type JobState = "idle" | "submitting" | "processing" | "done" | "not_found" | "failed";
@@ -126,6 +128,7 @@ const CHECK_INTERVAL_MS = 5_000;
 const MAX_CHECK_ATTEMPTS = 7;
 
 export default function PassportPhotoClient() {
+  const router = useRouter();
   const [mode, setMode] = useState<ToolMode>("ai");
   const [file, setFile] = useState<File | null>(null);
   const [previewUrl, setPreviewUrl] = useState("");
@@ -135,6 +138,8 @@ export default function PassportPhotoClient() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isCropOpen, setIsCropOpen] = useState(false);
   const [cropRect, setCropRect] = useState<CropRect>(DEFAULT_CROP_RECT);
+  const [cropQuad, setCropQuad] = useState<CropQuad>(DEFAULT_CROP_QUAD);
+  const [cropMode, setCropMode] = useState<"straight" | "perspective">("perspective");
   const [jobState, setJobState] = useState<JobState>("idle");
   const [jobId, setJobId] = useState<number | null>(null);
   const [finalImageUrl, setFinalImageUrl] = useState("");
@@ -342,6 +347,7 @@ export default function PassportPhotoClient() {
     setPreviewUrl(URL.createObjectURL(selected));
     setPhotoVariation(passportAttireOptions[0].key);
     setCropRect(DEFAULT_CROP_RECT);
+    setCropQuad(DEFAULT_CROP_QUAD);
     setViewOrder(null);
     resetJob();
   }
@@ -365,6 +371,7 @@ export default function PassportPhotoClient() {
     setIsPreviewOpen(false);
     setIsCropOpen(false);
     setCropRect(DEFAULT_CROP_RECT);
+    setCropQuad(DEFAULT_CROP_QUAD);
     setViewOrder(null);
     resetJob();
   }
@@ -378,13 +385,14 @@ export default function PassportPhotoClient() {
   async function applyImageCrop() {
     if (!previewUrl) return;
     try {
-      const croppedBlob = await cropImage(previewUrl, cropRect);
+      const croppedBlob = cropMode === "perspective" ? await warpPerspectiveCrop(previewUrl, cropQuad) : await cropImage(previewUrl, cropRect);
       const croppedFile = new File([croppedBlob], (file?.name || "photo").replace(/(\.[^.]+)?$/, "-cropped.png"), { type: "image/png" });
       URL.revokeObjectURL(previewUrl);
       setFile(croppedFile);
       setPreviewUrl(URL.createObjectURL(croppedFile));
       setIsCropOpen(false);
       setCropRect(DEFAULT_CROP_RECT);
+      setCropQuad(DEFAULT_CROP_QUAD);
       resetJob();
     } catch {
       setError("Could not crop the photo. Please upload it again and try.");
@@ -458,6 +466,8 @@ export default function PassportPhotoClient() {
         setStepCursor(PROCESSING_ITEMS.length);
         setJobState("done");
         setFinalImageUrl(result.imageUrl);
+        stashPhotoForPrintSheet(result.imageUrl, file?.name || "passport-photo.jpg");
+        router.push("/photo-print-sheet");
         return;
       }
 
@@ -940,10 +950,26 @@ export default function PassportPhotoClient() {
               </button>
             </div>
             <div className="crop-body">
-              <CropEditor fileUrl={previewUrl} rect={cropRect} onRectChange={setCropRect} />
+              <div className="crop-mode-toggle">
+                <button type="button" className={cropMode === "perspective" ? "active" : ""} onClick={() => setCropMode("perspective")}>
+                  Perspective crop
+                </button>
+                <button type="button" className={cropMode === "straight" ? "active" : ""} onClick={() => setCropMode("straight")}>
+                  Straight crop
+                </button>
+              </div>
+              {cropMode === "straight" ? (
+                <CropEditor fileUrl={previewUrl} rect={cropRect} onRectChange={setCropRect} />
+              ) : (
+                <PerspectiveCropEditor fileUrl={previewUrl} quad={cropQuad} onQuadChange={setCropQuad} />
+              )}
               <div className="crop-controls">
-                <p>Drag a corner or edge to resize the crop area. Drag inside the box to move it.</p>
-                <button type="button" onClick={() => setCropRect(DEFAULT_CROP_RECT)}>
+                <p>
+                  {cropMode === "straight"
+                    ? "Drag a corner or edge to resize the crop area. Drag inside the box to move it."
+                    : "Drag each corner onto the photo's actual edge - useful when it was taken at an angle. Click anywhere on an edge to move its nearest corner there."}
+                </p>
+                <button type="button" onClick={() => (cropMode === "straight" ? setCropRect(DEFAULT_CROP_RECT) : setCropQuad(DEFAULT_CROP_QUAD))}>
                   Reset Crop
                 </button>
                 <button type="button" onClick={applyImageCrop}>

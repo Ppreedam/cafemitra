@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { Archive, Check, Download, Eye, FilePlus2, Gauge, Info, LoaderCircle, Plus, RotateCcw, ShieldCheck, Trash2, X } from "lucide-react";
 import { DashboardShell } from "../../DashboardShell";
 import { PdfToolUpload } from "../PdfToolUpload";
+import { usePdfPasswordGate } from "../usePdfPasswordGate";
 
 type CompressItem = {
   id: string;
@@ -21,8 +22,14 @@ type QualityPreview = { itemId: string; pages: number; original: string[]; compr
 export default function CompressPdfClient({ children }: { children?: ReactNode }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const resultUrls = useRef(new Set<string>());
+  const { gateFiles, modal: passwordModal } = usePdfPasswordGate();
   const [items, setItems] = useState<CompressItem[]>([]);
+  const itemsRef = useRef(items);
+  itemsRef.current = items;
+  const levelDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [level, setLevel] = useState(60);
+  const levelRef = useRef(level);
+  levelRef.current = level;
   const [dragging, setDragging] = useState(false);
   const [compressing, setCompressing] = useState(false);
   const [zipBusy, setZipBusy] = useState(false);
@@ -30,9 +37,12 @@ export default function CompressPdfClient({ children }: { children?: ReactNode }
   const [preview, setPreview] = useState<QualityPreview | null>(null);
 
   useEffect(() => () => resultUrls.current.forEach((url) => URL.revokeObjectURL(url)), []);
+  useEffect(() => () => { if (levelDebounceRef.current) clearTimeout(levelDebounceRef.current); }, []);
 
   async function addFiles(files: FileList | File[]) {
-    const selected = Array.from(files);
+    const unlocked = await gateFiles(files);
+    if (!unlocked.length) return;
+    const selected = unlocked;
     const invalid = selected.find((file) => file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf"));
     if (invalid) return setError(`${invalid.name} is not a PDF file.`);
     setError("");
@@ -50,16 +60,30 @@ export default function CompressPdfClient({ children }: { children?: ReactNode }
         return null;
       }
     }))).filter((item): item is CompressItem => item !== null);
-    if (readyItems.length) await compressFiles(readyItems, 60);
+    if (readyItems.length) await compressFiles(readyItems, levelRef.current);
   }
 
   function discardResult(item: CompressItem) { if (item.result) { URL.revokeObjectURL(item.result.url); resultUrls.current.delete(item.result.url); } }
   function removeItem(id: string) { setItems((current) => { const removed = current.find((item) => item.id === id); if (removed) discardResult(removed); return current.filter((item) => item.id !== id); }); }
   function clearAll() { items.forEach(discardResult); setItems([]); setError(""); if (inputRef.current) inputRef.current.value = ""; }
-  function updateLevel(value: number) { setLevel(value); setItems((current) => current.map((item) => { discardResult(item); return { ...item, result: undefined, progress: 0 }; })); }
+  // Dragging the slider fires onChange continuously, so the actual re-compress
+  // is debounced - without this, moving the level just cleared every card's
+  // result and left it stuck on "Starting compression..." forever, since
+  // nothing else ever re-ran compressFiles for the new level.
+  function updateLevel(value: number) {
+    setLevel(value);
+    setItems((current) => current.map((item) => { discardResult(item); return { ...item, result: undefined, progress: 0 }; }));
+    if (levelDebounceRef.current) clearTimeout(levelDebounceRef.current);
+    levelDebounceRef.current = setTimeout(() => {
+      levelDebounceRef.current = null;
+      const readyItems = itemsRef.current.filter((item) => !item.loading);
+      if (readyItems.length) void compressFiles(readyItems, value);
+    }, 450);
+  }
 
   async function compressAll() {
     if (!items.length || items.some((item) => item.loading) || compressing) return;
+    if (levelDebounceRef.current) { clearTimeout(levelDebounceRef.current); levelDebounceRef.current = null; }
     await compressFiles(items, level);
   }
 
@@ -112,7 +136,7 @@ export default function CompressPdfClient({ children }: { children?: ReactNode }
 
       {!items.length ? <PdfToolUpload title="Compress PDF" description="Reduce PDF file size while balancing document quality." icon={Archive} inputRef={inputRef} onFiles={(files) => void addFiles(files)} headingLevel={children ? "h2" : "h1"} /> : <div className="compress-studio">
         <section className={`compress-workspace ${dragging ? "dragging" : ""}`} onDragOver={(event) => { event.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={drop}>
-          <div className="compress-workspace-head"><div><h2>Your PDF files</h2><p>Files are automatically compressed at 60% after upload.</p></div><button type="button" disabled={compressing} onClick={() => inputRef.current?.click()}><Plus size={18} /> Add PDFs</button></div>
+          <div className="compress-workspace-head"><div><h2>Your PDF files</h2><p>Files are automatically compressed at {level}% after upload.</p></div><button type="button" disabled={compressing} onClick={() => inputRef.current?.click()}><Plus size={18} /> Add PDFs</button></div>
           <div className="compress-file-grid">{items.map((item) => <article className="compress-file-card" key={item.id}>
             <button className="compress-remove" type="button" disabled={compressing} onClick={() => removeItem(item.id)} aria-label={`Remove ${item.file.name}`}><X size={17} /></button>
             <div className="compress-file-meta"><strong title={item.file.name}>{item.file.name}</strong><span>Original: {formatBytes(item.file.size)}</span></div>
@@ -132,6 +156,7 @@ export default function CompressPdfClient({ children }: { children?: ReactNode }
       </div>}
       {error ? <div className="profile-alert error compress-error" role="alert">{error}</div> : null}
       {preview ? <QualityPreviewModal preview={preview} item={items.find((item) => item.id === preview.itemId)} onClose={() => setPreview(null)} /> : null}
+      {passwordModal}
     </div>
   </DashboardShell>;
 }

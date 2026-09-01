@@ -1,5 +1,14 @@
 import type { TemplateId } from "./templates";
 
+export type ResumeSectionId = "personal" | "summary" | "skills" | "experience" | "education" | "projects" | "certifications";
+
+// A custom field's `section` is either one of the fixed ResumeSectionId
+// values, or a ResumeCustomSection's own `id` - a plain string covers both
+// without the field needing to know which kind of section it belongs to.
+export type ResumeCustomField = { id: string; section: string; label: string; value: string };
+
+export type ResumeCustomSection = { id: string; title: string };
+
 export type ExperienceItem = { id: string; role: string; company: string; location: string; start: string; end: string; current: boolean; bullets: string };
 export type EducationItem = { id: string; degree: string; school: string; start: string; end: string; score: string };
 export type ProjectItem = { id: string; name: string; stack: string; description: string; link: string };
@@ -38,6 +47,14 @@ export type ResumeData = {
   education: EducationItem[];
   projects: ProjectItem[];
   certifications: CertItem[];
+  customFields: ResumeCustomField[];
+  customSections: ResumeCustomSection[];
+  // Built-in field keys (ResumeData property names) and section ids the user
+  // has removed via the form's select-then-remove control - hidden (and
+  // restorable), not deleted, so the underlying data survives a template
+  // switch or an accidental removal.
+  hiddenFields: string[];
+  hiddenSections: ResumeSectionId[];
 };
 
 export const STORAGE_KEY = "repetigo-resume-builder-draft";
@@ -96,6 +113,10 @@ export const sampleResume: ResumeData = {
     },
   ],
   certifications: [{ id: nextId(), name: "Meta Front-End Developer Professional Certificate", issuer: "Coursera", year: "2023" }],
+  customFields: [],
+  customSections: [],
+  hiddenFields: [],
+  hiddenSections: [],
 };
 
 export const blankResume: ResumeData = {
@@ -114,6 +135,10 @@ export const blankResume: ResumeData = {
   education: [],
   projects: [],
   certifications: [],
+  customFields: [],
+  customSections: [],
+  hiddenFields: [],
+  hiddenSections: [],
 };
 
 export function blankExperience(): ExperienceItem {

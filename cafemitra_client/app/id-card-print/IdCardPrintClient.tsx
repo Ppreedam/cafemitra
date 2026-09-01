@@ -2,10 +2,22 @@
 
 import type React from "react";
 import { useState } from "react";
-import { Contrast, Crop, Palette, Plus, Printer, RotateCcw, RotateCw, SlidersHorizontal, Trash2, Upload, X } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Contrast, Crop, LogIn, Palette, Plus, Printer, RotateCcw, RotateCw, SlidersHorizontal, Trash2, Upload, Wallet, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
 import { WalletLimitBanner } from "../WalletLimitBanner";
-import { CropEditor, cropImage, DEFAULT_CROP_RECT, type CropRect } from "../CropEditor";
+import { CropEditor, cropImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, warpPerspectiveCrop, type CropQuad, type CropRect } from "../CropEditor";
+import { apiFetch, hasStoredSession } from "@/lib/api";
+import { useToolPrice } from "@/lib/useToolPrice";
+import IdCardPrintSeoContent from "./IdCardPrintSeoContent";
+
+async function chargeIdCardPrint() {
+  const response = await apiFetch("/api/tools/id-card-print-charge/", { method: "POST" });
+  if (response.ok) return;
+  const data = await response.json().catch(() => ({}));
+  throw new Error(data.message || "Could not verify your wallet balance. Please try again.");
+}
 
 type Side = "front" | "back";
 type ColorMode = "color" | "bw";
@@ -14,7 +26,10 @@ type SideState = {
   file: File | null;
   url: string;
   cropRect: CropRect;
+  cropQuad: CropQuad;
 };
+
+type CropMode = "straight" | "perspective";
 
 type CardEntry = {
   id: string;
@@ -26,8 +41,9 @@ type SlotRef = { cardId: string; side: Side };
 
 type FilterValues = { brightness: number; contrast: number; saturation: number };
 
-const EMPTY_SIDE: SideState = { file: null, url: "", cropRect: DEFAULT_CROP_RECT };
+const EMPTY_SIDE: SideState = { file: null, url: "", cropRect: DEFAULT_CROP_RECT, cropQuad: DEFAULT_CROP_QUAD };
 const CARD_ASPECT_RATIO = "85.6/53.98";
+const CARD_ASPECT_RATIO_NUMBER = 85.6 / 53.98;
 const DEFAULT_FILTER: FilterValues = { brightness: 100, contrast: 100, saturation: 100 };
 
 function newCard(): CardEntry {
@@ -39,12 +55,43 @@ function sameSlot(a: SlotRef | null, b: SlotRef) {
 }
 
 export default function IdCardPrintClient() {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const price = useToolPrice("id_card_print");
   const [cards, setCards] = useState<CardEntry[]>(() => [newCard()]);
   const [active, setActive] = useState<SlotRef | null>(null);
   const [cropTarget, setCropTarget] = useState<SlotRef | null>(null);
+  const [cropMode, setCropMode] = useState<CropMode>("perspective");
   const [filterTarget, setFilterTarget] = useState<SlotRef | null>(null);
   const [filterValues, setFilterValues] = useState<FilterValues>(DEFAULT_FILTER);
   const [colorMode, setColorMode] = useState<ColorMode>("color");
+  const [printBusy, setPrintBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [loginPrompt, setLoginPrompt] = useState(false);
+  const [chargeConfirm, setChargeConfirm] = useState<{ resolve: (ok: boolean) => void } | null>(null);
+  const loginNextUrl = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
+
+  // Uploading, cropping, and previewing cards is free for anyone. Login (and
+  // the wallet charge) is only required for the action that actually
+  // produces output - clicking Print.
+  function requireLogin() {
+    if (hasStoredSession()) return true;
+    setLoginPrompt(true);
+    return false;
+  }
+
+  // No price loaded yet, or the tool is still free - skip the modal
+  // entirely and go straight to the charge call (which is itself a no-op
+  // while free).
+  function requestChargeConfirm() {
+    if (!price) return Promise.resolve(true);
+    return new Promise<boolean>((resolve) => setChargeConfirm({ resolve }));
+  }
+
+  function answerChargeConfirm(ok: boolean) {
+    chargeConfirm?.resolve(ok);
+    setChargeConfirm(null);
+  }
 
   function getSide(cardId: string, side: Side): SideState {
     return cards.find((card) => card.id === cardId)?.[side] || EMPTY_SIDE;
@@ -58,7 +105,7 @@ export default function IdCardPrintClient() {
     if (!selected) return;
     const current = getSide(cardId, side);
     if (current.url) URL.revokeObjectURL(current.url);
-    setSide(cardId, side, { file: selected, url: URL.createObjectURL(selected), cropRect: DEFAULT_CROP_RECT });
+    setSide(cardId, side, { file: selected, url: URL.createObjectURL(selected), cropRect: DEFAULT_CROP_RECT, cropQuad: DEFAULT_CROP_QUAD });
   }
 
   function handleDrop(cardId: string, side: Side, event: React.DragEvent<HTMLLabelElement>) {
@@ -81,7 +128,7 @@ export default function IdCardPrintClient() {
       const rotatedBlob = await rotateImage90(current.url);
       const rotatedFile = new File([rotatedBlob], current.file.name.replace(/\.[^.]+$/, ".png"), { type: "image/png" });
       URL.revokeObjectURL(current.url);
-      setSide(cardId, side, { file: rotatedFile, url: URL.createObjectURL(rotatedFile), cropRect: DEFAULT_CROP_RECT });
+      setSide(cardId, side, { file: rotatedFile, url: URL.createObjectURL(rotatedFile), cropRect: DEFAULT_CROP_RECT, cropQuad: DEFAULT_CROP_QUAD });
     } catch {
       // Leave the photo as-is if rotation fails.
     }
@@ -91,15 +138,19 @@ export default function IdCardPrintClient() {
     setSide(cardId, side, { ...getSide(cardId, side), cropRect: rect });
   }
 
+  function updateCropQuad(cardId: string, side: Side, quad: CropQuad) {
+    setSide(cardId, side, { ...getSide(cardId, side), cropQuad: quad });
+  }
+
   async function applyCrop() {
     if (!cropTarget) return;
     const current = getSide(cropTarget.cardId, cropTarget.side);
     if (!current.url) return;
     try {
-      const croppedBlob = await cropImage(current.url, current.cropRect);
+      const croppedBlob = cropMode === "perspective" ? await warpPerspectiveCrop(current.url, current.cropQuad, CARD_ASPECT_RATIO_NUMBER) : await cropImage(current.url, current.cropRect);
       const croppedFile = new File([croppedBlob], (current.file?.name || "photo").replace(/(\.[^.]+)?$/, "-cropped.png"), { type: "image/png" });
       URL.revokeObjectURL(current.url);
-      setSide(cropTarget.cardId, cropTarget.side, { file: croppedFile, url: URL.createObjectURL(croppedFile), cropRect: DEFAULT_CROP_RECT });
+      setSide(cropTarget.cardId, cropTarget.side, { file: croppedFile, url: URL.createObjectURL(croppedFile), cropRect: DEFAULT_CROP_RECT, cropQuad: DEFAULT_CROP_QUAD });
       setCropTarget(null);
     } catch {
       // Crop dialog stays open so the user can retry.
@@ -119,7 +170,7 @@ export default function IdCardPrintClient() {
       const adjustedBlob = await applyFilterAdjustments(current.url, filterValues);
       const adjustedFile = new File([adjustedBlob], (current.file?.name || "photo").replace(/(\.[^.]+)?$/, "-adjusted.png"), { type: "image/png" });
       URL.revokeObjectURL(current.url);
-      setSide(filterTarget.cardId, filterTarget.side, { file: adjustedFile, url: URL.createObjectURL(adjustedFile), cropRect: current.cropRect });
+      setSide(filterTarget.cardId, filterTarget.side, { file: adjustedFile, url: URL.createObjectURL(adjustedFile), cropRect: current.cropRect, cropQuad: current.cropQuad });
       setFilterTarget(null);
     } catch {
       // Panel stays open so the user can retry.
@@ -141,14 +192,25 @@ export default function IdCardPrintClient() {
     setActive((current) => (current?.cardId === cardId ? null : current));
   }
 
-  function printSheet() {
+  async function printSheet() {
     const printable = cards.filter((card) => card.front.url).map((card) => ({ frontUrl: card.front.url, backUrl: card.back.url }));
-    if (!printable.length) return;
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
-    printWindow.document.open();
-    printWindow.document.write(buildCardPrintSheetHtml(printable, colorMode));
-    printWindow.document.close();
+    if (!printable.length || printBusy) return;
+    if (!requireLogin()) return;
+    if (!(await requestChargeConfirm())) return;
+    setPrintBusy(true);
+    setError("");
+    try {
+      await chargeIdCardPrint();
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) return;
+      printWindow.document.open();
+      printWindow.document.write(buildCardPrintSheetHtml(printable, colorMode));
+      printWindow.document.close();
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : "Could not prepare the print job. Please try again.");
+    } finally {
+      setPrintBusy(false);
+    }
   }
 
   const readyCount = cards.filter((card) => card.front.url).length;
@@ -163,7 +225,7 @@ export default function IdCardPrintClient() {
         <div className="dashboard-hero pdf-tools-hero">
           <div>
             <span className="auto-print-kicker">PrintPilot ID Card Print</span>
-            <h1>ID Card Print (Photo Upload)</h1>
+            <h2>ID Card Print (Photo Upload)</h2>
             <p>Upload one or more ID cards - each photo fills its slot at true print size, so what you see here is what comes out of the printer.</p>
           </div>
           <div className="auto-print-hero-actions">
@@ -206,8 +268,8 @@ export default function IdCardPrintClient() {
                 </button>
               </div>
               <div className="idcard-toolbar-divider" />
-              <button className="idcard-print-cta" type="button" disabled={!readyCount} onClick={printSheet}>
-                <Printer size={16} /> Print A4 Sheet
+              <button className="idcard-print-cta" type="button" disabled={!readyCount || printBusy} onClick={() => void printSheet()}>
+                <Printer size={16} /> {printBusy ? "Preparing…" : "Print A4 Sheet"}
               </button>
             </div>
           </div>
@@ -263,6 +325,7 @@ export default function IdCardPrintClient() {
           <p className="customer-inline-help">
             {readyCount ? "Click a card to select it, then use Crop / Rotate / Remove above. Back is optional - upload only a front for cards like PAN." : "Each card slot above is the upload target itself - upload a front photo to print."}
           </p>
+          {error ? <div className="profile-alert error">{error}</div> : null}
         </article>
       </div>
 
@@ -279,15 +342,38 @@ export default function IdCardPrintClient() {
               </button>
             </div>
             <div className="crop-body">
-              <CropEditor
-                fileUrl={cropState.url}
-                rect={cropState.cropRect}
-                onRectChange={(rect) => updateCropRect(cropTarget.cardId, cropTarget.side, rect)}
-                aspectRatio={CARD_ASPECT_RATIO}
-              />
+              <div className="crop-mode-toggle">
+                <button type="button" className={cropMode === "perspective" ? "active" : ""} onClick={() => setCropMode("perspective")}>
+                  Perspective crop
+                </button>
+                <button type="button" className={cropMode === "straight" ? "active" : ""} onClick={() => setCropMode("straight")}>
+                  Straight crop
+                </button>
+              </div>
+              {cropMode === "straight" ? (
+                <CropEditor
+                  fileUrl={cropState.url}
+                  rect={cropState.cropRect}
+                  onRectChange={(rect) => updateCropRect(cropTarget.cardId, cropTarget.side, rect)}
+                  aspectRatio={CARD_ASPECT_RATIO}
+                />
+              ) : (
+                <PerspectiveCropEditor
+                  fileUrl={cropState.url}
+                  quad={cropState.cropQuad}
+                  onQuadChange={(quad) => updateCropQuad(cropTarget.cardId, cropTarget.side, quad)}
+                />
+              )}
               <div className="crop-controls">
-                <p>Drag a corner or edge to resize the crop area. Drag inside the box to move it.</p>
-                <button type="button" onClick={() => updateCropRect(cropTarget.cardId, cropTarget.side, DEFAULT_CROP_RECT)}>
+                <p>
+                  {cropMode === "straight"
+                    ? "Drag a corner or edge to resize the crop area. Drag inside the box to move it."
+                    : "Drag each corner onto the card's actual corner - useful when the photo was taken at an angle. Click anywhere on an edge to move its nearest corner there."}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => (cropMode === "straight" ? updateCropRect(cropTarget.cardId, cropTarget.side, DEFAULT_CROP_RECT) : updateCropQuad(cropTarget.cardId, cropTarget.side, DEFAULT_CROP_QUAD))}
+                >
                   <RotateCcw size={16} /> Reset Crop
                 </button>
                 <button type="button" onClick={applyCrop}>
@@ -343,6 +429,40 @@ export default function IdCardPrintClient() {
           </div>
         </div>
       ) : null}
+
+      {chargeConfirm ? (
+        <div className="resbuild-confirm-overlay" onClick={() => answerChargeConfirm(false)}>
+          <div className="resbuild-confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <span className="resbuild-confirm-icon"><Wallet size={20} /></span>
+            <h3>Confirm wallet charge</h3>
+            <p>
+              This will deduct <strong>₹{price}</strong> from your RepetiGo wallet for this print job.
+            </p>
+            <div className="resbuild-confirm-actions">
+              <button type="button" className="resbuild-btn-secondary" onClick={() => answerChargeConfirm(false)}>Cancel</button>
+              <button type="button" className="resbuild-btn-primary" onClick={() => answerChargeConfirm(true)}>OK, Continue</button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {loginPrompt ? (
+        <div className="resbuild-confirm-overlay" onClick={() => setLoginPrompt(false)}>
+          <div className="resbuild-confirm-modal" onClick={(e) => e.stopPropagation()}>
+            <span className="resbuild-confirm-icon"><LogIn size={20} /></span>
+            <h3>Login to continue</h3>
+            <p>
+              Your cards stay exactly as you left them. Log in (or create a free account) to print.
+            </p>
+            <div className="resbuild-confirm-actions">
+              <button type="button" className="resbuild-btn-secondary" onClick={() => setLoginPrompt(false)}>Keep editing</button>
+              <Link className="resbuild-btn-primary" href={`/login?next=${encodeURIComponent(loginNextUrl)}`}>Login</Link>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      <IdCardPrintSeoContent />
     </DashboardShell>
   );
 }

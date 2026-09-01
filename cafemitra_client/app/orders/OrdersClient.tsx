@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
   BarChart3,
@@ -29,6 +30,7 @@ import {
 } from "lucide-react";
 import { apiFetch, apiUrl, hasStoredSession } from "@/lib/api";
 import { passportAttireLabels } from "@/lib/passport-attire";
+import { stashPhotoForPrintSheet } from "@/lib/printSheetHandoff";
 import { DashboardShell } from "../DashboardShell";
 import { SkeletonBlock, UiState } from "../UiState";
 
@@ -110,6 +112,7 @@ const navGroups: NavGroup[] = [
 const ORDERS_PER_PAGE = 15;
 
 export default function OrdersClient() {
+  const router = useRouter();
   const [orders, setOrders] = useState<Order[]>([]);
   const [message, setMessage] = useState("Loading orders...");
   const [printFilter, setPrintFilter] = useState<PrintFilter>("all");
@@ -235,6 +238,24 @@ export default function OrdersClient() {
     } finally {
       setMarkingPaidId(null);
     }
+  }
+
+  async function printOrderToPrintSheet(order: Order) {
+    // The list response omits the base64 photo payload - fetch the single
+    // order first so the print sheet page receives the actual image data.
+    try {
+      const response = await apiFetch(`/api/orders/${order.id}/`);
+      const result = await response.json().catch(() => ({}));
+      const fullOrder = response.ok && result.order ? result.order : order;
+      if (fullOrder.geminiPhoto) {
+        stashPhotoForPrintSheet(fullOrder.geminiPhoto, fullOrder.fileName || "passport-photo.jpg");
+        router.push("/photo-print-sheet");
+        return;
+      }
+    } catch {
+      // fall through to the per-order passport photo page below
+    }
+    router.push(`/passport-photo?orderId=${order.id}`);
   }
 
   async function openCompare(order: Order) {
@@ -475,9 +496,9 @@ export default function OrdersClient() {
                         <td>
                           <span className={`order-status ${order.status}`}>{formatStatus(order.status)}</span>
                           {order.serviceKey === "passport_photo" && order.status === "queued" && order.paymentStatus === "paid" ? (
-                            <Link href={`/passport-photo?orderId=${order.id}`} className="orders-print-link">
+                            <button type="button" className="orders-print-link" onClick={() => printOrderToPrintSheet(order)}>
                               <Printer size={14} /> Print
-                            </Link>
+                            </button>
                           ) : null}
                         </td>
                         <td>{formatDate(order.createdAt)}</td>
@@ -559,9 +580,23 @@ export default function OrdersClient() {
                   </button>
                 ) : null}
                 {compareOrder.status === "queued" && compareOrder.paymentStatus === "paid" ? (
-                  <Link href={`/passport-photo?orderId=${compareOrder.id}`} className="btn btn-primary">
-                    <Printer size={16} /> Print
-                  </Link>
+                  compareOrder.geminiPhoto ? (
+                    <button
+                      type="button"
+                      className="btn btn-primary"
+                      onClick={() => {
+                        if (!compareOrder.geminiPhoto) return;
+                        stashPhotoForPrintSheet(compareOrder.geminiPhoto, compareOrder.fileName || "passport-photo.jpg");
+                        router.push("/photo-print-sheet");
+                      }}
+                    >
+                      <Printer size={16} /> Print
+                    </button>
+                  ) : (
+                    <Link href={`/passport-photo?orderId=${compareOrder.id}`} className="btn btn-primary">
+                      <Printer size={16} /> Print
+                    </Link>
+                  )
                 ) : null}
               </div>
             ) : null}

@@ -1,11 +1,10 @@
 ﻿"use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ArrowLeft, ChevronDown, ChevronUp, Download, Eye, FolderOpen, LogIn, Printer, RotateCcw, Save, Sparkles, Wallet } from "lucide-react";
 import { apiFetch, hasStoredSession } from "@/lib/api";
-import { fetchAgentHealth, runAgentPrintFile } from "@/lib/printpilot-agent";
 import { TEMPLATES, type TemplateId } from "../templates";
 import { useTemplatePrices } from "../useTemplatePrices";
 import { useListOps } from "../useListOps";
@@ -24,6 +23,8 @@ import {
   type EducationItem,
   type ExperienceItem,
   type ProjectItem,
+  type ResumeCustomField,
+  type ResumeCustomSection,
   type ResumeData,
   type SavedOrderSummary,
 } from "../resumeModel";
@@ -40,13 +41,28 @@ async function chargeResumeDownload(template: TemplateId) {
   throw new Error(data.message || "Could not verify your wallet balance. Please try again.");
 }
 
-function blobToBase64(blob: Blob) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(String(reader.result).split(",")[1] || "");
-    reader.onerror = () => reject(new Error("Could not read the generated PDF."));
-    reader.readAsDataURL(blob);
-  });
+// Prints a generated PDF straight from the browser - a hidden iframe loads the
+// blob so the browser's own PDF viewer (and its print dialog) handles it,
+// without depending on the separate PrintPilot desktop agent being connected.
+function printPdfBlob(blob: Blob) {
+  const url = URL.createObjectURL(blob);
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  iframe.src = url;
+  iframe.onload = () => {
+    iframe.contentWindow?.focus();
+    iframe.contentWindow?.print();
+  };
+  document.body.appendChild(iframe);
+  setTimeout(() => {
+    iframe.remove();
+    URL.revokeObjectURL(url);
+  }, 60_000);
 }
 
 export default function ResumeBuilderClient() {
@@ -55,9 +71,9 @@ export default function ResumeBuilderClient() {
   const templatePrices = useTemplatePrices<TemplateId>("resume_builder_");
   const [resume, setResume] = useState<ResumeData>(sampleResume);
   const [downloadBusy, setDownloadBusy] = useState(false);
-  const [printPilotBusy, setPrintPilotBusy] = useState(false);
+  const [printBusy, setPrintBusy] = useState(false);
   const [previewBusy, setPreviewBusy] = useState(false);
-  const busy = downloadBusy || printPilotBusy || previewBusy;
+  const busy = downloadBusy || printBusy || previewBusy;
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [savedOrder, setSavedOrder] = useState<SavedOrderSummary | null>(null);
@@ -160,6 +176,23 @@ export default function ResumeBuilderClient() {
   const educationOps = useListOps<EducationItem>("education", setResume);
   const projectOps = useListOps<ProjectItem>("projects", setResume);
   const certOps = useListOps<CertItem>("certifications", setResume);
+  const customFieldOps = useListOps<ResumeCustomField>("customFields", setResume);
+  const customSectionOps = useMemo(
+    () => ({
+      add: (blank: ResumeCustomSection) => setResume((r) => ({ ...r, customSections: [...(r.customSections || []), blank] })),
+      update: (id: string, patch: Partial<Pick<ResumeCustomSection, "title">>) =>
+        setResume((r) => ({ ...r, customSections: (r.customSections || []).map((section) => (section.id === id ? { ...section, ...patch } : section)) })),
+      // Dropping a section also drops the fields filed under it, so removed
+      // sections don't leave orphaned fields lingering invisibly in the data.
+      remove: (id: string) =>
+        setResume((r) => ({
+          ...r,
+          customSections: (r.customSections || []).filter((section) => section.id !== id),
+          customFields: (r.customFields || []).filter((field) => field.section !== id),
+        })),
+    }),
+    [],
+  );
 
   function setField<K extends keyof ResumeData>(key: K, value: ResumeData[K]) {
     setResume((r) => ({ ...r, [key]: value }));
@@ -231,25 +264,20 @@ export default function ResumeBuilderClient() {
     }
   }
 
-  async function printViaPrintPilot() {
+  async function printResume() {
     if (busy || locked) return;
     if (!requireLogin()) return;
     if (!(await requestChargeConfirm(templatePrices?.[resume.template], templateLabel))) return;
-    setPrintPilotBusy(true);
+    setPrintBusy(true);
     setError("");
     try {
-      const health = await fetchAgentHealth();
-      if (health.status !== "running" || !health.printer) {
-        throw new Error("PrintPilot Agent isn't connected, or no printer is selected. Open PrintPilot from the top bar to connect one first.");
-      }
       await chargeResumeDownload(resume.template);
       const blob = await buildResumePdf(resume);
-      const pdfBase64 = await blobToBase64(blob);
-      await runAgentPrintFile({ printer: health.printer, fileName: `${resumeFileSlug(resume.fullName)}-resume.pdf`, pdfBase64 });
+      printPdfBlob(blob);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Could not print via PrintPilot. Please try again.");
+      setError(reason instanceof Error ? reason.message : "Could not prepare the resume for printing. Please try again.");
     } finally {
-      setPrintPilotBusy(false);
+      setPrintBusy(false);
     }
   }
 
@@ -296,8 +324,8 @@ export default function ResumeBuilderClient() {
           <button type="button" className="resbuild-btn-secondary" onClick={previewPdf} disabled={busy}>
             <Eye size={16} /> {previewBusy ? "Preparing..." : "Preview PDF"}
           </button>
-          <button type="button" className="resbuild-btn-secondary" onClick={printViaPrintPilot} disabled={busy || locked} title={locked ? "Customer payment is pending" : undefined}>
-            <Printer size={16} /> {printPilotBusy ? "Printing..." : "Print via PrintPilot"}
+          <button type="button" className="resbuild-btn-secondary" onClick={printResume} disabled={busy || locked} title={locked ? "Customer payment is pending" : undefined}>
+            <Printer size={16} /> {printBusy ? "Printing..." : "Print"}
           </button>
           <button type="button" className="resbuild-btn-primary" onClick={downloadPdf} disabled={busy || locked} title={locked ? "Customer payment is pending" : undefined}>
             <Download size={16} /> {downloadBusy ? "Generating..." : "Download PDF"}
@@ -367,6 +395,8 @@ export default function ResumeBuilderClient() {
             educationOps={educationOps}
             projectOps={projectOps}
             certOps={certOps}
+            customFieldOps={customFieldOps}
+            customSectionOps={customSectionOps}
           />
         </div>
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ArrowLeft, Download, Eye, RefreshCw, Wallet } from "lucide-react";
 import { apiUrl } from "@/lib/api";
 import { calculatePriceItemRate, type PricingService } from "@/lib/pricing";
@@ -15,6 +15,8 @@ import {
   blankBiodata,
   biodataHasContent,
   sampleBiodata,
+  type BiodataCustomField,
+  type BiodataCustomSection,
   type BiodataData,
   type SavedBiodataOrderSummary,
 } from "../../biodata-maker/biodataModel";
@@ -53,6 +55,31 @@ export default function PublicBiodataMaker({
   function setField<K extends keyof BiodataData>(key: K, value: BiodataData[K]) {
     setData((d) => ({ ...d, [key]: value }));
   }
+
+  const customFieldOps = useMemo(
+    () => ({
+      add: (blank: BiodataCustomField) => setData((d) => ({ ...d, customFields: [...(d.customFields || []), blank] })),
+      update: (id: string, patch: Partial<Pick<BiodataCustomField, "label" | "value">>) =>
+        setData((d) => ({ ...d, customFields: (d.customFields || []).map((field) => (field.id === id ? { ...field, ...patch } : field)) })),
+      remove: (id: string) => setData((d) => ({ ...d, customFields: (d.customFields || []).filter((field) => field.id !== id) })),
+    }),
+    [],
+  );
+
+  const customSectionOps = useMemo(
+    () => ({
+      add: (blank: BiodataCustomSection) => setData((d) => ({ ...d, customSections: [...(d.customSections || []), blank] })),
+      update: (id: string, patch: Partial<Pick<BiodataCustomSection, "title">>) =>
+        setData((d) => ({ ...d, customSections: (d.customSections || []).map((section) => (section.id === id ? { ...section, ...patch } : section)) })),
+      remove: (id: string) =>
+        setData((d) => ({
+          ...d,
+          customSections: (d.customSections || []).filter((section) => section.id !== id),
+          customFields: (d.customFields || []).filter((field) => field.section !== id),
+        })),
+    }),
+    [],
+  );
 
   const price = customerPriceForTemplate(pricingService, data.template);
   const isPaid = savedOrder?.paymentStatus === "paid";
@@ -197,7 +224,7 @@ export default function PublicBiodataMaker({
             <ArrowLeft size={14} /> Change template
           </button>
 
-          <BiodataFormFields data={data} setField={setField} />
+          <BiodataFormFields data={data} setField={setField} customFieldOps={customFieldOps} customSectionOps={customSectionOps} />
 
           <fieldset className="resbuild-section">
             <h2>Preview</h2>

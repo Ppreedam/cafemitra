@@ -3,17 +3,18 @@
 import { useState } from "react";
 import type React from "react";
 import { Contrast, Crop, Palette, Plus, RotateCcw, RotateCw, SlidersHorizontal, Trash2, Upload, X } from "lucide-react";
-import { CropEditor, cropImage, loadImage, DEFAULT_CROP_RECT, type CropRect } from "../../CropEditor";
+import { CropEditor, cropImage, loadImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, warpPerspectiveCrop, type CropQuad, type CropRect } from "../../CropEditor";
 
 type Side = "front" | "back";
 type ColorMode = "color" | "bw";
-type SideState = { file: File | null; url: string; cropRect: CropRect };
+type SideState = { file: File | null; url: string; cropRect: CropRect; cropQuad: CropQuad };
 type CardEntry = { id: string; front: SideState; back: SideState };
 type SlotRef = { cardId: string; side: Side };
 type FilterValues = { brightness: number; contrast: number; saturation: number };
 
-const EMPTY_SIDE: SideState = { file: null, url: "", cropRect: DEFAULT_CROP_RECT };
+const EMPTY_SIDE: SideState = { file: null, url: "", cropRect: DEFAULT_CROP_RECT, cropQuad: DEFAULT_CROP_QUAD };
 const CARD_ASPECT_RATIO = "85.6/53.98";
+const CARD_ASPECT_RATIO_NUMBER = 85.6 / 53.98;
 const DEFAULT_FILTER: FilterValues = { brightness: 100, contrast: 100, saturation: 100 };
 const CARDS_PER_PAGE = 4;
 
@@ -133,6 +134,7 @@ export default function IdCardPrintUpload({ onComposed, busy }: { onComposed: (f
   const [cards, setCards] = useState<CardEntry[]>(() => [newCard()]);
   const [active, setActive] = useState<SlotRef | null>(null);
   const [cropTarget, setCropTarget] = useState<SlotRef | null>(null);
+  const [cropMode, setCropMode] = useState<"straight" | "perspective">("perspective");
   const [filterTarget, setFilterTarget] = useState<SlotRef | null>(null);
   const [filterValues, setFilterValues] = useState<FilterValues>(DEFAULT_FILTER);
   const [colorMode, setColorMode] = useState<ColorMode>("color");
@@ -151,7 +153,7 @@ export default function IdCardPrintUpload({ onComposed, busy }: { onComposed: (f
     if (!selected) return;
     const current = getSide(cardId, side);
     if (current.url) URL.revokeObjectURL(current.url);
-    setSide(cardId, side, { file: selected, url: URL.createObjectURL(selected), cropRect: DEFAULT_CROP_RECT });
+    setSide(cardId, side, { file: selected, url: URL.createObjectURL(selected), cropRect: DEFAULT_CROP_RECT, cropQuad: DEFAULT_CROP_QUAD });
     setError("");
   }
 
@@ -175,7 +177,7 @@ export default function IdCardPrintUpload({ onComposed, busy }: { onComposed: (f
       const rotatedBlob = await rotateImage90(current.url);
       const rotatedFile = new File([rotatedBlob], current.file.name.replace(/\.[^.]+$/, ".png"), { type: "image/png" });
       URL.revokeObjectURL(current.url);
-      setSide(cardId, side, { file: rotatedFile, url: URL.createObjectURL(rotatedFile), cropRect: DEFAULT_CROP_RECT });
+      setSide(cardId, side, { file: rotatedFile, url: URL.createObjectURL(rotatedFile), cropRect: DEFAULT_CROP_RECT, cropQuad: DEFAULT_CROP_QUAD });
     } catch {
       // Leave the photo as-is if rotation fails.
     }
@@ -185,15 +187,19 @@ export default function IdCardPrintUpload({ onComposed, busy }: { onComposed: (f
     setSide(cardId, side, { ...getSide(cardId, side), cropRect: rect });
   }
 
+  function updateCropQuad(cardId: string, side: Side, quad: CropQuad) {
+    setSide(cardId, side, { ...getSide(cardId, side), cropQuad: quad });
+  }
+
   async function applyCrop() {
     if (!cropTarget) return;
     const current = getSide(cropTarget.cardId, cropTarget.side);
     if (!current.url) return;
     try {
-      const croppedBlob = await cropImage(current.url, current.cropRect);
+      const croppedBlob = cropMode === "perspective" ? await warpPerspectiveCrop(current.url, current.cropQuad, CARD_ASPECT_RATIO_NUMBER) : await cropImage(current.url, current.cropRect);
       const croppedFile = new File([croppedBlob], (current.file?.name || "photo").replace(/(\.[^.]+)?$/, "-cropped.png"), { type: "image/png" });
       URL.revokeObjectURL(current.url);
-      setSide(cropTarget.cardId, cropTarget.side, { file: croppedFile, url: URL.createObjectURL(croppedFile), cropRect: DEFAULT_CROP_RECT });
+      setSide(cropTarget.cardId, cropTarget.side, { file: croppedFile, url: URL.createObjectURL(croppedFile), cropRect: DEFAULT_CROP_RECT, cropQuad: DEFAULT_CROP_QUAD });
       setCropTarget(null);
     } catch {
       // Crop dialog stays open so the customer can retry.
@@ -213,7 +219,7 @@ export default function IdCardPrintUpload({ onComposed, busy }: { onComposed: (f
       const adjustedBlob = await applyFilterAdjustments(current.url, filterValues);
       const adjustedFile = new File([adjustedBlob], (current.file?.name || "photo").replace(/(\.[^.]+)?$/, "-adjusted.png"), { type: "image/png" });
       URL.revokeObjectURL(current.url);
-      setSide(filterTarget.cardId, filterTarget.side, { file: adjustedFile, url: URL.createObjectURL(adjustedFile), cropRect: current.cropRect });
+      setSide(filterTarget.cardId, filterTarget.side, { file: adjustedFile, url: URL.createObjectURL(adjustedFile), cropRect: current.cropRect, cropQuad: current.cropQuad });
       setFilterTarget(null);
     } catch {
       // Panel stays open so the customer can retry.
@@ -358,15 +364,38 @@ export default function IdCardPrintUpload({ onComposed, busy }: { onComposed: (f
               </button>
             </div>
             <div className="crop-body">
-              <CropEditor
-                fileUrl={cropState.url}
-                rect={cropState.cropRect}
-                onRectChange={(rect) => updateCropRect(cropTarget.cardId, cropTarget.side, rect)}
-                aspectRatio={CARD_ASPECT_RATIO}
-              />
+              <div className="crop-mode-toggle">
+                <button type="button" className={cropMode === "perspective" ? "active" : ""} onClick={() => setCropMode("perspective")}>
+                  Perspective crop
+                </button>
+                <button type="button" className={cropMode === "straight" ? "active" : ""} onClick={() => setCropMode("straight")}>
+                  Straight crop
+                </button>
+              </div>
+              {cropMode === "straight" ? (
+                <CropEditor
+                  fileUrl={cropState.url}
+                  rect={cropState.cropRect}
+                  onRectChange={(rect) => updateCropRect(cropTarget.cardId, cropTarget.side, rect)}
+                  aspectRatio={CARD_ASPECT_RATIO}
+                />
+              ) : (
+                <PerspectiveCropEditor
+                  fileUrl={cropState.url}
+                  quad={cropState.cropQuad}
+                  onQuadChange={(quad) => updateCropQuad(cropTarget.cardId, cropTarget.side, quad)}
+                />
+              )}
               <div className="crop-controls">
-                <p>Drag a corner or edge to resize the crop area. Drag inside the box to move it.</p>
-                <button type="button" onClick={() => updateCropRect(cropTarget.cardId, cropTarget.side, DEFAULT_CROP_RECT)}>
+                <p>
+                  {cropMode === "straight"
+                    ? "Drag a corner or edge to resize the crop area. Drag inside the box to move it."
+                    : "Drag each corner onto the card's actual corner - useful when the photo was taken at an angle. Click anywhere on an edge to move its nearest corner there."}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => (cropMode === "straight" ? updateCropRect(cropTarget.cardId, cropTarget.side, DEFAULT_CROP_RECT) : updateCropQuad(cropTarget.cardId, cropTarget.side, DEFAULT_CROP_QUAD))}
+                >
                   <RotateCcw size={16} /> Reset Crop
                 </button>
                 <button type="button" onClick={applyCrop}>

@@ -143,7 +143,7 @@ export default function MarkdownToPdfClient() {
 function markdownToHtml(source: string) {
   const lines = source.replace(/\r\n/g, "\n").split("\n");
   const html: string[] = [];
-  let listOpen = false;
+  let listOpen: "ul" | "ol" | null = null;
   let tableBuffer: string[] = [];
   let codeOpen = false;
   let codeLanguage = "";
@@ -151,8 +151,8 @@ function markdownToHtml(source: string) {
 
   function closeList() {
     if (listOpen) {
-      html.push("</ul>");
-      listOpen = false;
+      html.push(listOpen === "ol" ? "</ol>" : "</ul>");
+      listOpen = null;
     }
   }
 
@@ -228,11 +228,22 @@ function markdownToHtml(source: string) {
       html.push(`<h${heading[1].length}>${inline(heading[2])}</h${heading[1].length}>`);
       return;
     }
+    const orderedItem = /^(\d+)[.)]\s+(.+)$/.exec(trimmed);
+    if (orderedItem) {
+      if (listOpen !== "ol") {
+        closeList();
+        html.push(`<ol start="${escapeAttr(orderedItem[1])}">`);
+        listOpen = "ol";
+      }
+      html.push(`<li>${inline(orderedItem[2])}</li>`);
+      return;
+    }
     const listItem = /^[-*+]\s+(.+)$/.exec(trimmed);
     if (listItem) {
-      if (!listOpen) {
+      if (listOpen !== "ul") {
+        closeList();
         html.push("<ul>");
-        listOpen = true;
+        listOpen = "ul";
       }
       html.push(`<li>${inline(listItem[1])}</li>`);
       return;
@@ -252,6 +263,8 @@ async function markdownToPdfBlob(source: string) {
   const pdf = await PDFDocument.create();
   const regular = await pdf.embedFont(StandardFonts.Helvetica);
   const bold = await pdf.embedFont(StandardFonts.HelveticaBold);
+  const italic = await pdf.embedFont(StandardFonts.HelveticaOblique);
+  const boldItalic = await pdf.embedFont(StandardFonts.HelveticaBoldOblique);
   const mono = await pdf.embedFont(StandardFonts.Courier);
   const pageSize: [number, number] = [595.28, 841.89];
   const margin = 52;
@@ -272,6 +285,9 @@ async function markdownToPdfBlob(source: string) {
   let codeLanguage = "";
   let codeLines: string[] = [];
   let tableRows: string[][] = [];
+  let quoteLines: string[] = [];
+  let blockLines: string[] = [];
+  let blockListMarker: string | null = null;
 
   function ensure(space: number) {
     if (y - space >= margin) return;
@@ -287,6 +303,70 @@ async function markdownToPdfBlob(source: string) {
     wrapPdfText(text, width, font, options.size).forEach((line) => {
       ensure(leading);
       page.drawText(safePdfText(line), { x, y, size: options.size, font, color: options.color || colors.text });
+      y -= leading;
+    });
+  }
+
+  type InlineWord = { text: string; font: typeof regular; color: ReturnType<typeof rgb>; code: boolean };
+
+  function fontForToken(token: { bold: boolean; italic: boolean; code: boolean }) {
+    if (token.code) return mono;
+    if (token.bold && token.italic) return boldItalic;
+    if (token.bold) return bold;
+    if (token.italic) return italic;
+    return regular;
+  }
+
+  // Bold/italic/code markdown inside a paragraph, list item, or blockquote
+  // needs its own font per word (pdf-lib draws one font per drawText call),
+  // so wrapping has to measure each word with its own font instead of the
+  // single-font wrapPdfText used elsewhere.
+  function wrapInlineWords(text: string, width: number, size: number, baseColor: ReturnType<typeof rgb>): InlineWord[][] {
+    const spaceWidth = regular.widthOfTextAtSize(" ", size);
+    const words: InlineWord[] = [];
+    parseInlineTokens(safePdfText(stripLinksAndImages(text))).forEach((token) => {
+      const font = fontForToken(token);
+      token.text.split(/\s+/).filter(Boolean).forEach((piece) => {
+        words.push({ text: piece, font, color: token.code ? colors.text : baseColor, code: token.code });
+      });
+    });
+    const lines: InlineWord[][] = [];
+    let line: InlineWord[] = [];
+    let lineWidth = 0;
+    words.forEach((word) => {
+      const wordWidth = word.font.widthOfTextAtSize(word.text, size);
+      const extra = line.length ? spaceWidth : 0;
+      if (lineWidth + extra + wordWidth > width && line.length) {
+        lines.push(line);
+        line = [word];
+        lineWidth = wordWidth;
+      } else {
+        line.push(word);
+        lineWidth += extra + wordWidth;
+      }
+    });
+    if (line.length) lines.push(line);
+    return lines;
+  }
+
+  function drawInline(text: string, options: { x?: number; size: number; color?: ReturnType<typeof rgb>; width?: number; leading?: number }) {
+    const x = options.x || margin;
+    const width = options.width || maxWidth;
+    const size = options.size;
+    const leading = options.leading || size * 1.55;
+    const spaceWidth = regular.widthOfTextAtSize(" ", size);
+    wrapInlineWords(text, width, size, options.color || colors.text).forEach((lineWords) => {
+      ensure(leading);
+      let cursor = x;
+      lineWords.forEach((word, index) => {
+        if (index > 0) cursor += spaceWidth;
+        if (word.code) {
+          const codeWidth = word.font.widthOfTextAtSize(word.text, size);
+          page.drawRectangle({ x: cursor - 2, y: y - 3, width: codeWidth + 4, height: size + 4, color: colors.soft });
+        }
+        page.drawText(word.text, { x: cursor, y, size, font: word.font, color: word.color });
+        cursor += word.font.widthOfTextAtSize(word.text, size);
+      });
       y -= leading;
     });
   }
@@ -340,6 +420,41 @@ async function markdownToPdfBlob(source: string) {
     tableRows = [];
   }
 
+  // Consecutive ">" lines are one quote block, not one blockquote per line -
+  // buffered and flushed together so the side bar spans the whole block
+  // instead of a separate, fixed-height bar (and overflowing text) per line.
+  function flushQuote() {
+    if (!quoteLines.length) return;
+    const text = quoteLines.join(" ");
+    const leading = 15;
+    const wrapped = wrapInlineWords(text, maxWidth - 14, 10, colors.muted);
+    const blockHeight = wrapped.length * leading + 10;
+    ensure(blockHeight + 8);
+    page.drawRectangle({ x: margin, y: y - blockHeight, width: 4, height: blockHeight, color: colors.blue });
+    drawInline(text, { x: margin + 14, size: 10, width: maxWidth - 14, color: colors.muted, leading });
+    y -= 8;
+    quoteLines = [];
+  }
+
+  // A paragraph or list item is one logical block even when its source is
+  // soft-wrapped across several lines - joining them before drawInline()
+  // matters now that **bold**/`code` spans are actually parsed: a bold
+  // marker split across two source lines would otherwise show up as a
+  // literal, unmatched "**" instead of being rendered bold.
+  function flushBlock() {
+    if (!blockLines.length) return;
+    const text = blockLines.join(" ");
+    if (blockListMarker !== null) {
+      ensure(18);
+      page.drawText(blockListMarker, { x: margin + 14, y, size: 10, font: bold, color: colors.blue });
+      drawInline(text, { x: margin + 32, size: 10.5, width: maxWidth - 32, leading: 16 });
+    } else {
+      drawInline(text, { size: 10.5, leading: 17 });
+    }
+    blockLines = [];
+    blockListMarker = null;
+  }
+
   async function drawImage(alt: string, url: string) {
     const cleanUrl = url.trim();
     if (!/^https?:\/\//i.test(cleanUrl) && !/^data:image\//i.test(cleanUrl)) {
@@ -376,28 +491,47 @@ async function markdownToPdfBlob(source: string) {
       }
       continue;
     }
+    if (trimmed.startsWith(">")) {
+      flushBlock();
+      quoteLines.push(trimmed.replace(/^>\s?/, ""));
+      continue;
+    }
+    flushQuote();
     if (trimmed.startsWith("```")) {
+      flushBlock();
       flushTable();
       codeOpen = true;
       codeLanguage = trimmed.slice(3).trim();
       continue;
     }
     if (trimmed.includes("|") && /^\|?.+\|.+\|?$/.test(trimmed)) {
+      flushBlock();
       tableRows.push(trimmed.split("|").map((cell) => cell.trim()).filter(Boolean));
       continue;
     }
     flushTable();
     if (!trimmed) {
+      flushBlock();
       y -= 8;
+      continue;
+    }
+    if (/^---+$|^\*\*\*+$/.test(trimmed)) {
+      flushBlock();
+      ensure(20);
+      y -= 6;
+      page.drawLine({ start: { x: margin, y }, end: { x: pageSize[0] - margin, y }, thickness: 1, color: colors.line });
+      y -= 14;
       continue;
     }
     const image = /^!\[([^\]]*)\]\(([^)]+)\)$/.exec(trimmed);
     if (image) {
+      flushBlock();
       await drawImage(stripInline(image[1]), image[2]);
       continue;
     }
     const heading = /^(#{1,6})\s+(.+)$/.exec(trimmed);
     if (heading) {
+      flushBlock();
       const level = heading[1].length;
       const size = level === 1 ? 26 : level === 2 ? 16 : 13;
       y -= level === 1 ? 6 : 12;
@@ -409,25 +543,29 @@ async function markdownToPdfBlob(source: string) {
       y -= level === 1 ? 18 : 8;
       continue;
     }
+    const orderedItem = /^(\d+)[.)]\s+(.+)$/.exec(trimmed);
+    if (orderedItem) {
+      flushBlock();
+      blockLines = [orderedItem[2]];
+      blockListMarker = `${orderedItem[1]}.`;
+      continue;
+    }
     const listItem = /^[-*+]\s+(.+)$/.exec(trimmed);
     if (listItem) {
-      ensure(18);
-      page.drawText("-", { x: margin + 14, y, size: 10, font: bold, color: colors.blue });
-      drawWrapped(stripInline(listItem[1]), { x: margin + 32, size: 10.5, width: maxWidth - 32, leading: 16 });
+      flushBlock();
+      blockLines = [listItem[1]];
+      blockListMarker = "-";
       continue;
     }
-    if (trimmed.startsWith(">")) {
-      ensure(40);
-      page.drawRectangle({ x: margin, y: y - 28, width: 4, height: 28, color: colors.blue });
-      drawWrapped(stripInline(trimmed.replace(/^>\s?/, "")), { x: margin + 14, size: 10, width: maxWidth - 14, color: colors.muted });
-      y -= 8;
-      continue;
-    }
-    drawWrapped(stripInline(trimmed), { size: 10.5, leading: 17 });
+    // Not a new block starter - a continuation of whatever paragraph or
+    // list item is already open (or the start of a new paragraph if none is).
+    blockLines.push(trimmed);
   }
 
+  flushBlock();
   flushCode();
   flushTable();
+  flushQuote();
   const bytes = await pdf.save();
   return new Blob([bytes], { type: "application/pdf" });
 }
@@ -473,11 +611,41 @@ function tokenizeCodeForPdf(source: string, language: string, rgb: PdfColorFacto
 }
 
 function stripInline(value: string) { return value.replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1").replace(/\[([^\]]+)\]\([^)]+\)/g, "$1").replace(/[`*_~]/g, ""); }
+function stripLinksAndImages(value: string) { return value.replace(/!\[([^\]]*)\]\([^)]+\)/g, "$1").replace(/\[([^\]]+)\]\([^)]+\)/g, "$1"); }
+
+type InlineToken = { text: string; bold: boolean; italic: boolean; code: boolean };
+
+// Splits a line into styled runs on ***bold italic***, **bold**, *italic*,
+// and `code` so the PDF renderer can draw each run with its own font -
+// unlike stripInline(), which just deletes the markers for plain text.
+function parseInlineTokens(text: string): InlineToken[] {
+  const tokens: InlineToken[] = [];
+  const pattern = /\*\*\*([^*]+)\*\*\*|\*\*([^*]+)\*\*|\*([^*]+)\*|`([^`]+)`/;
+  let remaining = text;
+  while (remaining.length) {
+    const match = pattern.exec(remaining);
+    if (!match) {
+      tokens.push({ text: remaining, bold: false, italic: false, code: false });
+      break;
+    }
+    if (match.index > 0) tokens.push({ text: remaining.slice(0, match.index), bold: false, italic: false, code: false });
+    if (match[1] !== undefined) tokens.push({ text: match[1], bold: true, italic: true, code: false });
+    else if (match[2] !== undefined) tokens.push({ text: match[2], bold: true, italic: false, code: false });
+    else if (match[3] !== undefined) tokens.push({ text: match[3], bold: false, italic: true, code: false });
+    else if (match[4] !== undefined) tokens.push({ text: match[4], bold: false, italic: false, code: true });
+    remaining = remaining.slice(match.index + match[0].length);
+  }
+  return tokens.filter((token) => token.text.length);
+}
 function escapeHtml(value: string) { return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
 function escapeAttr(value: string) { return value.replace(/[^a-zA-Z0-9_-]/g, ""); }
 function escapeAttrText(value: string) { return escapeHtml(value).replace(/"/g, "&quot;"); }
 function escapeAttrUrl(value: string) { const url = value.trim(); return /^https?:\/\//i.test(url) || /^data:image\//i.test(url) ? escapeAttrText(url) : ""; }
-function safePdfText(value: string) { return value.replace(/\u2260/g, "!=").replace(/\u2264/g, "<=").replace(/\u2265/g, ">=").replace(/\u2192/g, "->").replace(/\u2190/g, "<-").replace(/\u2013|\u2014/g, "-").replace(/\u201c|\u201d/g, '"').replace(/\u2018|\u2019/g, "'").replace(/\u2022/g, "-").replace(/[^\x20-\x7E]/g, "?"); }
+// Helvetica/WinAnsi (what pdf-lib's standard fonts use) covers Latin-1
+// Supplement (U+00A0-U+00FF) directly - that's \u00d7, \u00b0, \u00e9, \u00f1, etc. Only the
+// typographic punctuation outside that range (smart quotes, en/em dash,
+// arrows) needs an explicit ASCII fallback before the final catch-all.
+function safePdfText(value: string) { return value.replace(/\u2260/g, "!=").replace(/\u2264/g, "<=").replace(/\u2265/g, ">=").replace(/\u2192/g, "->").replace(/\u2190/g, "<-").replace(/\u2013|\u2014/g, "-").replace(/\u201c|\u201d/g, '"').replace(/\u2018|\u2019/g, "'").replace(/\u2022/g, "-").replace(/[^\x20-\x7E\u00a0-\u00ff]/g, "?"); }
 function wrapCodeLine(line: string, maxChars: number) { if (line.length <= maxChars) return [line]; const chunks: string[] = []; for (let index = 0; index < line.length; index += maxChars) chunks.push(line.slice(index, index + maxChars)); return chunks; }
 function wrapPdfText(text: string, maxWidth: number, font: { widthOfTextAtSize(value: string, size: number): number }, size: number) { const words = safePdfText(text).replace(/\s+/g, " ").trim().split(" "); const lines: string[] = []; let line = ""; words.forEach((word) => { const next = line ? `${line} ${word}` : word; if (font.widthOfTextAtSize(next, size) > maxWidth && line) { lines.push(line); line = word; } else line = next; }); if (line || !lines.length) lines.push(line); return lines; }
 function truncatePdfText(text: string, maxWidth: number, font: { widthOfTextAtSize(value: string, size: number): number }, size: number) { const original = safePdfText(stripInline(text)); let value = original; while (value.length > 3 && font.widthOfTextAtSize(value, size) > maxWidth - 16) value = value.slice(0, -1); return value === original ? value : `${value.slice(0, -3)}...`; }

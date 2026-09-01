@@ -6,12 +6,14 @@ import { Archive, ArrowDown, ArrowLeft, ArrowRight, ArrowUp, Check, Download, Ey
 import Link from "next/link";
 import { DashboardShell } from "../../DashboardShell";
 import { PdfToolUpload } from "../PdfToolUpload";
+import { usePdfPasswordGate } from "../usePdfPasswordGate";
 
 type PdfPage = { index: number; thumbnail: string; removed: boolean };
 type PdfItem = { id: string; file: File; pages: PdfPage[]; loading: boolean };
 
 export default function MergePdfClient({ children }: { children?: ReactNode }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const { gateFiles, modal: passwordModal } = usePdfPasswordGate();
   const [items, setItems] = useState<PdfItem[]>([]);
   const [dragging, setDragging] = useState(false);
   const [merging, setMerging] = useState(false);
@@ -23,7 +25,9 @@ export default function MergePdfClient({ children }: { children?: ReactNode }) {
   useEffect(() => () => { if (resultUrl) URL.revokeObjectURL(resultUrl); }, [resultUrl]);
 
   async function addFiles(files: FileList | File[]) {
-    const selected = Array.from(files);
+    const unlocked = await gateFiles(files);
+    if (!unlocked.length) return;
+    const selected = unlocked;
     const invalid = selected.find((file) => file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf"));
     if (invalid) return setError(`${invalid.name} is not a PDF file.`);
     clearResult(); setError("");
@@ -130,6 +134,7 @@ export default function MergePdfClient({ children }: { children?: ReactNode }) {
             <footer><span>{preview.pages.filter((page) => !page.removed).length} of {preview.pages.length} pages selected</span><button className={selectedPreviewPage.removed ? "restore" : "remove"} type="button" onClick={() => togglePage(preview.id, selectedPreviewPage.index)}>{selectedPreviewPage.removed ? <><Check size={17} /> Restore this page</> : <><Trash2 size={17} /> Remove this page</>}</button><button type="button" onClick={() => setPreviewId(null)}>Done</button></footer>
           </section>
         </div> : null}
+        {passwordModal}
       </div>
     </DashboardShell>
   );

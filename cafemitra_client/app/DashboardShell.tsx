@@ -11,7 +11,9 @@ import {
   Home,
   IdCard,
   Image,
+  LayoutGrid,
   Printer,
+  QrCode,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -48,10 +50,12 @@ const navGroups: NavGroup[] = [
       { name: "Passport Photo", icon: IdCard, href: "/passport-photo", match: ["/passport-photo"], serviceKey: "passport_photo" },
       { name: "ID Card Maker", icon: FileScan, href: "/id-card-maker", match: ["/id-card-maker"], serviceKey: "id_card_maker" },
       { name: "ID Card Print", icon: IdCard, href: "/id-card-print", match: ["/id-card-print"], serviceKey: "id_card_print" },
+      { name: "Photo Print Sheet", icon: LayoutGrid, href: "/photo-print-sheet", match: ["/photo-print-sheet"] },
       { name: "PDF Tools", icon: FileText, href: "/pdf-tools", match: ["/pdf-tools"], serviceKey: "pdf_tools" },
       { name: "Image Tools", icon: Image, href: "/image-tools", match: ["/image-tools"], serviceKey: "image_tools" },
       { name: "Resume Builder", icon: FileUser, href: "/resume-builder", match: ["/resume-builder"], serviceKey: "resume_builder" },
       { name: "Biodata Maker", icon: Users, href: "/biodata-maker", match: ["/biodata-maker"], serviceKey: "biodata_maker" },
+      { name: "UPI QR Generator", icon: QrCode, href: "/upi-qr-generator", match: ["/upi-qr-generator"] },
     ],
   },
 ];

@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ArrowLeft, ChevronDown, ChevronUp, Download, Eye, FolderOpen, LogIn, Printer, RotateCcw, Save, Sparkles, Wallet } from "lucide-react";
 import { apiFetch, hasStoredSession } from "@/lib/api";
-import { fetchAgentHealth, runAgentPrintFile } from "@/lib/printpilot-agent";
 import { useTemplatePrices } from "../../resume-builder/useTemplatePrices";
 import { resumeFileSlug, triggerPdfDownload } from "../../resume-builder/downloadPdf";
 import TemplatePicker from "../../resume-builder/TemplatePicker";
@@ -15,7 +14,7 @@ import { BIODATA_TEMPLATES, type BiodataTemplateId } from "../templates";
 import { BiodataPreviewPage } from "../BiodataPreview";
 import BiodataFormFields from "../BiodataFormFields";
 import { buildBiodataPdf, buildPreviewBiodataPdf } from "../pdfBuilder";
-import { blankBiodata, biodataHasContent, sampleBiodata, STORAGE_KEY, type BiodataData, type SavedBiodataOrderSummary } from "../biodataModel";
+import { blankBiodata, biodataHasContent, sampleBiodata, STORAGE_KEY, type BiodataCustomField, type BiodataCustomSection, type BiodataData, type SavedBiodataOrderSummary } from "../biodataModel";
 
 async function chargeBiodataDownload(template: BiodataTemplateId) {
   const response = await apiFetch("/api/tools/biodata-maker-charge/", {
@@ -28,13 +27,28 @@ async function chargeBiodataDownload(template: BiodataTemplateId) {
   throw new Error(data.message || "Could not verify your wallet balance. Please try again.");
 }
 
-function blobToBase64(blob: Blob) {
-  return new Promise<string>((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(String(reader.result).split(",")[1] || "");
-    reader.onerror = () => reject(new Error("Could not read the generated PDF."));
-    reader.readAsDataURL(blob);
-  });
+// Prints a generated PDF straight from the browser - a hidden iframe loads the
+// blob so the browser's own PDF viewer (and its print dialog) handles it,
+// without depending on the separate PrintPilot desktop agent being connected.
+function printPdfBlob(blob: Blob) {
+  const url = URL.createObjectURL(blob);
+  const iframe = document.createElement("iframe");
+  iframe.style.position = "fixed";
+  iframe.style.right = "0";
+  iframe.style.bottom = "0";
+  iframe.style.width = "0";
+  iframe.style.height = "0";
+  iframe.style.border = "0";
+  iframe.src = url;
+  iframe.onload = () => {
+    iframe.contentWindow?.focus();
+    iframe.contentWindow?.print();
+  };
+  document.body.appendChild(iframe);
+  setTimeout(() => {
+    iframe.remove();
+    URL.revokeObjectURL(url);
+  }, 60_000);
 }
 
 export default function BiodataBuilderClient() {
@@ -43,9 +57,9 @@ export default function BiodataBuilderClient() {
   const templatePrices = useTemplatePrices<BiodataTemplateId>("biodata_maker_");
   const [data, setData] = useState<BiodataData>(sampleBiodata);
   const [downloadBusy, setDownloadBusy] = useState(false);
-  const [printPilotBusy, setPrintPilotBusy] = useState(false);
+  const [printBusy, setPrintBusy] = useState(false);
   const [previewBusy, setPreviewBusy] = useState(false);
-  const busy = downloadBusy || printPilotBusy || previewBusy;
+  const busy = downloadBusy || printBusy || previewBusy;
   const [error, setError] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [savedOrder, setSavedOrder] = useState<SavedBiodataOrderSummary | null>(null);
@@ -137,6 +151,33 @@ export default function BiodataBuilderClient() {
     setData((d) => ({ ...d, [key]: value }));
   }
 
+  const customFieldOps = useMemo(
+    () => ({
+      add: (blank: BiodataCustomField) => setData((d) => ({ ...d, customFields: [...(d.customFields || []), blank] })),
+      update: (id: string, patch: Partial<Pick<BiodataCustomField, "label" | "value">>) =>
+        setData((d) => ({ ...d, customFields: (d.customFields || []).map((field) => (field.id === id ? { ...field, ...patch } : field)) })),
+      remove: (id: string) => setData((d) => ({ ...d, customFields: (d.customFields || []).filter((field) => field.id !== id) })),
+    }),
+    [],
+  );
+
+  const customSectionOps = useMemo(
+    () => ({
+      add: (blank: BiodataCustomSection) => setData((d) => ({ ...d, customSections: [...(d.customSections || []), blank] })),
+      update: (id: string, patch: Partial<Pick<BiodataCustomSection, "title">>) =>
+        setData((d) => ({ ...d, customSections: (d.customSections || []).map((section) => (section.id === id ? { ...section, ...patch } : section)) })),
+      // Dropping a section also drops the fields filed under it, so removed
+      // sections don't leave orphaned fields lingering invisibly in the data.
+      remove: (id: string) =>
+        setData((d) => ({
+          ...d,
+          customSections: (d.customSections || []).filter((section) => section.id !== id),
+          customFields: (d.customFields || []).filter((field) => field.section !== id),
+        })),
+    }),
+    [],
+  );
+
   function clearForm() {
     if (!window.confirm("Clear the form? Your saved draft stays safe in this browser - refresh the page to bring it back.")) return;
     skipNextSaveRef.current = true;
@@ -203,25 +244,20 @@ export default function BiodataBuilderClient() {
     }
   }
 
-  async function printViaPrintPilot() {
+  async function printBiodata() {
     if (busy || locked) return;
     if (!requireLogin()) return;
     if (!(await requestChargeConfirm(templatePrices?.[data.template], templateLabel))) return;
-    setPrintPilotBusy(true);
+    setPrintBusy(true);
     setError("");
     try {
-      const health = await fetchAgentHealth();
-      if (health.status !== "running" || !health.printer) {
-        throw new Error("PrintPilot Agent isn't connected, or no printer is selected. Open PrintPilot from the top bar to connect one first.");
-      }
       await chargeBiodataDownload(data.template);
       const blob = await buildBiodataPdf(data);
-      const pdfBase64 = await blobToBase64(blob);
-      await runAgentPrintFile({ printer: health.printer, fileName: `${resumeFileSlug(data.fullName, "biodata")}-biodata.pdf`, pdfBase64 });
+      printPdfBlob(blob);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "Could not print via PrintPilot. Please try again.");
+      setError(reason instanceof Error ? reason.message : "Could not prepare the biodata for printing. Please try again.");
     } finally {
-      setPrintPilotBusy(false);
+      setPrintBusy(false);
     }
   }
 
@@ -266,8 +302,8 @@ export default function BiodataBuilderClient() {
           <button type="button" className="resbuild-btn-secondary" onClick={previewPdf} disabled={busy}>
             <Eye size={16} /> {previewBusy ? "Preparing..." : "Preview PDF"}
           </button>
-          <button type="button" className="resbuild-btn-secondary" onClick={printViaPrintPilot} disabled={busy || locked} title={locked ? "Customer payment is pending" : undefined}>
-            <Printer size={16} /> {printPilotBusy ? "Printing..." : "Print via PrintPilot"}
+          <button type="button" className="resbuild-btn-secondary" onClick={printBiodata} disabled={busy || locked} title={locked ? "Customer payment is pending" : undefined}>
+            <Printer size={16} /> {printBusy ? "Printing..." : "Print"}
           </button>
           <button type="button" className="resbuild-btn-primary" onClick={downloadPdf} disabled={busy || locked} title={locked ? "Customer payment is pending" : undefined}>
             <Download size={16} /> {downloadBusy ? "Generating..." : "Download PDF"}
@@ -330,7 +366,7 @@ export default function BiodataBuilderClient() {
             refreshBusy={refreshBusy}
           />
 
-          <BiodataFormFields data={data} setField={setField} />
+          <BiodataFormFields data={data} setField={setField} customFieldOps={customFieldOps} customSectionOps={customSectionOps} />
         </div>
 
         <div className="resbuild-preview-panel">

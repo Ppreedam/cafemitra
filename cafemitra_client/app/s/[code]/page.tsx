@@ -2,11 +2,11 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
-import { Clock3, Crop, Download, Eye, EyeOff, FileText, IdCard, Image as ImageIcon, LoaderCircle, LockKeyhole, Printer, Trash2, Upload, Wallet, X } from "lucide-react";
+import { Clock3, Crop, Download, Eye, EyeOff, FileText, IdCard, Image as ImageIcon, LoaderCircle, LockKeyhole, Printer, ShieldCheck, Trash2, Upload, Wallet, X } from "lucide-react";
 import { apiUrl } from "@/lib/api";
 import { calculatePriceItemRate, formatPriceItem, getAllowedPaymentModes, mergePricingDefaults, type PriceItem, type PricingService } from "@/lib/pricing";
 import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
-import { CropEditor, cropImage, loadImage, DEFAULT_CROP_RECT, type CropRect } from "../../CropEditor";
+import { CropEditor, cropImage, loadImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, warpPerspectiveCrop, type CropQuad, type CropRect } from "../../CropEditor";
 import PublicResumeBuilder from "./PublicResumeBuilder";
 import PublicBiodataMaker from "./PublicBiodataMaker";
 import IdCardPrintUpload from "./IdCardPrintUpload";
@@ -95,6 +95,8 @@ export default function CustomerScanPage() {
   const [isUnlockingPdf, setIsUnlockingPdf] = useState(false);
   const [showPdfPassword, setShowPdfPassword] = useState(false);
   const [cropRect, setCropRect] = useState<CropRect>(DEFAULT_CROP_RECT);
+  const [cropQuad, setCropQuad] = useState<CropQuad>(DEFAULT_CROP_QUAD);
+  const [cropMode, setCropMode] = useState<"straight" | "perspective">("perspective");
   const [isProcessingPdf, setIsProcessingPdf] = useState(false);
   const [isCombiningFiles, setIsCombiningFiles] = useState(false);
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
@@ -111,6 +113,8 @@ export default function CustomerScanPage() {
   const paymentPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const paymentCheckInFlightRef = useRef(false);
   const deletePromptShownForOrderRef = useRef<number | null>(null);
+  const deletedNoticeShownForOrderRef = useRef<number | null>(null);
+  const [isDocumentDeletedNoticeOpen, setIsDocumentDeletedNoticeOpen] = useState(false);
 
   useEffect(() => {
     fetch(apiUrl(`/api/public-shop/${params.code}/`))
@@ -346,6 +350,17 @@ export default function CustomerScanPage() {
     setIsDeleteDocumentOpen(true);
   }, [order]);
 
+  // Confirming deletion as a modal (not just a status line) matters here -
+  // the whole point is reassuring the customer their document is gone from
+  // our servers, whether they deleted it themselves or it was auto-deleted.
+  useEffect(() => {
+    if (!order || !order.documentDeleted) return;
+    if (deletedNoticeShownForOrderRef.current === order.id) return;
+
+    deletedNoticeShownForOrderRef.current = order.id;
+    setIsDocumentDeletedNoticeOpen(true);
+  }, [order]);
+
   useEffect(() => {
     setPrintProgress(0);
   }, [order?.id]);
@@ -539,6 +554,7 @@ export default function CustomerScanPage() {
     setIsPreviewOpen(false);
     setIsCropOpen(false);
     setCropRect(DEFAULT_CROP_RECT);
+    setCropQuad(DEFAULT_CROP_QUAD);
     setOrder(null);
     setOrderError("");
     setOptionsTouched(false);
@@ -601,6 +617,7 @@ export default function CustomerScanPage() {
     setIsPageManagerOpen(false);
     setIsCropOpen(false);
     setCropRect(DEFAULT_CROP_RECT);
+    setCropQuad(DEFAULT_CROP_QUAD);
   }
 
   function clearUpload() {
@@ -612,11 +629,19 @@ export default function CustomerScanPage() {
     resetPaymentFlow();
   }
 
+  // Once the customer has acknowledged their document is gone, this order is
+  // fully wrapped up - reset the whole flow so they land back at a clean
+  // upload screen instead of staring at a finished, deleted order.
+  function dismissDocumentDeletedNotice() {
+    setIsDocumentDeletedNoticeOpen(false);
+    clearUpload();
+  }
+
   async function applyImageCrop() {
     if (!fileUrl || !hasImageFile) return;
 
     try {
-      const croppedBlob = await cropImage(fileUrl, cropRect);
+      const croppedBlob = cropMode === "perspective" ? await warpPerspectiveCrop(fileUrl, cropQuad) : await cropImage(fileUrl, cropRect);
       const croppedUrl = URL.createObjectURL(croppedBlob);
       URL.revokeObjectURL(fileUrl);
       setFinalFile(croppedBlob);
@@ -626,6 +651,7 @@ export default function CustomerScanPage() {
       setIsCropOpen(false);
       setIsPreviewOpen(false);
       setCropRect(DEFAULT_CROP_RECT);
+      setCropQuad(DEFAULT_CROP_QUAD);
       setOrder(null);
       setOrderError("");
       if (passportSheetUrl) {
@@ -1383,6 +1409,24 @@ export default function CustomerScanPage() {
         </div>
       ) : null}
 
+      {isDocumentDeletedNoticeOpen ? (
+        <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Document deleted">
+          <div className="confirm-dialog">
+            <span className="confirm-dialog-kicker">RepetiGo Privacy</span>
+            <div className="confirm-dialog-icon confirm-dialog-icon-success">
+              <ShieldCheck size={22} />
+            </div>
+            <h2>Your document has been deleted</h2>
+            <p>The uploaded file is now permanently removed from our servers. Only your token record ({order?.tokenId}) is kept, so the cafe can confirm your order.</p>
+            <div className="confirm-dialog-actions confirm-dialog-actions-single">
+              <button type="button" className="confirm-dialog-primary" onClick={dismissDocumentDeletedNotice}>
+                OK, Got It
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       {isPreviewOpen ? (
         <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Document preview">
           <div className="document-preview-window">
@@ -1452,10 +1496,26 @@ export default function CustomerScanPage() {
               </button>
             </div>
             <div className="crop-body">
-              <CropEditor fileUrl={fileUrl} rect={cropRect} onRectChange={setCropRect} />
+              <div className="crop-mode-toggle">
+                <button type="button" className={cropMode === "perspective" ? "active" : ""} onClick={() => setCropMode("perspective")}>
+                  Perspective crop
+                </button>
+                <button type="button" className={cropMode === "straight" ? "active" : ""} onClick={() => setCropMode("straight")}>
+                  Straight crop
+                </button>
+              </div>
+              {cropMode === "straight" ? (
+                <CropEditor fileUrl={fileUrl} rect={cropRect} onRectChange={setCropRect} />
+              ) : (
+                <PerspectiveCropEditor fileUrl={fileUrl} quad={cropQuad} onQuadChange={setCropQuad} />
+              )}
               <div className="crop-controls">
-                <p>Drag a corner or edge to resize the print area. Drag inside the box to move the crop area.</p>
-                <button type="button" onClick={() => setCropRect(DEFAULT_CROP_RECT)}>
+                <p>
+                  {cropMode === "straight"
+                    ? "Drag a corner or edge to resize the print area. Drag inside the box to move the crop area."
+                    : "Drag each corner onto the document's actual edge - useful when the photo was taken at an angle. Click anywhere on an edge to move its nearest corner there."}
+                </p>
+                <button type="button" onClick={() => (cropMode === "straight" ? setCropRect(DEFAULT_CROP_RECT) : setCropQuad(DEFAULT_CROP_QUAD))}>
                   Reset Crop
                 </button>
                 <button type="button" onClick={applyImageCrop}>

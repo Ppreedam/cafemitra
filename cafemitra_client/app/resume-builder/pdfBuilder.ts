@@ -1,5 +1,5 @@
 import type { TemplateId } from "./templates";
-import { certHasContent, dateRange, eduHasContent, expHasContent, projHasContent, type ResumeData } from "./resumeModel";
+import { certHasContent, dateRange, eduHasContent, expHasContent, projHasContent, type ResumeData, type ResumeSectionId } from "./resumeModel";
 
 type TemplateMetrics = {
   margin: number; nameSize: number; roleSize: number; contactSize: number;
@@ -208,38 +208,61 @@ async function buildSingleColumnResumePdf(data: ResumeData) {
     }
   }
 
+  const customFields = data.customFields || [];
+  const hiddenFields = data.hiddenFields || [];
+  const hiddenSections = data.hiddenSections || [];
+  const hf = (key: string) => hiddenFields.includes(key);
+  const hs = (id: ResumeSectionId) => hiddenSections.includes(id);
+  const customRows = (section: string) => {
+    customFields.filter((field) => field.section === section && field.value.trim()).forEach((field) => {
+      drawWrapped(field.label ? `${field.label}: ${field.value}` : field.value, { size: m.bodySize, leading: m.bodySize * 1.45 });
+    });
+  };
+  const hasCustom = (section: string) => customFields.some((field) => field.section === section && field.value.trim());
+
   // Header
-  const hasBand = m.bandHeight > 0 && c.band;
-  if (hasBand) {
-    page.drawRectangle({ x: 0, y: pageSize[1] - m.bandHeight, width: pageSize[0], height: m.bandHeight, color: c.band });
-  }
-  const nameColor = c.navy;
-  const roleColor = hasBand ? (c.bandMuted || c.accent) : c.accent;
-  const contactColor = hasBand ? (c.bandMuted || c.muted) : c.muted;
-  drawHeaderLine(data.fullName || "Your Name", { size: m.nameSize, font: bold, color: nameColor, leading: m.nameSize * 1.18 });
-  if (data.role.trim()) drawHeaderLine(data.role, { size: m.roleSize, color: roleColor, leading: m.roleSize * 1.42 });
-  const contactLine = [data.email, data.phone, data.location, data.linkedin, data.website].map((s) => s.trim()).filter(Boolean).join("   |   ");
-  if (contactLine) drawHeaderLine(contactLine, { size: m.contactSize, color: contactColor, leading: m.contactSize * 1.5 });
+  if (!hs("personal")) {
+    const hasBand = m.bandHeight > 0 && c.band;
+    if (hasBand) {
+      page.drawRectangle({ x: 0, y: pageSize[1] - m.bandHeight, width: pageSize[0], height: m.bandHeight, color: c.band });
+    }
+    const nameColor = c.navy;
+    const roleColor = hasBand ? (c.bandMuted || c.accent) : c.accent;
+    const contactColor = hasBand ? (c.bandMuted || c.muted) : c.muted;
+    drawHeaderLine((hf("fullName") ? "" : data.fullName) || "Your Name", { size: m.nameSize, font: bold, color: nameColor, leading: m.nameSize * 1.18 });
+    if (!hf("role") && data.role.trim()) drawHeaderLine(data.role, { size: m.roleSize, color: roleColor, leading: m.roleSize * 1.42 });
+    const contactLine = [hf("email") ? "" : data.email, hf("phone") ? "" : data.phone, hf("location") ? "" : data.location, hf("linkedin") ? "" : data.linkedin, hf("website") ? "" : data.website]
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .join("   |   ");
+    if (contactLine) drawHeaderLine(contactLine, { size: m.contactSize, color: contactColor, leading: m.contactSize * 1.5 });
 
-  if (hasBand) {
-    y = pageSize[1] - m.bandHeight - 18;
-  } else {
-    y -= 4;
-    ensure(6);
-    page.drawLine({ start: { x: margin, y }, end: { x: pageSize[0] - margin, y }, thickness: 1.4, color: c.navy });
-    y -= 16;
+    if (hasBand) {
+      y = pageSize[1] - m.bandHeight - 18;
+    } else {
+      y -= 4;
+      ensure(6);
+      page.drawLine({ start: { x: margin, y }, end: { x: pageSize[0] - margin, y }, thickness: 1.4, color: c.navy });
+      y -= 16;
+    }
+
+    customFields
+      .filter((field) => field.section === "personal" && field.value.trim())
+      .forEach((field) => drawHeaderLine(field.label ? `${field.label}: ${field.value}` : field.value, { size: m.contactSize, color: contactColor, leading: m.contactSize * 1.5 }));
   }
 
-  if (data.summary.trim()) {
+  if (!hs("summary") && (data.summary.trim() || hasCustom("summary"))) {
     sectionHeading("Summary");
-    drawWrapped(data.summary, { size: m.bodySize, leading: m.bodySize * 1.45 });
+    if (data.summary.trim() && !hf("summary")) drawWrapped(data.summary, { size: m.bodySize, leading: m.bodySize * 1.45 });
+    customRows("summary");
     y -= 6;
   }
 
-  const skillsList = data.skills.split(",").map((s) => s.trim()).filter(Boolean);
-  if (skillsList.length) {
+  const skillsList = (hf("skills") ? "" : data.skills).split(",").map((s) => s.trim()).filter(Boolean);
+  if (!hs("skills") && (skillsList.length || hasCustom("skills"))) {
     sectionHeading("Skills");
-    drawWrapped(skillsList.join("   |   "), { size: m.bodySize, leading: m.bodySize * 1.45 });
+    if (skillsList.length) drawWrapped(skillsList.join("   |   "), { size: m.bodySize, leading: m.bodySize * 1.45 });
+    customRows("skills");
     y -= 6;
   }
 
@@ -252,7 +275,7 @@ async function buildSingleColumnResumePdf(data: ResumeData) {
   const contentWidth = m.timeline ? maxWidth - 16 : maxWidth;
 
   const experienceEntries = data.experience.filter(expHasContent);
-  if (experienceEntries.length) {
+  if (!hs("experience") && (experienceEntries.length || hasCustom("experience"))) {
     sectionHeading("Experience");
     experienceEntries.forEach((exp, index) => {
       ensure(30);
@@ -274,11 +297,12 @@ async function buildSingleColumnResumePdf(data: ResumeData) {
       if (index < experienceEntries.length - 1) y -= 8;
       if (m.timeline) page.drawLine({ start: { x: railX, y: entryTopY - 3 }, end: { x: railX, y: y + 2 }, thickness: 1.4, color: c.line });
     });
+    customRows("experience");
     y -= 6;
   }
 
   const educationEntries = data.education.filter(eduHasContent);
-  if (educationEntries.length) {
+  if (!hs("education") && (educationEntries.length || hasCustom("education"))) {
     sectionHeading("Education");
     educationEntries.forEach((edu, index) => {
       ensure(28);
@@ -293,11 +317,12 @@ async function buildSingleColumnResumePdf(data: ResumeData) {
       y -= 4;
       if (m.timeline && index < educationEntries.length - 1) page.drawLine({ start: { x: railX, y: entryTopY - 3 }, end: { x: railX, y: y + 2 }, thickness: 1.4, color: c.line });
     });
+    customRows("education");
     y -= 2;
   }
 
   const projectEntries = data.projects.filter(projHasContent);
-  if (projectEntries.length) {
+  if (!hs("projects") && (projectEntries.length || hasCustom("projects"))) {
     sectionHeading("Projects");
     projectEntries.forEach((proj, index) => {
       ensure(24);
@@ -311,16 +336,26 @@ async function buildSingleColumnResumePdf(data: ResumeData) {
       y -= 4;
       if (m.timeline && index < projectEntries.length - 1) page.drawLine({ start: { x: railX, y: entryTopY - 3 }, end: { x: railX, y: y + 2 }, thickness: 1.4, color: c.line });
     });
+    customRows("projects");
     y -= 2;
   }
 
   const certEntries = data.certifications.filter(certHasContent);
-  if (certEntries.length) {
+  if (!hs("certifications") && (certEntries.length || hasCustom("certifications"))) {
     sectionHeading("Certifications");
     certEntries.forEach((cert) => {
       drawWrapped([cert.name, cert.issuer, cert.year].filter(Boolean).join(" - "), { size: m.bulletSize, leading: m.bulletSize * 1.45 });
     });
+    customRows("certifications");
   }
+
+  (data.customSections || []).forEach((section) => {
+    const fields = customFields.filter((field) => field.section === section.id && field.value.trim());
+    if (!fields.length) return;
+    y -= 6;
+    sectionHeading(section.title || "Additional Details");
+    fields.forEach((field) => drawWrapped(field.label ? `${field.label}: ${field.value}` : field.value, { size: m.bodySize, leading: m.bodySize * 1.45 }));
+  });
 
   const bytes = await pdf.save();
   return new Blob([bytes], { type: "application/pdf" });
@@ -444,37 +479,53 @@ async function buildSidebarResumePdf(data: ResumeData, mirrored = false) {
     sy -= 4;
   }
 
-  const contactParts = [data.email, data.phone, data.location, data.linkedin, data.website].map((s) => s.trim()).filter(Boolean);
-  if (contactParts.length) {
+  const customFields = data.customFields || [];
+  const hiddenFields = data.hiddenFields || [];
+  const hiddenSections = data.hiddenSections || [];
+  const hf = (key: string) => hiddenFields.includes(key);
+  const hs = (id: ResumeSectionId) => hiddenSections.includes(id);
+  const hasCustom = (section: string) => customFields.some((field) => field.section === section && field.value.trim());
+  const customLabelValues = (section: string) =>
+    customFields.filter((field) => field.section === section && field.value.trim()).map((field) => (field.label ? `${field.label}: ${field.value}` : field.value));
+
+  const contactParts = [hf("email") ? "" : data.email, hf("phone") ? "" : data.phone, hf("location") ? "" : data.location, hf("linkedin") ? "" : data.linkedin, hf("website") ? "" : data.website]
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (!hs("personal") && (contactParts.length || hasCustom("personal"))) {
     sidebarHeading("Contact");
     contactParts.forEach(drawSidebarWrapped);
+    customLabelValues("personal").forEach(drawSidebarWrapped);
     sy -= 10;
   }
 
-  const skillsList = data.skills.split(",").map((s) => s.trim()).filter(Boolean);
-  if (skillsList.length) {
+  const skillsList = (hf("skills") ? "" : data.skills).split(",").map((s) => s.trim()).filter(Boolean);
+  if (!hs("skills") && (skillsList.length || hasCustom("skills"))) {
     sidebarHeading("Skills");
     skillsList.forEach(drawSidebarWrapped);
+    customLabelValues("skills").forEach(drawSidebarWrapped);
   }
 
   // Main column: name, role, then the usual sections
-  page.drawText(safePdfText(data.fullName || "Your Name"), { x: mainX, y: my, size: 23, font: bold, color: mainText });
-  my -= 30;
-  if (data.role.trim()) {
-    page.drawText(safePdfText(data.role), { x: mainX, y: my, size: 12, font: regular, color: mainAccent });
-    my -= 28;
-  } else {
-    my -= 8;
+  if (!hs("personal")) {
+    page.drawText(safePdfText((hf("fullName") ? "" : data.fullName) || "Your Name"), { x: mainX, y: my, size: 23, font: bold, color: mainText });
+    my -= 30;
+    if (!hf("role") && data.role.trim()) {
+      page.drawText(safePdfText(data.role), { x: mainX, y: my, size: 12, font: regular, color: mainAccent });
+      my -= 28;
+    } else {
+      my -= 8;
+    }
   }
 
-  if (data.summary.trim()) {
+  if (!hs("summary") && (data.summary.trim() || hasCustom("summary"))) {
     mainSectionHeading("Profile");
-    drawMainWrapped(data.summary, { size: 10, leading: 14.5 });
+    if (data.summary.trim() && !hf("summary")) drawMainWrapped(data.summary, { size: 10, leading: 14.5 });
+    customLabelValues("summary").forEach((line) => drawMainWrapped(line, { size: 10, leading: 14.5 }));
     my -= 6;
   }
 
   const experienceEntries = data.experience.filter(expHasContent);
-  if (experienceEntries.length) {
+  if (!hs("experience") && (experienceEntries.length || hasCustom("experience"))) {
     mainSectionHeading("Experience");
     experienceEntries.forEach((exp, index) => {
       ensureMain(30);
@@ -489,11 +540,12 @@ async function buildSidebarResumePdf(data: ResumeData, mirrored = false) {
       });
       if (index < experienceEntries.length - 1) my -= 8;
     });
+    customLabelValues("experience").forEach((line) => drawMainWrapped(line, { size: 9.7, leading: 14 }));
     my -= 6;
   }
 
   const educationEntries = data.education.filter(eduHasContent);
-  if (educationEntries.length) {
+  if (!hs("education") && (educationEntries.length || hasCustom("education"))) {
     mainSectionHeading("Education");
     educationEntries.forEach((edu) => {
       ensureMain(28);
@@ -503,11 +555,12 @@ async function buildSidebarResumePdf(data: ResumeData, mirrored = false) {
       if (edu.score.trim()) drawMainWrapped(edu.score, { size: 9, color: mainMuted, leading: 13 });
       my -= 4;
     });
+    customLabelValues("education").forEach((line) => drawMainWrapped(line, { size: 9.7, leading: 14 }));
     my -= 2;
   }
 
   const projectEntries = data.projects.filter(projHasContent);
-  if (projectEntries.length) {
+  if (!hs("projects") && (projectEntries.length || hasCustom("projects"))) {
     mainSectionHeading("Projects");
     projectEntries.forEach((proj) => {
       ensureMain(24);
@@ -517,16 +570,26 @@ async function buildSidebarResumePdf(data: ResumeData, mirrored = false) {
       if (proj.link.trim()) drawMainWrapped(proj.link, { size: 9, color: mainMuted, leading: 13 });
       my -= 4;
     });
+    customLabelValues("projects").forEach((line) => drawMainWrapped(line, { size: 9.7, leading: 14 }));
     my -= 2;
   }
 
   const certEntries = data.certifications.filter(certHasContent);
-  if (certEntries.length) {
+  if (!hs("certifications") && (certEntries.length || hasCustom("certifications"))) {
     mainSectionHeading("Certifications");
     certEntries.forEach((cert) => {
       drawMainWrapped([cert.name, cert.issuer, cert.year].filter(Boolean).join(" - "), { size: 9.7, leading: 14 });
     });
+    customLabelValues("certifications").forEach((line) => drawMainWrapped(line, { size: 9.7, leading: 14 }));
   }
+
+  (data.customSections || []).forEach((section) => {
+    const fields = customLabelValues(section.id);
+    if (!fields.length) return;
+    my -= 6;
+    mainSectionHeading(section.title || "Additional Details");
+    fields.forEach((line) => drawMainWrapped(line, { size: 9.7, leading: 14 }));
+  });
 
   const bytes = await pdf.save();
   return new Blob([bytes], { type: "application/pdf" });
@@ -534,13 +597,19 @@ async function buildSidebarResumePdf(data: ResumeData, mirrored = false) {
 
 // Exported for reuse by other client-side pdf-lib builders (e.g. Biodata
 // Maker) - pure text-layout helpers, nothing resume-specific about them.
+//
+// Helvetica/Times (the standard fonts these builders embed) render WinAnsi,
+// which covers Latin-1 Supplement (U+00A0-U+00FF) directly - that's ×, °,
+// é, ñ, etc. Only the typographic punctuation outside that range (smart
+// quotes, en/em dash) needs an explicit ASCII fallback before the final
+// catch-all, which used to flatten all of it to "?".
 export function safePdfText(value: string) {
   return value
     .replace(/–|—/g, "-")
     .replace(/“|”/g, '"')
     .replace(/‘|’/g, "'")
     .replace(/•/g, "-")
-    .replace(/[^\x20-\x7E]/g, "?");
+    .replace(/[^\x20-\x7E -ÿ]/g, "?");
 }
 
 export function wrapPdfText(text: string, maxWidth: number, font: { widthOfTextAtSize(value: string, size: number): number }, size: number) {

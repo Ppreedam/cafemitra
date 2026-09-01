@@ -2,12 +2,14 @@
 
 import { useRef, useState } from "react";
 import { Upload, X } from "lucide-react";
-import { CropEditor, cropImage, DEFAULT_CROP_RECT, loadImage, type CropRect } from "../../CropEditor";
+import { CropEditor, cropImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, loadImage, PerspectiveCropEditor, warpPerspectiveCrop, type CropQuad, type CropRect } from "../../CropEditor";
 
 export default function PhotoUploadField({ photo, onChange }: { photo: string; onChange: (dataUrl: string) => void }) {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
   const [rect, setRect] = useState<CropRect>(DEFAULT_CROP_RECT);
+  const [quad, setQuad] = useState<CropQuad>(DEFAULT_CROP_QUAD);
+  const [cropMode, setCropMode] = useState<"straight" | "perspective">("perspective");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
 
@@ -20,6 +22,7 @@ export default function PhotoUploadField({ photo, onChange }: { photo: string; o
     reader.onload = () => {
       setPendingUrl(String(reader.result));
       setRect(DEFAULT_CROP_RECT);
+      setQuad(DEFAULT_CROP_QUAD);
     };
     reader.onerror = () => setError("Could not read that image. Please try another file.");
     reader.readAsDataURL(file);
@@ -30,7 +33,8 @@ export default function PhotoUploadField({ photo, onChange }: { photo: string; o
     setBusy(true);
     setError("");
     try {
-      const dataUrl = await cropAndSquarePhoto(pendingUrl, rect);
+      const croppedBlob = cropMode === "perspective" ? await warpPerspectiveCrop(pendingUrl, quad) : await cropImage(pendingUrl, rect);
+      const dataUrl = await squarePhoto(croppedBlob);
       onChange(dataUrl);
       setPendingUrl(null);
     } catch {
@@ -44,8 +48,24 @@ export default function PhotoUploadField({ photo, onChange }: { photo: string; o
     <div className="resbuild-photo-field">
       {pendingUrl ? (
         <div className="resbuild-photo-crop">
-          <CropEditor fileUrl={pendingUrl} rect={rect} onRectChange={setRect} />
-          <p className="resbuild-photo-hint">Drag to reposition, resize the box to frame your face. It will be saved as a square photo.</p>
+          <div className="crop-mode-toggle">
+            <button type="button" className={cropMode === "perspective" ? "active" : ""} onClick={() => setCropMode("perspective")}>
+              Perspective crop
+            </button>
+            <button type="button" className={cropMode === "straight" ? "active" : ""} onClick={() => setCropMode("straight")}>
+              Straight crop
+            </button>
+          </div>
+          {cropMode === "straight" ? (
+            <CropEditor fileUrl={pendingUrl} rect={rect} onRectChange={setRect} />
+          ) : (
+            <PerspectiveCropEditor fileUrl={pendingUrl} quad={quad} onQuadChange={setQuad} />
+          )}
+          <p className="resbuild-photo-hint">
+            {cropMode === "straight"
+              ? "Drag to reposition, resize the box to frame your face. It will be saved as a square photo."
+              : "Drag each corner onto the photo's actual edge - useful when it was taken at an angle. It will be saved as a square photo."}
+          </p>
           <div className="resbuild-photo-crop-actions">
             <button type="button" className="resbuild-btn-secondary" onClick={() => setPendingUrl(null)}>Cancel</button>
             <button type="button" className="resbuild-btn-primary" onClick={confirmCrop} disabled={busy}>{busy ? "Saving..." : "Save photo"}</button>
@@ -70,16 +90,15 @@ export default function PhotoUploadField({ photo, onChange }: { photo: string; o
   );
 }
 
-// Crops to exactly the user's selection, then places that (uncropped, at its
-// own aspect ratio) onto a square canvas - scaled to fit and centered, with
-// the surrounding area padded rather than trimmed. An earlier version
-// center-cropped the selection down to a square, which silently discarded
-// whichever edge (top/bottom or left/right) didn't fit - if someone dragged
-// a non-square box, part of what they'd deliberately framed just vanished.
-// Padding never loses any of the user's selection, only a plain square crop
-// (the common case - the default box is already square) needs no padding.
-async function cropAndSquarePhoto(fileUrl: string, rect: CropRect, size = 420) {
-  const croppedBlob = await cropImage(fileUrl, rect);
+// Places the cropped selection (uncropped, at its own aspect ratio) onto a
+// square canvas - scaled to fit and centered, with the surrounding area
+// padded rather than trimmed. An earlier version center-cropped the
+// selection down to a square, which silently discarded whichever edge
+// (top/bottom or left/right) didn't fit - if someone dragged a non-square
+// box, part of what they'd deliberately framed just vanished. Padding never
+// loses any of the user's selection, only a plain square crop (the common
+// case - the default box is already square) needs no padding.
+async function squarePhoto(croppedBlob: Blob, size = 420) {
   const croppedUrl = URL.createObjectURL(croppedBlob);
   try {
     const image = await loadImage(croppedUrl);

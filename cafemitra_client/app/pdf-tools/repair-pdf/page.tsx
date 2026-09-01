@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { Check, Download, Eye, FilePlus2, FileText, Gauge, ImagePlus, LoaderCircle, RotateCcw, ShieldCheck, Sparkles, Trash2, Wrench, X } from "lucide-react";
 import { DashboardShell } from "../../DashboardShell";
 import { PdfToolUpload } from "../PdfToolUpload";
+import { usePdfPasswordGate } from "../usePdfPasswordGate";
 import RepairSeoContent from "./RepairSeoContent";
 
 type RepairMode = "structure" | "enhance" | "scan";
@@ -12,13 +13,16 @@ type RepairItem = { id: string; file: File; thumbnail: string; pages: number; lo
 
 export default function RepairPdfPage() {
   const inputRef = useRef<HTMLInputElement>(null); const urls = useRef(new Set<string>());
+  const { gateFiles, modal: passwordModal } = usePdfPasswordGate();
   const [items, setItems] = useState<RepairItem[]>([]); const [mode, setMode] = useState<RepairMode>("structure");
   const [resolution, setResolution] = useState(144); const [contrast, setContrast] = useState(12); const [grayscale, setGrayscale] = useState(false);
   const [processing, setProcessing] = useState(false); const [zipBusy, setZipBusy] = useState(false); const [error, setError] = useState(""); const [previewId, setPreviewId] = useState<string | null>(null);
   useEffect(() => () => urls.current.forEach((url) => URL.revokeObjectURL(url)), []);
 
   async function addFiles(files: FileList) {
-    const selected = Array.from(files); const invalid = selected.find((file) => file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")); if (invalid) return setError(`${invalid.name} is not a PDF file.`);
+    const unlocked = await gateFiles(files);
+    if (!unlocked.length) return;
+    const selected = unlocked; const invalid = selected.find((file) => file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")); if (invalid) return setError(`${invalid.name} is not a PDF file.`);
     clearResults(); setError(""); const additions = selected.map((file) => ({ id: crypto.randomUUID(), file, thumbnail: "", pages: 0, loading: true, progress: 0 })); setItems((current) => [...current, ...additions]);
     await Promise.all(additions.map(async (item) => { try { const info = await readPreview(item.file); setItems((current) => current.map((entry) => entry.id === item.id ? { ...entry, ...info, loading: false } : entry)); } catch { setItems((current) => current.map((entry) => entry.id === item.id ? { ...entry, loading: false, failed: "Preview unavailable. Structural repair may still recover this file." } : entry)); } }));
   }
@@ -42,7 +46,7 @@ export default function RepairPdfPage() {
   async function downloadZip() { const ready = items.filter((item) => item.result); if (!ready.length) return; setZipBusy(true); const { default: JSZip } = await import("jszip"); const zip = new JSZip(); ready.forEach((item) => zip.file(repairedName(item.file.name), item.result!.blob)); const blob = await zip.generateAsync({ type: "blob" }); const url = URL.createObjectURL(blob); triggerDownload(url, "repetigo-repaired-pdfs.zip"); setTimeout(() => URL.revokeObjectURL(url), 1000); setZipBusy(false); }
   const ready = items.filter((item) => item.result).length; const previewItem = items.find((item) => item.id === previewId);
 
-  if (!items.length) return <DashboardShell activePath="/pdf-tools"><div className="dashboard repair-pdf-page"><RepairSeoContent /><PdfToolUpload title="Repair & enhance PDF" description="Rebuild damaged PDFs and improve the clarity of scanned document pages." icon={Wrench} inputRef={inputRef} onFiles={(files) => void addFiles(files)} buttonLabel="Select PDF files" headingLevel="h2" /></div></DashboardShell>;
+  if (!items.length) return <DashboardShell activePath="/pdf-tools"><div className="dashboard repair-pdf-page"><RepairSeoContent /><PdfToolUpload title="Repair & enhance PDF" description="Rebuild damaged PDFs and improve the clarity of scanned document pages." icon={Wrench} inputRef={inputRef} onFiles={(files) => void addFiles(files)} buttonLabel="Select PDF files" headingLevel="h2" />{passwordModal}</div></DashboardShell>;
   return <DashboardShell activePath="/pdf-tools"><div className="dashboard repair-pdf-page">
     <RepairSeoContent />
     <input ref={inputRef} hidden multiple type="file" accept="application/pdf,.pdf" onChange={(event) => { if (event.target.files?.length) void addFiles(event.target.files); event.target.value = ""; }} />
@@ -57,6 +61,7 @@ export default function RepairPdfPage() {
       <div className="repair-side-actions"><button className="repair-submit" type="button" disabled={processing || items.some((item) => item.loading)} onClick={repairAll}>{processing ? <LoaderCircle className="spin" size={19} /> : <Wrench size={19} />} {processing ? "Processing…" : mode === "structure" ? "Repair PDFs" : "Enhance PDFs"}</button><button className="repair-zip" type="button" disabled={!ready || processing || zipBusy} onClick={() => void downloadZip()}>{zipBusy ? <LoaderCircle className="spin" size={18} /> : <Download size={18} />} Download ZIP</button><button type="button" disabled={processing} onClick={reset}><RotateCcw size={16} /> Start over</button></div>
     </aside></div>{error ? <div className="profile-alert error repair-error">{error}</div> : null}
     {previewItem?.result ? <div className="repair-preview-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setPreviewId(null); }}><section><header><div><h2>Before and after preview</h2><p>{previewItem.file.name} · First page</p></div><button type="button" onClick={() => setPreviewId(null)}><X size={20} /></button></header><div><article><strong>Original</strong><img src={previewItem.thumbnail} alt="Original first page" /></article><article><strong>Repaired / enhanced</strong><img src={previewItem.result.preview} alt="Enhanced first page" /></article></div><footer><a href={previewItem.result.url} download={repairedName(previewItem.file.name)}><Download size={18} /> Download PDF</a></footer></section></div> : null}
+    {passwordModal}
   </div></DashboardShell>;
 }
 

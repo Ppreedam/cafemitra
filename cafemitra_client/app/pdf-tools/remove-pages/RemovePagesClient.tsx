@@ -6,6 +6,7 @@ import { ArrowLeft, Check, Download, FileText, LoaderCircle, RotateCcw, ShieldCh
 import { DashboardShell } from "../../DashboardShell";
 import { PdfToolUpload } from "../PdfToolUpload";
 import { RelatedToolSuggestions, ToolPromotionRail } from "../ToolDiscovery";
+import { usePdfPasswordGate } from "../usePdfPasswordGate";
 
 type PagePreview = { index: number; image: string };
 type RemoveResult = { blob: Blob; url: string; size: number };
@@ -23,6 +24,7 @@ export default function RemovePagesClient({
   uploadHeadingLevel = children ? "h2" : "h1",
 }: RemovePagesClientProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const { gateFiles, modal: passwordModal } = usePdfPasswordGate();
   const [file, setFile] = useState<File | null>(null);
   const [pages, setPages] = useState<PagePreview[]>([]);
   const [removed, setRemoved] = useState<Set<number>>(new Set());
@@ -37,7 +39,8 @@ export default function RemovePagesClient({
   useEffect(() => () => { if (result) URL.revokeObjectURL(result.url); }, [result]);
 
   async function chooseFile(files: FileList) {
-    const selected = files[0]; if (!selected) return;
+    const unlocked = await gateFiles(files);
+    const selected = unlocked[0]; if (!selected) return;
     if (selected.type !== "application/pdf" && !selected.name.toLowerCase().endsWith(".pdf")) return setError("Please select a PDF file.");
     clearResult(); setFile(selected); setPages([]); setRemoved(new Set()); setLoading(true); setError("");
     try { const previews = await renderPagePreviews(selected); setPages(previews); setRangeFrom(1); setRangeTo(previews.length); }
@@ -64,7 +67,7 @@ export default function RemovePagesClient({
     finally { setProcessing(false); }
   }
 
-  if (!file) return <DashboardShell activePath="/pdf-tools"><div className="dashboard remove-pages-page"><PdfToolUpload title={uploadTitle} description={uploadDescription} icon={Trash2} inputRef={inputRef} onFiles={(files) => void chooseFile(files)} multiple={false} buttonLabel="Select PDF file" headingLevel={uploadHeadingLevel} />{children}</div></DashboardShell>;
+  if (!file) return <DashboardShell activePath="/pdf-tools"><div className="dashboard remove-pages-page"><PdfToolUpload title={uploadTitle} description={uploadDescription} icon={Trash2} inputRef={inputRef} onFiles={(files) => void chooseFile(files)} multiple={false} buttonLabel="Select PDF file" headingLevel={uploadHeadingLevel} />{children}{passwordModal}</div></DashboardShell>;
 
   return <DashboardShell activePath="/pdf-tools"><div className="dashboard remove-pages-page">
     <input ref={inputRef} hidden type="file" accept="application/pdf,.pdf" onChange={(event) => { if (event.target.files?.length) void chooseFile(event.target.files); event.target.value = ""; }} />
@@ -80,7 +83,7 @@ export default function RemovePagesClient({
         <div className="remove-quick"><h3>Quick selection</h3><div><button type="button" onClick={() => selectPattern("odd")}>Odd pages</button><button type="button" onClick={() => selectPattern("even")}>Even pages</button><button type="button" onClick={() => setSelection(new Set())}><Undo2 size={15} /> Clear</button></div></div>
         <div className="remove-side-actions">{processing ? <div><span>Creating PDF… {progress}%</span><progress value={progress} max="100" /></div> : null}<button className="remove-submit" type="button" disabled={!removed.size || processing || loading} onClick={removePages}>{processing ? <LoaderCircle className="spin" size={19} /> : <Trash2 size={19} />} {processing ? "Removing pages…" : `Remove ${removed.size || "selected"} pages`}</button><button type="button" disabled={processing} onClick={reset}><RotateCcw size={16} /> Start over</button></div>
       </aside> : <ToolPromotionRail context="remove-pages-result" />}
-    </div>{error ? <div className="profile-alert error remove-error" role="alert">{error}</div> : null}{children}
+    </div>{error ? <div className="profile-alert error remove-error" role="alert">{error}</div> : null}{children}{passwordModal}
   </div></DashboardShell>;
 }
 

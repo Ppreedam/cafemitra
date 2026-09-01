@@ -133,6 +133,50 @@ class ShopProfile(models.Model):
         return self.shop_name or f"Shop for {self.user_id}"
 
 
+class UpiPayee(models.Model):
+    """A shop's saved UPI collection account (VPA + display name) for the
+    UPI QR Generator tool. A shop can save multiple - e.g. one VPA for the
+    front counter, one for a second branch - and switch between them when
+    generating a QR. Pure convenience/persistence; the tool itself has no
+    per-use backend cost (the QR is built client-side), so it is NOT wired
+    into ToolPricing.
+    """
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="upi_payees")
+    label = models.CharField(max_length=160)
+    vpa = models.CharField(max_length=120)
+    is_default = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-is_default", "-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.label} ({self.vpa})"
+
+
+class UpiQrRecord(models.Model):
+    """One generated UPI QR the shop chose to keep (not every QR generated -
+    only ones the user explicitly saves from the UPI QR Generator tool), so
+    they can reopen/reprint a past QR (e.g. a recurring fixed-amount QR)
+    without retyping the amount/note each time. Only the field values are
+    stored, not the rendered image - the QR/branded card is rebuilt
+    client-side from these on demand.
+    """
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="upi_qr_records")
+    label = models.CharField(max_length=160)
+    vpa = models.CharField(max_length=120)
+    amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    note = models.CharField(max_length=50, blank=True)
+    order_ref = models.CharField(max_length=60, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"{self.label} QR ({self.vpa})"
+
+
 class ContactMessage(models.Model):
     full_name = models.CharField(max_length=160)
     email = models.EmailField()

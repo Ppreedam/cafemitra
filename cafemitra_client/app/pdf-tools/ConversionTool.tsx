@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Archive, ArrowLeft, ArrowRight, Check, Download, FileImage, FileText, Image as ImageIcon, LoaderCircle, Plus, Presentation, RotateCw, ShieldCheck, Table2, Trash2, Upload, type LucideIcon } from "lucide-react";
 import { PdfToolUpload } from "./PdfToolUpload";
 import { RelatedToolSuggestions, ToolPromotionRail } from "./ToolDiscovery";
+import { usePdfPasswordGate } from "./usePdfPasswordGate";
 
 export type ConversionSlug = "jpg-to-pdf" | "word-to-pdf" | "powerpoint-to-pdf" | "excel-to-pdf" | "html-to-pdf" | "markdown-to-pdf" | "pdf-to-jpg" | "pdf-to-word" | "pdf-to-powerpoint" | "pdf-to-excel" | "pdf-to-pdfa";
 type Config = { title: string; description: string; icon: LucideIcon; accept: string; button: string; drop: string; multiple: boolean; action: string; output: string; note: string };
@@ -18,7 +19,7 @@ const configs: Record<ConversionSlug, Config> = {
   "excel-to-pdf": { title: "Excel to PDF", description: "Convert spreadsheet sheets into readable PDF pages.", icon: Table2, accept: ".xls,.xlsx,.csv,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", button: "Select spreadsheets", drop: "or drop Excel and CSV files here", multiple: true, action: "Convert to PDF", output: "PDF", note: "Cell values are preserved; very wide sheets wrap across the PDF." },
   "html-to-pdf": { title: "HTML to PDF", description: "Convert saved HTML documents into clean PDF files.", icon: FileText, accept: ".html,.htm,text/html", button: "Select HTML files", drop: "or drop HTML files here", multiple: true, action: "Convert to PDF", output: "PDF", note: "Readable page text is converted. Remote scripts and tracking are not executed." },
   "markdown-to-pdf": { title: "Markdown to PDF", description: "Convert Markdown documents into clean PDF files.", icon: FileText, accept: ".md,.markdown,text/markdown,text/plain", button: "Select Markdown files", drop: "or drop MD files here", multiple: true, action: "Convert to PDF", output: "PDF", note: "Markdown content is converted privately in your browser." },
-  "pdf-to-jpg": { title: "PDF to JPG", description: "Render every PDF page as a high-quality JPG image.", icon: ImageIcon, accept: "application/pdf,.pdf", button: "Select PDF files", drop: "or drop PDFs here", multiple: true, action: "Convert to JPG", output: "JPG", note: "Choose image quality and scale before converting." },
+  "pdf-to-jpg": { title: "PDF to JPG", description: "Render every PDF page as a high-quality JPG image.", icon: ImageIcon, accept: "application/pdf,.pdf", button: "Select PDF files", drop: "or drop PDFs here", multiple: true, action: "Convert to JPG", output: "JPG", note: "Choose the DPI and image quality before converting." },
   "pdf-to-word": { title: "PDF to Word", description: "Extract PDF text into editable DOCX documents.", icon: FileText, accept: "application/pdf,.pdf", button: "Select PDF files", drop: "or drop PDFs here", multiple: true, action: "Convert to Word", output: "DOCX", note: "Best for text PDFs. Scanned PDFs should use OCR first." },
   "pdf-to-powerpoint": { title: "PDF to PowerPoint", description: "Turn every PDF page into a presentation slide.", icon: Presentation, accept: "application/pdf,.pdf", button: "Select PDF files", drop: "or drop PDFs here", multiple: true, action: "Convert to PowerPoint", output: "PPTX", note: "Each page becomes a high-quality, layout-preserving slide image." },
   "pdf-to-excel": { title: "PDF to Excel", description: "Extract readable PDF text into an Excel workbook.", icon: Table2, accept: "application/pdf,.pdf", button: "Select PDF files", drop: "or drop PDFs here", multiple: true, action: "Convert to Excel", output: "XLSX", note: "Text rows are extracted per page. Use OCR first for scanned tables." },
@@ -37,16 +38,18 @@ type ConversionToolProps = {
 
 export default function ConversionTool({ slug, children, uploadTitle, uploadDescription, uploadHeadingLevel }: ConversionToolProps) {
   const config = configs[slug]; const inputRef = useRef<HTMLInputElement>(null);
+  const { gateFiles, modal: passwordModal } = usePdfPasswordGate();
   const [files, setFiles] = useState<File[]>([]); const [results, setResults] = useState<Result[]>([]);
   const [busy, setBusy] = useState(false); const [progress, setProgress] = useState(0); const [error, setError] = useState("");
-  const [quality, setQuality] = useState(88); const [orientation, setOrientation] = useState<"auto" | "portrait" | "landscape">("auto");
+  const [quality, setQuality] = useState(95); const [orientation, setOrientation] = useState<"auto" | "portrait" | "landscape">("auto");
+  const [dpi, setDpi] = useState(300);
   const isImageOutput = slug === "pdf-to-jpg"; const isImageInput = slug === "jpg-to-pdf";
   const totalSize = useMemo(() => files.reduce((sum, file) => sum + file.size, 0), [files]);
 
-  function add(selected: FileList) {
+  async function add(selected: FileList) {
     // FileList is live and becomes empty as soon as the file input is reset.
     // Snapshot it before scheduling React's asynchronous state update.
-    const additions = Array.from(selected);
+    const additions = await gateFiles(Array.from(selected));
     if (!additions.length) return;
     clearResults();
     setFiles((current) => config.multiple ? [...current, ...additions] : [additions[0]]);
@@ -58,16 +61,16 @@ export default function ConversionTool({ slug, children, uploadTitle, uploadDesc
     try {
       const made: Omit<Result, "url">[] = [];
       if (slug === "jpg-to-pdf") { made.push(await imagesToPdf(files, orientation)); setProgress(100); }
-      else for (let index = 0; index < files.length; index += 1) { const outputs = await convertFile(slug, files[index], { quality: quality / 100, orientation }); made.push(...outputs); setProgress(Math.round(((index + 1) / files.length) * 100)); }
+      else for (let index = 0; index < files.length; index += 1) { const outputs = await convertFile(slug, files[index], { quality: quality / 100, orientation, dpi }); made.push(...outputs); setProgress(Math.round(((index + 1) / files.length) * 100)); }
       setResults(made.map((item) => ({ ...item, url: URL.createObjectURL(item.blob) })));
     } catch (reason) { setError(reason instanceof Error ? reason.message : "This file could not be converted."); }
     finally { setBusy(false); }
   }
 
-  if (!files.length) return <>{children}<PdfToolUpload title={uploadTitle || config.title} description={uploadDescription || config.description} icon={config.icon} inputRef={inputRef} onFiles={add} accept={config.accept} multiple={config.multiple} buttonLabel={config.button} dropLabel={config.drop} headingLevel={uploadHeadingLevel || (children ? "h2" : "h1")} /></>;
+  if (!files.length) return <>{children}<PdfToolUpload title={uploadTitle || config.title} description={uploadDescription || config.description} icon={config.icon} inputRef={inputRef} onFiles={(selected) => void add(selected)} accept={config.accept} multiple={config.multiple} buttonLabel={config.button} dropLabel={config.drop} headingLevel={uploadHeadingLevel || (children ? "h2" : "h1")} />{passwordModal}</>;
   const Icon = config.icon;
   return <div className="conversion-page">
-    <input ref={inputRef} hidden type="file" accept={config.accept} multiple={config.multiple} onChange={(event) => { if (event.target.files?.length) add(event.target.files); event.target.value = ""; }} />
+    <input ref={inputRef} hidden type="file" accept={config.accept} multiple={config.multiple} onChange={(event) => { if (event.target.files?.length) void add(event.target.files); event.target.value = ""; }} />
     <div className="conversion-topline"><Link href="/pdf-tools"><ArrowLeft size={17} /> PDF Tools</Link><span><ShieldCheck size={16} /> Files stay in your browser</span></div>
     <div className="conversion-layout">
       <main className="conversion-main">
@@ -81,6 +84,7 @@ export default function ConversionTool({ slug, children, uploadTitle, uploadDesc
       </main>
       <aside className="conversion-sidebar">
         <div className="conversion-side-title"><span><Icon size={20} /></span><div><small>RepetiGo converter</small><h2>{config.title}</h2></div></div>
+        {isImageOutput ? <label className="conversion-control"><span>Resolution (DPI)</span><select value={dpi} onChange={(event) => setDpi(Number(event.target.value))}><option value={150}>150 DPI - Screen / web use</option><option value={200}>200 DPI - Standard</option><option value={300}>300 DPI - Print quality (recommended)</option><option value={600}>600 DPI - Maximum / archival</option></select></label> : null}
         {(isImageInput || isImageOutput) ? <label className="conversion-control"><span>Image quality <strong>{quality}%</strong></span><input type="range" min="55" max="100" value={quality} onChange={(event) => setQuality(Number(event.target.value))} /></label> : null}
         {isImageInput ? <div className="conversion-control"><span>Page orientation</span><div className="conversion-segmented">{(["auto", "portrait", "landscape"] as const).map((value) => <button className={orientation === value ? "active" : ""} type="button" key={value} onClick={() => setOrientation(value)}>{capitalize(value)}</button>)}</div></div> : null}
         <div className="conversion-note"><Check size={18} /><div><strong>{results.length ? "Conversion complete" : "Ready to convert"}</strong><p>{config.note}</p></div></div>
@@ -91,6 +95,7 @@ export default function ConversionTool({ slug, children, uploadTitle, uploadDesc
     </div>
     {results.length ? <ToolPromotionRail context={`${slug}-conversion`} /> : null}
     {children}
+    {passwordModal}
   </div>;
 }
 
@@ -98,9 +103,9 @@ function ConversionResults({ config, results, onDownloadAll }: { config: Config;
   return <section className="conversion-results"><div className="conversion-complete"><span><Check size={28} /></span><div><h2>Your {config.output} files are ready</h2><p>Converted privately in your browser.</p></div>{results.length > 1 ? <button type="button" onClick={onDownloadAll}><Download size={17} /> Download all</button> : null}</div><div className="conversion-result-grid">{results.map((result) => <article key={result.name}>{result.preview ? <img src={result.preview} alt="Converted page preview" /> : <div className="conversion-output-icon"><config.icon size={31} /></div>}<div><strong>{result.name}</strong><small>{result.detail} · {formatBytes(result.blob.size)}</small></div><a href={result.url} download={result.name}><Download size={17} /> Download</a></article>)}</div></section>;
 }
 
-async function convertFile(slug: ConversionSlug, file: File, options: { quality: number; orientation: "auto" | "portrait" | "landscape" }): Promise<Omit<Result, "url">[]> {
+async function convertFile(slug: ConversionSlug, file: File, options: { quality: number; orientation: "auto" | "portrait" | "landscape"; dpi: number }): Promise<Omit<Result, "url">[]> {
   if (slug === "jpg-to-pdf") return [await imagesToPdf([file], options.orientation)];
-  if (slug === "pdf-to-jpg") return pdfToJpg(file, options.quality);
+  if (slug === "pdf-to-jpg") return pdfToJpg(file, options.quality, options.dpi);
   if (slug === "word-to-pdf") return [await textSourceToPdf(file, await wordText(file))];
   if (slug === "powerpoint-to-pdf") return [await textSourceToPdf(file, await powerpointText(file), true)];
   if (slug === "excel-to-pdf") return [await textSourceToPdf(file, await excelText(file))];
@@ -119,9 +124,14 @@ async function imagesToPdf(files: File[], orientation: "auto" | "portrait" | "la
   const output = await pdf.save(); return makeResult(`${baseName(files[0].name)}${files.length > 1 ? "-combined" : ""}.pdf`, new Blob([output], { type: "application/pdf" }), `${files.length} PDF page${files.length > 1 ? "s" : ""}`);
 }
 
-async function pdfToJpg(file: File, quality: number) {
+// DPI is user-selectable (150-600, defaults to 300 - standard print
+// quality) via the sidebar dropdown; a PDF page's native unit is 72
+// points/inch, so scale = dpi/72 renders the canvas at exactly that pixel
+// density. The quality slider separately controls JPEG compression.
+async function pdfToJpg(file: File, quality: number, dpi: number) {
+  const scale = dpi / 72;
   const pdf = await loadPdf(file); const outputs: Omit<Result, "url">[] = [];
-  for (let number = 1; number <= pdf.numPages; number += 1) { const page = await pdf.getPage(number); const viewport = page.getViewport({ scale: 1.65 }); const canvas = document.createElement("canvas"); canvas.width = Math.ceil(viewport.width); canvas.height = Math.ceil(viewport.height); const context = canvas.getContext("2d"); if (!context) throw new Error("Image renderer is unavailable."); await page.render({ canvas, canvasContext: context, viewport }).promise; const blob = await canvasBlob(canvas, "image/jpeg", quality); const preview = canvas.toDataURL("image/jpeg", .55); outputs.push(makeResult(`${baseName(file.name)}-page-${number}.jpg`, blob, `Page ${number} of ${pdf.numPages}`, preview)); }
+  for (let number = 1; number <= pdf.numPages; number += 1) { const page = await pdf.getPage(number); const viewport = page.getViewport({ scale }); const canvas = document.createElement("canvas"); canvas.width = Math.ceil(viewport.width); canvas.height = Math.ceil(viewport.height); const context = canvas.getContext("2d"); if (!context) throw new Error("Image renderer is unavailable."); await page.render({ canvas, canvasContext: context, viewport }).promise; const blob = await canvasBlob(canvas, "image/jpeg", quality); const preview = canvas.toDataURL("image/jpeg", .55); outputs.push(makeResult(`${baseName(file.name)}-page-${number}.jpg`, blob, `Page ${number} of ${pdf.numPages}`, preview)); }
   return outputs;
 }
 
@@ -139,7 +149,7 @@ async function powerpointText(file: File) { const { default: JSZip } = await imp
 function htmlText(source: string) { const doc = new DOMParser().parseFromString(source, "text/html"); doc.querySelectorAll("script,style,noscript").forEach((node) => node.remove()); return doc.body.innerText || doc.body.textContent || ""; }
 
 async function pdfToWord(file: File) { const { Document, Packer, Paragraph, HeadingLevel, PageBreak } = await import("docx"); const pages = await extractPdfPages(file); const children = pages.flatMap((text, index) => [new Paragraph({ text: `${file.name} · Page ${index + 1}`, heading: HeadingLevel.HEADING_2 }), ...text.split(/\n/).filter(Boolean).map((line) => new Paragraph(line)), ...(index < pages.length - 1 ? [new Paragraph({ children: [new PageBreak()] })] : [])]); const document = new Document({ sections: [{ children }] }); const blob = await Packer.toBlob(document); return makeResult(`${baseName(file.name)}.docx`, blob, `${pages.length} page${pages.length > 1 ? "s" : ""} extracted`); }
-async function pdfToPowerPoint(file: File) { const pptxModule = await import("pptxgenjs"); const PptxGenJS = pptxModule.default; const pptx = new PptxGenJS(); pptx.layout = "LAYOUT_WIDE"; pptx.author = "RepetiGo"; const pdf = await loadPdf(file); for (let number = 1; number <= pdf.numPages; number += 1) { const page = await pdf.getPage(number); const viewport = page.getViewport({ scale: 1.45 }); const canvas = document.createElement("canvas"); canvas.width = Math.ceil(viewport.width); canvas.height = Math.ceil(viewport.height); const context = canvas.getContext("2d"); if (!context) throw new Error("Slide renderer unavailable."); await page.render({ canvas, canvasContext: context, viewport }).promise; const slide = pptx.addSlide(); slide.background = { color: "F4F7FC" }; slide.addImage({ data: canvas.toDataURL("image/jpeg", .9), x: .35, y: .2, w: 12.63, h: 7.1, sizing: "contain" as never }); } const blob = await pptx.write({ outputType: "blob" }) as Blob; return makeResult(`${baseName(file.name)}.pptx`, blob, `${pdf.numPages} slide${pdf.numPages > 1 ? "s" : ""}`); }
+async function pdfToPowerPoint(file: File) { const pptxModule = await import("pptxgenjs"); const PptxGenJS = pptxModule.default; const pptx = new PptxGenJS(); pptx.layout = "LAYOUT_WIDE"; pptx.author = "RepetiGo"; const pdf = await loadPdf(file); for (let number = 1; number <= pdf.numPages; number += 1) { const page = await pdf.getPage(number); const viewport = page.getViewport({ scale: 2.8 }); const canvas = document.createElement("canvas"); canvas.width = Math.ceil(viewport.width); canvas.height = Math.ceil(viewport.height); const context = canvas.getContext("2d"); if (!context) throw new Error("Slide renderer unavailable."); await page.render({ canvas, canvasContext: context, viewport }).promise; const slide = pptx.addSlide(); slide.background = { color: "F4F7FC" }; slide.addImage({ data: canvas.toDataURL("image/jpeg", .95), x: .35, y: .2, w: 12.63, h: 7.1, sizing: "contain" as never }); } const blob = await pptx.write({ outputType: "blob" }) as Blob; return makeResult(`${baseName(file.name)}.pptx`, blob, `${pdf.numPages} slide${pdf.numPages > 1 ? "s" : ""}`); }
 async function pdfToExcel(file: File) { const XLSX = await import("xlsx"); const pages = await extractPdfPages(file); const book = XLSX.utils.book_new(); pages.forEach((text, index) => { const rows = text.split(/\n/).filter(Boolean).map((line) => line.split(/\s{2,}|\t/)); XLSX.utils.book_append_sheet(book, XLSX.utils.aoa_to_sheet(rows.length ? rows : [[""]]), `Page ${index + 1}`); }); const bytes = XLSX.write(book, { type: "array", bookType: "xlsx" }); return makeResult(`${baseName(file.name)}.xlsx`, new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" }), `${pages.length} worksheet${pages.length > 1 ? "s" : ""}`); }
 async function pdfToArchive(file: File) { const { PDFDocument } = await import("pdf-lib"); const source = await PDFDocument.load(await file.arrayBuffer()); const pdf = await PDFDocument.create(); const pages = await pdf.copyPages(source, source.getPageIndices()); pages.forEach((page) => pdf.addPage(page)); pdf.setTitle(source.getTitle() || baseName(file.name)); pdf.setAuthor(source.getAuthor() || "RepetiGo archival conversion"); pdf.setProducer("RepetiGo browser PDF tools"); pdf.setCreator("RepetiGo"); pdf.setCreationDate(source.getCreationDate() || new Date()); pdf.setModificationDate(new Date()); const bytes = await pdf.save({ useObjectStreams: false, addDefaultPage: false }); return makeResult(`${baseName(file.name)}-archival.pdf`, new Blob([bytes], { type: "application/pdf" }), `${pages.length} normalized page${pages.length > 1 ? "s" : ""}`); }
 

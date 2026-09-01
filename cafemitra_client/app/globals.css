@@ -7522,6 +7522,21 @@ img.profile-photo {
   cursor: not-allowed;
 }
 
+.confirm-dialog-icon-success {
+  background: linear-gradient(135deg, #16a34a, #22c55e);
+  box-shadow: 0 10px 24px rgba(22, 163, 74, 0.28);
+}
+
+.confirm-dialog-actions-single {
+  grid-template-columns: 1fr;
+}
+
+.confirm-dialog-actions button.confirm-dialog-primary {
+  border-color: transparent;
+  color: #fff;
+  background: var(--brand-hero-gradient);
+}
+
 .pdf-password-window {
   display: grid;
   justify-items: center;
@@ -7690,6 +7705,32 @@ img.profile-photo {
   background: #f7f8fc;
 }
 
+.crop-mode-toggle {
+  grid-column: 1 / -1;
+  display: inline-flex;
+  gap: 6px;
+}
+
+.crop-mode-toggle button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 34px;
+  border: 1px solid var(--soft-line, #d9deeb);
+  border-radius: 8px;
+  padding: 0 14px;
+  color: #18214d;
+  background: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.crop-mode-toggle button.active {
+  border-color: transparent;
+  background: var(--brand-hero-gradient);
+  color: #fff;
+}
+
 .crop-stage {
   position: relative;
   aspect-ratio: 1 / 1;
@@ -7731,6 +7772,27 @@ img.profile-photo {
 .crop-selection::after {
   inset: 66.666% 0 auto;
 }
+
+/* Full-length invisible grab strip along each edge - lets a side be resized
+   by dragging anywhere along that line, not just the small round handle. */
+.crop-edge {
+  position: absolute;
+  touch-action: none;
+}
+.crop-edge-n, .crop-edge-s {
+  left: 8px;
+  right: 8px;
+  height: 18px;
+}
+.crop-edge-n { top: -9px; cursor: ns-resize; }
+.crop-edge-s { bottom: -9px; cursor: ns-resize; }
+.crop-edge-e, .crop-edge-w {
+  top: 8px;
+  bottom: 8px;
+  width: 18px;
+}
+.crop-edge-w { left: -9px; cursor: ew-resize; }
+.crop-edge-e { right: -9px; cursor: ew-resize; }
 
 .crop-handle {
   position: absolute;
@@ -7792,6 +7854,63 @@ img.profile-photo {
   top: 50%;
   transform: translateY(-50%);
   cursor: ew-resize;
+}
+
+/* Perspective (4-corner) crop mode - see PerspectiveCropEditor in CropEditor.tsx. */
+.crop-perspective-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.crop-perspective-svg line {
+  pointer-events: stroke;
+  cursor: pointer;
+}
+.crop-quad-handle {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #2563eb;
+  box-shadow: 0 6px 14px rgba(9, 15, 42, 0.35);
+  transform: translate(-50%, -50%);
+  cursor: grab;
+  touch-action: none;
+}
+.crop-quad-handle:active {
+  cursor: grabbing;
+  background: #1d4ed8;
+}
+
+/* Contains the perspective stage by BOTH width and height, preserving the
+   source photo's true aspect ratio - without this, a tall/portrait photo's
+   stage (sized to the photo's own ratio, not a fixed landscape card ratio)
+   could grow taller than the modal, pushing the bottom corner handles
+   outside it with no way to reach them. */
+.crop-stage-perspective-frame {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: min(58vh, 520px);
+  overflow: hidden;
+}
+.crop-stage-perspective {
+  width: auto;
+  height: auto;
+  max-width: 100%;
+  /* Absolute cap, not a percentage: in some page layouts (e.g. a grid with
+     place-items:center) the flex ancestor chain up to the frame never
+     becomes "definite", so a percentage max-height here silently resolves
+     to none and the stage renders at the source photo's full natural size,
+     pushing corner handles off-screen. Mirroring the frame's own absolute
+     cap keeps this self-contained regardless of ancestor definiteness. */
+  max-height: min(58vh, 520px);
 }
 
 .crop-controls {
@@ -8238,9 +8357,12 @@ img.profile-photo {
   gap: 5px;
   margin-top: 8px;
   padding: 5px 10px;
+  border: 0;
   border-radius: 999px;
   background: rgba(87, 64, 237, 0.1);
+  color: inherit;
   font-size: 0.78rem;
+  cursor: pointer;
 }
 
 .orders-mark-paid-link {
@@ -15923,6 +16045,29 @@ img.profile-photo {
 .merge-result-download { background: linear-gradient(100deg, #258554, #42aa72); }
 .merge-reset-button { display: flex; align-items: center; justify-content: center; gap: 7px; border: 0; padding: 8px; color: #717995; background: transparent; font: inherit; font-size: .72rem; font-weight: 750; cursor: pointer; }
 .merge-error { position: fixed; z-index: 50; right: 24px; bottom: 24px; max-width: 430px; }
+/* Password prompt shown by usePdfPasswordGate.tsx whenever a tool detects an
+   encrypted upload - sits above every other PDF-tool modal (all at z-index
+   100-110) since it blocks processing until unlocked. */
+.pdf-password-backdrop { position: fixed; z-index: 150; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(22,26,46,.72); backdrop-filter: blur(4px); }
+.pdf-password-modal { width: min(380px, 100%); border-radius: 16px; background: #fff; box-shadow: 0 30px 80px rgba(0,0,0,.3); }
+.pdf-password-modal header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding: 20px 20px 16px; border-bottom: 1px solid #e4e6ee; }
+.pdf-password-modal header > div:first-child { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.pdf-password-icon { display: grid; place-items: center; flex: 0 0 auto; width: 36px; height: 36px; border-radius: 999px; background: #fff1e6; color: #c2410c; }
+.pdf-password-modal header strong { display: block; color: #252c47; font-size: .95rem; }
+.pdf-password-modal header span { display: block; overflow: hidden; max-width: 220px; color: #777f99; font-size: .78rem; text-overflow: ellipsis; white-space: nowrap; }
+.pdf-password-modal header button { flex: 0 0 auto; display: grid; place-items: center; width: 30px; height: 30px; border: 0; border-radius: 8px; background: transparent; color: #777f99; cursor: pointer; }
+.pdf-password-modal header button:hover { background: #f1f2f8; }
+.pdf-password-body { display: grid; gap: 10px; padding: 18px 20px 20px; }
+.pdf-password-body p { margin: 0; color: #4b5171; font-size: .82rem; line-height: 1.5; }
+.pdf-password-body input { border: 1.5px solid #e0e2ee; border-radius: 9px; padding: 11px 13px; font: inherit; font-size: .88rem; }
+.pdf-password-body input:focus { outline: none; border-color: #6b5bff; }
+.pdf-password-error { color: #c0362c; font-size: .78rem; font-weight: 600; }
+.pdf-password-actions { display: flex; gap: 10px; margin-top: 4px; }
+.pdf-password-actions button { flex: 1; min-height: 42px; border-radius: 9px; font: inherit; font-size: .85rem; font-weight: 700; cursor: pointer; }
+.pdf-password-cancel { border: 1px solid #e0e2ee; background: #fff; color: #252c47; }
+.pdf-password-cancel:hover { background: #f7f7fb; }
+.pdf-password-submit { border: 0; background: var(--brand-hero-gradient); color: #fff; }
+.pdf-password-submit:disabled { opacity: .6; cursor: not-allowed; }
 .pdf-preview-backdrop { position: fixed; z-index: 100; inset: 0; display: grid; place-items: center; padding: 20px; background: rgba(22,26,46,.72); backdrop-filter: blur(4px); }
 .pdf-preview-modal { display: grid; grid-template-rows: auto minmax(0,1fr) auto; width: min(1050px, 96vw); height: min(760px, 92vh); overflow: hidden; border-radius: 16px; background: #fff; box-shadow: 0 30px 80px rgba(0,0,0,.3); }
 .pdf-preview-modal header, .pdf-preview-modal footer { display: flex; align-items: center; gap: 12px; padding: 16px 20px; }
@@ -16464,6 +16609,7 @@ img.profile-photo {
 .ocr-topline { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 14px; color: #687694; font-size: .7rem; font-weight: 800; }
 .ocr-topline a,.ocr-topline span { display: inline-flex; align-items: center; gap: 6px; }.ocr-topline a{color:#2563eb}
 .ocr-studio { display: grid; grid-template-columns: minmax(0,1fr) 330px; gap: 18px; min-height: calc(100vh - 145px); }
+.ocr-studio.ocr-result-view { grid-template-columns: minmax(0,1fr) minmax(320px,1fr); }
 .ocr-canvas { min-width: 0; min-height: 650px; border: 1px solid #dce5f2; border-radius: 15px; padding: 19px; background: rgba(255,255,255,.72); }
 .ocr-canvas > header { display:flex;align-items:center;justify-content:space-between;gap:15px;border-bottom:1px solid #e3e9f2;padding-bottom:14px}.ocr-canvas h1{margin:0 0 4px;color:#0d1748;font-size:1.35rem}.ocr-canvas header p{overflow:hidden;max-width:680px;margin:0;color:#71809b;font-size:.68rem;text-overflow:ellipsis;white-space:nowrap}.ocr-canvas>header button{border:1px solid #cbd9ec;border-radius:8px;padding:9px 12px;color:#2456a6;background:#fff;font:inherit;font-size:.67rem;font-weight:800;cursor:pointer}
 .ocr-loading{display:flex;align-items:center;flex-direction:column;justify-content:center;min-height:520px;gap:10px;color:#2563eb;font-size:.72rem;font-weight:800}
@@ -16474,9 +16620,13 @@ img.profile-photo {
 .ocr-selection strong{display:block;margin-bottom:8px;color:#34415f;font-size:.68rem}.ocr-selection>div{display:flex;gap:7px}.ocr-selection button{border:1px solid #cbd9ec;border-radius:7px;padding:7px 10px;color:#2456a6;background:#fff;font:inherit;font-size:.61rem;font-weight:800;cursor:pointer}
 .ocr-info{display:flex;align-items:flex-start;gap:8px;margin-top:16px;border-radius:9px;padding:11px;color:#526b91;background:#eff6ff;font-size:.58rem;line-height:1.45}.ocr-info svg{flex:0 0 auto;color:#2563eb}
 .ocr-side-actions{display:grid;gap:8px;margin-top:auto;padding-top:17px}.ocr-side-actions>div{color:#52617f;font-size:.59rem;font-weight:800}.ocr-side-actions progress{width:100%;margin-top:5px;accent-color:#2563eb}.ocr-submit{display:flex;align-items:center;justify-content:center;gap:7px;border:0;border-radius:10px;padding:14px;color:#fff;background:linear-gradient(135deg,#2563eb,#1d4ed8);box-shadow:0 10px 22px rgba(37,99,235,.2);font:inherit;font-size:.72rem;font-weight:850;cursor:pointer}.ocr-submit:disabled{opacity:.45;cursor:not-allowed}.ocr-side-actions>button:last-child{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;padding:6px;color:#687694;background:transparent;font:inherit;font-size:.61rem;font-weight:800;cursor:pointer}
-.ocr-success{display:flex;align-items:center;flex-direction:column;justify-content:center;min-height:550px;text-align:center}.ocr-success>span{display:grid;place-items:center;width:62px;height:62px;border-radius:50%;color:#fff;background:#0d9488}.ocr-success h2{margin:14px 0 5px;color:#0d1748}.ocr-success>p{margin:0 0 18px;color:#71809b;font-size:.72rem}.ocr-success>div:not(.ocr-result-tools):not(.ocr-related){display:grid;grid-template-columns:36px minmax(0,1fr);align-items:center;gap:9px;min-width:min(420px,100%);border:1px solid #dce5f2;border-radius:9px;padding:11px;color:#2563eb;text-align:left}.ocr-success strong,.ocr-success small{display:block}.ocr-success strong{color:#2d3855;font-size:.69rem}.ocr-success small{color:#7b87a1;font-size:.61rem}.ocr-success>a{display:inline-flex;align-items:center;gap:7px;margin-top:14px;border-radius:9px;padding:13px 20px;color:#fff;background:#2563eb;font-size:.72rem;font-weight:850}.ocr-result-tools{display:flex;gap:7px;margin-top:9px}.ocr-result-tools button{display:inline-flex;align-items:center;gap:5px;border:1px solid #cbd9ec;border-radius:7px;padding:8px 10px;color:#2456a6;background:#fff;font:inherit;font-size:.61rem;font-weight:800;cursor:pointer}.ocr-success footer{display:flex;gap:8px;margin-top:11px}.ocr-success footer button{border:0;padding:7px;color:#53617e;background:transparent;font:inherit;font-size:.61rem;font-weight:800;cursor:pointer}
-.ocr-error{position:fixed;z-index:80;right:20px;bottom:20px;max-width:430px}.ocr-text-backdrop{position:fixed;z-index:120;inset:0;display:grid;place-items:center;padding:18px;background:rgba(13,23,72,.72);backdrop-filter:blur(4px)}.ocr-text-backdrop>section{display:grid;grid-template-rows:auto minmax(0,1fr) auto;width:min(850px,96vw);height:min(700px,92vh);overflow:hidden;border-radius:15px;background:#fff}.ocr-text-backdrop header{display:flex;align-items:center;justify-content:space-between;padding:15px 18px}.ocr-text-backdrop h2{margin:0 0 3px;color:#0d1748;font-size:.95rem}.ocr-text-backdrop header p{margin:0;color:#71809b;font-size:.64rem}.ocr-text-backdrop header button{display:grid;place-items:center;width:33px;height:33px;border:0;border-radius:8px;color:#53617e;background:#eef2f7;cursor:pointer}.ocr-text-backdrop pre{overflow:auto;margin:0;border-top:1px solid #e2e8f1;border-bottom:1px solid #e2e8f1;padding:18px;color:#273250;background:#f8faff;font:400 .72rem/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap}.ocr-text-backdrop footer{display:flex;justify-content:flex-end;padding:12px 17px}.ocr-text-backdrop footer button{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:8px;padding:10px 13px;color:#fff;background:#2563eb;font:inherit;font-size:.65rem;font-weight:850;cursor:pointer}
-@media(max-width:980px){.ocr-studio{grid-template-columns:1fr}.ocr-side-panel{position:static;height:auto;min-height:0}.ocr-side-actions{margin-top:22px}}@media(max-width:620px){.ocr-topline,.ocr-canvas>header{align-items:flex-start;flex-direction:column}.ocr-page-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ocr-page-grid img{height:150px}.ocr-success footer{align-items:stretch;flex-direction:column}}
+.ocr-pdf-preview{height:calc(100vh - 260px);min-height:520px;margin-top:14px;border:1px solid #dce5f2;border-radius:10px;overflow:hidden;background:#eef2f7}.ocr-pdf-preview iframe{display:block;width:100%;height:100%;border:0}
+.ocr-text-panel{position:sticky;top:16px;display:flex;flex-direction:column;height:calc(100vh - 145px);min-height:650px;border:1px solid #dce5f2;border-radius:15px;padding:21px;background:#fff;box-shadow:0 10px 28px rgba(25,35,82,.06)}.ocr-text-panel h2{margin:8px 0 5px;color:#0d1748;font-size:1.5rem}.ocr-text-panel>div:first-child p{margin:0;color:#71809b;font-size:.66rem}
+.ocr-text-scroll{flex:1;min-height:0;overflow-y:auto;margin-top:15px;border:1px solid #e2e8f1;border-radius:10px;padding:14px;background:#f8faff}.ocr-text-scroll pre{margin:0;color:#273250;font:400 .72rem/1.65 ui-monospace,SFMono-Regular,Consolas,monospace;white-space:pre-wrap;word-break:break-word}
+.ocr-text-actions{display:flex;gap:8px;margin-top:14px}.ocr-text-actions a,.ocr-text-actions button{display:inline-flex;align-items:center;justify-content:center;gap:6px;flex:1;border:1px solid #cbd9ec;border-radius:8px;padding:10px;color:#2456a6;background:#fff;font:inherit;font-size:.65rem;font-weight:800;cursor:pointer;text-decoration:none}.ocr-text-actions a:first-child{border-color:transparent;color:#fff;background:linear-gradient(135deg,#2563eb,#1d4ed8)}
+.ocr-text-panel>footer{display:flex;gap:8px;margin-top:11px}.ocr-text-panel>footer button{border:0;padding:7px;color:#53617e;background:transparent;font:inherit;font-size:.61rem;font-weight:800;cursor:pointer}
+.ocr-error{position:fixed;z-index:80;right:20px;bottom:20px;max-width:430px}
+@media(max-width:980px){.ocr-studio{grid-template-columns:1fr}.ocr-side-panel,.ocr-text-panel{position:static;height:auto;min-height:0}.ocr-side-actions{margin-top:22px}.ocr-pdf-preview{height:60vh}}@media(max-width:620px){.ocr-topline,.ocr-canvas>header{align-items:flex-start;flex-direction:column}.ocr-page-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.ocr-page-grid img{height:150px}.ocr-text-actions{flex-direction:column}}
 
 .ocr-promotion{position:sticky;top:16px;display:flex;flex-direction:column;min-height:calc(100vh - 145px);border:1px solid #dce5f2;border-radius:15px;padding:25px 22px;overflow:hidden;background:radial-gradient(circle at 85% 8%,rgba(22,161,189,.14),transparent 28%),linear-gradient(180deg,#fff 0%,#f2f7ff 100%);box-shadow:0 10px 28px rgba(25,35,82,.06)}.ocr-promotion::after{content:"";position:absolute;right:-55px;bottom:-55px;width:180px;height:180px;border:28px solid rgba(37,99,235,.06);border-radius:50%;pointer-events:none}.ocr-promo-mark{display:grid;place-items:center;width:52px;height:52px;margin-bottom:16px;border-radius:15px;color:#fff;background:linear-gradient(135deg,#2563eb,#16a1bd);box-shadow:0 12px 24px rgba(37,99,235,.2)}.ocr-promotion h2{margin:9px 0;color:#0d1748;font-size:1.35rem;line-height:1.15}.ocr-promotion>p{margin:0;color:#61708d;font-size:.69rem;line-height:1.6}.ocr-promotion ul{display:grid;gap:9px;margin:20px 0;padding:0;list-style:none}.ocr-promotion li{display:flex;align-items:center;gap:7px;color:#445473;font-size:.65rem;font-weight:750}.ocr-promotion li svg{color:#0d9488}.ocr-promo-stat{border:1px solid #cfe0f5;border-radius:10px;padding:12px;color:#174ea6;background:rgba(239,246,255,.84)}.ocr-promo-stat strong,.ocr-promo-stat span{display:block}.ocr-promo-stat strong{font-size:.7rem}.ocr-promo-stat span{margin-top:4px;color:#66799d;font-size:.59rem;line-height:1.45}.ocr-promotion>a{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:7px;margin-top:auto;border-radius:9px;padding:12px;color:#fff;background:#2563eb;font-size:.7rem;font-weight:850}.ocr-promotion>small{position:relative;z-index:1;margin-top:9px;color:#7a87a1;font-size:.54rem;line-height:1.4;text-align:center}
 .ocr-related{width:min(720px,100%);margin-top:24px;border-top:1px solid #e0e7f1;padding-top:16px;text-align:left}.ocr-related>header{display:flex;align-items:flex-end;justify-content:space-between;gap:12px}.ocr-related header strong{color:#0d1748;font-size:.75rem}.ocr-related header small{margin-top:3px;color:#7a87a1;font-size:.57rem}.ocr-related header>a{display:inline-flex;align-items:center;gap:4px;color:#2563eb;font-size:.59rem;font-weight:850}.ocr-related>div{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-top:10px}.ocr-related>div>a{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:8px;border:1px solid #dce5f2;border-radius:9px;padding:8px;background:#fff;transition:.15s ease}.ocr-related>div>a:hover{border-color:#b9cff0;background:#eff6ff;transform:translateY(-1px)}.ocr-related>div>a>span{display:grid;place-items:center;width:34px;height:34px;border-radius:8px;color:#2563eb;background:#eaf2ff}.ocr-related>div>a strong{font-size:.64rem}.ocr-related>div>a small{margin-top:2px;font-size:.54rem}.ocr-related>div>a>svg{color:#8290aa}
@@ -16809,6 +16959,7 @@ img.profile-photo {
 .conversion-control { display: grid; gap: 12px; padding: 15px; border: 1px solid #d8e3f4; border-radius: 13px; background: #f8faff; color: #263b68; font-size: 13px; font-weight: 700; }
 .conversion-control > span { display: flex; justify-content: space-between; gap: 10px; }
 .conversion-control input { width: 100%; accent-color: #2862ea; }
+.conversion-control select { width: 100%; border: 1px solid #d8e3f4; border-radius: 7px; padding: 9px; color: #263b68; background: #fff; font: inherit; font-weight: 600; }
 .conversion-segmented { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
 .conversion-segmented button { min-height: 34px; border: 1px solid #d5dfef; border-radius: 8px; background: #fff; color: #637493; cursor: pointer; text-transform: capitalize; }
 .conversion-segmented button.active { border-color: #2862ea; background: #eaf1ff; color: #1853b7; font-weight: 800; }
@@ -17403,6 +17554,9 @@ img.profile-photo {
 .resbuild-section h2 { margin: 0 0 14px; color: var(--ink); font-size: 15px; }
 .resbuild-section-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 14px; }
 .resbuild-section-head h2 { margin: 0; }
+.resbuild-section-title-input { min-width: 0; flex: 1; border: 0; border-bottom: 1px dashed var(--line); padding: 2px 0 4px; background: transparent; color: var(--ink); font: inherit; font-size: 15px; font-weight: 700; }
+.resbuild-section-title-input:focus { outline: none; border-bottom-color: var(--brand-blue); }
+.resbuild-section-title-input::placeholder { color: var(--muted); font-weight: 600; }
 .resbuild-template-toggle { display: inline-flex; align-items: center; gap: 6px; border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px; background: var(--mist); color: var(--brand-blue); font-size: 12.5px; font-weight: 800; cursor: pointer; }
 .resbuild-template-toggle:hover { border-color: var(--brand-blue); background: #eff6ff; }
 .resbuild-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 14px; }
@@ -17416,8 +17570,24 @@ img.profile-photo {
 .resbuild-entry-head strong { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .04em; }
 .resbuild-icon-btn { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border: 1px solid var(--line); border-radius: 7px; background: #fff; color: #be123c; cursor: pointer; }
 .resbuild-icon-btn:hover { background: #fff1f2; }
+.resbuild-icon-btn:disabled { opacity: .3; cursor: not-allowed; background: #fff; }
+.resbuild-icon-btn:disabled:hover { background: #fff; }
+/* Armed state - a field or the section itself is selected, so this icon
+   will actually remove something if clicked. */
+.resbuild-icon-btn-active { border-color: #be123c; box-shadow: 0 0 0 3px rgba(190, 18, 60, 0.12); }
 .resbuild-add-btn { display: inline-flex; align-items: center; gap: 8px; width: 100%; justify-content: center; border: 1.5px dashed var(--brand-blue); border-radius: 8px; padding: 10px; background: #fff; color: var(--brand-blue); font-size: 13.5px; font-weight: 700; cursor: pointer; }
 .resbuild-add-btn:hover { background: #eff6ff; }
+
+.resbuild-section-head { cursor: pointer; }
+.resbuild-section-head h2 { cursor: pointer; border-radius: 6px; padding: 2px 6px; margin-left: -6px; }
+.resbuild-section-title-selected { background: #fff1f2; color: #be123c; outline: 1.5px dashed #be123c; }
+.resbuild-field { cursor: pointer; border-radius: 8px; padding: 4px; margin: -4px; transition: background-color .12s, box-shadow .12s; }
+.resbuild-field-selected { background: #fff1f2; box-shadow: 0 0 0 1.5px #be123c; }
+.resbuild-entry { cursor: pointer; }
+.resbuild-entry-selected { border-color: #be123c; box-shadow: 0 0 0 1.5px #be123c; background: #fff1f2; }
+.resbuild-restore-banner { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 9px 14px; border: 1px dashed var(--brand-blue); border-radius: 9px; background: #eff6ff; color: var(--ink); font-size: 12.5px; }
+.resbuild-restore-banner button { border: 0; background: none; color: var(--brand-blue); font-weight: 700; font-size: 12.5px; cursor: pointer; padding: 0; }
+.resbuild-restore-banner button:hover { text-decoration: underline; }
 .resbuild-checkbox-row { display: flex; align-items: center; gap: 8px; align-self: end; font-size: 13px; font-weight: 600; color: var(--ink); }
 .resbuild-checkbox-row input { width: auto; }
 
@@ -17570,6 +17740,578 @@ img.profile-photo {
 /* Simple: grayscale, no colored accents, general-purpose (non-matrimonial) use */
 .biodata-tpl-simple.biodata-page section h2 { color: #111827; border-bottom-color: #d1d5db; }
 .biodata-tpl-simple.biodata-page .biodata-header-tag { color: var(--muted); }
+
+/* Royal: festive maroon & gold matrimonial biodata, centered header, decorative
+   double-border frame (via nested inset box-shadows on the page itself, no
+   extra wrapper element needed) - the classic Indian shaadi-biodata look. */
+.biodata-tpl-royal.biodata-page {
+  padding: 42px 40px;
+  background: #fdf8ee;
+  font-family: Georgia, "Times New Roman", serif;
+  border: 2px solid #c9a227;
+  box-shadow: inset 0 0 0 6px #fdf8ee, inset 0 0 0 7px #7a1f2b;
+}
+.biodata-tpl-royal.biodata-page .biodata-header {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.biodata-tpl-royal.biodata-page .biodata-header::after {
+  content: "";
+  display: block;
+  width: 150px;
+  height: 2px;
+  margin-top: 10px;
+  background: linear-gradient(90deg, transparent, #c9a227 20%, #c9a227 80%, transparent);
+}
+.biodata-tpl-royal.biodata-page .biodata-photo {
+  width: 118px;
+  height: 118px;
+  border-radius: 50%;
+  border: 3px solid #c9a227;
+  background: #fff8e7;
+  box-shadow: 0 0 0 4px #fdf8ee, 0 0 0 5px rgba(122, 31, 43, 0.35);
+}
+.biodata-tpl-royal.biodata-page .biodata-header-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.biodata-tpl-royal.biodata-page .biodata-header-copy h1 {
+  color: #7a1f2b;
+  font-family: var(--font-baloo), Georgia, serif;
+  font-size: 30px;
+  letter-spacing: 0.01em;
+}
+.biodata-tpl-royal.biodata-page .biodata-header-tag {
+  color: #a3790f;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 12px;
+}
+.biodata-tpl-royal.biodata-page section {
+  text-align: center;
+}
+.biodata-tpl-royal.biodata-page section h2 {
+  position: relative;
+  margin: 0 auto 16px;
+  padding-bottom: 10px;
+  color: #a3790f;
+  font-family: var(--font-baloo), Georgia, serif;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  border-bottom: none;
+}
+.biodata-tpl-royal.biodata-page section h2::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  width: 64px;
+  height: 2px;
+  transform: translateX(-50%);
+  background: linear-gradient(90deg, transparent, #c9a227, transparent);
+}
+.biodata-tpl-royal.biodata-page .biodata-row {
+  justify-content: center;
+  text-align: left;
+}
+.biodata-tpl-royal.biodata-page .biodata-row-label { flex: 0 0 150px; color: #8c6239; }
+.biodata-tpl-royal.biodata-page .biodata-row-value { flex: 0 1 260px; color: #3b2418; }
+.biodata-tpl-royal.biodata-page .biodata-freetext { color: #3b2418; }
+
+/* Shubh Vivah: devotional Hindu matrimonial biodata - toran-style top/bottom
+   valance and diamond side bands (all pure CSS gradients, no image assets),
+   a "Shree Ganeshay Namah" header line injected via ::before content, and a
+   two-column body using CSS multi-column (the header spans both columns). */
+.biodata-tpl-shubh.biodata-page {
+  position: relative;
+  padding: 58px 34px 50px;
+  background:
+    repeating-linear-gradient(45deg, #7a1f2b 0 5px, #c9a227 5px 10px) left/12px 100% no-repeat,
+    repeating-linear-gradient(45deg, #7a1f2b 0 5px, #c9a227 5px 10px) right/12px 100% no-repeat,
+    #fdf6e9;
+  border: 2px solid #c9a227;
+  border-radius: 6px;
+  column-count: 2;
+  column-gap: 26px;
+}
+.biodata-tpl-shubh.biodata-page::before,
+.biodata-tpl-shubh.biodata-page::after {
+  content: "";
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  height: 22px;
+  background:
+    radial-gradient(circle at 10px 0, transparent 11px, #7a1f2b 12px) top / 20px 22px repeat-x,
+    linear-gradient(#c9a227, #c9a227) top / 100% 4px no-repeat;
+}
+.biodata-tpl-shubh.biodata-page::before { top: 0; }
+.biodata-tpl-shubh.biodata-page::after { bottom: 0; transform: scaleY(-1); }
+.biodata-tpl-shubh.biodata-page .biodata-header {
+  column-span: all;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  margin-bottom: 18px;
+}
+.biodata-tpl-shubh.biodata-page .biodata-header::before {
+  content: "\5350   || Shree Ganeshay Namah ||   \5350";
+  display: block;
+  margin-bottom: 6px;
+  color: #7a1f2b;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+}
+.biodata-tpl-shubh.biodata-page .biodata-header::after {
+  content: "\25CF";
+  display: block;
+  margin-top: 2px;
+  color: #a3241f;
+  font-size: 10px;
+}
+.biodata-tpl-royal.biodata-page .biodata-photo,
+.biodata-tpl-shubh.biodata-page .biodata-photo {
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  border: 3px solid #c9a227;
+  background: #fff8e7;
+  box-shadow: 0 0 0 4px #fdf8ee, 0 0 0 5px rgba(122, 31, 43, 0.35);
+}
+.biodata-tpl-shubh.biodata-page .biodata-header-copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.biodata-tpl-shubh.biodata-page .biodata-header-copy h1 {
+  color: #7a1f2b;
+  font-family: var(--font-baloo), Georgia, serif;
+  font-size: 22px;
+  letter-spacing: 0.02em;
+}
+.biodata-tpl-shubh.biodata-page .biodata-header-tag {
+  display: none;
+}
+.biodata-tpl-shubh.biodata-page section {
+  break-inside: avoid;
+  margin-bottom: 16px;
+}
+.biodata-tpl-shubh.biodata-page section h2 {
+  position: relative;
+  margin: 0 0 10px;
+  padding: 0 0 6px 16px;
+  color: #7a1f2b;
+  font-family: var(--font-baloo), Georgia, serif;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  border-bottom: 1px dashed #c9a227;
+}
+.biodata-tpl-shubh.biodata-page section h2::before {
+  content: "\2756";
+  position: absolute;
+  left: 0;
+  color: #c9a227;
+}
+.biodata-tpl-shubh.biodata-page .biodata-row {
+  padding: 3px 4px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+.biodata-tpl-shubh.biodata-page .biodata-row:nth-child(even) {
+  background: rgba(201, 162, 39, 0.1);
+}
+.biodata-tpl-shubh.biodata-page .biodata-row-label {
+  flex: 0 0 92px;
+  color: #7a1f2b;
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+.biodata-tpl-shubh.biodata-page .biodata-row-label::after {
+  content: ":";
+  margin-left: 3px;
+  color: #c9a227;
+}
+.biodata-tpl-shubh.biodata-page .biodata-row-value { color: #3b2418; }
+.biodata-tpl-shubh.biodata-page .biodata-freetext { color: #3b2418; font-size: 12px; }
+
+/* Heritage / Krishna / Marriage / Indigo: four more devotional, single-column
+   matrimonial layouts sharing the same structure (circular emblem badge,
+   invocation subtitle, photo, colon-style rows, bulleted headings, a small
+   bottom ornament) - only colors, border treatment, and the invocation text
+   differ per template. Shared rules first, then each template's palette. */
+.biodata-tpl-heritage.biodata-page,
+.biodata-tpl-krishna.biodata-page,
+.biodata-tpl-marriage.biodata-page,
+.biodata-tpl-indigo.biodata-page {
+  position: relative;
+  padding: 46px 34px 40px;
+}
+.biodata-tpl-heritage.biodata-page .biodata-header,
+.biodata-tpl-krishna.biodata-page .biodata-header,
+.biodata-tpl-marriage.biodata-page .biodata-header,
+.biodata-tpl-indigo.biodata-page .biodata-header {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+.biodata-tpl-heritage.biodata-page .biodata-header::before,
+.biodata-tpl-krishna.biodata-page .biodata-header::before,
+.biodata-tpl-marriage.biodata-page .biodata-header::before,
+.biodata-tpl-indigo.biodata-page .biodata-header::before {
+  content: "";
+  order: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 18px;
+}
+.biodata-tpl-heritage.biodata-page .biodata-header::after,
+.biodata-tpl-krishna.biodata-page .biodata-header::after,
+.biodata-tpl-marriage.biodata-page .biodata-header::after,
+.biodata-tpl-indigo.biodata-page .biodata-header::after {
+  order: 2;
+  display: block;
+  font-weight: 800;
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+}
+.biodata-tpl-heritage.biodata-page .biodata-photo,
+.biodata-tpl-krishna.biodata-page .biodata-photo,
+.biodata-tpl-marriage.biodata-page .biodata-photo,
+.biodata-tpl-indigo.biodata-page .biodata-photo {
+  order: 3;
+}
+.biodata-tpl-heritage.biodata-page .biodata-header-copy,
+.biodata-tpl-krishna.biodata-page .biodata-header-copy,
+.biodata-tpl-marriage.biodata-page .biodata-header-copy,
+.biodata-tpl-indigo.biodata-page .biodata-header-copy {
+  order: 4;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.biodata-tpl-heritage.biodata-page .biodata-header-copy h1,
+.biodata-tpl-krishna.biodata-page .biodata-header-copy h1,
+.biodata-tpl-marriage.biodata-page .biodata-header-copy h1,
+.biodata-tpl-indigo.biodata-page .biodata-header-copy h1 {
+  font-family: var(--font-baloo), Georgia, serif;
+  font-size: 21px;
+}
+.biodata-tpl-heritage.biodata-page .biodata-header-tag,
+.biodata-tpl-krishna.biodata-page .biodata-header-tag,
+.biodata-tpl-marriage.biodata-page .biodata-header-tag,
+.biodata-tpl-indigo.biodata-page .biodata-header-tag {
+  display: none;
+}
+.biodata-tpl-heritage.biodata-page section h2,
+.biodata-tpl-krishna.biodata-page section h2,
+.biodata-tpl-marriage.biodata-page section h2,
+.biodata-tpl-indigo.biodata-page section h2 {
+  position: relative;
+  text-align: left;
+  font-family: var(--font-baloo), Georgia, serif;
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  padding: 0 0 6px 16px;
+  margin: 0 0 10px;
+}
+.biodata-tpl-heritage.biodata-page section h2::before,
+.biodata-tpl-krishna.biodata-page section h2::before,
+.biodata-tpl-marriage.biodata-page section h2::before,
+.biodata-tpl-indigo.biodata-page section h2::before {
+  content: "\25CF";
+  position: absolute;
+  left: 0;
+  top: -1px;
+  font-size: 9px;
+}
+.biodata-tpl-heritage.biodata-page .biodata-row,
+.biodata-tpl-krishna.biodata-page .biodata-row,
+.biodata-tpl-marriage.biodata-page .biodata-row,
+.biodata-tpl-indigo.biodata-page .biodata-row {
+  padding: 3px 4px;
+  border-radius: 4px;
+}
+.biodata-tpl-heritage.biodata-page .biodata-row-label,
+.biodata-tpl-krishna.biodata-page .biodata-row-label,
+.biodata-tpl-marriage.biodata-page .biodata-row-label,
+.biodata-tpl-indigo.biodata-page .biodata-row-label {
+  flex: 0 0 150px;
+  font-weight: 700;
+}
+.biodata-tpl-heritage.biodata-page .biodata-row-label::after,
+.biodata-tpl-krishna.biodata-page .biodata-row-label::after,
+.biodata-tpl-marriage.biodata-page .biodata-row-label::after,
+.biodata-tpl-indigo.biodata-page .biodata-row-label::after {
+  content: ":";
+  margin-left: 6px;
+}
+.biodata-tpl-heritage.biodata-page::after,
+.biodata-tpl-krishna.biodata-page::after,
+.biodata-tpl-marriage.biodata-page::after,
+.biodata-tpl-indigo.biodata-page::after {
+  content: "\25C6";
+  display: block;
+  margin-top: 22px;
+  text-align: center;
+  font-size: 13px;
+}
+
+/* Heritage: wood-brown double-border frame, gold emblem, square-framed photo */
+.biodata-tpl-heritage.biodata-page {
+  background: #fdf7ee;
+  border: 10px solid #4a2c17;
+  border-radius: 4px;
+  box-shadow: inset 0 0 0 4px #fdf7ee, inset 0 0 0 6px #b8891f;
+}
+.biodata-tpl-heritage.biodata-page .biodata-header::before {
+  background: radial-gradient(circle at 35% 30%, #eecd7c, #b8891f 65%, #8a660f);
+  box-shadow: 0 0 0 3px #fdf7ee, 0 0 0 4px #b8891f;
+}
+.biodata-tpl-heritage.biodata-page .biodata-header::after { content: "|| Ganeshaya Namah ||"; color: #4a2c17; }
+.biodata-tpl-heritage.biodata-page .biodata-header-copy h1 { color: #4a2c17; }
+.biodata-tpl-heritage.biodata-page .biodata-photo {
+  width: 96px;
+  height: 112px;
+  border-radius: 10px;
+  border: 3px solid #b8891f;
+  background: #fff8e7;
+  box-shadow: 0 0 0 3px #fdf7ee, 0 0 0 4px rgba(74, 44, 23, 0.4);
+}
+.biodata-tpl-heritage.biodata-page section h2 { color: #4a2c17; border-bottom: 1px solid #d8b978; }
+.biodata-tpl-heritage.biodata-page section h2::before { color: #b8891f; }
+.biodata-tpl-heritage.biodata-page .biodata-row:nth-child(even) { background: rgba(184, 137, 31, 0.1); }
+.biodata-tpl-heritage.biodata-page .biodata-row-label { color: #4a2c17; }
+.biodata-tpl-heritage.biodata-page .biodata-row-label::after { color: #b8891f; }
+.biodata-tpl-heritage.biodata-page .biodata-row-value { color: #3b2418; }
+.biodata-tpl-heritage.biodata-page .biodata-freetext { color: #3b2418; }
+.biodata-tpl-heritage.biodata-page::after { color: #b8891f; }
+
+/* Krishna: cream background, maroon & gold, small corner ornaments */
+.biodata-tpl-krishna.biodata-page {
+  background: #fbf3e3;
+  border: 2px solid #8a2432;
+  border-radius: 6px;
+}
+.biodata-tpl-krishna.biodata-page::before {
+  content: "";
+  position: absolute;
+  inset: 10px;
+  border: 1px solid #c9a227;
+  border-radius: 4px;
+  pointer-events: none;
+  background:
+    radial-gradient(circle, #8a2432 0 3px, transparent 4px) 0 0 / 22px 22px no-repeat,
+    radial-gradient(circle, #8a2432 0 3px, transparent 4px) 100% 0 / 22px 22px no-repeat,
+    radial-gradient(circle, #8a2432 0 3px, transparent 4px) 0 100% / 22px 22px no-repeat,
+    radial-gradient(circle, #8a2432 0 3px, transparent 4px) 100% 100% / 22px 22px no-repeat;
+}
+.biodata-tpl-krishna.biodata-page .biodata-header::before {
+  content: "\0950";
+  color: #fff;
+  background: radial-gradient(circle at 35% 30%, #b45465, #8a2432 65%, #6b1a26);
+  box-shadow: 0 0 0 3px #fbf3e3, 0 0 0 4px #c9a227;
+}
+.biodata-tpl-krishna.biodata-page .biodata-header::after { content: "|| Shree Krishnaya Namah ||"; color: #8a2432; }
+.biodata-tpl-krishna.biodata-page .biodata-header-copy h1 { color: #8a2432; }
+.biodata-tpl-krishna.biodata-page .biodata-photo {
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  border: 3px solid #c9a227;
+  background: #fff8e7;
+  box-shadow: 0 0 0 3px #fbf3e3, 0 0 0 4px rgba(138, 36, 50, 0.35);
+}
+.biodata-tpl-krishna.biodata-page section h2 { color: #8a2432; border-bottom: 1px solid #e3c98a; }
+.biodata-tpl-krishna.biodata-page section h2::before { color: #c9a227; }
+.biodata-tpl-krishna.biodata-page .biodata-row:nth-child(even) { background: rgba(201, 162, 39, 0.1); }
+.biodata-tpl-krishna.biodata-page .biodata-row-label { color: #8a2432; }
+.biodata-tpl-krishna.biodata-page .biodata-row-label::after { color: #c9a227; }
+.biodata-tpl-krishna.biodata-page .biodata-row-value { color: #3a2418; }
+.biodata-tpl-krishna.biodata-page .biodata-freetext { color: #3a2418; }
+.biodata-tpl-krishna.biodata-page::after { color: #c9a227; }
+
+/* Marriage: tan background, green & maroon, "Marriage Biodata" title line */
+.biodata-tpl-marriage.biodata-page {
+  background: #f6f1e2;
+  border: 2px solid #2e6b3e;
+  border-radius: 6px;
+}
+.biodata-tpl-marriage.biodata-page::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 10px;
+  height: 24px;
+  background: repeating-linear-gradient(-45deg, #2e6b3e 0 4px, transparent 4px 9px);
+  opacity: 0.5;
+  pointer-events: none;
+}
+.biodata-tpl-marriage.biodata-page .biodata-header::before {
+  content: "\0950";
+  color: #fff;
+  background: radial-gradient(circle at 35% 30%, #4d8f5f, #2e6b3e 65%, #1f4d2b);
+  box-shadow: 0 0 0 3px #f6f1e2, 0 0 0 4px #b8891f;
+}
+.biodata-tpl-marriage.biodata-page .biodata-header::after {
+  content: "Marriage Biodata\A || Shree Ganeshay Namah ||";
+  white-space: pre-line;
+  line-height: 1.55;
+  color: #8a2432;
+}
+.biodata-tpl-marriage.biodata-page .biodata-header-copy h1 { color: #2e6b3e; }
+.biodata-tpl-marriage.biodata-page .biodata-photo {
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  border: 3px solid #2e6b3e;
+  background: #fff;
+  box-shadow: 0 0 0 3px #f6f1e2, 0 0 0 4px rgba(46, 107, 62, 0.3);
+}
+.biodata-tpl-marriage.biodata-page section h2 { color: #2e6b3e; border-bottom: 1px solid #b7d2b9; }
+.biodata-tpl-marriage.biodata-page section h2::before { color: #8a2432; }
+.biodata-tpl-marriage.biodata-page .biodata-row:nth-child(even) { background: rgba(46, 107, 62, 0.08); }
+.biodata-tpl-marriage.biodata-page .biodata-row-label { color: #8a2432; }
+.biodata-tpl-marriage.biodata-page .biodata-row-label::after { color: #2e6b3e; }
+.biodata-tpl-marriage.biodata-page .biodata-row-value { color: #2b2f26; }
+.biodata-tpl-marriage.biodata-page .biodata-freetext { color: #2b2f26; }
+.biodata-tpl-marriage.biodata-page::after { color: #2e6b3e; }
+
+/* Indigo: deep blue background, gold striped border band, gold-on-blue text */
+.biodata-tpl-indigo.biodata-page {
+  background:
+    repeating-linear-gradient(45deg, #d4af37 0 4px, #142a52 4px 8px) top / 100% 14px no-repeat,
+    repeating-linear-gradient(45deg, #d4af37 0 4px, #142a52 4px 8px) bottom / 100% 14px no-repeat,
+    repeating-linear-gradient(45deg, #d4af37 0 4px, #142a52 4px 8px) left / 14px 100% no-repeat,
+    repeating-linear-gradient(45deg, #d4af37 0 4px, #142a52 4px 8px) right / 14px 100% no-repeat,
+    #142a52;
+  border: 2px solid #d4af37;
+  border-radius: 6px;
+}
+.biodata-tpl-indigo.biodata-page .biodata-header::before {
+  content: "\0950";
+  color: #142a52;
+  background: radial-gradient(circle at 35% 30%, #f0d675, #d4af37 65%, #a9860b);
+  box-shadow: 0 0 0 3px #142a52, 0 0 0 4px #d4af37;
+}
+.biodata-tpl-indigo.biodata-page .biodata-header::after { content: "|| Namo Buddhay ||"; color: #d4af37; }
+.biodata-tpl-indigo.biodata-page .biodata-header-copy h1 { color: #f5e6b8; }
+.biodata-tpl-indigo.biodata-page .biodata-photo {
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  border: 3px solid #d4af37;
+  background: #1c3661;
+  box-shadow: 0 0 0 3px #142a52, 0 0 0 4px rgba(212, 175, 55, 0.5);
+}
+.biodata-tpl-indigo.biodata-page section h2 { color: #f0d675; border-bottom: 1px solid rgba(212, 175, 55, 0.4); }
+.biodata-tpl-indigo.biodata-page section h2::before { color: #d4af37; }
+.biodata-tpl-indigo.biodata-page .biodata-row:nth-child(even) { background: rgba(212, 175, 55, 0.1); }
+.biodata-tpl-indigo.biodata-page .biodata-row-label { color: #f0d675; }
+.biodata-tpl-indigo.biodata-page .biodata-row-label::after { color: #d4af37; }
+.biodata-tpl-indigo.biodata-page .biodata-row-value { color: #e7ecf5; }
+.biodata-tpl-indigo.biodata-page .biodata-freetext { color: #e7ecf5; }
+.biodata-tpl-indigo.biodata-page::after { color: #d4af37; }
+
+/* Red & Beige: uses the actual illustrated Ganesha page background from
+   public/Red Beige Traditional Marriage Biodata Document/ (page 1 has the
+   header/corner artwork + "BIODATA" pill baked in already) instead of a
+   CSS-drawn frame - content is written on top of it. The header element is
+   repurposed to hold just the photo, absolutely positioned into the gap next
+   to the rows (the name/tag text it normally carries is hidden and Full Name
+   shows as a regular row instead, matching the source design). */
+/* Stacks the two real pages this template can render (see
+   RedBeigePaginatedPreview in BiodataPreview.tsx) with a visible gap between
+   them, mirroring how the two-page PDF looks. */
+.biodata-page-stack { display: flex; flex-direction: column; gap: 24px; }
+
+.biodata-tpl-redbeige.biodata-page {
+  position: relative;
+  aspect-ratio: 1414 / 2000;
+  background-image: url("/Red%20Beige%20Traditional%20Marriage%20Biodata%20Document/Red%20Beige%20Traditional%20Marriage%20Biodata%20page1.jpg");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+  background-color: #fdf8ef;
+  /* Vertical padding percentages resolve against the element's WIDTH per the
+     CSS spec (not height), so these are width-relative values chosen to clear
+     the pill/emblem art baked into the background image at this fixed
+     aspect-ratio - not the raw fraction of page height they'd visually cover. */
+  padding: 34% 8% 11%;
+  border-radius: 0;
+}
+/* Continuation page - page2.jpg has no header art, so it only needs the
+   same plain margin the left/right padding already uses, not the top
+   reserve that clears page1's Ganesha/BIODATA header. */
+.biodata-tpl-redbeige.biodata-page.biodata-page-cont {
+  background-image: url("/Red%20Beige%20Traditional%20Marriage%20Biodata%20Document/Red%20Beige%20Traditional%20Marriage%20Biodata%20page2.jpg");
+  padding-top: 8%;
+}
+.biodata-tpl-redbeige.biodata-page .biodata-header {
+  position: absolute;
+  top: 23%;
+  right: 8%;
+  width: 27%;
+  display: block;
+}
+.biodata-tpl-redbeige.biodata-page .biodata-header-copy { display: none; }
+.biodata-tpl-redbeige.biodata-page .biodata-photo {
+  width: 100%;
+  height: auto;
+  aspect-ratio: 4 / 5;
+  border: 3px solid #8a1620;
+  border-radius: 3px;
+  background: #fff;
+}
+/* Explicit classes rather than :first-of-type/:nth-of-type - the preview
+   component wraps each section in a keyed div for pagination measurement,
+   which would break positional selectors. The photo box sits beside Personal
+   Details AND Education & Occupation, so both need the narrowed gutter; on
+   the continuation page there's no photo, so the gutter is dropped there. */
+.biodata-tpl-redbeige.biodata-page:not(.biodata-page-cont) .biodata-section-personal,
+.biodata-tpl-redbeige.biodata-page:not(.biodata-page-cont) .biodata-section-education {
+  padding-right: 34%;
+}
+.biodata-tpl-redbeige.biodata-page .biodata-section-personal h2 {
+  display: none;
+}
+.biodata-tpl-redbeige.biodata-page section h2 {
+  display: inline-block;
+  margin: 0 0 12px;
+  padding: 7px 22px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #9c1c24, #6d0f14);
+  color: #f6ead0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  border-bottom: 0;
+}
+.biodata-tpl-redbeige.biodata-page .biodata-row-label {
+  flex: 0 0 140px;
+  color: #7a1015;
+  font-weight: 700;
+}
+.biodata-tpl-redbeige.biodata-page .biodata-row-label::after {
+  content: ":";
+  margin-left: 6px;
+  color: #7a1015;
+}
+.biodata-tpl-redbeige.biodata-page .biodata-row-value { color: #2b2015; }
+.biodata-tpl-redbeige.biodata-page .biodata-freetext { color: #2b2015; }
 
 /* Photo upload field */
 .resbuild-photo-field { display: grid; gap: 10px; }
@@ -18454,5 +19196,792 @@ img.profile-photo {
   .idcard-preview {
     flex-direction: column;
     align-items: center;
+  }
+}
+
+/* Photo Print Sheet */
+
+.pps-queue-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.pps-queue-item {
+  display: flex;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px;
+  background: #fff;
+}
+
+.pps-queue-thumb {
+  position: relative;
+  flex: 0 0 64px;
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f2f4fa;
+  border: 1px solid var(--soft-line);
+}
+
+.pps-queue-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pps-queue-thumb-preview {
+  position: absolute;
+  right: 3px;
+  top: 3px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 1px solid rgba(217, 222, 235, 0.9);
+  border-radius: 999px;
+  color: #111a44;
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 4px 10px rgba(25, 35, 82, 0.18);
+  cursor: pointer;
+}
+
+.pps-queue-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.pps-size-chip {
+  border: 1px solid #bfdbfe;
+  border-radius: 999px;
+  padding: 5px 12px;
+  background: rgba(37, 99, 235, 0.08);
+  color: #2563eb;
+  font-weight: 700;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.pps-count-stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--soft-line);
+  border-radius: 999px;
+  padding: 3px 6px;
+}
+
+.pps-count-stepper button {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: none;
+  border-radius: 999px;
+  background: #f2f4fa;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.pps-count-stepper button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pps-count-stepper span {
+  min-width: 18px;
+  text-align: center;
+  font-weight: 800;
+  font-size: 0.86rem;
+}
+
+.pps-queue-actions {
+  display: inline-flex;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.pps-queue-actions button {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--soft-line);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.pps-queue-actions button.danger {
+  color: #c7354d;
+  border-color: #f3d7dd;
+  background: rgba(233, 84, 106, 0.08);
+}
+
+.pps-queue-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pps-size-editor {
+  flex: 1 0 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 4px;
+  padding: 10px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  background: #f8f9fd;
+}
+
+.pps-size-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.pps-size-presets button {
+  border: 1px solid var(--soft-line);
+  border-radius: 999px;
+  padding: 5px 11px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pps-size-presets button.active {
+  border-color: #2563eb;
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.pps-size-custom {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.pps-size-custom label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.74rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.pps-size-custom input {
+  border: 1px solid var(--soft-line);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 0.84rem;
+}
+
+.pps-size-done {
+  align-self: flex-end;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 14px;
+  background: var(--ink);
+  color: #fff;
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pps-add-upload-compact {
+  min-height: unset;
+  padding: 16px;
+}
+
+.pps-clear-queue {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  border: none;
+  background: none;
+  color: #c7354d;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pps-preview-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pps-live-toggle {
+  border: 1px solid var(--soft-line);
+  border-radius: 999px;
+  padding: 5px 12px;
+  background: #fff;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.pps-live-toggle.active {
+  border-color: #16b978;
+  color: #0a8f5e;
+  background: rgba(22, 185, 120, 0.1);
+}
+
+.pps-preview-stage {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 420px;
+  padding: 20px;
+  border-radius: 10px;
+  background: #1c2440;
+}
+
+.pps-paper {
+  position: relative;
+  height: 100%;
+  max-height: 100%;
+  width: auto;
+  max-width: 100%;
+  background: #fff;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
+}
+
+.pps-paper-empty {
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.pps-tile {
+  position: absolute;
+  overflow: hidden;
+  border: 1px solid rgba(13, 23, 72, 0.18);
+  background: #fff;
+}
+
+.pps-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pps-paper-badge {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  border-radius: 6px;
+  padding: 3px 9px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.pps-page-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.pps-page-nav button {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--soft-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.pps-page-nav button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pps-controls {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--soft-line);
+}
+
+.pps-controls-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.pps-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pps-field > span {
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.pps-field select {
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  padding: 9px 10px;
+  font-size: 0.86rem;
+  background: #fff;
+}
+
+.pps-reset-default {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid var(--soft-line);
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.pps-custom-paper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  border: 1px solid #f6d9a0;
+  border-radius: 8px;
+  background: #fff7e6;
+  color: #92660c;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.pps-custom-paper input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  border-bottom: 1px solid #ecc789;
+  background: transparent;
+  padding: 4px 2px;
+  color: #6b4a05;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.pps-custom-paper input::placeholder {
+  color: #c79a4b;
+  font-weight: 600;
+}
+
+.pps-custom-paper-x {
+  color: #c79a4b;
+}
+
+.pps-gap-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 20px;
+}
+
+.pps-slider {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pps-slider span {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.78rem;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.pps-slider span b {
+  color: var(--ink);
+}
+
+.pps-slider input[type="range"] {
+  width: 100%;
+}
+
+.pps-refresh-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 12px;
+  border: 1px dashed #16b978;
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: rgba(22, 185, 120, 0.08);
+  color: #0a8f5e;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  justify-content: center;
+}
+
+.pps-final-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.pps-final-actions .pps-download-hd {
+  flex: 1;
+  margin-top: 0;
+}
+
+.pps-print-btn {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 48px;
+  border: 1px solid var(--soft-line);
+  border-radius: 10px;
+  padding: 12px 18px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.pps-print-btn:hover:not(:disabled) {
+  border-color: #2563eb;
+  color: #2563eb;
+}
+
+.pps-print-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .pps-controls-row {
+    grid-template-columns: 1fr;
+  }
+
+  .pps-final-actions {
+    flex-wrap: wrap;
+  }
+
+  .pps-final-actions .icon-action-btn {
+    flex: 1;
+  }
+
+  .pps-gap-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pps-preview-stage {
+    height: 320px;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   UPI QR Generator
+--------------------------------------------------------------------- */
+.upiqr-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 20px;
+  align-items: start;
+}
+
+.upiqr-form-col {
+  display: grid;
+  gap: 16px;
+}
+
+.upiqr-payee-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.upiqr-payee-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1.5px solid var(--line);
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.upiqr-payee-chip-active {
+  border-color: var(--brand-blue);
+  background: #eff5ff;
+}
+
+.upiqr-payee-chip-text {
+  display: grid;
+  gap: 2px;
+}
+
+.upiqr-payee-chip-label {
+  font-size: 12.5px;
+  font-weight: 750;
+  color: var(--ink);
+}
+
+.upiqr-payee-chip-vpa {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.upiqr-payee-chip-remove {
+  color: #c62828;
+  flex-shrink: 0;
+}
+
+.upiqr-add-form {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+.upiqr-add-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.upiqr-add-trigger {
+  width: 100%;
+  justify-content: center;
+}
+
+.upiqr-adhoc {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  margin-top: 12px;
+}
+
+.upiqr-adhoc-hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.upiqr-error {
+  color: #c62828;
+  font-size: 12px;
+  margin: 0;
+}
+
+.upiqr-hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.upiqr-mode-toggle {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.upiqr-mode-toggle button {
+  flex: 1;
+  border: 1.5px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 12px;
+  background: #fff;
+  color: var(--ink);
+  font-weight: 750;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.upiqr-mode-toggle button.active {
+  border-color: var(--brand-blue);
+  background: var(--brand-blue);
+  color: #fff;
+}
+
+.upiqr-quick-amounts {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.upiqr-quick-amounts button {
+  flex: 1;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 7px 0;
+  background: var(--mist);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 12.5px;
+  cursor: pointer;
+}
+
+.upiqr-preview-col {
+  position: sticky;
+  top: 16px;
+  display: grid;
+  gap: 12px;
+}
+
+.upiqr-qr-card {
+  padding: 8px;
+  text-align: center;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+}
+
+.upiqr-branded-preview {
+  width: 100%;
+  max-width: 340px;
+  height: auto;
+}
+
+.upiqr-qr-placeholder {
+  width: 220px;
+  height: 220px;
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  color: var(--muted);
+  background: var(--mist);
+  border-radius: 10px;
+  font-size: 12px;
+  text-align: center;
+  padding: 12px;
+}
+
+.upiqr-qr-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.upiqr-qr-actions a,
+.upiqr-qr-actions button {
+  width: 100%;
+  justify-content: center;
+}
+
+.upiqr-disabled-link {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+.upiqr-history {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  padding: 14px;
+}
+
+.upiqr-history h3 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.upiqr-history-list {
+  display: grid;
+  gap: 6px;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+.upiqr-history-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+}
+
+.upiqr-history-item-main {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+  text-align: left;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+.upiqr-history-item-label {
+  font-size: 12.5px;
+  font-weight: 750;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.upiqr-history-item-meta {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.upiqr-history-item-remove {
+  color: #c62828;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+@media (max-width: 900px) {
+  .upiqr-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .upiqr-preview-col {
+    position: static;
   }
 }

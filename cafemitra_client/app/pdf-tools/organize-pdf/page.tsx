@@ -6,6 +6,7 @@ import { ArrowDown, ArrowLeft, ArrowUp, Check, Copy, Download, FilePlus2, FileTe
 import { DashboardShell } from "../../DashboardShell";
 import { PdfToolUpload } from "../PdfToolUpload";
 import { RelatedToolSuggestions, ToolPromotionRail } from "../ToolDiscovery";
+import { usePdfPasswordGate } from "../usePdfPasswordGate";
 import OrganizeSeoContent from "./OrganizeSeoContent";
 
 type SourceFile = { id: string; file: File };
@@ -14,6 +15,7 @@ type OrganizeResult = { blob: Blob; url: string; size: number };
 
 export default function OrganizePdfPage() {
   const inputRef = useRef<HTMLInputElement>(null);
+  const { gateFiles, modal: passwordModal } = usePdfPasswordGate();
   const [sources, setSources] = useState<SourceFile[]>([]);
   const [pages, setPages] = useState<OrganizePage[]>([]);
   const [initialPages, setInitialPages] = useState<OrganizePage[]>([]);
@@ -27,7 +29,9 @@ export default function OrganizePdfPage() {
   useEffect(() => () => { if (result) URL.revokeObjectURL(result.url); }, [result]);
 
   async function addFiles(files: FileList) {
-    const selected = Array.from(files); const invalid = selected.find((file) => file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf"));
+    const unlocked = await gateFiles(files);
+    if (!unlocked.length) return;
+    const selected = unlocked; const invalid = selected.find((file) => file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf"));
     if (invalid) return setError(`${invalid.name} is not a PDF file.`); clearResult(); setLoading(true); setError("");
     try {
       for (const file of selected) {
@@ -66,7 +70,7 @@ export default function OrganizePdfPage() {
     finally { setProcessing(false); }
   }
 
-  if (!sources.length) return <DashboardShell activePath="/pdf-tools"><div className="dashboard organize-pdf-page"><OrganizeSeoContent /><PdfToolUpload title="Organize PDF" description="Reorder, rotate, duplicate, delete or add blank pages to your PDF." icon={GripVertical} inputRef={inputRef} onFiles={(files) => void addFiles(files)} buttonLabel="Select PDF files" headingLevel="h2" /></div></DashboardShell>;
+  if (!sources.length) return <DashboardShell activePath="/pdf-tools"><div className="dashboard organize-pdf-page"><OrganizeSeoContent /><PdfToolUpload title="Organize PDF" description="Reorder, rotate, duplicate, delete or add blank pages to your PDF." icon={GripVertical} inputRef={inputRef} onFiles={(files) => void addFiles(files)} buttonLabel="Select PDF files" headingLevel="h2" />{passwordModal}</div></DashboardShell>;
 
   return <DashboardShell activePath="/pdf-tools"><div className="dashboard organize-pdf-page">
     <OrganizeSeoContent />
@@ -87,7 +91,7 @@ export default function OrganizePdfPage() {
         <div className="organize-hint"><Sparkles size={18} /><span><strong>Tip</strong> Drag any page card and drop it at the desired position.</span></div>
         <div className="organize-side-actions">{processing ? <div><span>Creating PDF… {progress}%</span><progress value={progress} max="100" /></div> : null}<button className="organize-submit" type="button" disabled={processing || loading || !pages.length} onClick={organize}>{processing ? <LoaderCircle className="spin" size={19} /> : <GripVertical size={19} />} {processing ? "Organizing…" : "Organize PDF"}</button></div>
       </aside> : <ToolPromotionRail context="organize-result" />}
-    </div>{error ? <div className="profile-alert error organize-error">{error}</div> : null}
+    </div>{error ? <div className="profile-alert error organize-error">{error}</div> : null}{passwordModal}
   </div></DashboardShell>;
 }
 

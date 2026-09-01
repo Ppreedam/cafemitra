@@ -36,7 +36,7 @@ from .background_remover.passport_photo_processor import ProcessingError, enhanc
 from .background_remover.watermark_remover import remove_gemini_watermark
 # from .models import AuthToken, ContactMessage, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from .admin_roles import role_allows_section
-from .models import Agent, AuthToken, ContactMessage, Coupon, CouponRedemption, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, LeadTag, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
+from .models import Agent, AuthToken, ContactMessage, Coupon, CouponRedemption, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, LeadTag, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UpiPayee, UpiQrRecord, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from cafemitra_server.product_setting import PAYMENT_GATEWAYS, active_payment_gateway
 
 User = get_user_model()
@@ -648,6 +648,216 @@ def biodata_maker_charge(request):
         return JsonResponse({"message": charge_message}, status=402)
 
     return JsonResponse({"ok": True, "toolKey": tool_key})
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def id_card_print_charge(request):
+    """Gate + charge one ID Card Print job. The card layout itself is drawn
+    entirely client-side (Canvas) and sent straight to the browser's print
+    dialog - this only gates and charges RepetiGo's own per-use fee. Shares
+    the "id_card_print" tool_key with the QR-upload customer flow (see
+    resolve_print_tool_key) - same billable action either way, one shared
+    admin-configurable price.
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Please log in to print your ID card."}, status=401)
+
+    tool_key = "id_card_print"
+    allowed, limit_message = wallet_usage_gate(user, tool_key)
+    if not allowed:
+        return JsonResponse({"message": limit_message}, status=402)
+
+    charged, charge_message, _txn = charge_wallet_for_tool(user, tool_key)
+    if not charged:
+        return JsonResponse({"message": charge_message}, status=402)
+
+    return JsonResponse({"ok": True, "toolKey": tool_key})
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def photo_print_sheet_charge(request):
+    """Gate + charge one Photo Print Sheet job. The tiled sheet is drawn
+    entirely client-side (Canvas) and sent straight to the browser's print
+    dialog or a downloaded PNG - this only gates and charges RepetiGo's own
+    per-use fee.
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Please log in to print or download your photo sheet."}, status=401)
+
+    tool_key = "photo_print_sheet"
+    allowed, limit_message = wallet_usage_gate(user, tool_key)
+    if not allowed:
+        return JsonResponse({"message": limit_message}, status=402)
+
+    charged, charge_message, _txn = charge_wallet_for_tool(user, tool_key)
+    if not charged:
+        return JsonResponse({"message": charge_message}, status=402)
+
+    return JsonResponse({"ok": True, "toolKey": tool_key})
+
+
+UPI_PAYEE_LIMIT_PER_USER = 20
+
+
+def upi_payee_summary(payee):
+    return {"id": payee.id, "label": payee.label, "vpa": payee.vpa, "isDefault": payee.is_default}
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def upi_payee_list(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Please log in to see your saved UPI accounts."}, status=401)
+
+    payees = UpiPayee.objects.filter(user=user)
+    return JsonResponse({"payees": [upi_payee_summary(payee) for payee in payees]})
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def upi_payee_save(request):
+    """Save a new UPI collection account for the UPI QR Generator tool. Free
+    - no wallet charge, since the tool itself has no per-use backend cost.
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Please log in to save a UPI account."}, status=401)
+
+    body = parse_body(request)
+    label = str(body.get("label", "")).strip()
+    vpa = str(body.get("vpa", "")).strip()
+    is_default = bool(body.get("isDefault"))
+
+    if not label or len(label) > 160:
+        return JsonResponse({"message": "Enter a shop or payee name (up to 160 characters)."}, status=400)
+    if not UPI_ID_PATTERN.match(vpa):
+        return JsonResponse({"message": "Enter a valid UPI ID like name@bank or mobile@upi."}, status=400)
+    if UpiPayee.objects.filter(user=user).count() >= UPI_PAYEE_LIMIT_PER_USER:
+        return JsonResponse({"message": f"You can save up to {UPI_PAYEE_LIMIT_PER_USER} UPI accounts."}, status=400)
+
+    if is_default:
+        UpiPayee.objects.filter(user=user, is_default=True).update(is_default=False)
+
+    payee = UpiPayee.objects.create(user=user, label=label, vpa=vpa, is_default=is_default)
+    return JsonResponse(upi_payee_summary(payee))
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def upi_payee_delete(request, payee_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Please log in."}, status=401)
+
+    deleted, _ = UpiPayee.objects.filter(id=payee_id, user=user).delete()
+    if not deleted:
+        return JsonResponse({"message": "UPI account not found."}, status=404)
+    return JsonResponse({"ok": True})
+
+
+UPI_QR_RECORD_LIMIT_PER_USER = 100
+
+
+def upi_qr_record_summary(record):
+    return {
+        "id": record.id,
+        "label": record.label,
+        "vpa": record.vpa,
+        "amount": float(record.amount) if record.amount is not None else None,
+        "note": record.note,
+        "orderRef": record.order_ref,
+        "createdAt": record.created_at.isoformat(),
+    }
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def upi_qr_record_list(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Please log in to see your saved QR codes."}, status=401)
+
+    records = UpiQrRecord.objects.filter(user=user)[:100]
+    return JsonResponse({"records": [upi_qr_record_summary(record) for record in records]})
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def upi_qr_record_save(request):
+    """Save one generated UPI QR (its field values, not the rendered image -
+    that's rebuilt client-side on demand) for later reuse. Free - no wallet
+    charge, since the tool itself has no per-use backend cost.
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Please log in to save this QR."}, status=401)
+
+    body = parse_body(request)
+    label = str(body.get("label", "")).strip()
+    vpa = str(body.get("vpa", "")).strip()
+    note = str(body.get("note", "")).strip()[:50]
+    order_ref = str(body.get("orderRef", "")).strip()[:60]
+    raw_amount = body.get("amount")
+
+    if not label or len(label) > 160:
+        return JsonResponse({"message": "Enter a shop or payee name (up to 160 characters)."}, status=400)
+    if not UPI_ID_PATTERN.match(vpa):
+        return JsonResponse({"message": "Enter a valid UPI ID like name@bank or mobile@upi."}, status=400)
+
+    amount = None
+    if raw_amount not in (None, ""):
+        try:
+            amount = Decimal(str(raw_amount)).quantize(Decimal("0.01"))
+        except InvalidOperation:
+            return JsonResponse({"message": "Enter a valid amount."}, status=400)
+
+    if UpiQrRecord.objects.filter(user=user).count() >= UPI_QR_RECORD_LIMIT_PER_USER:
+        return JsonResponse({"message": f"You can save up to {UPI_QR_RECORD_LIMIT_PER_USER} QR codes."}, status=400)
+
+    record = UpiQrRecord.objects.create(user=user, label=label, vpa=vpa, amount=amount, note=note, order_ref=order_ref)
+    return JsonResponse(upi_qr_record_summary(record))
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def upi_qr_record_delete(request, record_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Please log in."}, status=401)
+
+    deleted, _ = UpiQrRecord.objects.filter(id=record_id, user=user).delete()
+    if not deleted:
+        return JsonResponse({"message": "Saved QR not found."}, status=404)
+    return JsonResponse({"ok": True})
 
 
 def biodata_order_summary(order):

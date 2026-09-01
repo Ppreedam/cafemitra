@@ -78,6 +78,14 @@ urlpatterns = [
     re_path(r"^tools/biodata-maker/saved/?$", views.biodata_maker_saved_list),  # GET the caller's saved biodatas
     re_path(r"^tools/biodata-maker/saved/(?P<order_id>[0-9]+)/delete/?$", views.biodata_maker_delete),  # POST delete one saved biodata
     re_path(r"^tools/biodata-maker/saved/(?P<order_id>[0-9]+)/mark-paid/?$", views.mark_biodata_order_paid),  # POST owner confirms cash payment for a customer's biodata order
+    re_path(r"^tools/id-card-print-charge/?$", views.id_card_print_charge),  # POST gate+charge one ID Card Print job (free until the "id_card_print" ToolPricing row is configured)
+    re_path(r"^tools/photo-print-sheet-charge/?$", views.photo_print_sheet_charge),  # POST gate+charge one Photo Print Sheet job (free until the "photo_print_sheet" ToolPricing row is configured)
+    re_path(r"^tools/upi-qr/payees/?$", views.upi_payee_list),  # GET the caller's saved UPI payee accounts
+    re_path(r"^tools/upi-qr/payees/save/?$", views.upi_payee_save),  # POST save a UPI payee account (free, no wallet charge - tool has no per-use cost)
+    re_path(r"^tools/upi-qr/payees/(?P<payee_id>[0-9]+)/delete/?$", views.upi_payee_delete),  # POST delete a saved UPI payee account
+    re_path(r"^tools/upi-qr/history/?$", views.upi_qr_record_list),  # GET the caller's saved (generated) UPI QR codes
+    re_path(r"^tools/upi-qr/history/save/?$", views.upi_qr_record_save),  # POST save one generated UPI QR for later reuse (free, no wallet charge)
+    re_path(r"^tools/upi-qr/history/(?P<record_id>[0-9]+)/delete/?$", views.upi_qr_record_delete),  # POST delete a saved UPI QR
 
     # --- Auth -----------------------------------------------------------
     re_path(r"^auth/register/?$", views.register_user),  # POST create account, sends email verification link

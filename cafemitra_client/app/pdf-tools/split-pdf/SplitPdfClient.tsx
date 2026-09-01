@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { ArrowRight, Check, Download, FileArchive, FileText, Grid2X2, Layers3, LoaderCircle, Plus, RotateCcw, Scissors, ShieldCheck, Sparkles, Trash2, X } from "lucide-react";
 import { DashboardShell } from "../../DashboardShell";
 import { PdfToolUpload } from "../PdfToolUpload";
+import { usePdfPasswordGate } from "../usePdfPasswordGate";
 
 type PagePreview = { index: number; image: string };
 type PageRange = { id: string; from: number; to: number };
@@ -17,6 +18,7 @@ type SplitPdfToolProps = { initialMode?: SplitMode; toolTitle?: string; uploadTi
 export function SplitPdfTool({ initialMode = "range", toolTitle = "Split PDF", uploadTitle = "Split PDF", uploadDescription = "Separate pages, page ranges or file-size groups into independent PDF documents.", children, uploadHeadingLevel }: SplitPdfToolProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const urls = useRef(new Set<string>());
+  const { gateFiles, modal: passwordModal } = usePdfPasswordGate();
   const [file, setFile] = useState<File | null>(null);
   const [pages, setPages] = useState<PagePreview[]>([]);
   const [loading, setLoading] = useState(false);
@@ -37,7 +39,8 @@ export function SplitPdfTool({ initialMode = "range", toolTitle = "Split PDF", u
   useEffect(() => () => urls.current.forEach((url) => URL.revokeObjectURL(url)), []);
 
   async function chooseFile(files: FileList) {
-    const selected = files[0]; if (!selected) return;
+    const unlocked = await gateFiles(files);
+    const selected = unlocked[0]; if (!selected) return;
     if (selected.type !== "application/pdf" && !selected.name.toLowerCase().endsWith(".pdf")) return setError("Please select a PDF file.");
     resetResults(); setLoading(true); setError(""); setFile(selected);
     try {
@@ -88,7 +91,7 @@ export function SplitPdfTool({ initialMode = "range", toolTitle = "Split PDF", u
   // When the upload field itself is the real page h1 (an explicit "h1" override, e.g. extract-pages,
   // which demotes the SEO article's own H1 via skipFirstH1), it must stay first in the DOM. Otherwise
   // the SEO article contains the real h1 and should render before the generic "h2" upload heading.
-  if (!file) return <DashboardShell activePath="/pdf-tools"><div className="dashboard split-pdf-page">{effectiveUploadHeadingLevel === "h1" ? <>{uploadField}{children}</> : <>{children}{uploadField}</>}</div></DashboardShell>;
+  if (!file) return <DashboardShell activePath="/pdf-tools"><div className="dashboard split-pdf-page">{effectiveUploadHeadingLevel === "h1" ? <>{uploadField}{children}</> : <>{children}{uploadField}</>}{passwordModal}</div></DashboardShell>;
 
   return <DashboardShell activePath="/pdf-tools"><div className="dashboard split-pdf-page">
     {children}
@@ -111,7 +114,7 @@ export function SplitPdfTool({ initialMode = "range", toolTitle = "Split PDF", u
         </div>
         <div className="split-side-actions">{processing ? <div className="split-progress"><span>Creating PDFs… {progress}%</span><progress value={progress} max="100" /></div> : null}<button className="split-submit" type="button" disabled={processing || loading || (mode === "pages" && !selectedPages.size)} onClick={splitPdf}>{processing ? <LoaderCircle className="spin" size={20} /> : <Scissors size={20} />} {processing ? "Creating PDFs…" : toolTitle}<ArrowRight size={18} /></button></div>
       </aside>
-    </div>{error ? <div className="profile-alert error split-error">{error}</div> : null}
+    </div>{error ? <div className="profile-alert error split-error">{error}</div> : null}{passwordModal}
   </div></DashboardShell>;
 }
 

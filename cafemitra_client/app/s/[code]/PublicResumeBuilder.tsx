@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ArrowLeft, Download, Eye, RefreshCw, Wallet } from "lucide-react";
 import { apiUrl } from "@/lib/api";
 import { calculatePriceItemRate, type PricingService } from "@/lib/pricing";
@@ -20,6 +20,8 @@ import {
   type EducationItem,
   type ExperienceItem,
   type ProjectItem,
+  type ResumeCustomField,
+  type ResumeCustomSection,
   type ResumeData,
   type SavedOrderSummary,
 } from "../../resume-builder/resumeModel";
@@ -59,6 +61,21 @@ export default function PublicResumeBuilder({
   const educationOps = useListOps<EducationItem>("education", setResume);
   const projectOps = useListOps<ProjectItem>("projects", setResume);
   const certOps = useListOps<CertItem>("certifications", setResume);
+  const customFieldOps = useListOps<ResumeCustomField>("customFields", setResume);
+  const customSectionOps = useMemo(
+    () => ({
+      add: (blank: ResumeCustomSection) => setResume((r) => ({ ...r, customSections: [...(r.customSections || []), blank] })),
+      update: (id: string, patch: Partial<Pick<ResumeCustomSection, "title">>) =>
+        setResume((r) => ({ ...r, customSections: (r.customSections || []).map((section) => (section.id === id ? { ...section, ...patch } : section)) })),
+      remove: (id: string) =>
+        setResume((r) => ({
+          ...r,
+          customSections: (r.customSections || []).filter((section) => section.id !== id),
+          customFields: (r.customFields || []).filter((field) => field.section !== id),
+        })),
+    }),
+    [],
+  );
 
   function setField<K extends keyof ResumeData>(key: K, value: ResumeData[K]) {
     setResume((r) => ({ ...r, [key]: value }));
@@ -214,6 +231,8 @@ export default function PublicResumeBuilder({
             educationOps={educationOps}
             projectOps={projectOps}
             certOps={certOps}
+            customFieldOps={customFieldOps}
+            customSectionOps={customSectionOps}
           />
 
           <fieldset className="resbuild-section">

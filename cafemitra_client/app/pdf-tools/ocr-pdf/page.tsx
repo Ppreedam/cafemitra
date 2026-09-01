@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, ArrowRight, Check, Download, Eye, FileSearch, FileText, Languages, LoaderCircle, Printer, RotateCcw, Search, ShieldCheck, Wrench, X } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Download, FileSearch, FileText, Languages, LoaderCircle, Printer, RotateCcw, Search, ShieldCheck, Wrench } from "lucide-react";
 import { DashboardShell } from "../../DashboardShell";
 import { PdfToolUpload } from "../PdfToolUpload";
-import { RelatedToolSuggestions, ToolPromotionRail } from "../ToolDiscovery";
+import { RelatedToolSuggestions } from "../ToolDiscovery";
+import { usePdfPasswordGate } from "../usePdfPasswordGate";
 import OcrSeoContent from "./OcrSeoContent";
 import { apiUrl } from "../../../lib/api";
 
@@ -14,12 +15,13 @@ type OcrResult = { pdf: Blob; pdfUrl: string; text: string; size: number };
 
 export default function OcrPdfPage() {
   const inputRef = useRef<HTMLInputElement>(null);
+  const { gateFiles, modal: passwordModal } = usePdfPasswordGate();
   const [file, setFile] = useState<File | null>(null); const [pages, setPages] = useState<OcrPage[]>([]); const [selected, setSelected] = useState<Set<number>>(new Set());
   const [language, setLanguage] = useState("eng"); const [loading, setLoading] = useState(false); const [processing, setProcessing] = useState(false);
-  const [progress, setProgress] = useState(0); const [status, setStatus] = useState(""); const [error, setError] = useState(""); const [result, setResult] = useState<OcrResult | null>(null); const [showText, setShowText] = useState(false);
+  const [progress, setProgress] = useState(0); const [status, setStatus] = useState(""); const [error, setError] = useState(""); const [result, setResult] = useState<OcrResult | null>(null);
   useEffect(() => () => { if (result) URL.revokeObjectURL(result.pdfUrl); }, [result]);
 
-  async function chooseFile(files: FileList) { const next = files[0]; if (!next) return; if (next.type !== "application/pdf" && !next.name.toLowerCase().endsWith(".pdf")) return setError("Please select a PDF file."); clearResult(); setFile(next); setLoading(true); setError(""); try { const previews = await renderPreviews(next); setPages(previews); setSelected(new Set(previews.map((page) => page.index))); } catch (reason) { console.error(reason); setFile(null); setError("This PDF could not be opened. It may be protected or damaged."); } finally { setLoading(false); } }
+  async function chooseFile(files: FileList) { const unlocked = await gateFiles(files); const next = unlocked[0]; if (!next) return; if (next.type !== "application/pdf" && !next.name.toLowerCase().endsWith(".pdf")) return setError("Please select a PDF file."); clearResult(); setFile(next); setLoading(true); setError(""); try { const previews = await renderPreviews(next); setPages(previews); setSelected(new Set(previews.map((page) => page.index))); } catch (reason) { console.error(reason); setFile(null); setError("This PDF could not be opened. It may be protected or damaged."); } finally { setLoading(false); } }
   function clearResult() { if (result) URL.revokeObjectURL(result.pdfUrl); setResult(null); setProgress(0); setStatus(""); }
   function reset() { clearResult(); setFile(null); setPages([]); setSelected(new Set()); setError(""); if (inputRef.current) inputRef.current.value = ""; }
   function togglePage(index: number) { clearResult(); setSelected((current) => { const next = new Set(current); next.has(index) ? next.delete(index) : next.add(index); return next; }); }
@@ -50,24 +52,25 @@ export default function OcrPdfPage() {
 
   function downloadText() { if (!result) return; const url = URL.createObjectURL(new Blob([result.text], { type: "text/plain;charset=utf-8" })); triggerDownload(url, `${baseName(file?.name || "ocr")}-ocr.txt`); setTimeout(() => URL.revokeObjectURL(url), 1000); }
 
-  if (!file) return <DashboardShell activePath="/pdf-tools"><div className="dashboard ocr-pdf-page"><OcrSeoContent /><PdfToolUpload title="OCR PDF" description="Convert scanned PDF pages into searchable documents and extract their text." icon={FileSearch} inputRef={inputRef} onFiles={(files) => void chooseFile(files)} multiple={false} buttonLabel="Select PDF file" headingLevel="h2" /></div></DashboardShell>;
+  if (!file) return <DashboardShell activePath="/pdf-tools"><div className="dashboard ocr-pdf-page"><OcrSeoContent /><PdfToolUpload title="OCR PDF" description="Convert scanned PDF pages into searchable documents and extract their text." icon={FileSearch} inputRef={inputRef} onFiles={(files) => void chooseFile(files)} multiple={false} buttonLabel="Select PDF file" headingLevel="h2" />{passwordModal}</div></DashboardShell>;
   return <DashboardShell activePath="/pdf-tools"><div className="dashboard ocr-pdf-page">
     <OcrSeoContent />
     <input ref={inputRef} hidden type="file" accept="application/pdf,.pdf" onChange={(event) => { if (event.target.files?.length) void chooseFile(event.target.files); event.target.value = ""; }} />
     <div className="ocr-topline"><Link href="/pdf-tools"><ArrowLeft size={16} /> PDF Tools</Link><span><ShieldCheck size={16} /> Text extraction runs on server</span></div>
-    <div className="ocr-studio"><section className="ocr-canvas"><header><div><h2>OCR PDF</h2><p>{file.name} · {pages.length} pages · {formatBytes(file.size)}</p></div><button type="button" disabled={processing} onClick={() => inputRef.current?.click()}>Replace PDF</button></header>
-      {loading ? <div className="ocr-loading"><LoaderCircle className="spin" size={30} /> Preparing page thumbnails…</div> : result ? <OcrSuccess result={result} file={file} selected={selected.size} onText={() => setShowText(true)} onDownloadText={downloadText} onBack={clearResult} onReset={reset} /> : <div className="ocr-page-grid">{pages.map((page) => <button type="button" className={selected.has(page.index) ? "selected" : ""} key={page.index} onClick={() => togglePage(page.index)}><img src={page.image} alt={`Page ${page.index}`} /><span>{selected.has(page.index) ? <Check size={14} /> : null} Page {page.index}</span></button>)}</div>}
+    <div className={`ocr-studio${result ? " ocr-result-view" : ""}`}><section className="ocr-canvas"><header><div><h2>OCR PDF</h2><p>{file.name} · {result ? `${selected.size} of ${pages.length}` : pages.length} pages · {formatBytes(file.size)}</p></div><button type="button" disabled={processing} onClick={() => inputRef.current?.click()}>Replace PDF</button></header>
+      {loading ? <div className="ocr-loading"><LoaderCircle className="spin" size={30} /> Preparing page thumbnails…</div> : result ? <div className="ocr-pdf-preview"><iframe src={result.pdfUrl} title="Extracted PDF preview" /></div> : <div className="ocr-page-grid">{pages.map((page) => <button type="button" className={selected.has(page.index) ? "selected" : ""} key={page.index} onClick={() => togglePage(page.index)}><img src={page.image} alt={`Page ${page.index}`} /><span>{selected.has(page.index) ? <Check size={14} /> : null} Page {page.index}</span></button>)}</div>}
     </section>{!result ? <aside className="ocr-side-panel"><div><span className="auto-print-kicker">RepetiGo AI Tools</span><h2>OCR settings</h2><p>{selected.size} of {pages.length} pages selected</p></div>
       <div className="ocr-language"><label><Languages size={17} /> Document language</label><select value={language} disabled={processing} onChange={(event) => setLanguage(event.target.value)}><option value="eng">English</option><option value="hin">Hindi</option><option value="eng+hin">English + Hindi</option></select><small>Server extraction reads the PDF text layer. Scanned image pages may return blank text.</small></div>
       <div className="ocr-selection"><strong>Page selection</strong><div><button type="button" onClick={() => setSelected(new Set(pages.map((page) => page.index)))}>Select all</button><button type="button" onClick={() => setSelected(new Set())}>Clear</button></div></div>
       <div className="ocr-info"><Search size={18} /><span>The output keeps selected PDF pages and extracts embedded text through the backend.</span></div>
       <div className="ocr-side-actions">{processing ? <div><span>{status} · {progress}%</span><progress value={progress} max="100" /></div> : null}<button className="ocr-submit" type="button" disabled={processing || loading || !selected.size} onClick={runOcr}>{processing ? <LoaderCircle className="spin" size={19} /> : <FileSearch size={19} />} {processing ? "Extracting…" : "Extract Text"}</button><button type="button" disabled={processing} onClick={reset}><RotateCcw size={16} /> Start over</button></div>
-    </aside> : <ToolPromotionRail context="ocr-result" />}</div>{error ? <div className="profile-alert error ocr-error">{error}</div> : null}
-    {showText && result ? <div className="ocr-text-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setShowText(false); }}><section><header><div><h2>Recognized text</h2><p>{file.name}</p></div><button type="button" onClick={() => setShowText(false)}><X size={20} /></button></header><pre>{result.text || "No readable text was detected."}</pre><footer><button type="button" onClick={downloadText}><Download size={17} /> Download TXT</button></footer></section></div> : null}
+    </aside> : <aside className="ocr-text-panel"><div><span className="auto-print-kicker">RepetiGo AI Tools</span><h2>Extracted Text</h2><p>{selected.size} page{selected.size === 1 ? "" : "s"} processed · {result.text ? `${result.text.length.toLocaleString()} characters` : "no text detected"}</p></div>
+      <div className="ocr-text-scroll"><pre>{result.text || "No readable text was detected on the selected pages. Scanned image pages don't have a text layer to extract."}</pre></div>
+      <div className="ocr-text-actions"><a href={result.pdfUrl} download={`${baseName(file.name)}-selected.pdf`}><Download size={16} /> Download PDF</a><button type="button" onClick={downloadText}><Download size={16} /> Download TXT</button></div>
+      <footer><button type="button" onClick={clearResult}>Change settings</button><button type="button" onClick={reset}>Extract another PDF</button></footer>
+    </aside>}</div>{result ? <RelatedToolSuggestions context="ocr-result" /> : null}{error ? <div className="profile-alert error ocr-error">{error}</div> : null}{passwordModal}
   </div></DashboardShell>;
 }
-
-function OcrSuccess({ result, file, selected, onText, onDownloadText, onBack, onReset }: { result: OcrResult; file: File; selected: number; onText: () => void; onDownloadText: () => void; onBack: () => void; onReset: () => void }) { return <section className="ocr-success"><span><Check size={30} /></span><h2>Text extracted!</h2><p>{selected} pages processed · Your selected PDF pages are ready.</p><div><FileText size={24} /><div><strong>{baseName(file.name)}-selected.pdf</strong><small>{formatBytes(result.size)}</small></div></div><a href={result.pdfUrl} download={`${baseName(file.name)}-selected.pdf`}><Download size={19} /> Download selected PDF</a><div className="ocr-result-tools"><button type="button" onClick={onText}><Eye size={16} /> Preview text</button><button type="button" onClick={onDownloadText}><Download size={16} /> Download TXT</button></div><footer><button type="button" onClick={onBack}>Change settings</button><button type="button" onClick={onReset}>Extract another PDF</button></footer><RelatedToolSuggestions context="ocr-result" /></section>; }
 
 function RelatedOcrTools() { const tools = [{ name: "Repair & enhance", detail: "Improve scan clarity", href: "/pdf-tools/repair-pdf", icon: Wrench },{ name: "Compress PDF", detail: "Reduce output size", href: "/pdf-tools/compress-pdf", icon: FileText },{ name: "PDF to Word", detail: "Create editable document", href: "/pdf-tools/pdf-to-word", icon: FileText },{ name: "Translate PDF", detail: "Translate document text", href: "/pdf-tools/translate-pdf", icon: Languages }]; return <div className="ocr-related"><header><div><strong>Continue with another tool</strong><small>Useful next steps for your searchable PDF</small></div><Link href="/pdf-tools">View all <ArrowRight size={14} /></Link></header><div>{tools.map((tool) => { const Icon = tool.icon; return <Link href={tool.href} key={tool.name}><span><Icon size={17} /></span><div><strong>{tool.name}</strong><small>{tool.detail}</small></div><ArrowRight size={15} /></Link>; })}</div></div>; }
 

@@ -1,5 +1,14 @@
 import type { BiodataTemplateId } from "./templates";
 
+export type BiodataSectionId = "personal" | "education" | "family" | "contact" | "hobbies";
+
+// A custom field's `section` is either one of the fixed BiodataSectionId
+// values, or a BiodataCustomSection's own `id` - a plain string covers both
+// without the field needing to know which kind of section it belongs to.
+export type BiodataCustomField = { id: string; section: string; label: string; value: string };
+
+export type BiodataCustomSection = { id: string; title: string };
+
 /// The server's view of a saved biodata-as-PrintOrder row - mirrors
 /// biodata_order_summary() in api/views.py.
 export type SavedBiodataOrderSummary = {
@@ -44,6 +53,15 @@ export type BiodataData = {
   phone: string;
   email: string;
   hobbies: string;
+  customFields: BiodataCustomField[];
+  customSections: BiodataCustomSection[];
+  // Built-in field keys (BiodataData property names) and section ids the
+  // user has removed via the form's select-then-remove control - kept
+  // separate from customFields/customSections since these are hidden (and
+  // restorable), not deleted, so the underlying data survives a template
+  // switch or an accidental removal.
+  hiddenFields: string[];
+  hiddenSections: BiodataSectionId[];
 };
 
 export const STORAGE_KEY = "repetigo-biodata-maker-draft";
@@ -75,6 +93,10 @@ export const sampleBiodata: BiodataData = {
   phone: "+91 98765 43210",
   email: "priya.sharma@email.com",
   hobbies: "Classical music, reading, cooking",
+  customFields: [],
+  customSections: [],
+  hiddenFields: [],
+  hiddenSections: [],
 };
 
 export const blankBiodata: BiodataData = {
@@ -104,6 +126,10 @@ export const blankBiodata: BiodataData = {
   phone: "",
   email: "",
   hobbies: "",
+  customFields: [],
+  customSections: [],
+  hiddenFields: [],
+  hiddenSections: [],
 };
 
 export function biodataHasContent(data: BiodataData) {
