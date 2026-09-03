@@ -19061,6 +19061,42 @@ img.profile-photo {
   outline-offset: 2px;
 }
 
+.idcard-remove-bg-toggle {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 4px 10px;
+  margin: 16px 0;
+  padding: 12px 14px;
+  border: 1px solid var(--soft-line);
+  border-radius: 10px;
+  background: #fbfcff;
+  cursor: pointer;
+}
+
+.idcard-remove-bg-toggle input {
+  grid-row: 1 / span 2;
+  accent-color: var(--violet);
+  width: 17px;
+  height: 17px;
+}
+
+.idcard-remove-bg-toggle span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #18214d;
+  font-weight: 760;
+  font-size: 0.86rem;
+}
+
+.idcard-remove-bg-toggle small {
+  color: #6b7598;
+  font-size: 0.76rem;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
 /* Toolbar bar mirrors the Photo Editor's tool-tab pattern (photo-editor.css
    .photo-toolbar-bar) so the two editors feel like the same product: tool
    tabs on the left, settings/actions on the right, divided by a border. */
