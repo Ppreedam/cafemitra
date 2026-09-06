@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { BarChart3, Bookmark, ChevronDown, LogOut, Printer, Settings, UserRound, Wallet, type LucideIcon } from "lucide-react";
+import { Bookmark, ChevronDown, LogOut, Printer, Settings, UserRound, Wallet, type LucideIcon } from "lucide-react";
 import { clearSession } from "@/lib/api";
 
 export type ProfileMenuUser = {
@@ -29,7 +29,6 @@ const profileMenuItems: ProfileMenuItem[] = [
   { label: "PrintPilot Setup", href: "/auto-print", icon: Printer },
   { label: "Pricing & Settings", href: "/pricing-settings", icon: Settings },
   { label: "Service Credits & Settlement", href: "/wallet", icon: Wallet },
-  { label: "Analytics", href: "/analytics", icon: BarChart3 },
   { label: "Sign Out", href: "/login", icon: LogOut, onClick: clearSession },
 ];
 
