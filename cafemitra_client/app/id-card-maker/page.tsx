@@ -40,8 +40,10 @@ export default function IdCardMakerHubPage() {
         <section className="idcard-type-grid" aria-label="ID card types">
           {DOC_TYPES.map((doc) => {
             const DocIcon = doc.icon;
-            return (
-              <Link className="idcard-type-tile" href={`/id-card-maker/${doc.key}`} key={doc.key} style={{ "--doc-color": doc.color } as CSSProperties}>
+            const tileClassName = `idcard-type-tile${doc.comingSoon ? " is-coming-soon" : ""}`;
+            const tileContent = (
+              <>
+                {doc.comingSoon && <span className="idcard-coming-soon-badge">Coming Soon</span>}
                 <div className="idcard-type-tile-band">
                   <span className="idcard-type-tile-icon">
                     <DocIcon size={18} />
@@ -52,6 +54,20 @@ export default function IdCardMakerHubPage() {
                   <h2>{doc.label}</h2>
                   <p>{doc.description}</p>
                 </div>
+              </>
+            );
+
+            if (doc.comingSoon) {
+              return (
+                <div className={tileClassName} key={doc.key} style={{ "--doc-color": doc.color } as CSSProperties} aria-disabled="true">
+                  {tileContent}
+                </div>
+              );
+            }
+
+            return (
+              <Link className={tileClassName} href={`/id-card-maker/${doc.key}`} key={doc.key} style={{ "--doc-color": doc.color } as CSSProperties}>
+                {tileContent}
               </Link>
             );
           })}

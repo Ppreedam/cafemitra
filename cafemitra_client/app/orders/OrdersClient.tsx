@@ -187,27 +187,6 @@ export default function OrdersClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function markOrderPaid(orderId: number) {
-    setMarkingPaidId(orderId);
-    setActionError("");
-    try {
-      const response = await apiFetch(`/api/orders/${orderId}/mark-paid/`, { method: "POST" });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.message || "Could not mark this order as paid.");
-      setOrders((current) => current.map((order) => (order.id === orderId ? result.order : order)));
-      // Narrow update only - the compare modal's order carries base64 image
-      // payloads the list-style mark-paid response omits, so a full spread
-      // would wipe the photos already shown.
-      setCompareOrder((current) =>
-        current && current.id === orderId ? { ...current, paymentStatus: result.order.paymentStatus, status: result.order.status } : current,
-      );
-    } catch (error) {
-      setActionError(error instanceof Error ? error.message : "Could not mark this order as paid.");
-    } finally {
-      setMarkingPaidId(null);
-    }
-  }
-
   async function respondToCashOrder(orderId: number, approve: boolean) {
     setCashActionId(orderId);
     setActionError("");
@@ -240,6 +219,23 @@ export default function OrdersClient() {
     }
   }
 
+  function markOrderPrinted(orderId: number) {
+    // Fire-and-forget: the owner is already being sent to the print sheet,
+    // so this status update shouldn't hold up or be able to fail that
+    // navigation - it just needs to have gone out.
+    apiFetch(`/api/orders/${orderId}/mark-printed/`, { method: "POST" })
+      .then((response) => response.json().catch(() => ({})))
+      .then((result) => {
+        if (result?.order) {
+          setOrders((current) => current.map((o) => (o.id === orderId ? result.order : o)));
+          setCompareOrder((current) => (current && current.id === orderId ? result.order : current));
+        }
+      })
+      .catch(() => {
+        // Best-effort - a failed status update shouldn't block the actual print.
+      });
+  }
+
   async function printOrderToPrintSheet(order: Order) {
     // The list response omits the base64 photo payload - fetch the single
     // order first so the print sheet page receives the actual image data.
@@ -249,6 +245,7 @@ export default function OrdersClient() {
       const fullOrder = response.ok && result.order ? result.order : order;
       if (fullOrder.geminiPhoto) {
         stashPhotoForPrintSheet(fullOrder.geminiPhoto, fullOrder.fileName || "passport-photo.jpg");
+        markOrderPrinted(order.id);
         router.push("/photo-print-sheet");
         return;
       }
@@ -464,16 +461,7 @@ export default function OrdersClient() {
                         <td>Rs. {order.totalAmount}</td>
                         <td>
                           <span className={`order-status ${order.paymentStatus}`}>{formatStatus(order.paymentStatus)}</span>
-                          {order.serviceKey === "passport_photo" && order.paymentStatus === "no_payment" ? (
-                            <button
-                              type="button"
-                              className="orders-mark-paid-link"
-                              disabled={markingPaidId === order.id}
-                              onClick={() => markOrderPaid(order.id)}
-                            >
-                              {markingPaidId === order.id ? "Marking..." : "Mark as Paid"}
-                            </button>
-                          ) : order.serviceKey === "resume_builder" && order.paymentMode === "Cash" && order.paymentStatus === "no_payment" ? (
+                          {order.serviceKey === "resume_builder" && order.paymentMode === "Cash" && order.paymentStatus === "no_payment" ? (
                             <button
                               type="button"
                               className="orders-mark-paid-link"
@@ -495,7 +483,7 @@ export default function OrdersClient() {
                         </td>
                         <td>
                           <span className={`order-status ${order.status}`}>{formatStatus(order.status)}</span>
-                          {order.serviceKey === "passport_photo" && order.status === "queued" && order.paymentStatus === "paid" ? (
+                          {order.serviceKey === "passport_photo" && (order.status === "queued" || order.status === "printed") && order.hasGeminiPhoto ? (
                             <button type="button" className="orders-print-link" onClick={() => printOrderToPrintSheet(order)}>
                               <Printer size={14} /> Print
                             </button>
@@ -567,37 +555,20 @@ export default function OrdersClient() {
                 )}
               </div>
             </div>
-            {compareOrder.paymentStatus === "no_payment" || (compareOrder.status === "queued" && compareOrder.paymentStatus === "paid") ? (
+            {(compareOrder.status === "queued" || compareOrder.status === "printed") && compareOrder.geminiPhoto ? (
               <div className="passport-compare-actions">
-                {compareOrder.paymentStatus === "no_payment" ? (
-                  <button
-                    type="button"
-                    className="btn"
-                    disabled={markingPaidId === compareOrder.id}
-                    onClick={() => markOrderPaid(compareOrder.id)}
-                  >
-                    <Wallet size={16} /> {markingPaidId === compareOrder.id ? "Marking..." : "Mark as Paid"}
-                  </button>
-                ) : null}
-                {compareOrder.status === "queued" && compareOrder.paymentStatus === "paid" ? (
-                  compareOrder.geminiPhoto ? (
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={() => {
-                        if (!compareOrder.geminiPhoto) return;
-                        stashPhotoForPrintSheet(compareOrder.geminiPhoto, compareOrder.fileName || "passport-photo.jpg");
-                        router.push("/photo-print-sheet");
-                      }}
-                    >
-                      <Printer size={16} /> Print
-                    </button>
-                  ) : (
-                    <Link href={`/passport-photo?orderId=${compareOrder.id}`} className="btn btn-primary">
-                      <Printer size={16} /> Print
-                    </Link>
-                  )
-                ) : null}
+                <button
+                  type="button"
+                  className="btn btn-primary"
+                  onClick={() => {
+                    if (!compareOrder.geminiPhoto) return;
+                    stashPhotoForPrintSheet(compareOrder.geminiPhoto, compareOrder.fileName || "passport-photo.jpg");
+                    markOrderPrinted(compareOrder.id);
+                    router.push("/photo-print-sheet");
+                  }}
+                >
+                  <Printer size={16} /> Print
+                </button>
               </div>
             ) : null}
           </div>

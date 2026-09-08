@@ -113,9 +113,10 @@ const setupSteps: SetupStep[] = [
   { key: "test", title: "Test Print", helper: "Send a demo page to printer", icon: Play },
 ];
 
-const setupStepGuides: Record<SetupStep["key"], { title: string; youtubeId?: string; bullets: string[] }> = {
+const setupStepGuides: Record<SetupStep["key"], { title: string; videoUrl?: string; youtubeId?: string; bullets: string[] }> = {
   download: {
     title: "Install the desktop agent",
+    videoUrl: "https://newsbuilder.in/wp-content/uploads/2026/09/Agent-Guide-1.mp4",
     youtubeId: "hXQMlTIynDg",
     bullets: [
       "Download the PrintPilot Agent on the computer connected to the printer.",
@@ -125,6 +126,7 @@ const setupStepGuides: Record<SetupStep["key"], { title: string; youtubeId?: str
   },
   verify: {
     title: "Confirm the agent connection",
+    videoUrl: "https://newsbuilder.in/wp-content/uploads/2026/09/Agent-Guide-2.mp4",
     youtubeId: "x0MDUlcpWyY",
     bullets: [
       "Make sure the desktop agent is open.",
@@ -134,6 +136,7 @@ const setupStepGuides: Record<SetupStep["key"], { title: string; youtubeId?: str
   },
   printer: {
     title: "Choose the default printer",
+    videoUrl: "https://newsbuilder.in/wp-content/uploads/2026/09/Agent-Guide-3.mp4",
     youtubeId: "GhFBF4ZY-Bc",
     bullets: [
       "Select the printer that should receive customer print jobs.",
@@ -143,6 +146,7 @@ const setupStepGuides: Record<SetupStep["key"], { title: string; youtubeId?: str
   },
   pricing: {
     title: "Set customer print pricing",
+    videoUrl: "https://newsbuilder.in/wp-content/uploads/2026/09/Agent-Guide-4.mp4",
     youtubeId: "0Rsqf4AdST0",
     bullets: [
       "Add charges for black and white, color, or custom services.",
@@ -152,6 +156,7 @@ const setupStepGuides: Record<SetupStep["key"], { title: string; youtubeId?: str
   },
   qr: {
     title: "Prepare the customer QR",
+    videoUrl: "https://newsbuilder.in/wp-content/uploads/2026/09/Agent-Guide-5.mp4",
     youtubeId: "oEuTk6xRWkM",
     bullets: [
       "Generate the QR for your shop.",
@@ -161,6 +166,7 @@ const setupStepGuides: Record<SetupStep["key"], { title: string; youtubeId?: str
   },
   test: {
     title: "Run one test print",
+    videoUrl: "https://newsbuilder.in/wp-content/uploads/2026/09/Agent-Guide-6.mp4",
     youtubeId: "LmCbdEtdUqU",
     bullets: [
       "Confirm the agent is connected and a printer is selected.",
@@ -185,6 +191,11 @@ const paymentModeOptions = [
 export default function AutoPrintClient() {
   const router = useRouter();
   const [activeStep, setActiveStep] = useState(0);
+  // Self-hosted MP4 is tried first for each step's guide video; the YouTube
+  // embed is kept only as a fallback for when the MP4 fails to load, since
+  // relying on YouTube alone pulls in its own player chrome/related-video
+  // overlay that made the guide video look wrong.
+  const [guideVideoFailed, setGuideVideoFailed] = useState(false);
   const [agentDownloaded, setAgentDownloaded] = useState(false);
   const [agentConnected, setAgentConnected] = useState(false);
   const [agentHealth, setAgentHealth] = useState<AgentHealth | null>(null);
@@ -259,6 +270,10 @@ export default function AutoPrintClient() {
   const currentStep = setupSteps[activeStep];
   const CurrentStepIcon = currentStep.icon;
   const currentGuide = setupStepGuides[currentStep.key];
+
+  useEffect(() => {
+    setGuideVideoFailed(false);
+  }, [activeStep]);
 
   useEffect(() => {
     if (!hasStoredSession()) {
@@ -1014,7 +1029,19 @@ export default function AutoPrintClient() {
                   <span className="agent-status success">Help</span>
                 </div>
                 <div className="guide-video">
-                  {currentGuide.youtubeId ? (
+                  {currentGuide.videoUrl && !guideVideoFailed ? (
+                    <video
+                      key={currentStep.key}
+                      src={currentGuide.videoUrl}
+                      title={`${currentGuide.title} - video guide`}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      controls
+                      onError={() => setGuideVideoFailed(true)}
+                    />
+                  ) : currentGuide.youtubeId ? (
                     <iframe
                       key={currentStep.key}
                       src={`https://www.youtube.com/embed/${currentGuide.youtubeId}?autoplay=1&mute=1&rel=0`}

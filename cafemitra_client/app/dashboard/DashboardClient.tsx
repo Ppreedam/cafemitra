@@ -255,8 +255,21 @@ function orderServicesByRecency<T extends { key: string; available: boolean }>(c
 }
 
 function sumRevenue(orders: Order[]) {
+  // Only "paid" (online/manually confirmed) and "cash_counter" (collected in
+  // person, once past owner approval) represent money actually taken from a
+  // customer. "no_payment" is the shop owner using a tool themselves (e.g.
+  // the Passport Photo dashboard tool always creates orders this way) - no
+  // customer transaction happened, so it must never be counted as revenue.
+  // "pending" is payment still in flight, and awaiting_approval/awaiting_payment
+  // orders haven't had money confirmed collected yet either.
   return orders
-    .filter((order) => order.paymentStatus !== "pending" && order.status !== "failed")
+    .filter(
+      (order) =>
+        (order.paymentStatus === "paid" || order.paymentStatus === "cash_counter") &&
+        order.status !== "failed" &&
+        order.status !== "awaiting_approval" &&
+        order.status !== "awaiting_payment",
+    )
     .reduce((total, order) => total + Number(order.totalAmount || 0), 0);
 }
 

@@ -13,6 +13,7 @@ import time
 import urllib.error
 import urllib.parse
 import urllib.request
+import uuid
 from datetime import timedelta
 from decimal import Decimal, InvalidOperation
 
@@ -21,7 +22,7 @@ from channels.layers import get_channel_layer
 from django.contrib.auth import authenticate, get_user_model
 from django.conf import settings
 from django.core.mail import send_mail
-from django.db import transaction
+from django.db import connection, transaction
 from django.db.models import Count, Max, Q, Sum
 from django.db.models.functions import Substr
 from django.http import FileResponse, HttpResponse, HttpResponseRedirect, JsonResponse
@@ -36,7 +37,7 @@ from .background_remover.passport_photo_processor import ProcessingError, enhanc
 from .background_remover.watermark_remover import remove_gemini_watermark
 # from .models import AuthToken, ContactMessage, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from .admin_roles import role_allows_section
-from .models import Agent, AuthToken, ContactMessage, Coupon, CouponRedemption, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, LeadTag, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UpiPayee, UpiQrRecord, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
+from .models import Agent, AuthToken, ContactMessage, Coupon, CouponRedemption, EmailVerificationToken, GooglePlace, GooglePlaceDetail, LeadActivity, LeadTag, PassportAIConfig, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UpiPayee, UpiQrRecord, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from cafemitra_server.product_setting import PAYMENT_GATEWAYS, active_payment_gateway
 
 User = get_user_model()
@@ -1532,11 +1533,17 @@ def wallet_collection_summary(user):
         # treatment as the signup bonus above - spendable on tools, never
         # cashed out.
         coupon=Sum("amount", filter=Q(kind=WalletTransaction.KIND_COUPON_CREDIT, direction=WalletTransaction.DIRECTION_CREDIT)),
+        # Total ever debited for tool usage (AI generation, print sheets,
+        # etc.) - shown on the wallet page as "Tools Usage Credits" so a shop
+        # owner can see how much of their wallet has gone to paid tools,
+        # separate from what they've actually collected from customers.
+        tool_usage=Sum("amount", filter=Q(kind=WalletTransaction.KIND_TOOL_USAGE, direction=WalletTransaction.DIRECTION_DEBIT)),
     )
     online_collected = totals["online"] or Decimal("0.00")
     cash_collected = totals["cash"] or Decimal("0.00")
     signup_bonus_credited = totals["signup"] or Decimal("0.00")
     coupon_credit_received = totals["coupon"] or Decimal("0.00")
+    tool_usage_debited = totals["tool_usage"] or Decimal("0.00")
     total_collected = (online_collected + cash_collected).quantize(Decimal("0.01"))
     balance = wallet_balance(user)
     net_withdrawable = max(balance - signup_bonus_credited - coupon_credit_received, Decimal("0.00")).quantize(Decimal("0.01"))
@@ -1546,6 +1553,7 @@ def wallet_collection_summary(user):
         "totalCollected": total_collected,
         "signupBonusCredited": signup_bonus_credited.quantize(Decimal("0.01")),
         "couponCreditReceived": coupon_credit_received.quantize(Decimal("0.01")),
+        "toolUsageDebited": tool_usage_debited.quantize(Decimal("0.01")),
         "netWithdrawable": net_withdrawable,
     }
 
@@ -2311,43 +2319,99 @@ def generate_passport_photo_with_gemini(prompt, image_bytes, content_type):
     return None, "Gemini did not return an image."
 
 
-def apply_gemini_fallback(order):
-    """Last resort when the desktop PrintPilot Agent fails to produce a
-    passport photo (offline, crashed, or timed out): generate it directly
-    from the server via the Gemini API so the customer still gets their
-    photo instead of a bare error. Mutates and saves `order` in place.
-    Returns True if the fallback produced a usable photo."""
-    if order.status in (PrintOrder.STATUS_AWAITING_APPROVAL, PrintOrder.STATUS_AWAITING_PAYMENT):
-        # Every current caller (resolve_passport_photo, complete_passport_job)
-        # already excludes these statuses before getting here - this is a
-        # last-line-of-defense repeat of that same check inside the function
-        # that actually makes the billed Gemini call, so a future caller that
-        # forgets the check can't accidentally generate (and bill) a photo
-        # before a cash order is approved or an online payment is confirmed.
-        return False
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+OPENAI_TIMEOUT = int(os.environ.get("OPENAI_TIMEOUT") or 90)
+OPENAI_IMAGE_MODEL = os.environ.get("OPENAI_IMAGE_MODEL") or "gpt-image-1"
+OPENAI_IMAGE_EDIT_URL = "https://api.openai.com/v1/images/edits"
 
-    def give_up():
-        # Both the PrintPilot Agent and this Gemini fallback have now failed -
-        # there is no way left to ever produce a photo for this order, so
-        # reflect that in the order's own status instead of leaving it
-        # looking like a normal in-progress "Queued" order forever (it would
-        # otherwise just sit there silently retrying every
-        # PASSPORT_PHOTO_FALLBACK_RETRY_SECONDS on every future poll).
-        if order.status != PrintOrder.STATUS_FAILED:
-            order.status = PrintOrder.STATUS_FAILED
-            order.save(update_fields=["status"])
-        return False
 
-    if not order.original_filename:
-        return give_up()
+def _encode_multipart_form(fields: dict, file_field: str, filename: str, file_content_type: str, file_bytes: bytes):
+    """Hand-rolled multipart/form-data encoder so the OpenAI image-edit call
+    below can stay on stdlib urllib - same dependency-free approach as
+    generate_passport_photo_with_gemini - instead of adding `requests` or the
+    `openai` SDK as a new backend dependency just for one endpoint."""
+    boundary = uuid.uuid4().hex
+    parts = []
+    for name, value in fields.items():
+        parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n{value}\r\n'.encode("utf-8"))
+    parts.append(
+        f'--{boundary}\r\nContent-Disposition: form-data; name="{file_field}"; filename="{filename}"\r\n'
+        f"Content-Type: {file_content_type}\r\n\r\n".encode("utf-8")
+    )
+    parts.append(file_bytes)
+    parts.append(f"\r\n--{boundary}--\r\n".encode("utf-8"))
+    return f"multipart/form-data; boundary={boundary}", b"".join(parts)
 
-    content_type, image_bytes = data_uri_to_bytes(order.original_filename)
-    result_type, result = generate_passport_photo_with_gemini(order.passport_prompt, image_bytes, content_type)
-    if not result_type:
-        logger.warning("Gemini fallback failed for passport order %s: %s", order.id, result)
-        return give_up()
 
-    cleaned_bytes = remove_gemini_watermark(result, result_type)
+OPENAI_ALLOWED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp"}
+
+
+def generate_passport_photo_with_openai(prompt, image_bytes, content_type):
+    """Call OpenAI's image-editing endpoint (gpt-image-1 by default) directly
+    from the server, keyed off OPENAI_API_KEY in .env. Same contract as
+    generate_passport_photo_with_gemini: returns (content_type, bytes) on
+    success, or (None, error_message) on failure - never raises."""
+    if not OPENAI_API_KEY:
+        return None, "OpenAI is not configured."
+
+    # Unlike Gemini, OpenAI's edit endpoint hard-rejects anything outside
+    # these three mimetypes - the browser/multipart upload occasionally hands
+    # us a generic "application/octet-stream" for a perfectly good JPEG
+    # (file_to_data_uri stores whatever the upload's own content_type was),
+    # which would otherwise fail every request with "unsupported mimetype"
+    # even though the bytes are a real photo.
+    if content_type not in OPENAI_ALLOWED_IMAGE_TYPES:
+        content_type = "image/jpeg"
+
+    filename = "photo" + (mimetypes.guess_extension(content_type) or ".jpg")
+    content_type_header, body = _encode_multipart_form(
+        {
+            "model": OPENAI_IMAGE_MODEL,
+            "prompt": prompt,
+            "size": "1024x1536",
+            "quality": "high",
+            "input_fidelity": "high",
+            "n": "1",
+        },
+        "image",
+        filename,
+        content_type,
+        image_bytes,
+    )
+
+    request = urllib.request.Request(
+        OPENAI_IMAGE_EDIT_URL,
+        data=body,
+        headers={"Content-Type": content_type_header, "Authorization": f"Bearer {OPENAI_API_KEY}"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=OPENAI_TIMEOUT) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode("utf-8", errors="replace")
+        return None, f"OpenAI API error: {detail[:200]}"
+    except (urllib.error.URLError, TimeoutError):
+        return None, "OpenAI API is temporarily unavailable."
+    except Exception:
+        logger.exception("generate_passport_photo_with_openai: unexpected failure calling OpenAI")
+        return None, "OpenAI API call failed unexpectedly."
+
+    data = payload.get("data") or []
+    if data and data[0].get("b64_json"):
+        return "image/png", base64.b64decode(data[0]["b64_json"])
+
+    return None, "OpenAI did not return an image."
+
+
+def _finalize_passport_photo(order, result_type, result_bytes, is_gemini_output):
+    """Shared save path for a freshly generated passport photo, used by both
+    apply_ai_fallback and the OpenAI-primary attempt in
+    save_raw_passport_photo. remove_gemini_watermark blindly patches a fixed
+    bottom-right box on the assumption a Gemini sparkle watermark is there -
+    it must only run on Gemini's own output, never on OpenAI's, or it would
+    stamp over a clean image for no reason."""
+    cleaned_bytes = remove_gemini_watermark(result_bytes, result_type) if is_gemini_output else result_bytes
     encoded = base64.b64encode(cleaned_bytes).decode("ascii")
 
     order.gemini_photo = f"data:{result_type};base64,{encoded}"
@@ -2363,7 +2427,76 @@ def apply_gemini_fallback(order):
         update_fields.append("status")
     order.save(update_fields=update_fields)
     charge_wallet_for_tool(order.user, "passport_photo", quantity=1, order=order)
-    return True
+
+
+def apply_ai_fallback(order):
+    """Last resort when the desktop PrintPilot Agent fails to produce a
+    passport photo (offline, crashed, or timed out): generate it directly
+    from the server so the customer still gets their photo instead of a bare
+    error. Only fires for the two agent-first modes in PassportAIConfig
+    (MODE_AGENT_GEMINI_BACKUP / MODE_AGENT_OPENAI_BACKUP) - the two *_PRIMARY
+    modes already had their one shot at the chosen provider directly in
+    save_raw_passport_photo, before the agent ever saw the job, so there is
+    no second provider configured to fall back to here. Mutates and saves
+    `order` in place. Returns True if the configured backup produced a
+    usable photo."""
+    if order.status in (PrintOrder.STATUS_AWAITING_APPROVAL, PrintOrder.STATUS_AWAITING_PAYMENT):
+        # Every current caller (resolve_passport_photo, complete_passport_job)
+        # already excludes these statuses before getting here - this is a
+        # last-line-of-defense repeat of that same check inside the function
+        # that actually makes the billed Gemini/OpenAI call, so a future
+        # caller that forgets the check can't accidentally generate (and
+        # bill) a photo before a cash order is approved or an online payment
+        # is confirmed.
+        return False
+
+    def give_up():
+        # The agent and its configured backup (if any) have both now failed -
+        # there is no way left to ever produce a photo for this order, so
+        # reflect that in the order's own status instead of leaving it
+        # looking like a normal in-progress "Queued" order forever (it would
+        # otherwise just sit there silently retrying every
+        # PASSPORT_PHOTO_FALLBACK_RETRY_SECONDS on every future poll).
+        if order.status != PrintOrder.STATUS_FAILED:
+            order.status = PrintOrder.STATUS_FAILED
+            order.save(update_fields=["status"])
+        return False
+
+    if not order.original_filename:
+        return give_up()
+
+    try:
+        mode = PassportAIConfig.get_solo().mode
+    except Exception:
+        logger.exception("Failed to load PassportAIConfig for passport order %s", order.id)
+        return give_up()
+
+    if mode == PassportAIConfig.MODE_AGENT_GEMINI_BACKUP:
+        provider_fn, is_gemini_output, provider_label = generate_passport_photo_with_gemini, True, "Gemini"
+    elif mode == PassportAIConfig.MODE_AGENT_OPENAI_BACKUP:
+        provider_fn, is_gemini_output, provider_label = generate_passport_photo_with_openai, False, "OpenAI"
+    else:
+        # openai_primary / gemini_primary: no agent-failure backup configured.
+        return give_up()
+
+    content_type, image_bytes = data_uri_to_bytes(order.original_filename)
+    result_type, result = provider_fn(order.passport_prompt, image_bytes, content_type)
+    # Gemini can take up to GEMINI_TIMEOUT (60s) and OpenAI up to OPENAI_TIMEOUT
+    # (90s) - either call can run long enough that Supabase's session-mode
+    # pooler drops the DB connection this request opened before the call even
+    # started. Force a fresh one before writing the result instead of finding
+    # out via a 500 mid-save.
+    connection.close()
+    if result_type:
+        try:
+            _finalize_passport_photo(order, result_type, result, is_gemini_output=is_gemini_output)
+            return True
+        except Exception:
+            logger.exception("Failed to save %s backup result for passport order %s", provider_label, order.id)
+    else:
+        logger.warning("%s backup failed for passport order %s: %s", provider_label, order.id, result)
+
+    return give_up()
 
 
 def pricing_rate(settings, price_item_id, pages, fallback_rate):
@@ -2615,7 +2748,7 @@ def register_user(request):
     user.is_active = False
     user.save(update_fields=["first_name", "is_active"])
     UserProfile.objects.create(user=user, phone=phone)
-    ShopProfile.objects.create(user=user, shop_name="Cyber Cafe Shankar", mobile=phone, whatsapp=phone, email=email, referred_by_agent=referring_agent)
+    ShopProfile.objects.create(user=user, shop_name="Cyber Cafe Repetigo", mobile=phone, whatsapp=phone, email=email, referred_by_agent=referring_agent)
     try:
         create_email_verification(user)
     except Exception:
@@ -2891,6 +3024,7 @@ def wallet(request):
                 "totalCollected": float(collection_summary["totalCollected"]),
                 "signupBonusCredited": float(collection_summary["signupBonusCredited"]),
                 "couponCreditReceived": float(collection_summary["couponCreditReceived"]),
+                "toolUsageDebited": float(collection_summary["toolUsageDebited"]),
                 "netWithdrawable": float(collection_summary["netWithdrawable"]),
                 "pendingWithdrawal": float(pending_withdrawal),
                 "paidWithdrawal": float(paid_withdrawal),
@@ -3828,6 +3962,33 @@ def mark_passport_order_paid(request, order_id):
 
 @csrf_exempt
 @require_http_methods(["POST", "OPTIONS"])
+def mark_passport_order_printed(request, order_id):
+    """Passport photos are printed by the shop owner themselves from the
+    browser's print-sheet page (see photo-print-sheet), not by the desktop
+    Print Agent - there's no automatic "print completed" signal for them like
+    there is for agent-printed documents, so the frontend calls this the
+    moment the owner opens the print sheet for one."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    order = PrintOrder.objects.filter(id=order_id, user=user, service_key="passport_photo").first()
+    if not order:
+        return JsonResponse({"message": "Order not found."}, status=404)
+    if order.status != PrintOrder.STATUS_QUEUED:
+        return JsonResponse({"message": "Only queued passport photo orders can be marked as printed."}, status=400)
+
+    order.status = PrintOrder.STATUS_PRINTED
+    order.printed_at = timezone.now()
+    order.save(update_fields=["status", "printed_at"])
+    return JsonResponse({"order": public_order(order)})
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
 def approve_cash_order(request, order_id):
     if request.method == "OPTIONS":
         return JsonResponse({})
@@ -4161,19 +4322,21 @@ PASSPORT_PHOTO_FALLBACK_RETRY_SECONDS = 20
 def resolve_passport_photo(order):
     """Detect a stale/offline PrintPilot Agent job and, on any passport-photo
     failure (agent timeout or agent-reported failure), fall back to
-    generating the photo directly via the Gemini API. Mutates and saves
-    `order` in place as needed. Safe to call on every poll from any caller
-    (dashboard tool or public scan-to-print page) - retries the fallback at
-    most once every PASSPORT_PHOTO_FALLBACK_RETRY_SECONDS so a permanently
-    broken fallback doesn't get hammered on every poll. A cash-counter order
-    still waiting on the shop owner's approval (STATUS_AWAITING_APPROVAL) or
-    an online-payment order still waiting on the gateway to confirm payment
+    generating the photo directly via whichever provider PassportAIConfig
+    has configured as the agent's backup (see apply_ai_fallback). Mutates and
+    saves `order` in place as needed. Safe to
+    call on every poll from any caller (dashboard tool or public
+    scan-to-print page) - retries the fallback at most once every
+    PASSPORT_PHOTO_FALLBACK_RETRY_SECONDS so a permanently broken fallback
+    doesn't get hammered on every poll. A cash-counter order still waiting on
+    the shop owner's approval (STATUS_AWAITING_APPROVAL) or an
+    online-payment order still waiting on the gateway to confirm payment
     (STATUS_AWAITING_PAYMENT) is excluded from the agent's job list on
     purpose (see agent_passport_jobs) - without this guard, this "stale job"
     detector would treat that as an abandoned agent job after
-    PASSPORT_PHOTO_STALE_JOB_SECONDS and trigger the paid Gemini fallback
-    anyway, generating (and billing) the photo before it was ever approved
-    or paid for."""
+    PASSPORT_PHOTO_STALE_JOB_SECONDS and trigger the paid fallback anyway,
+    generating (and billing) the photo before it was ever approved or paid
+    for."""
     if order.service_key != "passport_photo" or order.gemini_photo or order.status in (
         PrintOrder.STATUS_AWAITING_APPROVAL, PrintOrder.STATUS_AWAITING_PAYMENT
     ):
@@ -4191,7 +4354,7 @@ def resolve_passport_photo(order):
 
     if order.photo_status == PrintOrder.PHOTO_STATUS_FAILED:
         stale_seconds = (timezone.now() - order.photo_updated_at).total_seconds() if order.photo_updated_at else 0
-        if (just_failed or stale_seconds >= PASSPORT_PHOTO_FALLBACK_RETRY_SECONDS) and not apply_gemini_fallback(order):
+        if (just_failed or stale_seconds >= PASSPORT_PHOTO_FALLBACK_RETRY_SECONDS) and not apply_ai_fallback(order):
             order.photo_updated_at = timezone.now()
             order.save(update_fields=["photo_updated_at"])
 
@@ -4246,6 +4409,41 @@ def save_raw_passport_photo(request):
         photo_status=PrintOrder.PHOTO_STATUS_PENDING,
         photo_updated_at=timezone.now(),
     )
+
+    ai_mode = PassportAIConfig.get_solo().mode
+    if ai_mode in (PassportAIConfig.MODE_OPENAI_PRIMARY, PassportAIConfig.MODE_GEMINI_PRIMARY):
+        # *_PRIMARY mode: call the chosen provider immediately, before the
+        # PrintPilot Agent ever sees this job, so the shop gets a photo
+        # without waiting on a desktop agent poll at all. If that call fails
+        # or isn't reachable right now, just leave the order PENDING - it
+        # silently drops into the normal agent queue (resolve_passport_photo)
+        # instead of failing the upload outright. Wrapped in try/except (unlike
+        # apply_ai_fallback's callers, which run from a poll and can afford to
+        # let an exception surface) because this runs inline in the upload
+        # request - any crash here, including a save() on a DB connection that
+        # Supabase's pooler dropped while this ~5-90s call was in flight, must
+        # not turn a successful upload into a 500.
+        try:
+            content_type, image_bytes = data_uri_to_bytes(order.original_filename)
+            if ai_mode == PassportAIConfig.MODE_OPENAI_PRIMARY:
+                result_type, result = generate_passport_photo_with_openai(prompt, image_bytes, content_type)
+                is_gemini_output = False
+                provider_label = "OpenAI"
+            else:
+                result_type, result = generate_passport_photo_with_gemini(prompt, image_bytes, content_type)
+                is_gemini_output = True
+                provider_label = "Gemini"
+            if result_type:
+                # Force a fresh DB connection before writing the result back -
+                # the one opened for order creation above may have sat idle
+                # for the whole call and been dropped by the pooler.
+                connection.close()
+                _finalize_passport_photo(order, result_type, result, is_gemini_output=is_gemini_output)
+            else:
+                logger.warning("%s primary generation failed for passport order %s: %s", provider_label, order.id, result)
+        except Exception:
+            logger.exception("Primary AI generation crashed for passport order %s", order.id)
+
     return JsonResponse({"id": order.id})
 
 
@@ -4258,7 +4456,7 @@ def save_manual_passport_photo(request):
     finished image directly - no Gemini/agent pipeline involved, so the
     order is created already-done instead of PHOTO_STATUS_PENDING like
     save_raw_passport_photo. Billed the same as an AI-generated photo
-    (see apply_gemini_fallback) since it uses the same passport_photo tool.
+    (see apply_ai_fallback) since it uses the same passport_photo tool.
     """
     if request.method == "OPTIONS":
         return JsonResponse({})
@@ -4452,7 +4650,7 @@ def complete_passport_job(request, job_id):
     if order.status == PrintOrder.STATUS_AWAITING_APPROVAL:
         # Same guard as claim_passport_job/agent_passport_jobs - this order
         # was never legitimately claimable, so don't let a report against
-        # its id (including the failure branch's Gemini fallback below)
+        # its id (including the failure branch's AI fallback below)
         # generate/bill a photo that was never approved.
         return JsonResponse({"message": "This cash-counter order is still waiting for the shop owner's approval."}, status=409)
     if order.status == PrintOrder.STATUS_AWAITING_PAYMENT:
@@ -4463,7 +4661,7 @@ def complete_passport_job(request, job_id):
         order.photo_error_message = friendly_photo_error_message(request.POST.get("message", ""))
         order.photo_updated_at = timezone.now()
         order.save(update_fields=["photo_status", "photo_error_message", "photo_updated_at"])
-        apply_gemini_fallback(order)
+        apply_ai_fallback(order)
         return JsonResponse(public_passport_job(order, request))
 
     final_image = request.FILES.get("final_image")

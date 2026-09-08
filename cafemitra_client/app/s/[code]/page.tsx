@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Clock3, Crop, Download, Eye, EyeOff, FileText, IdCard, Image as ImageIcon, LoaderCircle, LockKeyhole, Printer, ShieldCheck, Trash2, Upload, Wallet, X } from "lucide-react";
 import { apiUrl } from "@/lib/api";
 import { calculatePriceItemRate, formatPriceItem, getAllowedPaymentModes, mergePricingDefaults, type PriceItem, type PricingService } from "@/lib/pricing";
 import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
+import { stashPhotoForPrintSheet } from "@/lib/printSheetHandoff";
 import { CropEditor, cropImage, loadImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, warpPerspectiveCrop, type CropQuad, type CropRect } from "../../CropEditor";
 import PublicResumeBuilder from "./PublicResumeBuilder";
 import PublicBiodataMaker from "./PublicBiodataMaker";
@@ -72,6 +73,7 @@ function loadScript(src: string) {
 
 export default function CustomerScanPage() {
   const params = useParams<{ code: string }>();
+  const router = useRouter();
   const [data, setData] = useState<PublicShop | null>(null);
   const [error, setError] = useState("");
   const [selectedService, setSelectedService] = useState("auto_document_print");
@@ -193,7 +195,6 @@ export default function CustomerScanPage() {
   const amount = hasUploadedFile ? Math.max(0, selectedRate * (isPassportPhoto ? copies : pages * copies)) : 0;
   const hasPdfFile = isPdfFile(fileType, fileName);
   const hasImageFile = isImageFile(fileType, fileName);
-  const onlyCropImage = selectedService === "auto_document_print" && hasImageFile;
   const canCropImage = (selectedService === "auto_document_print" || isPassportPhoto) && hasImageFile;
   const showServiceSelector = (data?.services.length || 0) > 1;
   const activeStep = showServiceSelector
@@ -941,7 +942,7 @@ export default function CustomerScanPage() {
         <div className="customer-shop-overlay">
           <div className="customer-shop-identity">
             <div className="customer-logo">
-              {data.shop.logo ? <img src={data.shop.logo} alt="" /> : <Printer size={21} />}
+              {data.shop.logo ? <img src={data.shop.logo} alt="" /> : <img src="/Fab-Icon.png" alt="RepetiGo" />}
             </div>
             <div className="customer-shop-copy">
               <div>
@@ -1054,11 +1055,9 @@ export default function CustomerScanPage() {
                       <Crop size={16} /> Crop
                     </button>
                   ) : null}
-                  {!onlyCropImage ? (
-                    <button type="button" onClick={clearUpload}>
-                      <X size={16} /> Remove
-                    </button>
-                  ) : null}
+                  <button type="button" onClick={clearUpload}>
+                    <X size={16} /> Remove
+                  </button>
                 </div>
                 {isPassportPhoto && passportSheetUrl ? (
                   <>
@@ -1291,9 +1290,22 @@ export default function CustomerScanPage() {
                   {order.geminiPhoto ? (
                     <>
                       <img src={apiUrl(order.geminiPhoto)} alt="Generated passport photo" className="gemini-photo-preview" />
-                      <a className="customer-download-btn" href={apiUrl(order.geminiPhoto)} download="passport-photo.jpg">
-                        <Download size={16} /> Download photo
-                      </a>
+                      <div className="customer-photo-actions">
+                        <a className="customer-download-btn" href={apiUrl(order.geminiPhoto)} download="passport-photo.jpg">
+                          <Download size={16} /> Download photo
+                        </a>
+                        <button
+                          type="button"
+                          className="customer-download-btn"
+                          onClick={() => {
+                            if (!order.geminiPhoto) return;
+                            stashPhotoForPrintSheet(order.geminiPhoto, "passport-photo.jpg");
+                            router.push("/photo-print-sheet");
+                          }}
+                        >
+                          <Printer size={16} /> Print
+                        </button>
+                      </div>
                       <p className="customer-inline-help">Please collect your hardcopy passport photo from your cyber cafe shop.</p>
                     </>
                   ) : order.status === "awaiting_approval" ? (

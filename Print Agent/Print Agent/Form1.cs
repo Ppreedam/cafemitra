@@ -1304,7 +1304,8 @@ namespace Print_Agent
                 job.TotalAmount,
                 job.PrintColorModeLabel,
                 job.Pages,
-                job.Copies
+                job.Copies,
+                job.TokenId
             );
 
         }
@@ -1605,6 +1606,7 @@ namespace Print_Agent
     public class CashConfirmForm : Form
     {
         private readonly Label lblTitle;
+        private readonly Label lblToken;
         private readonly Label lblAmount;
         private readonly Label lblDetails;
         private readonly Button btnConfirm;
@@ -1612,12 +1614,12 @@ namespace Print_Agent
 
         public bool Confirmed { get; private set; }
 
-        public CashConfirmForm(decimal amount, string colorLabel, int pages, int copies)
+        public CashConfirmForm(decimal amount, string colorLabel, int pages, int copies, string tokenId)
         {
             // ── Form chrome ──────────────────────────────────────────
             FormBorderStyle = FormBorderStyle.None;
             StartPosition = FormStartPosition.CenterScreen;
-            Size = new Size(420, 260);
+            Size = new Size(420, 292);
             BackColor = Color.White;
             TopMost = true;                 // always-on-top
             ShowInTaskbar = true;
@@ -1670,6 +1672,19 @@ namespace Print_Agent
             topBar.Controls.Add(btnClose);
             btnClose.BringToFront();
 
+            // ── Token/Order ID (so the cafe owner knows which customer this
+            // request belongs to) ────────────────────────────────────
+            lblToken = new Label
+            {
+                Text = string.IsNullOrWhiteSpace(tokenId) ? "" : $"Token: {tokenId}",
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold),
+                ForeColor = Theme.Teal,
+                AutoSize = false,
+                TextAlign = ContentAlignment.MiddleCenter,
+                Location = new Point(20, 64),
+                Size = new Size(Width - 40, 22)
+            };
+
             // ── Amount (big, bold) ───────────────────────────────────
             lblAmount = new Label
             {
@@ -1678,7 +1693,7 @@ namespace Print_Agent
                 ForeColor = Theme.Teal,
                 AutoSize = false,
                 TextAlign = ContentAlignment.MiddleCenter,
-                Location = new Point(20, 72),
+                Location = new Point(20, 104),
                 Size = new Size(Width - 40, 50)
             };
 
@@ -1690,7 +1705,7 @@ namespace Print_Agent
                 ForeColor = Color.Gray,
                 AutoSize = false,
                 TextAlign = ContentAlignment.MiddleCenter,
-                Location = new Point(20, 122),
+                Location = new Point(20, 154),
                 Size = new Size(Width - 40, 24)
             };
 
@@ -1701,7 +1716,7 @@ namespace Print_Agent
                 ForeColor = Color.DimGray,
                 AutoSize = false,
                 TextAlign = ContentAlignment.MiddleCenter,
-                Location = new Point(20, 150),
+                Location = new Point(20, 182),
                 Size = new Size(Width - 40, 36)
             };
 
@@ -1710,7 +1725,7 @@ namespace Print_Agent
             {
                 Text = "Reject",
                 Size = new Size(160, 42),
-                Location = new Point(30, 200),
+                Location = new Point(30, 232),
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
@@ -1721,7 +1736,7 @@ namespace Print_Agent
             {
                 Text = "Confirm ✓",
                 Size = new Size(160, 42),
-                Location = new Point(Width - 190, 200),
+                Location = new Point(Width - 190, 232),
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
@@ -1729,6 +1744,7 @@ namespace Print_Agent
             btnConfirm.Click += (s, e) => ConfirmAndClose();
 
             Controls.Add(topBar);
+            Controls.Add(lblToken);
             Controls.Add(lblAmount);
             Controls.Add(lblDetails);
             Controls.Add(lblInstruction);
@@ -1760,9 +1776,9 @@ namespace Print_Agent
         /// <summary>
         /// Shows the dialog modally and returns true if the user confirmed cash collection.
         /// </summary>
-        public static bool ShowConfirm(decimal amount, string colorLabel, int pages, int copies)
+        public static bool ShowConfirm(decimal amount, string colorLabel, int pages, int copies, string tokenId)
         {
-            using var form = new CashConfirmForm(amount, colorLabel, pages, copies);
+            using var form = new CashConfirmForm(amount, colorLabel, pages, copies, tokenId);
             form.ShowDialog();
             return form.Confirmed;
         }

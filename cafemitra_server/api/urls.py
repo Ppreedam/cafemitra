@@ -36,6 +36,7 @@ urlpatterns = [
     re_path(r"^admin/contact-messages/?$", admin_views.admin_contact_messages),  # GET inbox (status=unread|resolved)
     re_path(r"^admin/contact-messages/(?P<message_id>[0-9]+)/?$", admin_views.admin_contact_message_detail),  # PUT mark resolved/unread + internal note
     re_path(r"^admin/print-agent/stats/?$", admin_views.admin_print_agent_stats),  # GET desktop Print Agent last-seen per shop + recent failed jobs
+    re_path(r"^admin/passport-ai-settings/?$", admin_views.admin_passport_ai_settings),  # GET/PUT OpenAI passport-photo backup/primary config
     re_path(r"^admin/wallet/ledger/export/?$", admin_views.admin_wallet_ledger_export),  # GET CSV download of the filtered wallet ledger (same filters as the JSON list, capped at 5000 rows)
     re_path(r"^admin/orders/export/?$", admin_views.admin_orders_export),  # GET CSV download of the filtered order list (same filters as the JSON list, capped at 5000 rows)
     re_path(r"^admin/notifications/?$", admin_views.admin_notifications),  # GET cheap poll-friendly counts for sidebar badges
@@ -122,6 +123,7 @@ urlpatterns = [
     re_path(r"^orders/?$", views.order_history),  # GET latest 100 orders for the owner across all services
     re_path(r"^orders/(?P<order_id>[0-9]+)/?$", views.order_detail),  # GET a single order owned by the caller
     re_path(r"^orders/(?P<order_id>[0-9]+)/mark-paid/?$", views.mark_passport_order_paid),  # POST mark an unpaid cash passport-photo order as paid
+    re_path(r"^orders/(?P<order_id>[0-9]+)/mark-printed/?$", views.mark_passport_order_printed),  # POST mark a queued passport-photo order as printed (owner opened the print sheet)
     re_path(r"^orders/(?P<order_id>[0-9]+)/approve-cash/?$", views.approve_cash_order),  # POST approve a cash-counter order awaiting approval
     re_path(r"^orders/(?P<order_id>[0-9]+)/reject-cash/?$", views.reject_cash_order),  # POST reject a cash-counter order
     re_path(r"^orders/(?P<order_id>[0-9]+)/file/?$", views.order_document),  # GET download the order's original uploaded document

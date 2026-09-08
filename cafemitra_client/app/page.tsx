@@ -309,7 +309,7 @@ function Hero() {
             </Link>
             <a
               className="ai-btn ai-btn-light"
-              href="https://youtu.be/TP76Eedq-aY?si=XL5VuES437B-o6XX"
+              href="https://youtu.be/hUspj2vx-wA?si=GJiBTUMsuvfCKEyS"
               target="_blank"
               rel="noopener noreferrer"
             >

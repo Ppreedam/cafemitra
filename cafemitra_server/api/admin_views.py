@@ -18,7 +18,7 @@ from django.http import HttpResponse, JsonResponse
 from .admin_activity import log_admin_activity
 from .admin_auth import get_admin_role, require_admin, require_section
 from .lead_scraper_runner import run_scrape_job
-from .models import AdminActivityLog, AdminRole, Agent, ContactMessage, Coupon, CouponRedemption, GooglePlace, PrintOrder, ScrapeRun, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTransaction, WalletTopup, WithdrawalRequest
+from .models import AdminActivityLog, AdminRole, Agent, ContactMessage, Coupon, CouponRedemption, GooglePlace, PassportAIConfig, PrintOrder, ScrapeRun, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTransaction, WalletTopup, WithdrawalRequest
 from .views import (
     ORDER_LIST_DEFERRED_FIELDS,
     cafe_code_for_user,
@@ -1607,6 +1607,47 @@ def admin_print_agent_stats(request):
             ],
         }
     )
+
+
+def public_passport_ai_config(config):
+    return {
+        "mode": config.mode,
+        "modeChoices": [
+            {"value": value, "label": label, "requiredEnvVar": PassportAIConfig.MODE_REQUIRED_ENV_VAR[value]}
+            for value, label in PassportAIConfig.MODE_CHOICES
+        ],
+        "updatedAt": config.updated_at.isoformat(),
+    }
+
+
+@csrf_exempt
+@require_http_methods(["GET", "PUT", "OPTIONS"])
+def admin_passport_ai_settings(request):
+    """Admin-editable choice of AI provider for the passport-photo path (see
+    views.PassportAIConfig / views.apply_ai_fallback / views.
+    save_raw_passport_photo). Lives under the "tools_config" section
+    (Tools Config > Passport Photo in the admin nav)."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "tools_config")
+    if err:
+        return err
+
+    config = PassportAIConfig.get_solo()
+
+    if request.method == "GET":
+        return JsonResponse({"config": public_passport_ai_config(config)})
+
+    body = parse_body(request)
+    mode = str(body.get("mode", "")).strip()
+    if mode not in dict(PassportAIConfig.MODE_CHOICES):
+        return JsonResponse({"message": "Invalid mode."}, status=400)
+    config.mode = mode
+    config.save(update_fields=["mode", "updated_at"])
+    log_admin_activity(admin_user, "passport_ai_config.update", "passport_ai_config", config.id, f"mode={config.mode}")
+
+    return JsonResponse({"config": public_passport_ai_config(config)})
 
 
 # --- Phase 11: Reporting (CSV export) ----------------------------------------

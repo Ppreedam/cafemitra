@@ -24,19 +24,20 @@ export type DocTypeMeta = {
   description: string;
   icon: LucideIcon;
   color: string;
+  comingSoon?: boolean;
 };
 
 export const DOC_TYPES: DocTypeMeta[] = [
   { key: "aadhaar", label: "Aadhaar Card", shortLabel: "AADHAAR", description: "Recreate a printable Aadhaar card from the downloaded e-Aadhaar PDF.", icon: IdCard, color: "#1a73e8" },
   { key: "pan", label: "PAN Card", shortLabel: "PAN", description: "Recreate a printable PAN card from the downloaded e-PAN PDF.", icon: Contact, color: "#26418f" },
   { key: "voter", label: "Voter ID Card", shortLabel: "VOTER ID", description: "Recreate a printable Voter ID (EPIC) card from the downloaded e-EPIC PDF.", icon: Vote, color: "#e8792f" },
-  { key: "eshram", label: "e-Shram Card", shortLabel: "E-SHRAM", description: "Recreate a printable e-Shram card from the downloaded UAN PDF.", icon: UserCheck, color: "#14b8a6" },
-  { key: "ayushman", label: "Ayushman Card", shortLabel: "AYUSHMAN", description: "Recreate a printable Ayushman Bharat (PM-JAY) card from the downloaded PDF.", icon: HeartPulse, color: "#c0392b" },
-  { key: "ration", label: "Ration Card", shortLabel: "RATION", description: "Recreate a printable Ration card from the downloaded PDF.", icon: Wheat, color: "#b8860b" },
-  { key: "apaar", label: "APAAR ID", shortLabel: "APAAR", description: "Recreate a printable APAAR (student) ID card from the downloaded PDF.", icon: BadgeCheck, color: "#6b46c1" },
-  { key: "epfo", label: "EPFO / UAN Card", shortLabel: "EPFO", description: "Recreate a printable EPFO / UAN card from the downloaded PDF.", icon: Landmark, color: "#155e63" },
-  { key: "dl", label: "Driving Licence", shortLabel: "DRIVING LICENCE", description: "Recreate a printable Driving Licence from the downloaded DL PDF.", icon: Car, color: "#2d3748" },
-  { key: "agriculture", label: "Agriculture Card", shortLabel: "AGRICULTURE", description: "Recreate a printable Agriculture / Kisan card from the downloaded PDF.", icon: Sprout, color: "#2f7d4f" },
+  { key: "eshram", label: "e-Shram Card", shortLabel: "E-SHRAM", description: "Recreate a printable e-Shram card from the downloaded UAN PDF.", icon: UserCheck, color: "#14b8a6", comingSoon: true },
+  { key: "ayushman", label: "Ayushman Card", shortLabel: "AYUSHMAN", description: "Recreate a printable Ayushman Bharat (PM-JAY) card from the downloaded PDF.", icon: HeartPulse, color: "#c0392b", comingSoon: true },
+  { key: "ration", label: "Ration Card", shortLabel: "RATION", description: "Recreate a printable Ration card from the downloaded PDF.", icon: Wheat, color: "#b8860b", comingSoon: true },
+  { key: "apaar", label: "APAAR ID", shortLabel: "APAAR", description: "Recreate a printable APAAR (student) ID card from the downloaded PDF.", icon: BadgeCheck, color: "#6b46c1", comingSoon: true },
+  { key: "epfo", label: "EPFO / UAN Card", shortLabel: "EPFO", description: "Recreate a printable EPFO / UAN card from the downloaded PDF.", icon: Landmark, color: "#155e63", comingSoon: true },
+  { key: "dl", label: "Driving Licence", shortLabel: "DRIVING LICENCE", description: "Recreate a printable Driving Licence from the downloaded DL PDF.", icon: Car, color: "#2d3748", comingSoon: true },
+  { key: "agriculture", label: "Agriculture Card", shortLabel: "AGRICULTURE", description: "Recreate a printable Agriculture / Kisan card from the downloaded PDF.", icon: Sprout, color: "#2f7d4f", comingSoon: true },
 ];
 
 export const DOC_FIELDS: Record<DocType, FieldDef[]> = {

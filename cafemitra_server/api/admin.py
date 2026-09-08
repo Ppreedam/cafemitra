@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AdminActivityLog, AdminRole, Agent, GooglePlace, GooglePlaceDetail, LeadActivity, ScrapeRun, ToolPricing, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
+from .models import AdminActivityLog, AdminRole, Agent, GooglePlace, GooglePlaceDetail, LeadActivity, PassportAIConfig, ScrapeRun, ToolPricing, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 
 
 @admin.register(ScrapeRun)
@@ -75,6 +75,12 @@ class ToolPricingAdmin(admin.ModelAdmin):
     list_display = ("tool_key", "label", "unit", "price", "price_b2b", "price_b2c", "is_billable", "updated_at")
     list_editable = ("price", "price_b2b", "price_b2c", "is_billable")
     search_fields = ("tool_key", "label")
+
+
+@admin.register(PassportAIConfig)
+class PassportAIConfigAdmin(admin.ModelAdmin):
+    list_display = ("id", "mode", "updated_at")
+    list_editable = ("mode",)
 
 
 @admin.register(WithdrawalRequest)

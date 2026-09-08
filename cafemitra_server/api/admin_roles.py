@@ -17,6 +17,7 @@ SECTION_ROLES = {
     "support": {AdminRole.ROLE_SUPPORT},
     "leads": {AdminRole.ROLE_SALES},
     "print_agent": {AdminRole.ROLE_SUPPORT},
+    "tools_config": {AdminRole.ROLE_SUPPORT},
     "analytics": {AdminRole.ROLE_FINANCE, AdminRole.ROLE_SALES},
     "activity_log": set(),
     "security": set(),

@@ -2,7 +2,7 @@
 
 import type React from "react";
 import { useEffect, useState } from "react";
-import { AlertTriangle, ArrowDownToLine, ArrowUpToLine, Banknote, Clock3, ReceiptText, Ticket, Wallet } from "lucide-react";
+import { AlertTriangle, ArrowDownToLine, ArrowUpToLine, Banknote, Clock3, ReceiptText, Sparkles, Ticket, Wallet } from "lucide-react";
 import { apiFetch, hasStoredSession } from "@/lib/api";
 import { DashboardShell } from "../DashboardShell";
 import { SkeletonBlock, UiState } from "../UiState";
@@ -37,6 +37,7 @@ type WalletData = {
     totalCollected: number;
     signupBonusCredited: number;
     couponCreditReceived: number;
+    toolUsageDebited: number;
     netWithdrawable: number;
     pendingWithdrawal: number;
     paidWithdrawal: number;
@@ -67,6 +68,7 @@ const emptyWallet: WalletData = {
     totalCollected: 0,
     signupBonusCredited: 0,
     couponCreditReceived: 0,
+    toolUsageDebited: 0,
     netWithdrawable: 0,
     pendingWithdrawal: 0,
     paidWithdrawal: 0,
@@ -112,7 +114,8 @@ function loadScript(src: string) {
 
 export default function WalletClient() {
   const [wallet, setWallet] = useState<WalletData>(emptyWallet);
-  const [message, setMessage] = useState("Loading wallet...");
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [message, setMessage] = useState("");
   const [messageKind, setMessageKind] = useState<"success" | "error">("error");
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("UPI");
@@ -156,7 +159,9 @@ export default function WalletClient() {
 
   async function loadWallet() {
     if (!hasStoredSession()) {
+      setMessageKind("error");
       setMessage("Please login to view wallet.");
+      setHasLoadedOnce(true);
       return;
     }
 
@@ -184,6 +189,8 @@ export default function WalletClient() {
     } catch (error) {
       setMessageKind("error");
       setMessage(error instanceof Error ? error.message : "Could not load wallet.");
+    } finally {
+      setHasLoadedOnce(true);
     }
   }
 
@@ -347,6 +354,7 @@ export default function WalletClient() {
     { label: "Withdrawable Balance", value: formatCurrency(wallet.summary.netWithdrawable), icon: Wallet, color: "#42b98e" },
     { label: "Online Balance", value: formatCurrency(wallet.balance), icon: Clock3, color: "#ff9a52" },
     { label: "Cash Counter Collected", value: formatCurrency(wallet.summary.cashCounterCollected), icon: Banknote, color: "#4a9dec" },
+    { label: "Tools Usage Credits", value: formatCurrency(wallet.summary.toolUsageDebited), icon: Sparkles, color: "#7c5cf5" },
   ];
   const trimmedAccountDetail = accountDetail.trim();
   const upiError = method === "UPI" && trimmedAccountDetail && !upiIdPattern.test(trimmedAccountDetail)
@@ -418,21 +426,25 @@ export default function WalletClient() {
         ) : null}
 
         <section className="metrics-grid wallet-metrics" aria-label="Wallet summary">
-          {cards.map((card) => {
-            const Icon = card.icon;
-            return (
-              <article className="metric-card" key={card.label}>
-                <span className="icon-tile" style={{ "--tile-color": card.color } as React.CSSProperties}>
-                  <Icon size={22} />
-                </span>
-                <div className="metric-content">
-                  <div className="metric-label">{card.label}</div>
-                  <div className="metric-value">{card.value}</div>
-                  <div className="metric-meta">{metricMeta(card.label, wallet.summary.signupBonusCredited, wallet.summary.couponCreditReceived)}</div>
-                </div>
-              </article>
-            );
-          })}
+          {!hasLoadedOnce ? (
+            <SkeletonBlock lines={4} />
+          ) : (
+            cards.map((card) => {
+              const Icon = card.icon;
+              return (
+                <article className="metric-card" key={card.label}>
+                  <span className="icon-tile" style={{ "--tile-color": card.color } as React.CSSProperties}>
+                    <Icon size={22} />
+                  </span>
+                  <div className="metric-content">
+                    <div className="metric-label">{card.label}</div>
+                    <div className="metric-value">{card.value}</div>
+                    <div className="metric-meta">{metricMeta(card.label, wallet.summary.signupBonusCredited, wallet.summary.couponCreditReceived)}</div>
+                  </div>
+                </article>
+              );
+            })
+          )}
         </section>
 
         <section className="wallet-layout">
@@ -634,6 +646,7 @@ function metricMeta(label: string, signupBonusCredited: number, couponCreditRece
   }
   if (label === "Online Balance") return "Wallet balance";
   if (label === "Cash Counter Collected") return "Already with cafe";
+  if (label === "Tools Usage Credits") return "Spent on paid tools so far";
   return "Wallet ledger";
 }
 

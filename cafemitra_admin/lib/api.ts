@@ -130,6 +130,23 @@ export function adminLogin(email: string, password: string) {
   });
 }
 
+// Generic auth endpoints shared with the cafe-owner app (views.py
+// request_password_reset/reset_password) - they operate on whichever User
+// the email/token belongs to, staff or not, so they work unchanged here.
+export function requestPasswordReset(email: string) {
+  return request<{ message: string }>("/auth/request-password-reset/", {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export function resetPassword(token: string, password: string) {
+  return request<{ message: string }>("/auth/reset-password/", {
+    method: "POST",
+    body: JSON.stringify({ token, password }),
+  });
+}
+
 export type AdminRoleValue = "super_admin" | "finance" | "support" | "sales";
 
 export function fetchAdminMe() {
@@ -721,6 +738,25 @@ export function fetchPrintAgentStats() {
   return request<{ onlineCount: number; shops: PrintAgentShopStatus[]; recentFailedJobs: PrintAgentFailedJob[] }>(
     "/admin/print-agent/stats/"
   );
+}
+
+export type PassportAIMode = "agent_gemini_backup" | "agent_openai_backup" | "openai_primary" | "gemini_primary";
+
+export type PassportAIConfig = {
+  mode: PassportAIMode;
+  modeChoices: { value: PassportAIMode; label: string; requiredEnvVar: string }[];
+  updatedAt: string;
+};
+
+export function fetchPassportAISettings() {
+  return request<{ config: PassportAIConfig }>("/admin/passport-ai-settings/");
+}
+
+export function updatePassportAISettings(mode: PassportAIMode) {
+  return request<{ config: PassportAIConfig }>("/admin/passport-ai-settings/", {
+    method: "PUT",
+    body: JSON.stringify({ mode }),
+  });
 }
 
 // --- Reporting / CSV export (Phase 11) ------------------------------------

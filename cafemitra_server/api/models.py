@@ -410,6 +410,61 @@ class WalletSetting(models.Model):
         return f"{self.key} = {self.value}"
 
 
+class PassportAIConfig(models.Model):
+    """Admin-editable choice of which AI provider generates passport photos,
+    and how it sits alongside the desktop PrintPilot Agent. Singleton row
+    (id=1) - see get_solo(). Exactly one of four mutually exclusive
+    strategies (see views.save_raw_passport_photo / views.apply_ai_fallback):
+
+    - MODE_AGENT_GEMINI_BACKUP (default): queue for the agent as normal;
+      only call Gemini if the agent fails. This is the original pipeline
+      from before OpenAI was ever added - the safe default.
+    - MODE_AGENT_OPENAI_BACKUP: queue for the agent as normal; only call
+      OpenAI if the agent fails. Gemini is not used at all in this mode.
+    - MODE_OPENAI_PRIMARY: call OpenAI immediately on upload, before the
+      agent ever sees the job. Neither the agent queue's own backup nor
+      Gemini is used.
+    - MODE_GEMINI_PRIMARY: call Gemini immediately on upload, before the
+      agent ever sees the job. Neither the agent queue's own backup nor
+      OpenAI is used.
+
+    Whichever mode is picked, if that mode's own attempt fails the order is
+    just left PENDING (falls into the normal agent queue) rather than
+    erroring the upload - see the callers for exactly which failures that
+    covers per mode.
+    """
+
+    MODE_AGENT_GEMINI_BACKUP = "agent_gemini_backup"
+    MODE_AGENT_OPENAI_BACKUP = "agent_openai_backup"
+    MODE_OPENAI_PRIMARY = "openai_primary"
+    MODE_GEMINI_PRIMARY = "gemini_primary"
+    MODE_CHOICES = [
+        (MODE_AGENT_GEMINI_BACKUP, "Agent first, Gemini backup - only if the agent fails"),
+        (MODE_AGENT_OPENAI_BACKUP, "Agent first, OpenAI backup - only if the agent fails"),
+        (MODE_OPENAI_PRIMARY, "OpenAI primary - generate with OpenAI immediately on upload"),
+        (MODE_GEMINI_PRIMARY, "Gemini primary - generate with Gemini immediately on upload"),
+    ]
+    # Which env var each mode depends on - drives the "Requires ..." hint in
+    # the admin UI (see admin_views.public_passport_ai_config).
+    MODE_REQUIRED_ENV_VAR = {
+        MODE_AGENT_GEMINI_BACKUP: "GEMINI_API_KEY",
+        MODE_AGENT_OPENAI_BACKUP: "OPENAI_API_KEY",
+        MODE_OPENAI_PRIMARY: "OPENAI_API_KEY",
+        MODE_GEMINI_PRIMARY: "GEMINI_API_KEY",
+    }
+
+    mode = models.CharField(max_length=30, choices=MODE_CHOICES, default=MODE_AGENT_GEMINI_BACKUP)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"PassportAIConfig(mode={self.mode})"
+
+    @classmethod
+    def get_solo(cls):
+        config, _ = cls.objects.get_or_create(id=1)
+        return config
+
+
 class ToolPricing(models.Model):
     """RepetiGo's own per-tool usage fee - separate from ServicePricing,
     which stores what a shop charges ITS customer at the counter. Editable
