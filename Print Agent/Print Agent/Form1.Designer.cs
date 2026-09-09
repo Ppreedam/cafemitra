@@ -152,7 +152,7 @@ namespace Print_Agent
             softwareVersion.Name = "softwareVersion";
             softwareVersion.Size = new Size(22, 17);
             softwareVersion.TabIndex = 1;
-            softwareVersion.Text = "14";
+            softwareVersion.Text = "15";
             softwareVersion.Visible = false;
             softwareVersion.Click += softwareVersion_Click;
             // 

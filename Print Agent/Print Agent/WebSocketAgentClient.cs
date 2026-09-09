@@ -7,12 +7,15 @@ namespace Print_Agent;
 /// over this socket - any message received just means "go poll now", so
 /// this class stays dumb on purpose: the existing GET /api/agent/jobs/
 /// flow (invoked via `onJobAvailable`) remains the single source of truth
-/// for job data. The existing poll timer keeps running unchanged as a
-/// fallback/keepalive; this is purely additive.
+/// for job data. `onConnectionChanged` lets Form1 stop the poll timer
+/// entirely while the socket is up (pushes make polling redundant load on
+/// the server) and resume it at the configured interval the instant the
+/// socket drops, so a WS outage never leaves jobs undiscovered.
 internal sealed class WebSocketAgentClient(
     Func<AgentConfig> getConfig,
     Func<Task> onJobAvailable,
-    Action<string> log
+    Action<string> log,
+    Action<bool> onConnectionChanged
 ) : IDisposable
 {
     // Same ladder as Form1's AutoLoginLoop, for consistency.
@@ -78,8 +81,22 @@ internal sealed class WebSocketAgentClient(
                 await socket.ConnectAsync(uri, token);
                 log("WebSocket connected - listening for job pushes.");
                 attempt = 0; // reset the ladder after a successful connect
+                SafeNotifyConnectionChanged(true);
 
-                await ReceiveLoopAsync(socket, token); // returns on close/error
+                try
+                {
+                    await ReceiveLoopAsync(socket, token); // returns on close/error
+                }
+                finally
+                {
+                    // Always on the way out of the receive loop, whether it
+                    // returned cleanly (server sent Close) or the socket was
+                    // torn down abruptly (server killed, network drop) and
+                    // ReceiveLoopAsync threw instead - either way, polling
+                    // must resume the instant we're no longer listening on
+                    // this socket, not just on a clean close.
+                    SafeNotifyConnectionChanged(false);
+                }
                 log("WebSocket disconnected - will reconnect.");
             }
             catch (OperationCanceledException)
@@ -125,6 +142,17 @@ internal sealed class WebSocketAgentClient(
             try { await Task.Delay(TimeSpan.FromSeconds(delay), token); }
             catch (OperationCanceledException) { return; }
         }
+    }
+
+    // A misbehaving UI-side handler (e.g. Invoke thrown against a form
+    // that's mid-teardown) must never escape into the reconnect loop above -
+    // that would skip the loop's own backoff/retry logic entirely and could
+    // leave polling stuck off if it happened to throw right after the
+    // connected(true) call.
+    private void SafeNotifyConnectionChanged(bool connected)
+    {
+        try { onConnectionChanged(connected); }
+        catch (Exception ex) { log($"onConnectionChanged handler failed: {ex.Message}"); }
     }
 
     private async Task ReceiveLoopAsync(ClientWebSocket socket, CancellationToken token)

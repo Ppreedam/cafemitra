@@ -1093,7 +1093,36 @@ namespace Print_Agent
                         _ = PollAndPrintAsync();
                     return Task.CompletedTask;
                 },
-                LogStatus
+                LogStatus,
+                connected =>
+                {
+                    // WS connected: stop polling entirely - the push tells us
+                    // the instant a job shows up, so a timer hit in between
+                    // would only ever find nothing. WS disconnected: resume
+                    // polling at the configured interval immediately, since
+                    // that's now the only way jobs get noticed until it
+                    // reconnects.
+                    void ApplyPollState()
+                    {
+                        if (_pollTimer == null) return;
+                        if (connected)
+                        {
+                            _pollTimer.Stop();
+                            LogStatus("Poll timer stopped - WebSocket is live, no more periodic /api/agent/jobs/ calls.");
+                        }
+                        else
+                        {
+                            _pollTimer.Interval = Math.Max(_config.PollIntervalSeconds, 5) * 1000;
+                            _pollTimer.Start();
+                            LogStatus($"Poll timer resumed - polling every {Math.Max(_config.PollIntervalSeconds, 5)}s (WebSocket disconnected).");
+                        }
+                    }
+
+                    if (InvokeRequired)
+                        BeginInvoke(new Action(ApplyPollState));
+                    else
+                        ApplyPollState();
+                }
             );
 
             // ── Poll Timer ────────────────────────────────────────────────
@@ -1545,9 +1574,17 @@ namespace Print_Agent
         }
 
         // ── Simple Status Log ─────────────────────────────────────────
+        // Cap on-disk log size so a chatty session (e.g. the poll timer
+        // ticking every few seconds for days) can't grow this file
+        // unbounded - trimmed back to half this size, not to zero, so
+        // there's still recent context immediately after a trim.
+        private const long MaxLogFileBytes = 2 * 1024 * 1024; // 2 MB
+
         private void LogStatus(string msg)
         {
-            System.Diagnostics.Debug.WriteLine($"[{DateTime.Now:HH:mm:ss}] {msg}");
+            var line = $"[{DateTime.Now:HH:mm:ss}] {msg}";
+            System.Diagnostics.Debug.WriteLine(line);
+            AppendToLogFile(line);
 
             if (txtAgentLog is null) return;
 
@@ -1557,7 +1594,35 @@ namespace Print_Agent
                 return;
             }
 
-            txtAgentLog.AppendText($"[{DateTime.Now:HH:mm:ss}] {msg}{Environment.NewLine}");
+            txtAgentLog.AppendText(line + Environment.NewLine);
+        }
+
+        // Persists every LogStatus line to disk (see AgentPaths.LogPath) so
+        // the activity log survives the app being closed/exited - the UI
+        // log box is in-memory only and is lost the moment the process ends,
+        // which made past issues impossible to diagnose after the fact.
+        // Best-effort: a disk/permission hiccup here must never crash the
+        // agent or block the caller.
+        private static void AppendToLogFile(string line)
+        {
+            try
+            {
+                Directory.CreateDirectory(AgentPaths.ConfigDir);
+
+                var info = new FileInfo(AgentPaths.LogPath);
+                if (info.Exists && info.Length > MaxLogFileBytes)
+                {
+                    var lines = File.ReadAllLines(AgentPaths.LogPath);
+                    var keepFrom = Math.Max(0, lines.Length - lines.Length / 2);
+                    File.WriteAllLines(AgentPaths.LogPath, lines[keepFrom..]);
+                }
+
+                File.AppendAllText(AgentPaths.LogPath, line + Environment.NewLine);
+            }
+            catch
+            {
+                // Best-effort - see comment above.
+            }
         }
 
         // ── Cleanup on Form Close ─────────────────────────────────────
