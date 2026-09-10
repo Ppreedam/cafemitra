@@ -69,7 +69,7 @@ export function AuthPanel({ mode }: AuthPanelProps) {
       }
 
       if (!phonePattern.test(values.phone.trim())) {
-        nextErrors.phone = "Mobile number must be exactly 10 digits.";
+        nextErrors.phone = "WhatsApp number must be exactly 10 digits.";
       }
 
       if (values.confirmPassword !== values.password || values.confirmPassword.length === 0) {
@@ -250,10 +250,11 @@ export function AuthPanel({ mode }: AuthPanelProps) {
                   onChange={(value) => updateValue("fullName", value)}
                 />
                 <Field
-                  label="Phone Number"
+                  label="WhatsApp Number"
                   name="phone-number"
                   type="tel"
-                  placeholder="Enter 10 digit mobile number"
+                  placeholder="Enter 10 digit WhatsApp number"
+                  hint="Enter a correct WhatsApp number to get a bonus - an incorrect number will not qualify."
                   value={values.phone}
                   error={touched.phone ? errors.phone : undefined}
                   verified={Boolean(values.phone.trim()) && !errors.phone}
