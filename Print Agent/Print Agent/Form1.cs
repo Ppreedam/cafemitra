@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using System.Drawing.Printing;
 using System.IO;
+using System.Management;
 using System.Text.Json;
 using System.Windows.Forms;
 using System.Drawing.Drawing2D;
@@ -19,10 +20,39 @@ namespace Print_Agent
         private readonly System.Collections.Generic.HashSet<int> _printedIds
             = new System.Collections.Generic.HashSet<int>();
 
+        // Job IDs this agent physically printed in a *previous* run, loaded
+        // from AgentPaths.PrintedJobsPath at startup (see LoadPrintedJobIds).
+        // _printedIds alone doesn't survive a restart - if the process died
+        // between the printer accepting the job and the "printed" status
+        // update reaching the server, the job is still "pending" server-side
+        // and a fresh _printedIds would print it again on the next poll.
+        // Anything in this set instead gets its status reconciled, never
+        // reprinted - see PollAndPrintAsync/ReconcilePreviouslyPrintedJobAsync.
+        private readonly System.Collections.Generic.HashSet<int> _recoveredPrintedIds
+            = new System.Collections.Generic.HashSet<int>();
+
         private readonly AgentConfig _config;
         private readonly string _configPath;
         private LocalStatusServer _localServer;
         private WebSocketAgentClient _wsClient;
+        private volatile bool _wsConnected;
+        private System.Windows.Forms.Timer _wsBlinkTimer;
+        private bool _wsBlinkBright;
+        private static readonly Color WsBlinkGreenBright = Color.FromArgb(34, 197, 94);
+        private static readonly Color WsBlinkGreenDim = Color.FromArgb(134, 239, 172);
+        private static readonly Color WsBlinkAmberBright = Color.FromArgb(234, 179, 8);
+        private static readonly Color WsBlinkAmberDim = Color.FromArgb(253, 224, 71);
+        private volatile bool _printerOfflineAlertShown;
+        // PollAndPrintAsync fires one ProcessJobAsync per job it finds
+        // without awaiting them, so 2+ jobs from the same poll/push run
+        // concurrently by default. They'd otherwise interleave through
+        // state that isn't per-job - it's fields/controls on this one form
+        // (selectedFile, cmbPrinters.SelectedItem, _pdfBytes, ...) - so job
+        // B's download/print landing mid-await of job A's can silently swap
+        // A's printer, paper size, or PDF bytes out from under it. This
+        // gate makes each job run end-to-end (cash confirm through the
+        // printed/failed status update) before the next one starts.
+        private readonly SemaphoreSlim _printQueueGate = new(1, 1);
         private CancellationTokenSource _autoLoginStop;
 
         private static readonly string SettingsFilePath =
@@ -246,6 +276,16 @@ namespace Print_Agent
 
             SetupSignedInChip();
             ShowSettingsOverlay(false);
+
+            // softwareVersion.Text (hidden - see VersionChecker) is the one
+            // real source of truth for the build's version, already bumped
+            // on every release for the update-check to work at all. label3
+            // is only the human-visible "Version: N" text; it used to carry
+            // its own separately-typed number and silently drifted out of
+            // sync with softwareVersion (shipped v15 while still reading
+            // "Version: 14" here). Deriving it removes the second place a
+            // release has to remember to touch.
+            label3.Text = $"Version: {softwareVersion.Text}";
         }
 
         // Chip location constants (relative to pnlAccountCard) for the
@@ -318,6 +358,43 @@ namespace Print_Agent
             var bg = on ? ColorTranslator.FromHtml("#F0FDFA") : Color.White;
             lblAccountStatus.BackColor = bg;
             lblLoginEmail.BackColor = bg;
+        }
+
+        // Blinks the signed-in badge (the round "✓" right before the account
+        // name) so connection health is visible at a glance, right next to
+        // the name where a shop owner is already looking: green while the
+        // WebSocket push is live, amber while running on the poll fallback
+        // (WS never connected yet, or dropped) - never a plain static color,
+        // since that reads the same as "logged in" whether or not either
+        // channel is actually delivering jobs. Must run on the UI thread;
+        // callers marshal first.
+        private void UpdateWsIndicator(bool wsConnected)
+        {
+            var (bright, dim) = wsConnected ? (WsBlinkGreenBright, WsBlinkGreenDim) : (WsBlinkAmberBright, WsBlinkAmberDim);
+
+            if (_wsBlinkTimer == null)
+            {
+                _wsBlinkTimer = new System.Windows.Forms.Timer { Interval = 600 };
+            }
+            else
+            {
+                _wsBlinkTimer.Stop();
+            }
+
+            _wsBlinkTimer.Tag = (bright, dim);
+            _wsBlinkTimer.Tick -= WsBlinkTick;
+            _wsBlinkTimer.Tick += WsBlinkTick;
+
+            _wsBlinkBright = true;
+            lblLoginBadge.BackColor = bright;
+            _wsBlinkTimer.Start();
+        }
+
+        private void WsBlinkTick(object sender, EventArgs e)
+        {
+            var (bright, dim) = ((Color, Color))_wsBlinkTimer.Tag;
+            _wsBlinkBright = !_wsBlinkBright;
+            lblLoginBadge.BackColor = _wsBlinkBright ? bright : dim;
         }
 
         private void CopyAccountEmailToClipboard()
@@ -429,7 +506,7 @@ namespace Print_Agent
                     ? _config.ShopName
                     : (_config.OwnerEmail ?? "");
 
-                pnlAccountCard.Height = LoggedInCardHeight;
+                pnlAccountCard.Height = LogicalToDeviceUnits(LoggedInCardHeight);
             }
             else
             {
@@ -440,7 +517,15 @@ namespace Print_Agent
                 // (and re-shown) for the "Signed in as X" chip above.
                 lblAccountStatus.Visible = false;
 
-                pnlAccountCard.Height = LoggedOutCardHeight;
+                // LogicalToDeviceUnits, not the raw constant: this height is
+                // assigned in code (after InitializeComponent's own DPI
+                // auto-scale pass already ran once), so it must be scaled by
+                // hand or it stays a fixed 300px design-time value forever.
+                // On a laptop running above 100% text scaling, the labels/
+                // textboxes/button inside are already taller than that (they
+                // scaled correctly), so the unscaled 300px cut the bottom of
+                // the login card off - the Sign In button included.
+                pnlAccountCard.Height = LogicalToDeviceUnits(LoggedOutCardHeight);
             }
 
             SetChipHighlighted(false);
@@ -572,6 +657,7 @@ namespace Print_Agent
         {
             _autoLoginStop?.Cancel();
             _wsClient?.Stop();
+            _wsBlinkTimer?.Stop();
             _config.AccessToken = "";
             _config.RefreshToken = "";
             AgentConfig.Save(_configPath, _config);
@@ -1062,6 +1148,7 @@ namespace Print_Agent
             dataGridPendingPrintData.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
 
             UpdateAccountLabel();
+            LoadPrintedJobIds();
 
             _localServer = new LocalStatusServer(
                 GetStatusSnapshot,
@@ -1102,8 +1189,18 @@ namespace Print_Agent
                     // polling at the configured interval immediately, since
                     // that's now the only way jobs get noticed until it
                     // reconnects.
+                    //
+                    // GetStatusSnapshot() must also know about this: it used
+                    // to infer "running" purely from the poll timer being
+                    // enabled, which broke the website's Verify Agent step
+                    // the instant WS connected and legitimately stopped that
+                    // timer (agent report itself as "stopped" while healthy).
+                    _wsConnected = connected;
+
                     void ApplyPollState()
                     {
+                        UpdateWsIndicator(connected);
+
                         if (_pollTimer == null) return;
                         if (connected)
                         {
@@ -1133,6 +1230,7 @@ namespace Print_Agent
                 await PollAndPrintAsync();
             };
             _pollTimer.Start();
+            UpdateWsIndicator(wsConnected: false); // amber until the WebSocket's first connect callback fires
 
             await BootstrapLoginAsync();
 
@@ -1168,6 +1266,19 @@ namespace Print_Agent
 
                     _printedIds.Add(job.Id);
 
+                    if (_recoveredPrintedIds.Contains(job.Id))
+                    {
+                        // Physically printed in a previous run - the server
+                        // only still shows it because that run ended before
+                        // the "printed" status update went out. Reconcile
+                        // the status, do not print it again.
+                        if (InvokeRequired)
+                            Invoke(new Action(() => _ = ReconcilePreviouslyPrintedJobAsync(api, job)));
+                        else
+                            _ = ReconcilePreviouslyPrintedJobAsync(api, job);
+                        continue;
+                    }
+
                     if (InvokeRequired)
                         Invoke(new Action(() => _ = ProcessJobAsync(api, job)));
                     else
@@ -1202,11 +1313,44 @@ namespace Print_Agent
             }
         }
 
+        // Reports a job recovered from AgentPaths.PrintedJobsPath as
+        // "printed" without touching the printer - see _recoveredPrintedIds.
+        // Best-effort: a failure here just means the job is picked up again
+        // on the next poll (still in _recoveredPrintedIds, no longer
+        // eligible for _printedIds' one-shot dispatch guard until then).
+        private async System.Threading.Tasks.Task ReconcilePreviouslyPrintedJobAsync(CafeMitraApi api, PrintJob job)
+        {
+            var tokenId = string.IsNullOrWhiteSpace(job.TokenId) ? $"Order {job.Id}" : job.TokenId;
+            try
+            {
+                await api.UpdateStatus(job.Id, "printed", "Recovered after an agent restart - already printed, not reprinted.", CancellationToken.None);
+                LogStatus($"{tokenId}: was already printed before the last restart - status reconciled, not reprinted.");
+            }
+            catch (Exception ex)
+            {
+                _printedIds.Remove(job.Id); // retry reconciling next poll
+                LogStatus($"{tokenId}: could not reconcile already-printed status - {ex.Message}");
+            }
+        }
+
         // ── Download + Auto Print One Job ──────────────────────────────
         private async System.Threading.Tasks.Task ProcessJobAsync(CafeMitraApi api, PrintJob job)
         {
             var tokenId = string.IsNullOrWhiteSpace(job.TokenId) ? $"Order {job.Id}" : job.TokenId;
 
+            await _printQueueGate.WaitAsync();
+            try
+            {
+                await ProcessJobCoreAsync(api, job, tokenId);
+            }
+            finally
+            {
+                _printQueueGate.Release();
+            }
+        }
+
+        private async System.Threading.Tasks.Task ProcessJobCoreAsync(CafeMitraApi api, PrintJob job, string tokenId)
+        {
             try
             {
                 if (job.IsCashApprovalPending)
@@ -1239,6 +1383,14 @@ namespace Print_Agent
                     return;
                 }
 
+                if (IsPrinterOffline(matchedPrinter))
+                {
+                    LogStatus($"{tokenId}: printer '{matchedPrinter}' is not connected - holding job until it reconnects.");
+                    _printedIds.Remove(job.Id); // retry automatically on a later poll/push, once the printer is back
+                    ShowPrinterOfflineAlert(matchedPrinter);
+                    return; // job stays exactly as it was on the server (pending) - not failed, not printed
+                }
+
                 LogStatus($"{tokenId}: using printer {matchedPrinter}");
                 await api.UpdateStatus(job.Id, "printing", $"Sent to {matchedPrinter} ({job.PrintColorModeLabel})", CancellationToken.None);
 
@@ -1252,6 +1404,8 @@ namespace Print_Agent
                 cmbColorType.SelectedItem = colorType;
 
                 var copies = Math.Max(job.Copies, 1);
+                var printedCopies = 0;
+                Exception lastPrintError = null;
                 for (var copy = 0; copy < copies; copy++)
                 {
                     if (string.IsNullOrWhiteSpace(selectedFile))
@@ -1281,15 +1435,38 @@ namespace Print_Agent
                             return;
                         }
 
+                        printedCopies++;
                         LogStatus("Print job sent successfully.");
                     }
                     catch (Exception ex)
                     {
+                        // Was previously swallowed here and the job still got
+                        // reported "printed" below regardless - e.g. the
+                        // printer saved in Setup got unplugged/uninstalled
+                        // since, so PrinterSettings.IsValid throws for every
+                        // copy, yet the customer (who paid for this) and the
+                        // shop dashboard both saw "printed". Record it and
+                        // let the zero-success check below turn this into a
+                        // real "failed" status instead.
+                        lastPrintError = ex;
                         LogStatus($"Printing Error: {ex.Message}");
                     }
                 }
 
-                var printResult = $"Printed via {matchedPrinter} ({job.PrintColorModeLabel}), {copies} cop{(copies == 1 ? "y" : "ies")}.";
+                if (printedCopies == 0)
+                {
+                    throw lastPrintError ?? new Exception("Printer did not accept the job.");
+                }
+
+                // Durably record the physical print *before* telling the
+                // server - if the process dies right here (crash, forced
+                // close, power loss), a restart must see this job as already
+                // printed and reconcile its status instead of reprinting it.
+                PersistPrintedJobId(job.Id);
+
+                var printResult = printedCopies == copies
+                    ? $"Printed via {matchedPrinter} ({job.PrintColorModeLabel}), {copies} cop{(copies == 1 ? "y" : "ies")}."
+                    : $"Printed {printedCopies} of {copies} cop{(copies == 1 ? "y" : "ies")} via {matchedPrinter} - remaining copies failed: {lastPrintError?.Message}";
                 await api.UpdateStatus(job.Id, "printed", printResult, CancellationToken.None);
                 LogStatus($"{tokenId}: printed.");
             }
@@ -1298,6 +1475,73 @@ namespace Print_Agent
                 _printedIds.Remove(job.Id); // retry next poll
                 LogStatus($"{tokenId}: failed - {ex.Message}");
                 try { await api.UpdateStatus(job.Id, "failed", ex.Message, CancellationToken.None); } catch { /* best effort */ }
+            }
+        }
+
+        // Windows keeps a printer object around (still "installed", still
+        // passes PrinterSettings.IsValid) even when the physical device is
+        // powered off, unplugged, or unreachable on the network - the
+        // System.Drawing.Printing print path doesn't reliably throw for
+        // that, it just queues the job silently. WMI's Win32_Printer is the
+        // one place that state is actually visible ahead of time.
+        private static bool IsPrinterOffline(string printerName)
+        {
+            try
+            {
+                var escaped = printerName.Replace("'", "''");
+                using var searcher = new ManagementObjectSearcher(
+                    $"SELECT WorkOffline FROM Win32_Printer WHERE Name = '{escaped}'");
+                using var results = searcher.Get();
+                foreach (ManagementObject printer in results)
+                {
+                    using (printer)
+                    {
+                        return printer["WorkOffline"] is bool offline && offline;
+                    }
+                }
+
+                // Not found in WMI at all - e.g. unplugged and Windows has
+                // dropped it from the printer list - treat that as offline
+                // too rather than letting the job silently vanish into a
+                // queue nobody is watching.
+                return true;
+            }
+            catch
+            {
+                // WMI unavailable/query failed for an unrelated reason -
+                // don't block a possibly-fine printer over an inconclusive
+                // check; fall through to the normal print attempt and its
+                // existing error handling.
+                return false;
+            }
+        }
+
+        // One dialog at a time, no matter how many queued jobs hit the same
+        // offline printer back to back - each held job still retries on its
+        // own via _printedIds.Remove, this just stops the operator from
+        // being stacked with a popup per job. Modal on purpose (blocks this
+        // form until dismissed): the whole point is the shop owner notices
+        // it before walking away, since a customer already paid for a job
+        // that is currently going nowhere.
+        private void ShowPrinterOfflineAlert(string printerName)
+        {
+            if (_printerOfflineAlertShown) return;
+            _printerOfflineAlertShown = true;
+            try
+            {
+                MessageBox.Show(
+                    this,
+                    $"Printer \"{printerName}\" is not connected.\n\n" +
+                    "Please turn it on and check the cable/USB/network connection. " +
+                    "The customer's print job is on hold and will print automatically as soon as the printer is back online - it does not need to be resent.\n\n" +
+                    "If a customer is waiting, let them know the shop's printer is temporarily disconnected.",
+                    "Printer Not Connected",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
+            }
+            finally
+            {
+                _printerOfflineAlertShown = false;
             }
         }
 
@@ -1401,7 +1645,7 @@ namespace Print_Agent
             return new AgentStatusSnapshot
             {
                 App = "PrintAgent",
-                Status = _pollTimer is { Enabled: true } ? "running" : "stopped",
+                Status = _wsConnected || _pollTimer is { Enabled: true } ? "running" : "stopped",
                 Account = string.IsNullOrWhiteSpace(_config.OwnerEmail) ? "" : $"{_config.OwnerName} {_config.OwnerEmail}".Trim(),
                 Printer = cmbPrinters.SelectedItem?.ToString() ?? "",
                 Printers = printers,
@@ -1585,12 +1829,23 @@ namespace Print_Agent
             var line = $"[{DateTime.Now:HH:mm:ss}] {msg}";
             System.Diagnostics.Debug.WriteLine(line);
             AppendToLogFile(line);
+            AppendToLogBox(line);
+        }
 
+        // Split out of LogStatus so the file/Debug writes above only ever
+        // happen once per call - this recurses via BeginInvoke to reach the
+        // UI thread, and having the whole of LogStatus in that recursive
+        // path (as before) meant every call from a background thread (e.g.
+        // WebSocketAgentClient's log callback, off Task.Run) wrote its line
+        // to agent.log twice: once before the redirect, once again when the
+        // redirected call re-ran from the top.
+        private void AppendToLogBox(string line)
+        {
             if (txtAgentLog is null) return;
 
             if (txtAgentLog.InvokeRequired)
             {
-                txtAgentLog.BeginInvoke(new Action(() => LogStatus(msg)));
+                txtAgentLog.BeginInvoke(new Action(() => AppendToLogBox(line)));
                 return;
             }
 
@@ -1625,6 +1880,69 @@ namespace Print_Agent
             }
         }
 
+        // ── Printed-Job Durability (see _recoveredPrintedIds) ──────────
+        // Newline-delimited job IDs, capped the same way as agent.log - a
+        // long-running shop could otherwise grow this file unbounded, and
+        // only the most recent IDs are ever useful (older ones' jobs have
+        // long since either had their status update land, or been retried
+        // and resolved some other way).
+        private const int MaxPrintedJobIdEntries = 2000;
+
+        private void LoadPrintedJobIds()
+        {
+            try
+            {
+                if (!File.Exists(AgentPaths.PrintedJobsPath)) return;
+
+                foreach (var line in File.ReadAllLines(AgentPaths.PrintedJobsPath))
+                {
+                    if (int.TryParse(line.Trim(), out var jobId))
+                    {
+                        _recoveredPrintedIds.Add(jobId);
+                    }
+                }
+
+                if (_recoveredPrintedIds.Count > 0)
+                {
+                    LogStatus($"Loaded {_recoveredPrintedIds.Count} previously-printed job ID(s) from disk - these will be reconciled, not reprinted, if the server still lists them.");
+                }
+            }
+            catch (Exception error)
+            {
+                // Best-effort: if this can't be read, the agent just loses
+                // the crash-recovery safety net for this run, not the
+                // ability to print - never block startup over it.
+                LogStatus($"Could not load printed-job history: {error.Message}");
+            }
+        }
+
+        // Best-effort: a disk/permission hiccup here must never crash the
+        // agent or block the caller - see AppendToLogFile above.
+        private static void PersistPrintedJobId(int jobId)
+        {
+            try
+            {
+                Directory.CreateDirectory(AgentPaths.ConfigDir);
+
+                var info = new FileInfo(AgentPaths.PrintedJobsPath);
+                if (info.Exists)
+                {
+                    var lines = File.ReadAllLines(AgentPaths.PrintedJobsPath);
+                    if (lines.Length > MaxPrintedJobIdEntries)
+                    {
+                        var keepFrom = Math.Max(0, lines.Length - MaxPrintedJobIdEntries / 2);
+                        File.WriteAllLines(AgentPaths.PrintedJobsPath, lines[keepFrom..]);
+                    }
+                }
+
+                File.AppendAllText(AgentPaths.PrintedJobsPath, jobId.ToString(System.Globalization.CultureInfo.InvariantCulture) + Environment.NewLine);
+            }
+            catch
+            {
+                // Best-effort - see comment above.
+            }
+        }
+
         // ── Cleanup on Form Close ─────────────────────────────────────
         protected override void OnFormClosing(FormClosingEventArgs e)
         {
@@ -1642,6 +1960,9 @@ namespace Print_Agent
             _loginReminderTimer?.Dispose();
             _localServer?.Dispose();
             _wsClient?.Dispose();
+            _wsBlinkTimer?.Stop();
+            _wsBlinkTimer?.Dispose();
+            _printQueueGate?.Dispose();
             _trayIcon?.Dispose();
             base.OnFormClosing(e);
         }

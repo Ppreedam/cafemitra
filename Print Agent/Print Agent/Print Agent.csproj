@@ -21,6 +21,7 @@
          size restrictions (replaced Pdfium.Net.SDK, whose trial mode blocked
          printing any PDF outside a handful of narrow size bands). -->
     <PackageReference Include="PDFtoImage" Version="5.2.1" />
+    <PackageReference Include="System.Management" Version="10.0.12" />
   </ItemGroup>
 
   <ItemGroup>

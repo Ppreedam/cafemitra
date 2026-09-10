@@ -15,6 +15,7 @@ internal static class AgentPaths
     public static readonly string ConfigPath = Path.Combine(ConfigDir, "config.json");
     public static readonly string CredentialsPath = Path.Combine(ConfigDir, "credentials.dat");
     public static readonly string LogPath = Path.Combine(ConfigDir, "agent.log");
+    public static readonly string PrintedJobsPath = Path.Combine(ConfigDir, "printed_jobs.txt");
 }
 
 internal sealed class AgentConfig

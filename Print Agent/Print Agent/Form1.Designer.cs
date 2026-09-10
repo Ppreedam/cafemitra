@@ -152,7 +152,7 @@ namespace Print_Agent
             softwareVersion.Name = "softwareVersion";
             softwareVersion.Size = new Size(22, 17);
             softwareVersion.TabIndex = 1;
-            softwareVersion.Text = "15";
+            softwareVersion.Text = "16";
             softwareVersion.Visible = false;
             softwareVersion.Click += softwareVersion_Click;
             // 
@@ -190,6 +190,7 @@ namespace Print_Agent
             // 
             // pnlAccount
             // 
+            pnlAccount.AutoScroll = true;
             pnlAccount.BackColor = Color.FromArgb(248, 250, 252);
             pnlAccount.Controls.Add(pnlLogsCard);
             pnlAccount.Controls.Add(pnlAccountSpacer);
