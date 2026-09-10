@@ -5,8 +5,19 @@ namespace PrintAgentUpdater;
 
 internal sealed class UpdaterForm : Form
 {
+    // update.zip is Git LFS-tracked in that repo (see its .gitattributes) -
+    // raw.githubusercontent.com only ever serves the LFS *pointer* text
+    // (~130 bytes: "version https://git-lfs.github.com/spec/v1\noid ...")
+    // for an LFS file, never the actual binary. media.githubusercontent.com
+    // is GitHub's LFS media-resolving host and is what actually returns the
+    // zip's bytes - matches the app_update_url file already checked into
+    // that repo, which this constant had silently drifted out of sync with.
+    // Downloading the pointer text and trying to ZipFile.ExtractToDirectory
+    // it throws (invalid zip), which RunUpdate's catch treats as a failed
+    // update - so this relaunches the old version instead of updating,
+    // silently, with no indication to the shop that anything was wrong.
     private const string UpdateZipUrl =
-        "https://raw.githubusercontent.com/httpsankit/cafemitra_updates/refs/heads/main/update.zip";
+        "https://media.githubusercontent.com/media/httpsankit/cafemitra_updates/refs/heads/main/update.zip";
 
     private readonly UpdateOptions _options;
     private readonly Label _title = new();
