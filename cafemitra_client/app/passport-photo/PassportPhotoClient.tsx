@@ -528,7 +528,7 @@ export default function PassportPhotoClient() {
           <button type="button" role="tab" aria-selected={mode === "ai"} className={mode === "ai" ? "active" : ""} onClick={() => setMode("ai")}>
             AI Generate
           </button>
-          <button type="button" role="tab" aria-selected={mode === "manual"} className={mode === "manual" ? "active" : ""} onClick={() => setMode("manual")}>
+          <button type="button" role="tab" aria-selected={mode === "manual"} className={mode === "manual" ? "active" : ""} onClick={() => router.push("/image-tools/photo-editor?for=passport")}>
             Manual Edit
           </button>
         </div>

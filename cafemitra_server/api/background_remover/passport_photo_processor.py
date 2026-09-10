@@ -101,6 +101,7 @@ def refine_alpha_mask(
     alpha: np.ndarray,
     erode_size: int = 1,
     blur_size: int = 3,
+    erode_blend: float = 0.55,
 ) -> np.ndarray:
     refined = alpha.copy()
 
@@ -152,9 +153,9 @@ def refine_alpha_mask(
         # Partial erosion, hair preserve karne ke liye
         refined = cv2.addWeighted(
             refined,
-            0.45,
+            1.0 - erode_blend,
             eroded,
-            0.55,
+            erode_blend,
             0,
         )
 
@@ -273,6 +274,127 @@ def remove_blue_cyan_spill(
     return output.astype(np.uint8)
 
 
+def decontaminate_edge_colors(
+    bgr: np.ndarray,
+    alpha: np.ndarray,
+    edge_width: int = 8,
+) -> np.ndarray:
+    """
+    Semi-transparent boundary pixels (jaise udte hue baal ke strands) ka
+    color kabhi bhi pure foreground nahi hota - original photo me wo pixel
+    optically (motion blur / camera anti-aliasing ki wajah se) background ke
+    saath thoda blend hota hai, chahe background kisi bhi color ka ho (safed,
+    cream, blue - kuch bhi). remove_blue_cyan_spill sirf blue/cyan studio
+    backdrop ke liye kaam karta hai; ye function har edge pixel ke sabse
+    nazdeeki "confidently background" pixel ka color estimate karke uska
+    contribution subtract karta hai - standard alpha-matting "decontaminate
+    colors" trick, jo kisi bhi original background color ke liye kaam karta
+    hai, isliye white/cream backdrop se aane wale fringe ko bhi hata deta hai.
+    """
+    confident_background = (alpha < 10).astype(np.uint8)
+
+    if not np.any(confident_background):
+        return bgr
+
+    # distanceTransformWithLabels seeds from ZERO-valued pixels, so the mask
+    # fed in must have background pixels at 0 (everything else at 1) - the
+    # inverse of confident_background itself.
+    seed_input = np.where(confident_background == 1, 0, 1).astype(np.uint8)
+
+    _, labels = cv2.distanceTransformWithLabels(
+        seed_input,
+        cv2.DIST_L2,
+        5,
+        labelType=cv2.DIST_LABEL_PIXEL,
+    )
+
+    ys, xs = np.nonzero(confident_background)
+    label_ids = labels[ys, xs]
+    colors = bgr[ys, xs].astype(np.float32)
+
+    lut = np.zeros((int(label_ids.max()) + 1, 3), dtype=np.float32)
+    lut[label_ids] = colors
+    background_estimate = lut[labels]
+
+    alpha_float = (alpha.astype(np.float32) / 255.0)[:, :, None]
+    edge_mask = create_edge_mask(
+        alpha,
+        edge_width=edge_width,
+    ).astype(np.float32)[:, :, None] / 255.0
+
+    safe_alpha = np.clip(alpha_float, 0.15, 1.0)
+    decontaminated = (
+        bgr.astype(np.float32) - background_estimate * (1.0 - alpha_float)
+    ) / safe_alpha
+    decontaminated = np.clip(decontaminated, 0, 255)
+
+    # Sirf semi-transparent boundary band par apply hota hai - jahan alpha
+    # already high (fully opaque core) wahan blend ~0 rehta hai, taaki face
+    # ya body ka asli color na badle.
+    blend = edge_mask * (1.0 - alpha_float)
+    result = bgr.astype(np.float32) * (1.0 - blend) + decontaminated * blend
+
+    return np.clip(result, 0, 255).astype(np.uint8)
+
+
+def defringe_edge_colors(
+    bgr: np.ndarray,
+    alpha: np.ndarray,
+    edge_width: int = 3,
+    strength: float = 0.8,
+) -> np.ndarray:
+    """
+    decontaminate_edge_colors ka matting formula sirf semi-transparent
+    pixels (alpha < 255) par kaam karta hai - jab alpha=255 hota hai, formula
+    background contribution zero maan leta hai, isliye kuch correct nahi
+    karta. Lekin refine_alpha_mask ka threshold (`refined[refined>251]=255`)
+    kayi near-boundary pixels ko poori tarah opaque bana deta hai, chahe
+    unka asal RGB color abhi bhi original (jaise white/cream) backdrop se
+    tinted ho - yही hard white/light outline banata hai jo kisi bhi solid
+    backdrop colour ke against dikhta hai.
+    Ye function un pixels ka color fix karta hai bina alpha par depend kiye:
+    mask boundary ke bilkul paas (edge_width) har pixel ka color, sabse
+    nazdeeki "confidently foreground" pixel ke color se replace/blend kar
+    deta hai. Seed pixels sirf wahi maane jaate hain jo high-alpha (>245)
+    HO AUR boundary se kaafi door (edge_width se bahar) bhi ho - kyunki
+    boundary ring ke pixels khud bhi refine_alpha_mask ke threshold se
+    alpha=255 tak snap ho chuke hote hain, sirf alpha check unhe interior
+    se alag nahi kar sakta.
+    """
+    seed_exclusion = create_edge_mask(alpha, edge_width=edge_width + 3)
+    confident_fg = ((alpha > 245) & (seed_exclusion == 0)).astype(np.uint8)
+
+    if not np.any(confident_fg) or np.all(confident_fg):
+        return bgr
+
+    seed_input = np.where(confident_fg == 1, 0, 1).astype(np.uint8)
+
+    _, labels = cv2.distanceTransformWithLabels(
+        seed_input,
+        cv2.DIST_L2,
+        5,
+        labelType=cv2.DIST_LABEL_PIXEL,
+    )
+
+    ys, xs = np.nonzero(confident_fg)
+    label_ids = labels[ys, xs]
+    colors = bgr[ys, xs].astype(np.float32)
+
+    lut = np.zeros((int(label_ids.max()) + 1, 3), dtype=np.float32)
+    lut[label_ids] = colors
+    foreground_estimate = lut[labels]
+
+    edge_mask = create_edge_mask(
+        alpha,
+        edge_width=edge_width,
+    ).astype(np.float32)[:, :, None] / 255.0
+
+    blend = edge_mask * float(np.clip(strength, 0.0, 1.0))
+    result = bgr.astype(np.float32) * (1.0 - blend) + foreground_estimate * blend
+
+    return np.clip(result, 0, 255).astype(np.uint8)
+
+
 def smooth_subject_edges(
     bgr: np.ndarray,
     alpha: np.ndarray,
@@ -345,26 +467,62 @@ def clean_transparent_image(
 def clean_transparent_image_light(
     image: np.ndarray,
 ) -> np.ndarray:
-    """Same as clean_transparent_image, but without the alpha erosion step.
+    """Same as clean_transparent_image, but with a much lighter alpha erosion.
 
     clean_transparent_image's erosion assumes a chroma-key studio backdrop
     (a person centred well inside the frame) and shrinks the whole
-    silhouette uniformly - fine for that passport-photo pipeline, but it
-    also eats into shoulders/limbs on ordinary photos where the subject
-    runs close to the frame edge. The API "enhance" step only wants the
-    colour-halo despill and edge smoothing, not the silhouette shrink.
+    silhouette uniformly - fine for that passport-photo pipeline, but a full
+    erosion also eats into shoulders/limbs on ordinary photos where the
+    subject runs close to the frame edge. Skipping erosion entirely, though,
+    left the outermost ring of semi-transparent pixels untouched - those
+    pixels still carry a blend of hair/edge colour with whatever the
+    original studio backdrop was (white, cream, etc.), so they show up as a
+    light-coloured fringe once composited over a different backdrop colour.
+    A small erosion, blended in partially, trims that outer fringe ring
+    without visibly shrinking the silhouette. On top of that,
+    defringe_edge_colors and decontaminate_edge_colors subtract whatever
+    original backdrop colour (white, cream, blue - any colour) is still
+    baked into the remaining boundary pixels - whether they're semi
+    transparent or were snapped to fully opaque by refine_alpha_mask's
+    threshold - since remove_blue_cyan_spill below only targets a blue/cyan
+    studio backdrop specifically.
     """
     bgr = image[:, :, :3]
     alpha = image[:, :, 3]
 
+    # decontaminate_edge_colors' matting formula is only physically valid on
+    # the ORIGINAL alpha (a real blend ratio from segmentation), so it runs
+    # first, before the alpha is eroded below. Running it after erosion would
+    # feed it an alpha value that was artificially manufactured by us, not a
+    # genuine partial-coverage ratio, and produce nonsense colours.
+    decontaminated = decontaminate_edge_colors(
+        bgr,
+        alpha,
+        edge_width=EDGE_WIDTH * 2,
+    )
+
     refined_alpha = refine_alpha_mask(
         alpha,
-        erode_size=0,
-        blur_size=EDGE_BLUR_SIZE,
+        erode_size=3,
+        blur_size=EDGE_BLUR_SIZE + 2,
+        erode_blend=0.72,
+    )
+
+    # defringe_edge_colors runs against the ERODED alpha instead, since its
+    # job is specifically to catch pixels refine_alpha_mask just snapped
+    # back to full opacity despite sitting right on the boundary. Concave
+    # spots (like the notch between an ear and hair) shrink less from
+    # erosion than a convex edge does, so they need the widest, strongest
+    # pass of the three.
+    defringed = defringe_edge_colors(
+        decontaminated,
+        refined_alpha,
+        edge_width=5,
+        strength=0.95,
     )
 
     despilled = remove_blue_cyan_spill(
-        bgr,
+        defringed,
         refined_alpha,
         strength=DESPILL_STRENGTH,
         edge_width=EDGE_WIDTH,
