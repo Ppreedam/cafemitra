@@ -77,7 +77,7 @@ export default function StaffPage() {
       </div>
       <p className="text-sm text-slate-500 mb-4">
         Only super admins can see this page. finance sees Wallet/Shops/Agents/Analytics; support sees
-        Shops/Orders/Support/Print Agent; sales sees Agents/Leads/Analytics; super_admin sees everything.
+        Shops/Orders/Support/Print Agent; sales sees Agents/Order Issues/Analytics; super_admin sees everything.
       </p>
 
       {showForm && (

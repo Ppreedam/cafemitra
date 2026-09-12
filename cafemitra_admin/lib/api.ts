@@ -791,7 +791,7 @@ export function exportOrdersCsv(params?: { shop?: string; service?: string; paym
   return downloadCsv(`/admin/orders/export/${qs ? `?${qs}` : ""}`, "orders.csv");
 }
 
-// --- Order Issues (Leads CRM > Order Issues) --------------------------------
+// --- Order Issues -------------------------------------------------------
 
 export type OrderIssue = {
   id: number;

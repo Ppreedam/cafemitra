@@ -3,7 +3,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, CheckCircle2, ChevronDown, ChevronRight, Download, ListChecks, RotateCcw } from "lucide-react";
 import Link from "next/link";
-import StatCard from "@/components/leads/StatCard";
+import StatCard from "@/components/StatCard";
 import Pagination from "@/components/Pagination";
 import { exportOrderIssuesCsv, fetchOrderIssues, setOrderIssueReviewed, type OrderIssueGroup } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";

@@ -1,6 +1,6 @@
 # RepetiGo Admin Dashboard — Implementation Plan
 
-Yeh doc RepetiGo team ke naye **platform-wide super-admin dashboard** ka phase-wise implementation plan hai. Yeh cafe-owner ke apne dashboard (`cafemitra_client/app/dashboard`) aur sales-CRM (`cafemitra_leads`) se **alag** hai — is dashboard se RepetiGo team poora platform (sab shops, orders, wallet, referral-agents, leads, support) ek jagah se manage karegi.
+Yeh doc RepetiGo team ke naye **platform-wide super-admin dashboard** ka phase-wise implementation plan hai. Yeh cafe-owner ke apne dashboard (`cafemitra_client/app/dashboard`) se **alag** hai — is dashboard se RepetiGo team poora platform (sab shops, orders, wallet, referral-agents, support) ek jagah se manage karegi.
 
 Reference: [`API_DOCUMENTATION.md`](API_DOCUMENTATION.md) (existing APIs), `cafemitra_server/api/models.py` (DB shape), `cafemitra_server/api/admin.py` (abhi ka bare Django admin).
 
@@ -10,7 +10,7 @@ Reference: [`API_DOCUMENTATION.md`](API_DOCUMENTATION.md) (existing APIs), `cafe
 
 ## 0. Architecture Decision
 
-- **Naya Next.js app**: `cafemitra_admin` (root me `cafemitra_client`/`cafemitra_leads` ki tarah sibling folder) — cafe-owner-facing aur internal-tool codebases ko mix nahi karna.
+- **Naya Next.js app**: `cafemitra_admin` (root me `cafemitra_client` ki tarah sibling folder) — cafe-owner-facing aur internal-tool codebases ko mix nahi karna.
 - **Backend**: alag Django app **nahi** — existing `cafemitra_server/api` app me hi rahenge. Naye files: `api/admin_views.py` (saari admin-dashboard views), `api/admin_auth.py` (`require_admin()` helper). Routes `api/urls.py` me hi `admin/` prefix ke saath add honge (`path("admin/", include([...]))`), taaki final URL `/api/admin/...` bane. Models (`api.models`) same hi reuse honge, koi naya app/migration-namespace nahi.
 - **Auth**: existing `AuthToken` mechanism reuse, lekin ek naya `is_platform_admin` flag (`User.is_staff` ya naya `AdminRole` model) — sirf yeh flag waale users `/api/admin/...` routes hit kar sakein. Har admin view `require_admin(request)` helper se gate hogi (`auth_user()` + role check), same pattern jo existing `api/views.py` me auth ke liye already use hota hai.
 - **Internal admin-access roles (v1 simple, v2 granular)**: v1 me bas `is_staff=True` = full access. v2 me `AdminRole` (super_admin / finance / support / sales) add karenge. Yeh roles sirf RepetiGo team ke apne staff ke liye hain — **dashboard access control**.
@@ -142,18 +142,6 @@ Reference: [`API_DOCUMENTATION.md`](API_DOCUMENTATION.md) (existing APIs), `cafe
 
 ---
 
-## Phase 8 — Leads CRM Security + Embed
-
-**Goal**: `cafemitra_leads` backend abhi **completely unauthenticated** hai (`GooglePlace`, `GooglePlaceDetail`, `LeadActivity` routes) — pehle isko secure karna, phir admin-dashboard se link/embed karna.
-
-- **API**:
-  - Existing `/google-places/`, `/google-place-details/`, activities routes ko `require_admin()` ke peeche laana (ya minimum ek shared-secret header, agar `cafemitra_leads` alag deploy hai jise turant refactor nahi kar sakte)
-  - `cafemitra_leads` frontend ko bhi same admin-auth-token use karne ke liye update karna
-- **UI**: Ya to `cafemitra_admin` sidebar se `cafemitra_leads` app ko iframe/link karo, ya lambi-term me leads-CRM ko `cafemitra_admin` ke andar hi ek section bana do (recommend: link rakho abhi, merge baad me)
-- **Integration**: Auth-gate lagaane ke baad `cafemitra_leads` ka existing flow (scraping script jo bhi data push karta hai) bhi naye auth ke saath test karo — wo script bhi token bhejna seekhe
-
----
-
 ## Phase 9 — Desktop Print Agent Monitoring
 
 **Goal**: Desktop "PrintPilot" Print Agent software ka version/health visibility (yeh Phase 6 ke Referral Agent se **alag cheez hai** — software hai, partner nahi).
@@ -168,7 +156,7 @@ Reference: [`API_DOCUMENTATION.md`](API_DOCUMENTATION.md) (existing APIs), `cafe
 
 ## Phase 10 — Security Fixes & Audit Alerts
 
-**Goal**: `API_DOCUMENTATION.md` Section 15 ke known gaps ko dashboard-visible banana (jab tak root-fix na ho).
+**Goal**: `API_DOCUMENTATION.md` Section 14 ke known gaps ko dashboard-visible banana (jab tak root-fix na ho).
 
 - **API**:
   - `delete-account` ke liye — kam-se-kam ek `AccountDeletionLog` model + admin-visible list (root-fix: is endpoint pe auth+password required karna, alag security ticket)
@@ -199,14 +187,13 @@ Phase 1 (Foundation + referral schema hooks)
                             ├─▶ Phase 5 (Wallet) ──┬─▶ Phase 6 (Referral Agent Program)
                             │                       │   (depends on Phase 3 shops + Phase 5 wallet/withdrawal reuse)
                             └─▶ Phase 7 (Support)
-Phase 8 (Leads CRM security) — independent, parallel-able
 Phase 9 (Desktop Print Agent monitoring) — independent, parallel-able
 Phase 10 (Security fixes) — parallel-able, prioritize gaps #1/#2/#3 early (real risk);
                              double-settlement fix (#3) prioritize before/with Phase 6
 Phase 11 (Internal roles/Reporting) — last, after core modules stable
 ```
 
-Phase 1–2 sequentially karo (foundation zaroori hai — isi me referral-agent ke schema-hooks bhi daal do taaki baad me rework na ho). Uske baad Phase 3–5, 7 largely parallel ho sakte hain. **Phase 6 (Referral Agent) Phase 3 aur Phase 5 dono complete hone ke baad start karo** — kyunki wo shops-list aur wallet/withdrawal dono reuse karta hai. Phase 8–9 independent hain, kabhi bhi le sakte ho. Phase 10 ke security items (khaaskar delete-account, original-image auth gaps, aur double-settlement) jaldi nikaal do — double-settlement fix Phase 6 ke commission-accrual ki correctness ke liye bhi zaroori hai.
+Phase 1–2 sequentially karo (foundation zaroori hai — isi me referral-agent ke schema-hooks bhi daal do taaki baad me rework na ho). Uske baad Phase 3–5, 7 largely parallel ho sakte hain. **Phase 6 (Referral Agent) Phase 3 aur Phase 5 dono complete hone ke baad start karo** — kyunki wo shops-list aur wallet/withdrawal dono reuse karta hai. Phase 9 independent hai, kabhi bhi le sakte ho. Phase 10 ke security items (khaaskar delete-account, original-image auth gaps, aur double-settlement) jaldi nikaal do — double-settlement fix Phase 6 ke commission-accrual ki correctness ke liye bhi zaroori hai.
 
 ---
 
@@ -233,7 +220,7 @@ Phase 1–11 (v1) complete hone ke baad, in-dashboard-use se nikle ideas ka ek r
 | Wallet & Finance | finance |
 | Referral Agents | finance, sales |
 | Support Inbox | support |
-| Leads CRM | sales (⚠️ **sidebar-only** — `cafemitra_leads` ka backend abhi bhi sirf "is-staff" check karta hai, role-specific nahi, since it's a separate app; koi security-regression nahi hai, pehle se hi is_staff-gated tha, bas utna hi granular nahi jitna baaki sections) |
+| Order Issues | sales |
 | Print Agent monitoring | support |
 | Analytics | finance, sales |
 | Activity Log | super_admin only |
@@ -243,5 +230,4 @@ Phase 1–11 (v1) complete hone ke baad, in-dashboard-use se nikle ideas ka ek r
 
 **Known trade-offs / follow-ups** (agar future me revisit karna ho):
 - Impersonate token URL hash-fragment se pass hota hai (browser history me thodi der reh sakta hai, access-token expiry 1hr per existing convention) — production-grade version isse ek short-lived one-time-use server-side code se replace kar sakta hai.
-- `leads` section sirf UI-level filter hai, backend-level nahi (upar note kiya).
 - CSV export cap 5000 rows hai (Phase 11 se carried forward).

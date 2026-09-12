@@ -33,9 +33,6 @@ Global numbers jo har cafe pe apply hote hain, `is_active` toggle ke saath:
 ### Wallet Ledger (`WalletTransaction`) — read-only audit
 - Har wallet-affecting event ka permanent record: kind, direction, amount, `balance_after`, note. Kisi bhi dispute/confusion ko trace karne ke liye source-of-truth.
 
-### Leads / CRM (`GooglePlace`, `GooglePlaceDetail`, `LeadActivity`)
-- Scraped Google Maps leads ka pipeline (new → follow-up → discussion → interested → converted), notes aur status-change timeline ke saath. Yeh cafemitra ke apne sales/outreach ke liye hai, cafes ke liye nahi.
-
 ---
 
 ## 2. Database me hai, lekin Admin Panel se access nahi (Gaps)

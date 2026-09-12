@@ -1,7 +1,5 @@
 """Role/section definitions - kept dependency-free (only imports .models) so
-both admin_auth.py (which imports from views.py) and views.py itself (for the
-Leads CRM endpoints, which live in views.py, not admin_views.py) can import
-this without a circular import.
+admin_auth.py can import this without a circular import.
 """
 
 from .models import AdminRole

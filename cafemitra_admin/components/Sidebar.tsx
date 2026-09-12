@@ -41,17 +41,7 @@ const links: NavLink[] = [
   { href: "/agents", label: "Referral Agents", section: "agents", badgeKey: "pendingAgents" },
   { href: "/coupons", label: "Coupon Codes", section: "coupons" },
   { href: "/support", label: "Support Inbox", section: "support", badgeKey: "unreadMessages" },
-  {
-    href: "/leads",
-    label: "Leads CRM",
-    section: "leads",
-    children: [
-      { href: "/leads/pipeline", label: "Pipeline", section: "leads" },
-      { href: "/leads/queue", label: "Scrape Queue", section: "leads" },
-      { href: "/leads/converted", label: "Converted Customers", section: "leads" },
-      { href: "/leads/order-issues", label: "Order Issues", section: "leads" },
-    ],
-  },
+  { href: "/order-issues", label: "Order Issues", section: "leads" },
   { href: "/print-agent", label: "Print Agent", section: "print_agent" },
   { href: "/tools-config", label: "Tools Config", section: "tools_config" },
   { href: "/security", label: "Security Alerts", section: "security" },

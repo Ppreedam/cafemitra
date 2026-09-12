@@ -52,8 +52,6 @@ urlpatterns = [
     re_path(r"^admin/staff/(?P<staff_id>[0-9]+)/revoke/?$", admin_views.admin_staff_revoke),  # POST demote a staff account back to a regular account (super_admin only)
     re_path(r"^admin/wallet/earnings-summary/?$", admin_views.admin_wallet_earnings_summary),  # GET today/this-week/this-month platform earning vs prior period
     re_path(r"^admin/recent-activity/?$", admin_views.admin_recent_activity),  # GET paginated merged orders+topups+withdrawals feed
-    re_path(r"^admin/leads/scrape/run/?$", admin_views.admin_leads_scrape_run),  # POST start the Selenium scrape-queue extractor in the background
-    re_path(r"^admin/leads/scrape/status/?$", admin_views.admin_leads_scrape_status),  # GET latest extractor run's progress/status
     re_path(r"^admin/order-issues/export/?$", admin_views.admin_order_issues_export),  # GET CSV of unsuccessful orders (shop name/email/phone/address + order columns), same filters as the JSON list
     re_path(r"^admin/order-issues/(?P<order_id>[0-9]+)/review/?$", admin_views.admin_order_issue_review),  # POST {reviewed} mark/unmark one unsuccessful order as handled
     re_path(r"^admin/order-issues/?$", admin_views.admin_order_issues),  # GET unsuccessful (non-printed) orders across all shops grouped one row per shop, paginated by shop, filterable by from/to/reviewed
@@ -164,18 +162,6 @@ urlpatterns = [
     re_path(r"^agent/version-check/?$", views.agent_version_check),  # GET latest available agent version (plain text)
     re_path(r"^agent/update/?$", views.agent_update_download),  # GET download the latest agent zip package
 
-    # --- Google Places (no auth) --------------------------------------------
-    re_path(r"^google-places/?$", views.google_places),  # GET list (optional ?extracted_status=true/false/all) / POST create (unique name)
-    re_path(r"^google-places/(?P<place_id>[0-9]+)/?$", views.google_place_detail),  # PUT/PATCH mark extracted_status=true, DELETE remove
-
-    # --- Google Place Details (full scraped record, no auth) ----------------
-    re_path(r"^google-place-details/?$", views.google_place_details),  # GET list (optional ?name=, ?status=, ?follow_up= search/filter) / POST create (unique maps_url)
-    re_path(r"^google-place-details/(?P<detail_id>[0-9]+)/?$", views.google_place_detail_item),  # GET one, PUT/PATCH update fields, DELETE remove
-    re_path(r"^google-place-details/(?P<detail_id>[0-9]+)/activities/?$", views.lead_activities),  # GET timeline, POST add a manual note
-
-    # --- Lead Tags (follow-up labels on converted leads) --------------------
-    re_path(r"^lead-tags/?$", views.lead_tags),  # GET list / POST create {name, color}
-    re_path(r"^lead-tags/(?P<tag_id>[0-9]+)/?$", views.lead_tag_item),  # PUT/PATCH rename/recolor, DELETE remove
     # --- Agent Installer (Download Agent button on PrintPilot Setup) --------
     re_path(r"^agent/installer/?$", views.agent_installer_download),  # GET download RepetigoInstaller.exe
 ]

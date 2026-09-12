@@ -143,7 +143,6 @@ Dono tools ka data `PrintOrder.resume_data` / `PrintOrder.biodata_data` (naye `J
 | `/api/admin/activity-log/` | GET | Audit trail |
 | `/api/admin/staff/`, `/staff/{id}/role/`, `/staff/{id}/revoke/` | GET/POST/PUT | Staff account + role management (`super_admin` only) |
 | `/api/admin/recent-activity/` | GET | Merged orders+topups+withdrawals feed |
-| `/api/admin/leads/scrape/run/`, `/scrape/status/` | POST/GET | §8 dekho |
 
 ### 5.3 Other new tool endpoints
 
@@ -170,25 +169,14 @@ Naya `Agent` model (naam collision se bacho — yeh **desktop Print Agent nahi h
 
 ---
 
-## 8. Naya: Leads scraper — background job runner
-
-Naya `cafemitra_server/api/lead_scraper_runner.py` + `gmaps_scraper.py` (Selenium-based Google Maps extractor, `google_maps_scraper_selenium/` repo-root folder se related lagta hai) — admin dashboard se ek "Run Extractor" button background thread me `ScrapeRun` (naya model, migration `0018`) progress-track karte hue chalata hai, taaki HTTP request block na ho.
-
-- `POST /api/admin/leads/scrape/run/` — background start
-- `GET /api/admin/leads/scrape/status/` — latest run ka progress poll
-
-**`GET /api/google-places/` abhi bhi intentionally unauthenticated hai** — naya code-comment isko explicitly confirm karta hai ("reverted 2026-08-11"): Chrome scraping extension Authorization header nahi bhej sakta, isliye yeh intake endpoint khula rehta hai. `API_DOCUMENTATION.md` §15 #5 ka known-gap **abhi bhi valid hai**, aur ab explicitly-intentional documented ho chuka hai (accidental gap nahi, design decision). Downstream Leads CRM endpoints (`google_place_details`, `google_place_detail_item`, `lead_activities`) auth+role-gated hi hain, koi change nahi.
-
----
-
-## 9. Chhote/dead-code cleanups
+## 8. Chhote/dead-code cleanups
 
 - `public_mark_order_paid` view function delete ho gaya — lekin yeh already dead code tha (koi URL route pehle se hi ismein map nahi tha `4e5ff3f` pe bhi), koi behavior change nahi.
 - `AdminRole` model (migration `0017`): koi staff (`is_staff=True`) account jiska koi `AdminRole` row nahi hai, wo `super_admin` maana jaata hai (backward-compat — purane staff accounts lock-out nahi hote naye role-system se).
 
 ---
 
-## 10. `ADMIN_FEATURES.md` roadmap — kya fulfil ho chuka hai
+## 9. `ADMIN_FEATURES.md` roadmap — kya fulfil ho chuka hai
 
 Us tracker-file ke "Roadmap" section (§3) ke kai items ab **already ban chuke hain** is update ke through:
 - ✅ "Dedicated admin dashboard (Django admin se aage)" — poora `cafemitra_admin` + `/api/admin/...` API ban chuka hai.
@@ -203,7 +191,7 @@ Us tracker-file ke "Roadmap" section (§3) ke kai items ab **already ban chuke h
 
 ---
 
-## 11. Summary — Print Agent (`.cs` desktop app) ke liye action items
+## 10. Summary — Print Agent (`.cs` desktop app) ke liye action items
 
 1. **`POST /print-file` implement karo** local bridge (`LocalStatusServer.cs`) me — is-waqt Resume Builder/Biodata Maker ka "Print via PrintPilot" button broken hai (§4).
 2. `agent/passport-jobs/` claim/complete ab shared-pool hai — agar isse security-concern lagta hai (kisi doosri shop ka job claim ho sakta hai), server-side ownership-check wapas add karne ki request raise karo, ya confirm karo ki yeh intentional hai.

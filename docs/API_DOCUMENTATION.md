@@ -262,43 +262,7 @@ Desktop "PrintPilot Agent" ka self-update aur pehli-baar-install mechanism — d
 
 ---
 
-## 14. Google Places & Google Place Details (internal lead-scraping CRM)
-
-⚠️ **Yeh poora section (Google Places, Google Place Details, Lead Activities) completely unauthenticated hai** — koi bhi GET/POST/PUT/DELETE kar sakta hai. Yeh RepetiGo team ke apne internal sales/outreach tool ke liye hai (cafes/customers ke liye nahi), lekin agar yeh routes public internet pe expose hain to koi bhi is CRM data ko padh/badal/delete kar sakta hai. Firewall/internal-network-only access ya kam-se-kam ek shared secret header add karna consider karo.
-
-### Google Places (`GooglePlace` — scraped Maps links, extraction-tracking ke liye)
-
-| Endpoint | Kya karta hai |
-|---|---|
-| `GET /google-places/?extracted_status=all\|true\|false` | List, filter optional |
-| `POST /google-places/` | Single object **ya JSON array (batch)** — create |
-| `PUT`/`PATCH /google-places/{id}/` | **Sirf** `extracted_status=True` mark karta hai (body ignore hoti hai) |
-| `DELETE /google-places/{id}/` | Hard delete |
-
-- Create: `link`/`name` blank → skip; `name` (globally unique) already exist ya batch ke andar hi duplicate → skip. Single-object mode me skip → `400`/`409`, batch mode me hamesha `{created, skipped}` array (kam-se-kam 1 create hua to `201`, warna `400`).
-- List: `extracted_status` invalid value → `400`.
-
-### Google Place Details (`GooglePlaceDetail` — full scraped record + sales pipeline)
-
-| Endpoint | Kya karta hai |
-|---|---|
-| `GET /google-place-details/?name=&status=&follow_up=` | List + filter (name = contains search) |
-| `POST /google-place-details/` | Single **ya batch array** — create |
-| `GET /google-place-details/{id}/` | Single record |
-| `PUT`/`PATCH /google-place-details/{id}/` | Partial update (PUT bhi partial hai, full-replace nahi) |
-| `DELETE /google-place-details/{id}/` | Hard delete (cascades activities bhi) |
-| `GET /google-place-details/{id}/activities/` | Timeline (status-changes + notes) |
-| `POST /google-place-details/{id}/activities/` | Manual note add |
-
-- `status` values: `new, follow_up, discussion, interested, call_discussed, converted, not_interested`. Create-time invalid/missing status → silently `new` (reject nahi hota); update-time invalid status → `400` (yahan reject hota hai — create aur update ka behaviour alag hai, dhyaan rakhna).
-- `follow_up` filter: `overdue | today | upcoming | none | all` — invalid value → `400`.
-- `maps_url` globally unique hai (dedupe key) — create ya update me duplicate → `409`.
-- Update: `status` change karne par automatically ek `LeadActivity(kind=status_change)` timeline-entry ban jaati hai — is route se direct status-change activity manually nahi daal sakte, sirf `note` kind ka activity `POST .../activities/` se add hota hai.
-- `latitude`/`longitude`/`rating`/`reviews` jaise numeric fields agar parse na ho paayein to reject nahi hote, chup-chaap `null` save ho jaate hain.
-
----
-
-## 15. Known Gaps / Follow-ups (is documentation pass me mile)
+## 14. Known Gaps / Follow-ups (is documentation pass me mile)
 
 In sabko main cross-check ke dauraan flag kiya, team ke saath review karne layak:
 
@@ -306,15 +270,14 @@ In sabko main cross-check ke dauraan flag kiya, team ke saath review karne layak
 2. **`GET /agent/passport-jobs/{job_id}/original-image/` — no auth.** Customer ka raw photo kisi bhi guessable job_id se download ho sakta hai. (Section 11)
 3. **`agent_job_status(status='printed')` me double-settlement risk** — retry se wallet credit/debit do baar chal sakta hai, koi idempotency-guard nahi. (Section 12)
 4. **`public_mark_order_paid` dead code** — `views.py` me function hai jo bina validation order ko "paid" bana deta hai, lekin `urls.py` me route nahi hai (abhi unreachable). Accidentally future me route ho gaya to payment-bypass bug banega. (Section 9)
-5. **Google Places / Google Place Details / Lead Activities — poora CRM section unauthenticated.** (Section 14)
-6. **`check-upi-payment` upstream errors `pending` bankar chhup jaate hain** — provider down hone aur payment abhi pending hone me client-side koi fark nahi dikhta. (Section 9)
-7. **Contact-us messages kahin email nahi hoti**, sirf DB me save hoti hain, dekhne ke liye Django admin registration bhi abhi nahi hai (`ADMIN_FEATURES.md` me already tracked).
+5. **`check-upi-payment` upstream errors `pending` bankar chhup jaate hain** — provider down hone aur payment abhi pending hone me client-side koi fark nahi dikhta. (Section 9)
+6. **Contact-us messages kahin email nahi hoti**, sirf DB me save hoti hain, dekhne ke liye Django admin registration bhi abhi nahi hai (`ADMIN_FEATURES.md` me already tracked).
 
 ---
 
-## 16. Postman Collection
+## 15. Postman Collection
 
-`cafemitra_server/postman_collection.json` me sabhi 76 requests (14 folders, System se leke Google Place Details tak) is doc ke exact structure me hain. Import karne ke baad:
+`cafemitra_server/postman_collection.json` me sabhi 63 requests (12 folders, System se leke Agent Update & Installer tak) is doc ke exact structure me hain. Import karne ke baad:
 
 1. `base_url` variable apne local server (default `http://127.0.0.1:8000`) ya deployed URL se set karo.
 2. **Register User → Verify Email (console/email se `verification_token` copy karo) → Login User** chalao — `token`, `refresh_token`, `shop_code` collection variables auto-set ho jaate hain (test scripts already lagi hain).

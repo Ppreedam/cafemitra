@@ -1,7 +1,6 @@
 import csv
 import secrets
 import string
-import threading
 from decimal import Decimal
 from datetime import datetime, timedelta
 
@@ -17,8 +16,7 @@ from django.http import HttpResponse, JsonResponse
 
 from .admin_activity import log_admin_activity
 from .admin_auth import get_admin_role, require_admin, require_section
-from .lead_scraper_runner import run_scrape_job
-from .models import AdminActivityLog, AdminRole, Agent, ContactMessage, Coupon, CouponRedemption, GooglePlace, PassportAIConfig, PrintOrder, ScrapeRun, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTransaction, WalletTopup, WithdrawalRequest
+from .models import AdminActivityLog, AdminRole, Agent, ContactMessage, Coupon, CouponRedemption, PassportAIConfig, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTransaction, WalletTopup, WithdrawalRequest
 from .views import (
     ORDER_LIST_DEFERRED_FIELDS,
     cafe_code_for_user,
@@ -1762,9 +1760,6 @@ def admin_orders_export(request):
 
 
 # --- Order Issues (unsuccessful orders needing admin follow-up) -------------
-# Lives under the Leads CRM nav group (as a one-by-one work queue, same
-# pattern as the scrape queue) even though it reads from PrintOrder/shops -
-# a deliberate placement choice, not a data-model relationship.
 
 def order_issues_queryset():
     """Every order that hasn't reached STATUS_PRINTED - failed, still queued,
@@ -2468,77 +2463,3 @@ def admin_wallet_earnings_summary(request):
             "thisMonth": {"amount": float(this_month), "comparisonAmount": float(last_month), "changePercent": pct_change(this_month, last_month)},
         }
     )
-
-
-# --- Leads: Selenium scrape-queue extractor ---------------------------------
-
-MAX_SCRAPE_PLACES = 15  # hard cap per run - bounds worst-case Chrome/Selenium run time
-
-
-def public_scrape_run(run):
-    return {
-        "id": run.id,
-        "status": run.status,
-        "maxPlaces": run.max_places,
-        "processedCount": run.processed_count,
-        "successCount": run.success_count,
-        "failedCount": run.failed_count,
-        "log": run.log,
-        "errorMessage": run.error_message,
-        "startedAt": run.started_at.isoformat(),
-        "completedAt": run.completed_at.isoformat() if run.completed_at else None,
-    }
-
-
-@csrf_exempt
-@require_http_methods(["POST", "OPTIONS"])
-def admin_leads_scrape_run(request):
-    """Starts the Selenium extractor in the background and returns
-    immediately - Chrome+Selenium is far too slow (seconds per place) to run
-    inside the request/response cycle. The frontend polls
-    admin_leads_scrape_status for progress.
-    """
-    if request.method == "OPTIONS":
-        return JsonResponse({})
-
-    admin_user, err = require_section(request, "leads")
-    if err:
-        return err
-
-    if ScrapeRun.objects.filter(status=ScrapeRun.STATUS_RUNNING).exists():
-        return JsonResponse({"message": "An extractor run is already in progress."}, status=409)
-
-    pending_count = GooglePlace.objects.filter(extracted_status=False).count()
-    if pending_count == 0:
-        return JsonResponse({"message": "Nothing pending in the scrape queue."}, status=400)
-
-    body = parse_body(request)
-    try:
-        max_places = min(MAX_SCRAPE_PLACES, max(1, int(body.get("maxPlaces", 5))))
-    except (TypeError, ValueError):
-        max_places = 5
-
-    run = ScrapeRun.objects.create(started_by=admin_user, max_places=max_places)
-    log_admin_activity(admin_user, "leads.run_scraper", "scrape_run", run.id, f"maxPlaces={max_places}")
-
-    thread = threading.Thread(target=run_scrape_job, args=(run.id,), daemon=True)
-    thread.start()
-
-    return JsonResponse({"run": public_scrape_run(run)}, status=201)
-
-
-@csrf_exempt
-@require_http_methods(["GET", "OPTIONS"])
-def admin_leads_scrape_status(request):
-    if request.method == "OPTIONS":
-        return JsonResponse({})
-
-    _, err = require_section(request, "leads")
-    if err:
-        return err
-
-    run = ScrapeRun.objects.order_by("-started_at").first()
-    if not run:
-        return JsonResponse({"run": None})
-
-    return JsonResponse({"run": public_scrape_run(run)})
