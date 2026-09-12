@@ -15,6 +15,7 @@ cafemitra_server/media/*
 !cafemitra_server/media/installer/
 !cafemitra_server/media/installer/**
 cafemitra_server/.env
+cafemitra_server/backups/
 
 # .NET build/cache
 printpilot_agent_csharp/bin/
@@ -28,4 +29,3 @@ printpilot_agent_csharp/obj/
 
 # Local planning/reference docs - not part of the shipped repo
 docs/
-ocr_experiments/
