@@ -10,7 +10,12 @@ internal static class ApiBaseUrlProvider
     // to this in dev). 127.0.0.1 rather than "localhost" - avoids .NET
     // resolving to ::1 first and failing/stalling against a runserver that's
     // only bound to the IPv4 loopback.
-    private const string LocalDevBaseUrl = "http://127.0.0.1:8000/";
+    // internal, not private: Form1 also reads this to gate the printer
+    // safety alerts (virtual printer, offline, etc.) off entirely for a
+    // local-dev session - a dev machine testing against manage.py runserver
+    // routinely has no real printer attached, and those alerts exist to
+    // protect a real shop's real customer, never fire against production.
+    internal const string LocalDevBaseUrl = "http://127.0.0.1:8000/";
 
     /// Refreshes AgentConfig.ApiBaseUrl from the published GitHub source and
     /// persists it to config.json when it changed. Any network failure here

@@ -43,6 +43,8 @@ namespace Print_Agent
         private static readonly Color WsBlinkAmberBright = Color.FromArgb(234, 179, 8);
         private static readonly Color WsBlinkAmberDim = Color.FromArgb(253, 224, 71);
         private volatile bool _printerOfflineAlertShown;
+        private volatile bool _virtualPrinterAlertShown;
+        private volatile bool _missingPresetAlertShown;
         // PollAndPrintAsync fires one ProcessJobAsync per job it finds
         // without awaiting them, so 2+ jobs from the same poll/push run
         // concurrently by default. They'd otherwise interleave through
@@ -55,8 +57,17 @@ namespace Print_Agent
         private readonly SemaphoreSlim _printQueueGate = new(1, 1);
         private CancellationTokenSource _autoLoginStop;
 
-        private static readonly string SettingsFilePath =
-        Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "printer_settings.txt");
+        // Was Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
+        // "printer_settings.txt") - tied to wherever this exact copy of the
+        // exe happens to be running from, unlike everything else (login,
+        // credentials, jobs, logs), which all live under AgentPaths.ConfigDir
+        // and survive a move/reinstall/update to a different folder. A shop
+        // whose install ever moved (or who has more than one copy of the
+        // exe, e.g. an old and a new build side by side) could see presets
+        // that seem to "reset" or disagree with what the website shows,
+        // with no obvious cause - login still worked fine, masking that this
+        // one file didn't come along. See MigrateLegacySettingsFileIfNeeded.
+        private static readonly string SettingsFilePath = AgentPaths.PrinterSettingsPath;
 
         private const string DefaultPaperSize = "A4";
 
@@ -254,7 +265,7 @@ namespace Print_Agent
             UpdateLoginButtonEnabled(); // starts disabled - both fields are empty
             Theme.StylePrimaryButton(btnPrint);
             Theme.StyleSecondaryButton(btnBrowse);
-            Theme.StylePrimaryButton(btnSavePrinterSetting);
+            Theme.StyleBrandButton(btnSavePrinterSetting);
             Theme.StyleIconButton(btnGear);
             Theme.StyleBackButton(btnBackFromSettings);
             MoveSignOutNextToSettings();
@@ -665,6 +676,30 @@ namespace Print_Agent
             txtPassword.Clear();
             UpdateAccountLabel();
             LogStatus("Logged out and removed the saved login from this computer.");
+        }
+
+        // One-time move from the old exe-relative location to the stable
+        // AgentPaths.ConfigDir one (see SettingsFilePath's comment) - only
+        // when nothing has been saved yet at the new path, so it never
+        // overwrites presets a shop already has there. Best-effort: a
+        // failure here just means presets stay wherever they already were,
+        // not lost, and this never blocks startup over it.
+        private static void MigrateLegacySettingsFileIfNeeded()
+        {
+            try
+            {
+                if (File.Exists(AgentPaths.PrinterSettingsPath)) return;
+
+                var legacyPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "printer_settings.txt");
+                if (!File.Exists(legacyPath)) return;
+
+                Directory.CreateDirectory(AgentPaths.ConfigDir);
+                File.Copy(legacyPath, AgentPaths.PrinterSettingsPath);
+            }
+            catch
+            {
+                // Best-effort - see comment above.
+            }
         }
 
         // ── Load Settings File & Populate Grid ───────────────────────
@@ -1125,6 +1160,7 @@ namespace Print_Agent
             dataGridPrinterSetting.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             // ─────────────────────────────────────────────────────────
 
+            MigrateLegacySettingsFileIfNeeded();
             LoadPrinterSettings();  // file se load karo
 
             // ── Pending Print Grid Setup ──────────────────────────────────
@@ -1199,19 +1235,41 @@ namespace Print_Agent
 
                     void ApplyPollState()
                     {
-                        UpdateWsIndicator(connected);
-
-                        if (_pollTimer == null) return;
-                        if (connected)
+                        // The real poll-timer toggle runs FIRST and is never
+                        // allowed to be skipped by the cosmetic badge update
+                        // below - GetStatusSnapshot()'s "running"/"stopped"
+                        // answer depends entirely on this actually running.
+                        // An earlier version called UpdateWsIndicator first;
+                        // if that ever threw (e.g. a WinForms control access
+                        // issue), the poll timer was never restarted on a WS
+                        // disconnect and the agent got stuck reporting
+                        // "stopped" until the next successful reconnect -
+                        // exactly the symptom this whole status field exists
+                        // to avoid.
+                        if (_pollTimer != null)
                         {
-                            _pollTimer.Stop();
-                            LogStatus("Poll timer stopped - WebSocket is live, no more periodic /api/agent/jobs/ calls.");
+                            if (connected)
+                            {
+                                _pollTimer.Stop();
+                                LogStatus("Poll timer stopped - WebSocket is live, no more periodic /api/agent/jobs/ calls.");
+                            }
+                            else
+                            {
+                                _pollTimer.Interval = Math.Max(_config.PollIntervalSeconds, 5) * 1000;
+                                _pollTimer.Start();
+                                LogStatus($"Poll timer resumed - polling every {Math.Max(_config.PollIntervalSeconds, 5)}s (WebSocket disconnected).");
+                            }
                         }
-                        else
+
+                        try
                         {
-                            _pollTimer.Interval = Math.Max(_config.PollIntervalSeconds, 5) * 1000;
-                            _pollTimer.Start();
-                            LogStatus($"Poll timer resumed - polling every {Math.Max(_config.PollIntervalSeconds, 5)}s (WebSocket disconnected).");
+                            UpdateWsIndicator(connected);
+                        }
+                        catch (Exception ex)
+                        {
+                            // Purely cosmetic (the badge blink) - must never
+                            // take the poll timer down with it.
+                            LogStatus($"WS indicator update failed (cosmetic only): {ex.Message}");
                         }
                     }
 
@@ -1378,16 +1436,50 @@ namespace Print_Agent
                 var matchedPrinter = FindMatchingPrinter(DefaultPaperSize, colorType);
                 if (matchedPrinter is null)
                 {
-                    LogStatus($"{tokenId}: no matching printer for {DefaultPaperSize} / {colorType} - skipping (add it in Printer Setting).");
-                    _printedIds.Remove(job.Id); // retry next poll once a matching printer is saved
-                    return;
+                    // Same silent-failure shape as an offline/virtual printer
+                    // - just log-and-skip, forever, with nothing telling the
+                    // shop why a customer's job never came out. Common real
+                    // case: only a Grayscale preset was ever saved (e.g. for
+                    // A4), and a Color order comes in - there's no A4/Color
+                    // row, so this is a permanent dead end for that job
+                    // until someone happens to notice and adds the preset.
+                    LogStatus($"{tokenId}: no printer preset saved for {DefaultPaperSize} / {colorType} - holding job until one is added.");
+                    _printedIds.Remove(job.Id); // retry next poll once a matching preset is saved
+                    ShowMissingPresetAlert(DefaultPaperSize, colorType);
+                    return; // job stays exactly as it was on the server (pending) - not failed, not printed
                 }
 
-                if (IsPrinterOffline(matchedPrinter))
+                // Skipped only against the local dev server - never in
+                // production. A dev machine testing the poll/print pipeline
+                // routinely has no real printer attached at all, so
+                // "Microsoft Print to PDF" is the only thing there is to
+                // pick; this alert exists to protect a real shop's real
+                // customer from a silent fake-success, not to block that
+                // kind of local testing.
+                if (!IsLocalDevSession && IsVirtualPrinter(matchedPrinter))
                 {
-                    LogStatus($"{tokenId}: printer '{matchedPrinter}' is not connected - holding job until it reconnects.");
-                    _printedIds.Remove(job.Id); // retry automatically on a later poll/push, once the printer is back
-                    ShowPrinterOfflineAlert(matchedPrinter);
+                    // Windows' built-in "printers" (Print to PDF, XPS Document
+                    // Writer, Fax, OneNote) always pass PrinterSettings.IsValid
+                    // and are never "offline" - they happily accept a job and
+                    // produce... a PDF file, a fax queue entry, a OneNote page.
+                    // No exception, no paper. A shop whose real printer was
+                    // never actually selected in Setup (or got swapped/
+                    // disconnected and one of these was already sitting in the
+                    // dropdown) would have every job "print" successfully
+                    // forever with nothing ever coming out - seen live on a
+                    // client machine.
+                    LogStatus($"{tokenId}: matched printer '{matchedPrinter}' is a virtual/built-in Windows printer, not a physical one - holding job until a real printer is selected.");
+                    _printedIds.Remove(job.Id); // retry automatically once a real printer is saved in Printer Setting
+                    ShowVirtualPrinterAlert(matchedPrinter);
+                    return; // job stays exactly as it was on the server (pending) - not failed, not printed
+                }
+
+                var printerFault = GetPrinterFault(matchedPrinter);
+                if (printerFault != null)
+                {
+                    LogStatus($"{tokenId}: printer '{matchedPrinter}' {printerFault} - holding job until it's resolved.");
+                    _printedIds.Remove(job.Id); // retry automatically on a later poll/push, once the fault clears
+                    ShowPrinterFaultAlert(matchedPrinter, printerFault);
                     return; // job stays exactly as it was on the server (pending) - not failed, not printed
                 }
 
@@ -1478,25 +1570,96 @@ namespace Print_Agent
             }
         }
 
+        // True only when this session is actually talking to the local
+        // manage.py runserver (see ApiBaseUrlProvider.UseLocalDevServerIfAvailable) -
+        // never true against production, so gating a safety check on this
+        // can't weaken it for a real shop.
+        private bool IsLocalDevSession => _config.ApiBaseUrl == ApiBaseUrlProvider.LocalDevBaseUrl;
+
+        // Windows' own built-in "printers" - they'll match any paper-size/
+        // color-mode preset a shop saves in Printer Setting just as happily
+        // as a real one, always report "online", and never throw: they just
+        // silently produce a PDF/fax/OneNote page instead of paper. Matched
+        // by substring, not exact name, since "OneNote (Desktop)" vs
+        // "OneNote for Windows 10" vs a future Windows version's exact
+        // wording all vary, but the identifying word doesn't.
+        private static readonly string[] VirtualPrinterMarkers =
+        {
+            "Print to PDF",
+            "XPS Document Writer",
+            "OneNote",
+            "Fax",
+        };
+
+        private static bool IsVirtualPrinter(string printerName)
+        {
+            return VirtualPrinterMarkers.Any(marker =>
+                printerName.Contains(marker, StringComparison.OrdinalIgnoreCase));
+        }
+
         // Windows keeps a printer object around (still "installed", still
-        // passes PrinterSettings.IsValid) even when the physical device is
-        // powered off, unplugged, or unreachable on the network - the
-        // System.Drawing.Printing print path doesn't reliably throw for
-        // that, it just queues the job silently. WMI's Win32_Printer is the
-        // one place that state is actually visible ahead of time.
-        private static bool IsPrinterOffline(string printerName)
+        // passes PrinterSettings.IsValid) even when it can't actually
+        // produce output right now - powered off/unplugged/unreachable,
+        // paper-jammed, out of paper or toner, a door open, or its queue
+        // manually paused after an earlier stuck job. System.Drawing.
+        // Printing's print path doesn't reliably throw for any of that, it
+        // just hands the job to the spooler and returns "success" - WMI's
+        // Win32_Printer is the one place this is actually visible ahead of
+        // time. One query covers all of it (WorkOffline, the PrinterState
+        // bitmask, and DetectedErrorState as a fallback for whichever of
+        // those a given driver actually populates).
+        //
+        // Returns a short, human-readable reason (fit for a popup message),
+        // or null if the printer looks healthy enough to attempt.
+        private static string GetPrinterFault(string printerName)
         {
             try
             {
                 var escaped = printerName.Replace("'", "''");
                 using var searcher = new ManagementObjectSearcher(
-                    $"SELECT WorkOffline FROM Win32_Printer WHERE Name = '{escaped}'");
+                    $"SELECT WorkOffline, PrinterState, DetectedErrorState FROM Win32_Printer WHERE Name = '{escaped}'");
                 using var results = searcher.Get();
                 foreach (ManagementObject printer in results)
                 {
                     using (printer)
                     {
-                        return printer["WorkOffline"] is bool offline && offline;
+                        if (printer["WorkOffline"] is bool offline && offline)
+                        {
+                            return "is not connected (offline)";
+                        }
+
+                        // Win32_Printer.PrinterState: a bitmask mirroring the
+                        // spooler API's PRINTER_STATUS_* flags. Low-toner/
+                        // low-paper deliberately don't hold the job - a
+                        // printer running low still produces (fainter, but
+                        // real) output, so blocking on "low" rather than
+                        // "empty" would just be a false alarm on every job.
+                        var state = Convert.ToUInt32(printer["PrinterState"] ?? 0u);
+                        const uint Paused = 0x1, PrinterError = 0x2, PaperJam = 0x8, PaperOut = 0x10,
+                            NoToner = 0x40000, DoorOpen = 0x400000;
+
+                        if ((state & Paused) != 0) return "has its print queue paused";
+                        if ((state & PaperJam) != 0) return "has a paper jam";
+                        if ((state & PaperOut) != 0) return "is out of paper";
+                        if ((state & NoToner) != 0) return "is out of toner/ink";
+                        if ((state & DoorOpen) != 0) return "has a door or cover open";
+                        if ((state & PrinterError) != 0) return "is reporting an error";
+
+                        // Not every driver populates PrinterState - fall back
+                        // to DetectedErrorState (a plain enum, not a bitmask)
+                        // for the ones that only set that instead.
+                        var errorState = Convert.ToUInt32(printer["DetectedErrorState"] ?? 0u);
+                        return errorState switch
+                        {
+                            4 => "is out of paper",
+                            6 => "is out of toner/ink",
+                            7 => "has a door or cover open",
+                            8 => "has a paper jam",
+                            9 => "is not connected (offline)",
+                            11 => "has a full output tray",
+                            12 => "has a paper problem",
+                            _ => null,
+                        };
                     }
                 }
 
@@ -1504,7 +1667,7 @@ namespace Print_Agent
                 // dropped it from the printer list - treat that as offline
                 // too rather than letting the job silently vanish into a
                 // queue nobody is watching.
-                return true;
+                return "is not connected (offline)";
             }
             catch
             {
@@ -1512,36 +1675,81 @@ namespace Print_Agent
                 // don't block a possibly-fine printer over an inconclusive
                 // check; fall through to the normal print attempt and its
                 // existing error handling.
-                return false;
+                return null;
             }
         }
 
         // One dialog at a time, no matter how many queued jobs hit the same
-        // offline printer back to back - each held job still retries on its
+        // faulted printer back to back - each held job still retries on its
         // own via _printedIds.Remove, this just stops the operator from
         // being stacked with a popup per job. Modal on purpose (blocks this
         // form until dismissed): the whole point is the shop owner notices
         // it before walking away, since a customer already paid for a job
         // that is currently going nowhere.
-        private void ShowPrinterOfflineAlert(string printerName)
+        private void ShowPrinterFaultAlert(string printerName, string fault)
         {
             if (_printerOfflineAlertShown) return;
             _printerOfflineAlertShown = true;
             try
             {
-                MessageBox.Show(
-                    this,
-                    $"Printer \"{printerName}\" is not connected.\n\n" +
-                    "Please turn it on and check the cable/USB/network connection. " +
-                    "The customer's print job is on hold and will print automatically as soon as the printer is back online - it does not need to be resent.\n\n" +
-                    "If a customer is waiting, let them know the shop's printer is temporarily disconnected.",
-                    "Printer Not Connected",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Warning);
+                PrintAlertForm.Show(
+                    "Printer Needs Attention",
+                    $"Printer \"{printerName}\" {fault}.\n\n" +
+                    "Please check it and fix the issue. " +
+                    "The customer's print job is on hold and will print automatically once it's resolved - it does not need to be resent.\n\n" +
+                    "If a customer is waiting, let them know the shop's printer needs attention.");
             }
             finally
             {
                 _printerOfflineAlertShown = false;
+            }
+        }
+
+        // Same one-at-a-time treatment as ShowPrinterOfflineAlert - a shop
+        // whose printer preset never got past a virtual/built-in one would
+        // otherwise get this popup once per queued job.
+        private void ShowVirtualPrinterAlert(string printerName)
+        {
+            if (_virtualPrinterAlertShown) return;
+            _virtualPrinterAlertShown = true;
+            try
+            {
+                PrintAlertForm.Show(
+                    "Wrong Printer Selected",
+                    $"\"{printerName}\" is a Windows built-in printer, not a real one - it will never produce paper.\n\n" +
+                    "Click the ⚙ gear icon in this app (top-right) and select your actual printer there. " +
+                    "The customer's print job is on hold and will print automatically the moment you save a real printer - it does not need to be resent.\n\n" +
+                    "If a customer is waiting, let them know the shop's printer needs to be set up.");
+            }
+            finally
+            {
+                _virtualPrinterAlertShown = false;
+            }
+        }
+
+        // Same one-at-a-time treatment as the other print-blocking alerts -
+        // triggered when a job needs a paper-size/color-mode combo that was
+        // never saved as a preset at all (e.g. only Grayscale was ever set
+        // up, and a Color order comes in - there's no row for that
+        // combination, matchedPrinter is null, and without this alert that
+        // job would just sit silently retrying forever with nothing telling
+        // the shop why).
+        private void ShowMissingPresetAlert(string paperSize, string colorType)
+        {
+            if (_missingPresetAlertShown) return;
+            _missingPresetAlertShown = true;
+            try
+            {
+                PrintAlertForm.Show(
+                    "Printer Not Set Up",
+                    $"No printer is set up for {paperSize} / {colorType}.\n\n" +
+                    "Click the ⚙ gear icon in this app (top-right) and save a printer preset for this paper size and color mode. " +
+                    "The customer's print job is on hold and will print automatically the moment that preset is saved - it does not need to be resent.\n\n" +
+                    "If a customer is waiting, let them know the shop's printer needs to be set up for this print type.");
+            }
+            finally
+            {
+                _missingPresetAlertShown = false;
             }
         }
 
@@ -2167,6 +2375,111 @@ namespace Print_Agent
             using var form = new CashConfirmForm(amount, colorLabel, pages, copies, tokenId);
             form.ShowDialog();
             return form.Confirmed;
+        }
+    }
+
+    /// Same branded-popup template as CashConfirmForm (borderless, rounded,
+    /// colored top bar, draggable, TopMost) - used for the "your print job
+    /// is stuck" family of alerts (offline printer, virtual printer, no
+    /// preset saved) instead of a plain MessageBox, so they read as part of
+    /// the app rather than a generic Windows dialog. Amber instead of teal:
+    /// teal already means "success/confirmed" elsewhere in this app (the
+    /// signed-in badge, Cash Counter's own Confirm), and these are warnings.
+    public class PrintAlertForm : Form
+    {
+        private readonly Label lblBody;
+        private readonly Button btnOk;
+
+        public PrintAlertForm(string title, string message)
+        {
+            FormBorderStyle = FormBorderStyle.None;
+            StartPosition = FormStartPosition.CenterScreen;
+            Size = new Size(460, 360);
+            BackColor = Color.White;
+            TopMost = true;
+            ShowInTaskbar = true;
+            KeyPreview = true;
+
+            Region = Region.FromHrgn(NativeMethods.CreateRoundRectRgn(0, 0, Width, Height, 18, 18));
+
+            Paint += (s, e) =>
+            {
+                using var pen = new Pen(Theme.Warning, 2);
+                e.Graphics.DrawRectangle(pen, 1, 1, Width - 3, Height - 3);
+            };
+
+            var topBar = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 56,
+                BackColor = Theme.Warning
+            };
+            var lblTitle = new Label
+            {
+                Text = "⚠  " + title,
+                ForeColor = Color.White,
+                Font = new Font("Segoe UI", 12F, FontStyle.Bold),
+                AutoSize = false,
+                TextAlign = ContentAlignment.MiddleLeft,
+                Dock = DockStyle.Fill,
+                Padding = new Padding(20, 0, 0, 0)
+            };
+            topBar.Controls.Add(lblTitle);
+
+            var btnClose = new Button
+            {
+                Text = "✕",
+                FlatStyle = FlatStyle.Flat,
+                ForeColor = Color.White,
+                BackColor = Theme.Warning,
+                Size = new Size(40, 40),
+                Location = new Point(Width - 48, 8),
+                Cursor = Cursors.Hand,
+                Anchor = AnchorStyles.Top | AnchorStyles.Right
+            };
+            btnClose.FlatAppearance.BorderSize = 0;
+            btnClose.FlatAppearance.MouseOverBackColor = Color.FromArgb(255, 255, 255, 40);
+            btnClose.Click += (s, e) => Close();
+            topBar.Controls.Add(btnClose);
+            btnClose.BringToFront();
+
+            lblBody = new Label
+            {
+                Text = message,
+                Font = new Font("Segoe UI", 10F),
+                ForeColor = Theme.TextPrimary,
+                AutoSize = false,
+                TextAlign = ContentAlignment.TopLeft,
+                Location = new Point(24, 72),
+                Size = new Size(Width - 48, 216)
+            };
+
+            btnOk = new Button
+            {
+                Text = "Got it",
+                Size = new Size(160, 42),
+                Location = new Point(Width - 190, 300),
+                Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                Cursor = Cursors.Hand
+            };
+            Theme.StylePrimaryButton(btnOk);
+            btnOk.Click += (s, e) => Close();
+
+            Controls.Add(topBar);
+            Controls.Add(lblBody);
+            Controls.Add(btnOk);
+
+            AcceptButton = btnOk;
+            CancelButton = btnOk;
+
+            topBar.MouseDown += (s, e) => NativeMethods.DragMove(this, e);
+            lblTitle.MouseDown += (s, e) => NativeMethods.DragMove(this, e);
+        }
+
+        public static void Show(string title, string message)
+        {
+            using var form = new PrintAlertForm(title, message);
+            form.ShowDialog();
         }
     }
 

@@ -25,6 +25,7 @@ internal static class Theme
     public static readonly Color TextMuted = ColorTranslator.FromHtml("#64748B");
     public static readonly Color Success = Teal;
     public static readonly Color Danger = ColorTranslator.FromHtml("#DC2626");
+    public static readonly Color Warning = ColorTranslator.FromHtml("#D97706");
     public static readonly Color GridHeaderBg = ColorTranslator.FromHtml("#F1F5F9");
     public static readonly Color GridAltRow = ColorTranslator.FromHtml("#F8FAFC");
 

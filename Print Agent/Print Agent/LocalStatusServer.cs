@@ -176,6 +176,20 @@ internal sealed class LocalStatusServer(
             "Access-Control-Allow-Origin: *\r\n" +
             "Access-Control-Allow-Methods: GET, POST, OPTIONS\r\n" +
             "Access-Control-Allow-Headers: Content-Type\r\n" +
+            // Chrome's Private Network Access policy: a page served over
+            // HTTPS (the website) fetching a loopback address (this bridge,
+            // 127.0.0.1) sends a preflight that gets silently blocked
+            // without this header, even though plain Access-Control-Allow-
+            // Origin is already set - PNA is a separate, additional check on
+            // top of ordinary CORS. Without it, a browser enforcing PNA
+            // (rolling out across Chrome/Edge versions) fails every /status
+            // fetch from the website with no visible error beyond the
+            // console - the exact same 127.0.0.1:8765/status typed directly
+            // into the address bar still works fine, since that's a plain
+            // navigation, not a cross-origin fetch, so PNA never applies to
+            // it. That mismatch (works typed in directly, fails via the
+            // website's Retry button) is what actually gave this away.
+            "Access-Control-Allow-Private-Network: true\r\n" +
             $"Content-Length: {bytes.Length}\r\n" +
             "Connection: close\r\n\r\n";
         await stream.WriteAsync(Encoding.UTF8.GetBytes(headers), token);
