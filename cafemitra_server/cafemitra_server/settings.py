@@ -180,6 +180,8 @@ PRODUCTION_FRONTEND_ORIGINS = {
 CORS_ALLOWED_ORIGINS = [
     "https://repetigo.com",
     "https://www.repetigo.com",
+    "https://dashboard.repetigo.com",
+    "http://dashboard.repetigo.com",  # remove once TLS is set up for this subdomain
     "http://localhost:3000",
     "http://localhost:3002",  # cafemitra_admin dev server
     "chrome-extension://haknmckbhgnjnjnhhbidhbinpknnioao",
