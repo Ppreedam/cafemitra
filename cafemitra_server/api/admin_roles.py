@@ -8,6 +8,7 @@ SECTION_ROLES = {
     # super_admin can always access every section - it's added to each set
     # below at lookup time rather than repeated in every entry.
     "shops": {AdminRole.ROLE_FINANCE, AdminRole.ROLE_SUPPORT},
+    "customers": {AdminRole.ROLE_FINANCE, AdminRole.ROLE_SUPPORT},
     "orders": {AdminRole.ROLE_SUPPORT},
     "wallet": {AdminRole.ROLE_FINANCE},
     "coupons": {AdminRole.ROLE_FINANCE},

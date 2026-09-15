@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 from django.contrib.auth import authenticate, get_user_model
 from django.db import transaction
-from django.db.models import Count, Q, Sum
+from django.db.models import Count, Max, Q, Sum
 from django.db.models.functions import TruncDate, TruncMonth, TruncWeek
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
@@ -405,8 +405,166 @@ def admin_shops(request):
     )
 
 
+def public_admin_customer(user, last_seen=None, order_count=0):
+    profile = getattr(user, "profile", None)
+    shop = getattr(user, "shop", None)
+    address_parts = [shop.address, shop.city, shop.state, shop.pin_code] if shop else []
+    return {
+        "id": user.id,
+        "fullName": user.get_full_name(),
+        "email": user.email,
+        "phone": profile.phone if profile else "",
+        "walletAmount": float(profile.balance) if profile else 0,
+        "address": ", ".join(part for part in address_parts if part),
+        "dateJoined": user.date_joined.isoformat(),
+        "lastSeen": last_seen.isoformat() if last_seen else None,
+        "orderCount": order_count,
+    }
+
+
+def order_count_map(user_ids):
+    return dict(
+        PrintOrder.objects.filter(user_id__in=user_ids).values("user_id").annotate(c=Count("id")).values_list("user_id", "c")
+    )
+
+
+def last_seen_map(user_ids):
+    """Best guess at "last active" per user - there's no dedicated activity
+    tracker, so this takes the more recent of their latest order and latest
+    wallet transaction, per user_id."""
+    order_last = dict(
+        PrintOrder.objects.filter(user_id__in=user_ids)
+        .values("user_id")
+        .annotate(last=Max("created_at"))
+        .values_list("user_id", "last")
+    )
+    txn_last = dict(
+        WalletTransaction.objects.filter(user_id__in=user_ids)
+        .values("user_id")
+        .annotate(last=Max("created_at"))
+        .values_list("user_id", "last")
+    )
+    result = {}
+    for uid in user_ids:
+        candidates = [t for t in (order_last.get(uid), txn_last.get(uid)) if t]
+        result[uid] = max(candidates) if candidates else None
+    return result
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def admin_customers(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    _, err = require_section(request, "customers")
+    if err:
+        return err
+
+    customers = shops_queryset()
+
+    search = request.GET.get("search", "").strip()
+    if search:
+        customers = customers.filter(
+            Q(email__icontains=search)
+            | Q(first_name__icontains=search)
+            | Q(last_name__icontains=search)
+            | Q(profile__phone__icontains=search)
+        )
+
+    try:
+        page = max(1, int(request.GET.get("page", 1)))
+    except (TypeError, ValueError):
+        page = 1
+    try:
+        page_size = min(MAX_PAGE_SIZE, max(1, int(request.GET.get("pageSize", 20))))
+    except (TypeError, ValueError):
+        page_size = 20
+
+    customers = customers.order_by("-date_joined")
+    count = customers.count()
+    start = (page - 1) * page_size
+    page_items = list(customers[start : start + page_size])
+    page_ids = [user.id for user in page_items]
+    last_seen_by_id = last_seen_map(page_ids)
+    order_count_by_id = order_count_map(page_ids)
+
+    return JsonResponse(
+        {
+            "count": count,
+            "page": page,
+            "pageSize": page_size,
+            "customers": [
+                public_admin_customer(user, last_seen=last_seen_by_id.get(user.id), order_count=order_count_by_id.get(user.id, 0))
+                for user in page_items
+            ],
+        }
+    )
+
+
 def get_shop_user(shop_id):
     return User.objects.filter(id=shop_id, is_staff=False, shop__isnull=False).select_related("profile", "shop", "shop__referred_by_agent").first()
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def admin_customer_detail(request, customer_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    _, err = require_section(request, "customers")
+    if err:
+        return err
+
+    customer_user = get_shop_user(customer_id)
+    if not customer_user:
+        return JsonResponse({"message": "Customer not found."}, status=404)
+
+    order_count = PrintOrder.objects.filter(user=customer_user).count()
+    last_seen = last_seen_map([customer_user.id]).get(customer_user.id)
+
+    # Coupons used - read off CouponRedemption (created alongside the
+    # coupon_credit wallet transaction at redemption time) rather than
+    # re-parsing the wallet history's note text, since it already links
+    # straight to the exact coupon code.
+    coupon_redemptions = CouponRedemption.objects.filter(user=customer_user).select_related("coupon").order_by("-redeemed_at")
+    coupons_used = [
+        {"code": r.coupon.code, "amount": float(r.coupon.amount), "redeemedAt": r.redeemed_at.isoformat()}
+        for r in coupon_redemptions
+    ]
+
+    return JsonResponse(
+        {
+            "customer": public_admin_customer(customer_user, last_seen=last_seen, order_count=order_count),
+            "orderCount": order_count,
+            "couponsUsed": coupons_used,
+        }
+    )
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def admin_customer_transactions(request, customer_id):
+    """Paginated wallet history for one customer. Gated on the "customers"
+    section (not "wallet") for the same reason admin_shop_orders is gated on
+    "shops" - a finance or support admin already looking at this customer's
+    profile shouldn't need separate "wallet" access just to see their ledger.
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    _, err = require_section(request, "customers")
+    if err:
+        return err
+
+    customer_user = get_shop_user(customer_id)
+    if not customer_user:
+        return JsonResponse({"message": "Customer not found."}, status=404)
+
+    transactions = WalletTransaction.objects.filter(user=customer_user).order_by("-created_at")
+    page_items, meta = paginate(transactions, request)
+
+    return JsonResponse({**meta, "transactions": [public_wallet_transaction(txn) for txn in page_items]})
 
 
 @csrf_exempt

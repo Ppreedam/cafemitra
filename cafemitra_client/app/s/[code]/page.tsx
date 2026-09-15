@@ -11,6 +11,7 @@ import { CropEditor, cropImage, loadImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT,
 import PublicResumeBuilder from "./PublicResumeBuilder";
 import PublicBiodataMaker from "./PublicBiodataMaker";
 import IdCardPrintUpload from "./IdCardPrintUpload";
+import { applyCleanScanToFile, type CleanScanProgress } from "./cleanScan/cleanScanEngine";
 
 type PublicShop = {
   code: string;
@@ -101,6 +102,9 @@ export default function CustomerScanPage() {
   const [cropMode, setCropMode] = useState<"straight" | "perspective">("perspective");
   const [isProcessingPdf, setIsProcessingPdf] = useState(false);
   const [isCombiningFiles, setIsCombiningFiles] = useState(false);
+  const [isCleanScanProcessing, setIsCleanScanProcessing] = useState(false);
+  const [cleanScanProgress, setCleanScanProgress] = useState<CleanScanProgress | null>(null);
+  const cleanScanAbortRef = useRef<AbortController | null>(null);
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [isDeletingDocument, setIsDeletingDocument] = useState(false);
   const [order, setOrder] = useState<PrintOrder | null>(null);
@@ -696,6 +700,49 @@ export default function CustomerScanPage() {
     }
   }
 
+  async function runCleanScan() {
+    if (!fileUrl || isCleanScanProcessing) return;
+
+    const controller = new AbortController();
+    cleanScanAbortRef.current = controller;
+    setIsCleanScanProcessing(true);
+    setCleanScanProgress({ processed: 0, total: hasPdfFile ? Math.max(pages, 1) : 1 });
+
+    try {
+      const sourceBlob = await fetch(fileUrl).then((response) => response.blob());
+      const sourceFile = new File([sourceBlob], fileName || (hasPdfFile ? "document.pdf" : "image.jpg"), { type: fileType || sourceBlob.type });
+
+      const cleanedFile = await applyCleanScanToFile(sourceFile, {
+        signal: controller.signal,
+        onProgress: (progress) => setCleanScanProgress(progress),
+      });
+
+      const cleanedUrl = URL.createObjectURL(cleanedFile);
+      URL.revokeObjectURL(fileUrl);
+      setFinalFile(cleanedFile);
+      setFileUrl(cleanedUrl);
+      setFileName(cleanedFile.name);
+      setFileType(cleanedFile.type);
+      setIsPreviewOpen(false);
+      setOrder(null);
+      setOrderError("");
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === "AbortError")) {
+        console.error("Clean scan failed:", error);
+        const detail = error instanceof Error ? error.message : String(error);
+        alert(`Could not clean up the scan. Please try again.\n\n(${detail})`);
+      }
+    } finally {
+      cleanScanAbortRef.current = null;
+      setIsCleanScanProcessing(false);
+      setCleanScanProgress(null);
+    }
+  }
+
+  function cancelCleanScan() {
+    cleanScanAbortRef.current?.abort();
+  }
+
   async function createPrintOrder() {
     if (!finalFile || !selectedItem || !activeService) return;
     if (!isCafeOpen) {
@@ -1046,19 +1093,43 @@ export default function CustomerScanPage() {
                 </p>
                 <div className="document-actions">
                   {hasPdfFile && !isIdCardPrint ? (
-                    <button type="button" onClick={() => setIsPageManagerOpen(true)} disabled={pages <= 1 || isProcessingPdf}>
+                    <button type="button" onClick={() => setIsPageManagerOpen(true)} disabled={pages <= 1 || isProcessingPdf || isCleanScanProcessing}>
                       <Trash2 size={16} /> Remove Page
                     </button>
                   ) : null}
                   {canCropImage ? (
-                    <button type="button" onClick={() => setIsCropOpen(true)}>
+                    <button type="button" onClick={() => setIsCropOpen(true)} disabled={isCleanScanProcessing}>
                       <Crop size={16} /> Crop
                     </button>
                   ) : null}
-                  <button type="button" onClick={clearUpload}>
+                  {!isPassportPhoto && !isIdCardPrint ? (
+                    <button type="button" onClick={runCleanScan} disabled={isCleanScanProcessing}>
+                      <ImageIcon size={16} /> {isCleanScanProcessing ? "Cleaning…" : "Clean Scan"}
+                    </button>
+                  ) : null}
+                  <button type="button" onClick={clearUpload} disabled={isCleanScanProcessing}>
                     <X size={16} /> Remove
                   </button>
                 </div>
+                {isCleanScanProcessing ? (
+                  <div className="clean-scan-progress">
+                    <span>
+                      {cleanScanProgress?.loadingEngine
+                        ? "Loading Clean Scan engine (first time only)…"
+                        : cleanScanProgress && cleanScanProgress.total > 1
+                          ? `Cleaning page ${cleanScanProgress.processed}/${cleanScanProgress.total}…`
+                          : "Cleaning scan…"}
+                    </span>
+                    {cleanScanProgress && !cleanScanProgress.loadingEngine && cleanScanProgress.total > 1 ? (
+                      <div className="clean-scan-progress-bar">
+                        <div style={{ width: `${Math.round((cleanScanProgress.processed / cleanScanProgress.total) * 100)}%` }} />
+                      </div>
+                    ) : null}
+                    <button type="button" onClick={cancelCleanScan}>
+                      Cancel
+                    </button>
+                  </div>
+                ) : null}
                 {isPassportPhoto && passportSheetUrl ? (
                   <>
                     <div className="passport-attire-picker">

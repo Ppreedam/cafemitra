@@ -10,6 +10,7 @@ import type { AdminNotifications, AdminRoleValue, AdminUser } from "@/lib/api";
 // here is a UX bug (wrong link visible/hidden), never a security hole.
 const SECTION_ROLES: Record<string, AdminRoleValue[]> = {
   shops: ["finance", "support"],
+  customers: ["finance", "support"],
   orders: ["support"],
   wallet: ["finance"],
   agents: ["finance", "sales"],
@@ -36,6 +37,7 @@ const links: NavLink[] = [
   { href: "/dashboard", label: "Overview", section: null },
   { href: "/analytics", label: "Analytics", section: "analytics" },
   { href: "/shops", label: "Shops", section: "shops" },
+  { href: "/customers", label: "Customers", section: "customers" },
   { href: "/orders", label: "Orders", section: "orders" },
   { href: "/wallet", label: "Wallet & Finance", section: "wallet", badgeKey: "pendingWithdrawals" },
   { href: "/agents", label: "Referral Agents", section: "agents", badgeKey: "pendingAgents" },

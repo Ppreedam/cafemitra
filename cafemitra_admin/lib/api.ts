@@ -327,6 +327,73 @@ export type ShopDetailResponse = {
   recentTransactions: ShopTransaction[];
 };
 
+export type Customer = {
+  id: number;
+  fullName: string;
+  email: string;
+  phone: string;
+  walletAmount: number;
+  address: string;
+  dateJoined: string;
+  lastSeen: string | null;
+  orderCount: number;
+};
+
+export type CustomerListResponse = {
+  count: number;
+  page: number;
+  pageSize: number;
+  customers: Customer[];
+};
+
+export type CustomerCouponUsed = {
+  code: string;
+  amount: number;
+  redeemedAt: string;
+};
+
+export type CustomerDetailResponse = {
+  customer: Customer;
+  orderCount: number;
+  couponsUsed: CustomerCouponUsed[];
+};
+
+export function fetchCustomers(params: { search?: string; page?: number; pageSize?: number }) {
+  const query = new URLSearchParams();
+  if (params.search) query.set("search", params.search);
+  if (params.pageSize) query.set("pageSize", String(params.pageSize));
+  if (params.page) query.set("page", String(params.page));
+  return request<CustomerListResponse>(`/admin/customers/?${query.toString()}`);
+}
+
+export function fetchCustomerDetail(id: number) {
+  return request<CustomerDetailResponse>(`/admin/customers/${id}/`);
+}
+
+export type CustomerTransaction = {
+  id: number;
+  kind: string;
+  direction: string;
+  amount: number;
+  affectsBalance: boolean;
+  note: string;
+  orderId: number | null;
+  createdAt: string;
+};
+
+export type CustomerTransactionListResponse = {
+  count: number;
+  page: number;
+  pageSize: number;
+  transactions: CustomerTransaction[];
+};
+
+export function fetchCustomerTransactions(id: number, params: { page?: number } = {}) {
+  const query = new URLSearchParams();
+  if (params.page) query.set("page", String(params.page));
+  return request<CustomerTransactionListResponse>(`/admin/customers/${id}/transactions/?${query.toString()}`);
+}
+
 export function fetchShops(params: {
   search?: string;
   balanceFilter?: string;

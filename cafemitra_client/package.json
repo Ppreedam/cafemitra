@@ -8,11 +8,13 @@
     "build": "next build",
     "start": "next start",
     "preview": "next build && next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "postinstall": "node scripts/copy-opencv.js"
   },
   "dependencies": {
     "@pdfsmaller/pdf-decrypt": "^1.0.1",
     "@pdfsmaller/pdf-encrypt": "^1.0.2",
+    "@techstark/opencv-js": "^4.10.0-release.1",
     "@types/qrcode": "^1.5.6",
     "docx": "^9.7.1",
     "gifenc": "^1.0.3",
