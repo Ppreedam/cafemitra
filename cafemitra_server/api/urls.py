@@ -9,6 +9,7 @@ urlpatterns = [
     re_path(r"^admin/overview/?$", admin_views.admin_overview),  # GET platform-wide KPI tiles + recent-activity feed
     re_path(r"^admin/shops/?$", admin_views.admin_shops),  # GET paginated/filtered shop list (search, balanceFilter, cashCounter, status)
     re_path(r"^admin/customers/?$", admin_views.admin_customers),  # GET paginated shop-owner list as customer records (name, email, phone, wallet amount, address)
+    re_path(r"^admin/customers/export/?$", admin_views.admin_customers_export),  # GET CSV export of all customer records (filtered by the same search param as the list)
     re_path(r"^admin/customers/(?P<customer_id>[0-9]+)/?$", admin_views.admin_customer_detail),  # GET one customer record + total order count
     re_path(r"^admin/customers/(?P<customer_id>[0-9]+)/transactions/?$", admin_views.admin_customer_transactions),  # GET paginated wallet transaction history for one customer
     re_path(r"^admin/shops/(?P<shop_id>[0-9]+)/?$", admin_views.admin_shop_detail),  # GET full shop detail (profile+pricing+orders+wallet) / PUT credit-limit + cash-counter permission

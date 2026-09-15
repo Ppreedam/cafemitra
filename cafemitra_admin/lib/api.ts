@@ -366,6 +366,13 @@ export function fetchCustomers(params: { search?: string; page?: number; pageSiz
   return request<CustomerListResponse>(`/admin/customers/?${query.toString()}`);
 }
 
+export function exportCustomersCsv(params?: { search?: string }) {
+  const query = new URLSearchParams();
+  if (params?.search) query.set("search", params.search);
+  const qs = query.toString();
+  return downloadCsv(`/admin/customers/export/${qs ? `?${qs}` : ""}`, "customers.csv");
+}
+
 export function fetchCustomerDetail(id: number) {
   return request<CustomerDetailResponse>(`/admin/customers/${id}/`);
 }
@@ -462,6 +469,13 @@ export type AdminOrder = ShopOrder & {
   shopId: number;
   shopName: string;
   shopEmail: string;
+  serviceKey?: string;
+  fileName?: string;
+  fileUrl?: string;
+  documentDeleted?: boolean;
+  hasRawPhoto?: boolean;
+  hasGeminiPhoto?: boolean;
+  geminiPhoto?: string;
 };
 
 export type AdminOrderListResponse = {

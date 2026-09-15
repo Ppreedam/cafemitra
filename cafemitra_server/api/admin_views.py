@@ -502,6 +502,52 @@ def admin_customers(request):
     )
 
 
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def admin_customers_export(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    _, err = require_section(request, "customers")
+    if err:
+        return err
+
+    customers = shops_queryset()
+
+    search = request.GET.get("search", "").strip()
+    if search:
+        customers = customers.filter(
+            Q(email__icontains=search)
+            | Q(first_name__icontains=search)
+            | Q(last_name__icontains=search)
+            | Q(profile__phone__icontains=search)
+        )
+
+    customers = customers.order_by("-date_joined")[:EXPORT_ROW_CAP]
+    customer_ids = [user.id for user in customers]
+    last_seen_by_id = last_seen_map(customer_ids)
+    order_count_by_id = order_count_map(customer_ids)
+
+    def row(user):
+        record = public_admin_customer(user, last_seen=last_seen_by_id.get(user.id), order_count=order_count_by_id.get(user.id, 0))
+        return [
+            record["fullName"],
+            record["email"],
+            record["phone"],
+            str(record["walletAmount"]),
+            str(record["orderCount"]),
+            record["address"],
+            record["dateJoined"],
+            record["lastSeen"] or "",
+        ]
+
+    return csv_response(
+        "customers.csv",
+        ["Name", "Email", "Phone", "Wallet Amount", "Orders", "Address", "Joined", "Last Seen"],
+        (row(user) for user in customers),
+    )
+
+
 def get_shop_user(shop_id):
     return User.objects.filter(id=shop_id, is_staff=False, shop__isnull=False).select_related("profile", "shop", "shop__referred_by_agent").first()
 

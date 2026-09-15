@@ -6,6 +6,14 @@ import { ArrowLeft } from "lucide-react";
 import { fetchOrderDetail, type AdminOrder } from "@/lib/api";
 import { formatCurrency, orderResultMessage, orderEffectiveStatus } from "@/lib/format";
 
+function isImageFile(name: string) {
+  return /\.(jpe?g|png|gif|webp|bmp)$/i.test(name);
+}
+
+function isImageUrl(name: string, url: string) {
+  return isImageFile(name) || url.startsWith("data:image");
+}
+
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const [order, setOrder] = useState<AdminOrder | null>(null);
@@ -23,6 +31,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
   if (!order) {
     return <p className="text-sm text-slate-500">Loading order...</p>;
   }
+
+  const isPhotoJob = order.serviceKey === "passport_photo" || order.hasGeminiPhoto || Boolean(order.photoStatus);
 
   const rows: [string, string][] = [
     ["Order number", order.orderNumber],
@@ -52,12 +62,56 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
             </div>
           ))}
         </dl>
+
         <div className="mt-4 pt-4 border-t border-slate-100">
           <Link href={`/shops/${order.shopId}`} className="text-sm text-indigo-700 hover:underline">
             View shop &rarr;
           </Link>
         </div>
       </div>
+
+      {isPhotoJob ? (
+        <div className="rounded-xl border border-slate-200 bg-white p-4 mt-4 max-w-3xl">
+          <div className="flex flex-wrap gap-6">
+            <div>
+              <p className="text-sm text-slate-500 mb-2">Input (uploaded photo)</p>
+              {order.hasRawPhoto && order.fileUrl && !order.documentDeleted ? (
+                <img src={order.fileUrl} alt="Input" className="max-w-xs rounded-md border border-slate-200" />
+              ) : (
+                <p className="text-sm text-slate-500">{order.documentDeleted ? "The file was deleted." : "No input file."}</p>
+              )}
+            </div>
+            <div>
+              <p className="text-sm text-slate-500 mb-2">Output (generated photo)</p>
+              {order.hasGeminiPhoto && order.geminiPhoto ? (
+                <img src={order.geminiPhoto} alt="Output" className="max-w-xs rounded-md border border-slate-200" />
+              ) : (
+                <p className="text-sm text-slate-500">{order.photoErrorMessage || "No output generated yet."}</p>
+              )}
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-slate-200 bg-white p-4 mt-4 max-w-xl">
+          <p className="text-sm text-slate-500 mb-2">Generated output</p>
+          {order.fileUrl && !order.documentDeleted ? (
+            isImageUrl(order.fileName || "", order.fileUrl) ? (
+              <img src={order.fileUrl} alt="Generated output" className="max-w-xs rounded-md border border-slate-200" />
+            ) : (
+              <a
+                href={order.fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm text-indigo-700 hover:underline"
+              >
+                Download {order.fileName || "file"} &rarr;
+              </a>
+            )
+          ) : (
+            <p className="text-sm text-slate-500">{order.documentDeleted ? "The file was deleted." : "No output generated yet."}</p>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Pagination from "@/components/Pagination";
+import PhotoOrderModal from "@/components/PhotoOrderModal";
 import { exportOrdersCsv, fetchOrders, type AdminOrder } from "@/lib/api";
 import { formatCurrency, orderResultMessage, orderStatusBadgeClass, orderEffectiveStatus } from "@/lib/format";
 
@@ -25,6 +26,7 @@ export default function OrdersPage() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [error, setError] = useState("");
+  const [photoOrderId, setPhotoOrderId] = useState<number | null>(null);
 
   useEffect(() => {
     fetchOrders({ service, status, paymentMode, from, to, page })
@@ -151,9 +153,15 @@ export default function OrdersPage() {
             {orders.map((order) => (
               <tr key={order.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
                 <td className="px-4 py-2">
-                  <Link href={`/orders/${order.id}`} className="text-indigo-700 hover:underline">
-                    {order.orderNumber}
-                  </Link>
+                  {order.serviceKey === "passport_photo" ? (
+                    <button onClick={() => setPhotoOrderId(order.id)} className="text-indigo-700 hover:underline">
+                      {order.orderNumber}
+                    </button>
+                  ) : (
+                    <Link href={`/orders/${order.id}`} className="text-indigo-700 hover:underline">
+                      {order.orderNumber}
+                    </Link>
+                  )}
                 </td>
                 <td className="px-4 py-2 text-slate-700">
                   <Link href={`/shops/${order.shopId}`} className="hover:underline">
@@ -181,6 +189,8 @@ export default function OrdersPage() {
         </table>
         <Pagination page={page} pageSize={pageSize} count={count} onPageChange={setPage} />
       </div>
+
+      {photoOrderId !== null && <PhotoOrderModal orderId={photoOrderId} onClose={() => setPhotoOrderId(null)} />}
     </div>
   );
 }

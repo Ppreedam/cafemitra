@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import CopyButton from "@/components/CopyButton";
 import Pagination from "@/components/Pagination";
-import { fetchCustomers, type Customer } from "@/lib/api";
+import { exportCustomersCsv, fetchCustomers, type Customer } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
 
 const PAGE_SIZE = 20;
@@ -45,7 +45,15 @@ export default function CustomersPage() {
   return (
     <div>
       <h1 className="text-xl font-semibold text-slate-900 mb-1">Customers</h1>
-      <p className="text-sm text-slate-500 mb-4">{count} customers on the platform.</p>
+      <div className="flex items-center justify-between mb-4">
+        <p className="text-sm text-slate-500">{count} customers on the platform.</p>
+        <button
+          onClick={() => exportCustomersCsv({ search }).catch((err) => setError(err instanceof Error ? err.message : "Export failed."))}
+          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+        >
+          Export CSV
+        </button>
+      </div>
 
       <div className="flex flex-wrap gap-2 mb-4">
         <input
