@@ -1,9 +1,12 @@
 import csv
+import json
+import re
 import secrets
 import string
 from decimal import Decimal
 from datetime import datetime, timedelta
 
+from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
 from django.db import transaction
 from django.db.models import Count, Max, Q, Sum
@@ -16,7 +19,7 @@ from django.http import HttpResponse, JsonResponse
 
 from .admin_activity import log_admin_activity
 from .admin_auth import get_admin_role, require_admin, require_section
-from .models import AdminActivityLog, AdminRole, Agent, ContactMessage, Coupon, CouponRedemption, PassportAIConfig, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTransaction, WalletTopup, WithdrawalRequest
+from .models import AdminActivityLog, AdminRole, Agent, ContactMessage, Coupon, CouponRedemption, CustomerTag, LeadAgent, LeadTag, PassportAIConfig, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTransaction, WalletTopup, WithdrawalRequest
 from .views import (
     ORDER_LIST_DEFERRED_FIELDS,
     cafe_code_for_user,
@@ -405,7 +408,14 @@ def admin_shops(request):
     )
 
 
-def public_admin_customer(user, last_seen=None, order_count=0):
+def public_customer_tag(tag, customer_count=None):
+    data = {"id": tag.id, "name": tag.name}
+    if customer_count is not None:
+        data["customerCount"] = customer_count
+    return data
+
+
+def public_admin_customer(user, last_seen=None, order_count=0, tags=None):
     profile = getattr(user, "profile", None)
     shop = getattr(user, "shop", None)
     address_parts = [shop.address, shop.city, shop.state, shop.pin_code] if shop else []
@@ -419,6 +429,7 @@ def public_admin_customer(user, last_seen=None, order_count=0):
         "dateJoined": user.date_joined.isoformat(),
         "lastSeen": last_seen.isoformat() if last_seen else None,
         "orderCount": order_count,
+        "tags": tags or [],
     }
 
 
@@ -426,6 +437,14 @@ def order_count_map(user_ids):
     return dict(
         PrintOrder.objects.filter(user_id__in=user_ids).values("user_id").annotate(c=Count("id")).values_list("user_id", "c")
     )
+
+
+def customer_tags_map(user_ids):
+    by_user = {}
+    rows = CustomerTag.customers.through.objects.filter(user_id__in=user_ids).select_related("customertag")
+    for row in rows:
+        by_user.setdefault(row.user_id, []).append(public_customer_tag(row.customertag))
+    return by_user
 
 
 def last_seen_map(user_ids):
@@ -472,6 +491,10 @@ def admin_customers(request):
             | Q(profile__phone__icontains=search)
         )
 
+    tag_id = request.GET.get("tag", "").strip()
+    if tag_id:
+        customers = customers.filter(customer_tags__id=tag_id)
+
     try:
         page = max(1, int(request.GET.get("page", 1)))
     except (TypeError, ValueError):
@@ -481,13 +504,24 @@ def admin_customers(request):
     except (TypeError, ValueError):
         page_size = 20
 
-    customers = customers.order_by("-date_joined")
+    # Sorting by order count needs the count annotated (and the ordering
+    # applied) before pagination slices the queryset - the per-page
+    # order_count_map() below is still used to actually populate the field,
+    # since re-reading it off the annotation would duplicate that query.
+    sort = request.GET.get("sort", "").strip()
+    if sort in ("orders_asc", "orders_desc"):
+        customers = customers.annotate(order_count=Count("print_orders", distinct=True))
+        customers = customers.order_by("order_count" if sort == "orders_asc" else "-order_count", "-date_joined")
+    else:
+        customers = customers.order_by("-date_joined")
+
     count = customers.count()
     start = (page - 1) * page_size
     page_items = list(customers[start : start + page_size])
     page_ids = [user.id for user in page_items]
     last_seen_by_id = last_seen_map(page_ids)
     order_count_by_id = order_count_map(page_ids)
+    tags_by_id = customer_tags_map(page_ids)
 
     return JsonResponse(
         {
@@ -495,11 +529,87 @@ def admin_customers(request):
             "page": page,
             "pageSize": page_size,
             "customers": [
-                public_admin_customer(user, last_seen=last_seen_by_id.get(user.id), order_count=order_count_by_id.get(user.id, 0))
+                public_admin_customer(
+                    user,
+                    last_seen=last_seen_by_id.get(user.id),
+                    order_count=order_count_by_id.get(user.id, 0),
+                    tags=tags_by_id.get(user.id, []),
+                )
                 for user in page_items
             ],
         }
     )
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST", "OPTIONS"])
+def admin_customer_tags(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "customers")
+    if err:
+        return err
+
+    if request.method == "POST":
+        body = parse_body(request)
+        name = str(body.get("name", "")).strip()
+        if not name:
+            return JsonResponse({"message": "Tag name is required."}, status=400)
+        tag, created = CustomerTag.objects.get_or_create(name=name)
+        if created:
+            log_admin_activity(admin_user, "customers.tag.create", "customer_tag", tag.id, name)
+        return JsonResponse({"tag": public_customer_tag(tag, 0 if created else tag.customers.count())}, status=201 if created else 200)
+
+    tags = CustomerTag.objects.annotate(customerCount=Count("customers")).order_by("name")
+    return JsonResponse({"tags": [public_customer_tag(t, t.customerCount) for t in tags]})
+
+
+@csrf_exempt
+@require_http_methods(["DELETE", "OPTIONS"])
+def admin_customer_tag_detail(request, tag_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "customers")
+    if err:
+        return err
+
+    tag = CustomerTag.objects.filter(id=tag_id).first()
+    if not tag:
+        return JsonResponse({"message": "Tag not found."}, status=404)
+    name = tag.name
+    tag.delete()
+    log_admin_activity(admin_user, "customers.tag.delete", "customer_tag", tag_id, name)
+    return JsonResponse({"deleted": True})
+
+
+@csrf_exempt
+@require_http_methods(["PUT", "OPTIONS"])
+def admin_customer_set_tags(request, customer_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "customers")
+    if err:
+        return err
+
+    customer_user = get_shop_user(customer_id)
+    if not customer_user:
+        return JsonResponse({"message": "Customer not found."}, status=404)
+
+    body = parse_body(request)
+    tag_ids = body.get("tagIds")
+    if not isinstance(tag_ids, list):
+        return JsonResponse({"message": "tagIds must be a list."}, status=400)
+
+    tags = list(CustomerTag.objects.filter(id__in=tag_ids))
+    customer_user.customer_tags.set(tags)
+    log_admin_activity(
+        admin_user, "customers.tags", "customer", customer_id, f"{len(tags)} tag(s): {', '.join(t.name for t in tags) or '(none)'}"
+    )
+
+    return JsonResponse({"tags": [public_customer_tag(t) for t in tags]})
 
 
 @csrf_exempt
@@ -514,14 +624,25 @@ def admin_customers_export(request):
 
     customers = shops_queryset()
 
-    search = request.GET.get("search", "").strip()
-    if search:
-        customers = customers.filter(
-            Q(email__icontains=search)
-            | Q(first_name__icontains=search)
-            | Q(last_name__icontains=search)
-            | Q(profile__phone__icontains=search)
-        )
+    # An explicit id selection (checkboxes ticked in the admin table) wins
+    # over the search/tag filters - it's "export exactly these", not another
+    # filter to combine with whatever's currently typed in the search box.
+    ids_param = request.GET.get("ids", "").strip()
+    if ids_param:
+        try:
+            ids = [int(x) for x in ids_param.split(",") if x.strip()]
+        except ValueError:
+            return JsonResponse({"message": "ids must be a comma-separated list of numbers."}, status=400)
+        customers = customers.filter(id__in=ids)
+    else:
+        search = request.GET.get("search", "").strip()
+        if search:
+            customers = customers.filter(
+                Q(email__icontains=search)
+                | Q(first_name__icontains=search)
+                | Q(last_name__icontains=search)
+                | Q(profile__phone__icontains=search)
+            )
 
     customers = customers.order_by("-date_joined")[:EXPORT_ROW_CAP]
     customer_ids = [user.id for user in customers]
@@ -2173,6 +2294,485 @@ def admin_order_issues_export(request):
         ["Shop", "Email", "Phone", "Address", "Date", "Order", "Service", "Status", "Payment Mode", "Payment Status", "Amount", "Reviewed"],
         rows,
     )
+
+
+# --- Leads (agent-locator listings imported from agents_data/) -------------
+# Read-only browse of LeadAgent rows loaded by `manage.py import_lead_agents`.
+# Not gated by SECTION_ROLES - visible to every platform-staff account.
+
+def normalize_lead_mobile(raw):
+    """"918651830104" -> "8651830104" (91 country code stripped), but
+    "9117652051" (already 10 digits, no country code, just happens to start
+    with "91") is left alone - the agents_data-sourced `mobile` column is
+    always a bare 10-digit number, so this is what lets an uploaded WhatsApp
+    delivery report's phone numbers match it.
+    """
+    digits = re.sub(r"\D", "", str(raw or ""))
+    if len(digits) == 12 and digits.startswith("91"):
+        digits = digits[2:]
+    elif len(digits) == 11 and digits.startswith("0"):
+        digits = digits[1:]
+    return digits if len(digits) == 10 else None
+
+
+def public_lead_tag(tag, agent_count=None):
+    data = {"id": tag.id, "name": tag.name}
+    if agent_count is not None:
+        data["agentCount"] = agent_count
+    return data
+
+
+def public_lead_agent(agent):
+    return {
+        "id": agent.id,
+        "sno": agent.sno,
+        "agentId": agent.agent_id,
+        "company": agent.company,
+        "agentName": agent.agent_name,
+        "address": agent.address,
+        "pincode": agent.pincode,
+        "city": agent.city,
+        "state": agent.state,
+        "division": agent.division,
+        "mobile": agent.mobile,
+        "tags": [public_lead_tag(tag) for tag in agent.tags.all()],
+    }
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def admin_lead_states(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    _, err = require_admin(request)
+    if err:
+        return err
+
+    rows = (
+        LeadAgent.objects.values("state")
+        .annotate(divisionCount=Count("division", distinct=True), agentCount=Count("id"))
+        .order_by("state")
+    )
+    return JsonResponse({"states": list(rows)})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def admin_lead_divisions(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    _, err = require_admin(request)
+    if err:
+        return err
+
+    state = request.GET.get("state", "").strip()
+    if not state:
+        return JsonResponse({"message": "state is required."}, status=400)
+
+    rows = (
+        LeadAgent.objects.filter(state=state)
+        .values("division")
+        .annotate(pincodeCount=Count("pincode", distinct=True), agentCount=Count("id"))
+        .order_by("division")
+    )
+    return JsonResponse({"divisions": list(rows)})
+
+
+def filtered_lead_agents(request, state, division):
+    """Shared (search, tag) filtering for the agents list and the mobiles
+    export - keeps "what you're currently filtered to" consistent between
+    the table and the copy-numbers button.
+    """
+    agents = LeadAgent.objects.filter(state=state, division=division)
+
+    search = request.GET.get("search", "").strip()
+    if search:
+        agents = agents.filter(
+            Q(agent_name__icontains=search)
+            | Q(company__icontains=search)
+            | Q(mobile__icontains=search)
+            | Q(city__icontains=search)
+            | Q(pincode__icontains=search)
+        )
+
+    tag_id = request.GET.get("tag", "").strip()
+    if tag_id:
+        agents = agents.filter(tags__id=tag_id)
+
+    return agents
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def admin_lead_agents(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    _, err = require_admin(request)
+    if err:
+        return err
+
+    state = request.GET.get("state", "").strip()
+    division = request.GET.get("division", "").strip()
+    if not state or not division:
+        return JsonResponse({"message": "state and division are required."}, status=400)
+
+    agents = filtered_lead_agents(request, state, division)
+
+    try:
+        page = max(1, int(request.GET.get("page", 1)))
+    except (TypeError, ValueError):
+        page = 1
+    try:
+        page_size = min(MAX_PAGE_SIZE, max(1, int(request.GET.get("pageSize", 25))))
+    except (TypeError, ValueError):
+        page_size = 25
+
+    agents = agents.order_by("pincode", "agent_name")
+    count = agents.count()
+    start = (page - 1) * page_size
+    page_items = list(agents.prefetch_related("tags")[start : start + page_size])
+
+    return JsonResponse(
+        {
+            "count": count,
+            "page": page,
+            "pageSize": page_size,
+            "agents": [public_lead_agent(a) for a in page_items],
+        }
+    )
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def admin_lead_agent_mobiles(request):
+    """Every mobile number matching the current (search, tag) filter for one
+    division - unpaginated, for the "copy numbers" button so it copies the
+    whole filtered set, not just the current page.
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    _, err = require_admin(request)
+    if err:
+        return err
+
+    state = request.GET.get("state", "").strip()
+    division = request.GET.get("division", "").strip()
+    if not state or not division:
+        return JsonResponse({"message": "state and division are required."}, status=400)
+
+    agents = filtered_lead_agents(request, state, division)
+    mobiles = list(agents.exclude(mobile="").order_by("pincode", "agent_name").values_list("mobile", flat=True))
+
+    return JsonResponse({"mobiles": mobiles, "count": len(mobiles)})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST", "OPTIONS"])
+def admin_lead_tags(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_admin(request)
+    if err:
+        return err
+
+    if request.method == "POST":
+        body = parse_body(request)
+        name = str(body.get("name", "")).strip()
+        if not name:
+            return JsonResponse({"message": "Tag name is required."}, status=400)
+        tag, created = LeadTag.objects.get_or_create(name=name)
+        if created:
+            log_admin_activity(admin_user, "leads.tag.create", "lead_tag", tag.id, name)
+        return JsonResponse({"tag": public_lead_tag(tag, 0 if created else tag.agents.count())}, status=201 if created else 200)
+
+    tags = LeadTag.objects.annotate(agentCount=Count("agents")).order_by("name")
+    return JsonResponse({"tags": [public_lead_tag(t, t.agentCount) for t in tags]})
+
+
+@csrf_exempt
+@require_http_methods(["DELETE", "OPTIONS"])
+def admin_lead_tag_detail(request, tag_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_admin(request)
+    if err:
+        return err
+
+    tag = LeadTag.objects.filter(id=tag_id).first()
+    if not tag:
+        return JsonResponse({"message": "Tag not found."}, status=404)
+    name = tag.name
+    tag.delete()
+    log_admin_activity(admin_user, "leads.tag.delete", "lead_tag", tag_id, name)
+    return JsonResponse({"deleted": True})
+
+
+@csrf_exempt
+@require_http_methods(["PUT", "OPTIONS"])
+def admin_lead_agent_tags(request, agent_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_admin(request)
+    if err:
+        return err
+
+    agent = LeadAgent.objects.filter(id=agent_id).first()
+    if not agent:
+        return JsonResponse({"message": "Agent not found."}, status=404)
+
+    body = parse_body(request)
+    tag_ids = body.get("tagIds")
+    if not isinstance(tag_ids, list):
+        return JsonResponse({"message": "tagIds must be a list."}, status=400)
+
+    tags = list(LeadTag.objects.filter(id__in=tag_ids))
+    agent.tags.set(tags)
+    log_admin_activity(admin_user, "leads.agent.tags", "lead_agent", agent_id, f"{len(tags)} tag(s): {', '.join(t.name for t in tags) or '(none)'}")
+
+    return JsonResponse({"agent": public_lead_agent(agent)})
+
+
+MAX_BULK_TAG_COUNT = 5000
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def admin_lead_bulk_tag(request):
+    """Assign (default) or remove a tag for the next N agents in a division,
+    in the same order the table lists them. No cursor/offset is stored:
+    assign only considers agents that don't have the tag yet, and remove only
+    considers agents that do - so calling this again with the same N and
+    action naturally picks up right where the last batch left off (1-20,
+    then 21-40, ...) without the caller having to track an offset.
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_admin(request)
+    if err:
+        return err
+
+    body = parse_body(request)
+    state = str(body.get("state", "")).strip()
+    division = str(body.get("division", "")).strip()
+    tag_id = body.get("tagId")
+    if not state or not division or not tag_id:
+        return JsonResponse({"message": "state, division and tagId are required."}, status=400)
+
+    action = str(body.get("action", "assign")).strip().lower()
+    if action not in ("assign", "remove"):
+        return JsonResponse({"message": "action must be 'assign' or 'remove'."}, status=400)
+
+    tag = LeadTag.objects.filter(id=tag_id).first()
+    if not tag:
+        return JsonResponse({"message": "Tag not found."}, status=404)
+
+    try:
+        count = int(body.get("count"))
+    except (TypeError, ValueError):
+        return JsonResponse({"message": "count must be a positive number."}, status=400)
+    if count <= 0:
+        return JsonResponse({"message": "count must be a positive number."}, status=400)
+    count = min(count, MAX_BULK_TAG_COUNT)
+
+    division_agents = LeadAgent.objects.filter(state=state, division=division)
+    if action == "assign":
+        candidates = division_agents.exclude(tags=tag)
+    else:
+        candidates = division_agents.filter(tags=tag)
+    candidate_rows = list(candidates.order_by("pincode", "agent_name").values_list("id", "mobile")[:count])
+    candidate_ids = [row[0] for row in candidate_rows]
+    candidate_mobiles = [row[1] for row in candidate_rows if row[1]]
+
+    if candidate_ids:
+        if action == "assign":
+            tag.agents.add(*candidate_ids)
+        else:
+            tag.agents.remove(*candidate_ids)
+
+    log_admin_activity(
+        admin_user,
+        "leads.agent.bulk_tag",
+        "lead_tag",
+        tag_id,
+        f"{action} {len(candidate_ids)} agent(s) in {state}/{division}",
+    )
+
+    return JsonResponse(
+        {
+            "action": action,
+            "affected": len(candidate_ids),
+            "totalInDivision": division_agents.count(),
+            "totalWithTag": division_agents.filter(tags=tag).count(),
+            # Just this batch's numbers - lets the caller copy the "this run's
+            # agents only" tier, separate from every agent that currently has
+            # the tag (which the /agents/mobiles/ endpoint covers).
+            "mobiles": candidate_mobiles,
+        }
+    )
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def admin_lead_import_tags(request):
+    """Bulk-tag LeadAgent rows by phone number from a JSON delivery report,
+    e.g. a WhatsApp-broadcast export: [{"phone": "918651830104", "name": "",
+    "status": "invalid"}, ...]. Each distinct `status` value becomes (or
+    reuses) a LeadTag with that exact name, and every LeadAgent whose mobile
+    matches a phone in that group gets tagged. Matching is global (every
+    state/division), not scoped to one division - a phone number alone
+    doesn't say which division its listing is in, and the same number can
+    appear more than once across divisions/pincodes, all of which get tagged.
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_admin(request)
+    if err:
+        return err
+
+    upload = request.FILES.get("file")
+    if not upload:
+        return JsonResponse({"message": "Upload a JSON file."}, status=400)
+
+    try:
+        rows = json.loads(upload.read().decode("utf-8"))
+    except (ValueError, UnicodeDecodeError):
+        return JsonResponse({"message": "File is not valid JSON."}, status=400)
+    if not isinstance(rows, list):
+        return JsonResponse({"message": "JSON must be a list of {phone, status} objects."}, status=400)
+
+    mobiles_by_status = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        status = str(row.get("status") or "").strip()
+        mobile = normalize_lead_mobile(row.get("phone"))
+        if not status or not mobile:
+            continue
+        mobiles_by_status.setdefault(status, set()).add(mobile)
+
+    results = []
+    total_matched_phones = 0
+    for status, mobiles in mobiles_by_status.items():
+        tag, _ = LeadTag.objects.get_or_create(name=status)
+        matched_agents = LeadAgent.objects.filter(mobile__in=mobiles)
+        matched_agent_ids = list(matched_agents.values_list("id", flat=True))
+        matched_mobile_count = matched_agents.values("mobile").distinct().count()
+        if matched_agent_ids:
+            tag.agents.add(*matched_agent_ids)
+
+        total_matched_phones += matched_mobile_count
+        results.append(
+            {
+                "status": status,
+                "tag": public_lead_tag(tag),
+                "phonesInFile": len(mobiles),
+                "matchedPhones": matched_mobile_count,
+                "unmatchedPhones": len(mobiles) - matched_mobile_count,
+                "agentsTagged": len(matched_agent_ids),
+            }
+        )
+
+    log_admin_activity(
+        admin_user,
+        "leads.agent.import_tags",
+        "lead_tag",
+        "",
+        f"{len(rows)} row(s) across {len(results)} status(es), {total_matched_phones} phone(s) matched",
+    )
+
+    return JsonResponse({"results": results, "totalPhones": len(rows), "totalMatched": total_matched_phones})
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def admin_lead_import(request):
+    """Add/refresh one state's lead data from the admin UI: accepts a state
+    name plus one or more division JSON files in the same shape as the files
+    under agents_data/ (see import_lead_agents management command). Each
+    uploaded division replaces only that (state, division)'s existing rows -
+    other states/divisions are untouched, unlike the wipe-and-reload command.
+    The raw files are also written to agents_data/<State>/ so a later full
+    `manage.py import_lead_agents` run stays in sync with what's in the DB.
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_admin(request)
+    if err:
+        return err
+
+    state_input = str(request.POST.get("state", "")).strip()
+    if not state_input:
+        return JsonResponse({"message": "State name is required."}, status=400)
+
+    files = request.FILES.getlist("files")
+    if not files:
+        return JsonResponse({"message": "Upload at least one division JSON file."}, status=400)
+
+    state_label = state_input.title()
+    folder_name = re.sub(r"[^A-Za-z0-9]+", "_", state_label).strip("_")
+    if not folder_name:
+        return JsonResponse({"message": "State name is invalid."}, status=400)
+
+    parsed = []
+    for upload in files:
+        raw = upload.read()
+        try:
+            data = json.loads(raw.decode("utf-8"))
+        except (ValueError, UnicodeDecodeError):
+            return JsonResponse({"message": f"{upload.name} is not valid JSON."}, status=400)
+
+        division = str(data.get("division") or "").strip()
+        pincodes = data.get("pincodes")
+        if not division or not isinstance(pincodes, dict):
+            return JsonResponse({"message": f"{upload.name} is missing a 'division' name or 'pincodes' object."}, status=400)
+
+        rows = []
+        for pincode, pin_data in pincodes.items():
+            for agent in (pin_data or {}).get("agents") or []:
+                rows.append(
+                    LeadAgent(
+                        state=state_label,
+                        division=division,
+                        pincode=pincode,
+                        sno=agent.get("SNo.", ""),
+                        agent_id=agent.get("Agent ID", ""),
+                        company=agent.get("Company", ""),
+                        agent_name=agent.get("Agent Name", ""),
+                        address=agent.get("Address", ""),
+                        city=agent.get("City", ""),
+                        mobile=agent.get("Mobile No.", ""),
+                    )
+                )
+        safe_name = upload.name if upload.name.lower().endswith(".json") else f"{upload.name}.json"
+        parsed.append((division, safe_name, raw, rows))
+
+    total_agents = 0
+    with transaction.atomic():
+        for division, _, _, rows in parsed:
+            LeadAgent.objects.filter(state=state_label, division=division).delete()
+            LeadAgent.objects.bulk_create(rows, batch_size=1000)
+            total_agents += len(rows)
+
+    state_dir = settings.BASE_DIR.parent / "agents_data" / folder_name
+    state_dir.mkdir(parents=True, exist_ok=True)
+    for _, safe_name, raw, _ in parsed:
+        with open(state_dir / safe_name, "wb") as f:
+            f.write(raw)
+
+    divisions = [division for division, _, _, _ in parsed]
+    log_admin_activity(admin_user, "leads.import", "lead_state", state_label, f"{len(divisions)} division(s), {total_agents} agents")
+
+    return JsonResponse({"state": state_label, "divisions": divisions, "agentsImported": total_agents})
 
 
 # --- V2-A: Notification badges -----------------------------------------------

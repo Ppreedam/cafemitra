@@ -618,3 +618,68 @@ class AdminRole(models.Model):
         return f"{self.user_id}: {self.role}"
 
 
+class LeadTag(models.Model):
+    """Free-form label ("message sent", "called", "not interested", ...)
+    admins create ad hoc from the Leads UI and attach to LeadAgent rows to
+    track outreach status. No fixed set - created/deleted from the panel.
+    """
+
+    name = models.CharField(max_length=60, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+
+class LeadAgent(models.Model):
+    """Agent-locator listing imported from agents_data/<State>/<Division>.json
+    (see `import_lead_agents` management command) - browsed read-only in the
+    admin Leads section (state -> division -> agents). Not linked to any live
+    RepetiGo account. NOTE: re-running the import (full CLI command, or a
+    per-state re-upload via admin_lead_import) deletes and recreates the
+    affected rows, which also clears any `tags` assigned to them.
+    """
+
+    state = models.CharField(max_length=60)
+    division = models.CharField(max_length=120)
+    pincode = models.CharField(max_length=10)
+    sno = models.CharField(max_length=10, blank=True, default="")
+    agent_id = models.CharField(max_length=40, blank=True, default="")
+    company = models.CharField(max_length=255, blank=True, default="")
+    agent_name = models.CharField(max_length=255, blank=True, default="")
+    address = models.TextField(blank=True, default="")
+    city = models.CharField(max_length=120, blank=True, default="")
+    mobile = models.CharField(max_length=20, blank=True, default="")
+    tags = models.ManyToManyField(LeadTag, blank=True, related_name="agents")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["state", "division"]),
+            models.Index(fields=["state", "division", "pincode"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.agent_name} ({self.pincode})"
+
+
+class CustomerTag(models.Model):
+    """Free-form label admins create ad hoc and attach to customer (shop
+    owner) accounts to track outreach/status - same idea as LeadTag, kept
+    separate so a tag set built for scraped leads doesn't get mixed with one
+    built for actual platform customers.
+    """
+
+    name = models.CharField(max_length=60, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    customers = models.ManyToManyField(settings.AUTH_USER_MODEL, blank=True, related_name="customer_tags")
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self) -> str:
+        return self.name
+
+

@@ -41,6 +41,7 @@ const links: NavLink[] = [
   { href: "/orders", label: "Orders", section: "orders" },
   { href: "/wallet", label: "Wallet & Finance", section: "wallet", badgeKey: "pendingWithdrawals" },
   { href: "/agents", label: "Referral Agents", section: "agents", badgeKey: "pendingAgents" },
+  { href: "/leads", label: "Leads", section: null },
   { href: "/coupons", label: "Coupon Codes", section: "coupons" },
   { href: "/support", label: "Support Inbox", section: "support", badgeKey: "unreadMessages" },
   { href: "/order-issues", label: "Order Issues", section: "leads" },

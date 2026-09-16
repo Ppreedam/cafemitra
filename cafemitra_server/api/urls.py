@@ -12,6 +12,9 @@ urlpatterns = [
     re_path(r"^admin/customers/export/?$", admin_views.admin_customers_export),  # GET CSV export of all customer records (filtered by the same search param as the list)
     re_path(r"^admin/customers/(?P<customer_id>[0-9]+)/?$", admin_views.admin_customer_detail),  # GET one customer record + total order count
     re_path(r"^admin/customers/(?P<customer_id>[0-9]+)/transactions/?$", admin_views.admin_customer_transactions),  # GET paginated wallet transaction history for one customer
+    re_path(r"^admin/customers/(?P<customer_id>[0-9]+)/tags/?$", admin_views.admin_customer_set_tags),  # PUT {tagIds:[...]} replace one customer's tag set
+    re_path(r"^admin/customer-tags/?$", admin_views.admin_customer_tags),  # GET all customer tags w/ counts / POST create a new tag {name}
+    re_path(r"^admin/customer-tags/(?P<tag_id>[0-9]+)/?$", admin_views.admin_customer_tag_detail),  # DELETE a customer tag (unassigns it from every customer)
     re_path(r"^admin/shops/(?P<shop_id>[0-9]+)/?$", admin_views.admin_shop_detail),  # GET full shop detail (profile+pricing+orders+wallet) / PUT credit-limit + cash-counter permission
     re_path(r"^admin/shops/(?P<shop_id>[0-9]+)/adjust-balance/?$", admin_views.admin_shop_adjust_balance),  # POST manual wallet credit/debit with a mandatory reason (audit-logged)
     re_path(r"^admin/shops/(?P<shop_id>[0-9]+)/suspend/?$", admin_views.admin_shop_suspend),  # POST deactivate a shop account
@@ -59,6 +62,16 @@ urlpatterns = [
     re_path(r"^admin/order-issues/export/?$", admin_views.admin_order_issues_export),  # GET CSV of unsuccessful orders (shop name/email/phone/address + order columns), same filters as the JSON list
     re_path(r"^admin/order-issues/(?P<order_id>[0-9]+)/review/?$", admin_views.admin_order_issue_review),  # POST {reviewed} mark/unmark one unsuccessful order as handled
     re_path(r"^admin/order-issues/?$", admin_views.admin_order_issues),  # GET unsuccessful (non-printed) orders across all shops grouped one row per shop, paginated by shop, filterable by from/to/reviewed
+    re_path(r"^admin/leads/states/?$", admin_views.admin_lead_states),  # GET distinct states in LeadAgent + division/agent counts (agents_data/ import)
+    re_path(r"^admin/leads/divisions/?$", admin_views.admin_lead_divisions),  # GET divisions for ?state= + pincode/agent counts
+    re_path(r"^admin/leads/agents/?$", admin_views.admin_lead_agents),  # GET paginated agents for ?state=&division=, filterable by search (name/company/mobile/city/pincode) and ?tag=<id>
+    re_path(r"^admin/leads/agents/(?P<agent_id>[0-9]+)/tags/?$", admin_views.admin_lead_agent_tags),  # PUT {tagIds:[...]} replace one agent's tag set
+    re_path(r"^admin/leads/agents/bulk-tag/?$", admin_views.admin_lead_bulk_tag),  # POST {state, division, tagId, count, action=assign|remove} - assign/remove a tag for the next N matching agents in a division
+    re_path(r"^admin/leads/agents/mobiles/?$", admin_views.admin_lead_agent_mobiles),  # GET all mobile numbers for ?state=&division= matching the current ?search=&tag= filter, unpaginated (for "copy numbers")
+    re_path(r"^admin/leads/agents/import-tags/?$", admin_views.admin_lead_import_tags),  # POST multipart {file} - bulk-tag agents globally by phone number from a [{phone,name,status}] JSON delivery report
+    re_path(r"^admin/leads/tags/?$", admin_views.admin_lead_tags),  # GET all tags w/ agent counts / POST create a new tag {name}
+    re_path(r"^admin/leads/tags/(?P<tag_id>[0-9]+)/?$", admin_views.admin_lead_tag_detail),  # DELETE a tag (unassigns it from every agent)
+    re_path(r"^admin/leads/import/?$", admin_views.admin_lead_import),  # POST multipart {state, files[]} - add/refresh one state's divisions from uploaded agents_data-format JSON
 
     # --- System -------------------------------------------------------
     re_path(r"^check/server/status/?$", views.check_server_status),  # GET  health check, returns {status, message}

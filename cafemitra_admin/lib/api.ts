@@ -327,6 +327,8 @@ export type ShopDetailResponse = {
   recentTransactions: ShopTransaction[];
 };
 
+export type CustomerTag = { id: number; name: string; customerCount?: number };
+
 export type Customer = {
   id: number;
   fullName: string;
@@ -337,6 +339,7 @@ export type Customer = {
   dateJoined: string;
   lastSeen: string | null;
   orderCount: number;
+  tags: CustomerTag[];
 };
 
 export type CustomerListResponse = {
@@ -358,17 +361,42 @@ export type CustomerDetailResponse = {
   couponsUsed: CustomerCouponUsed[];
 };
 
-export function fetchCustomers(params: { search?: string; page?: number; pageSize?: number }) {
+export function fetchCustomers(params: { search?: string; page?: number; pageSize?: number; sort?: "orders_asc" | "orders_desc"; tagId?: number }) {
   const query = new URLSearchParams();
   if (params.search) query.set("search", params.search);
   if (params.pageSize) query.set("pageSize", String(params.pageSize));
   if (params.page) query.set("page", String(params.page));
+  if (params.sort) query.set("sort", params.sort);
+  if (params.tagId) query.set("tag", String(params.tagId));
   return request<CustomerListResponse>(`/admin/customers/?${query.toString()}`);
 }
 
-export function exportCustomersCsv(params?: { search?: string }) {
+export function fetchCustomerTags() {
+  return request<{ tags: CustomerTag[] }>("/admin/customer-tags/");
+}
+
+export function createCustomerTag(name: string) {
+  return request<{ tag: CustomerTag }>("/admin/customer-tags/", { method: "POST", body: JSON.stringify({ name }) });
+}
+
+export function deleteCustomerTag(tagId: number) {
+  return request<{ deleted: boolean }>(`/admin/customer-tags/${tagId}/`, { method: "DELETE" });
+}
+
+export function setCustomerTags(customerId: number, tagIds: number[]) {
+  return request<{ tags: CustomerTag[] }>(`/admin/customers/${customerId}/tags/`, {
+    method: "PUT",
+    body: JSON.stringify({ tagIds }),
+  });
+}
+
+export function exportCustomersCsv(params?: { search?: string; ids?: number[] }) {
   const query = new URLSearchParams();
-  if (params?.search) query.set("search", params.search);
+  if (params?.ids && params.ids.length > 0) {
+    query.set("ids", params.ids.join(","));
+  } else if (params?.search) {
+    query.set("search", params.search);
+  }
   const qs = query.toString();
   return downloadCsv(`/admin/customers/export/${qs ? `?${qs}` : ""}`, "customers.csv");
 }
@@ -936,6 +964,128 @@ export function exportOrderIssuesCsv(params?: { from?: string; to?: string; revi
   });
   const qs = query.toString();
   return downloadCsv(`/admin/order-issues/export/${qs ? `?${qs}` : ""}`, "unsuccessful-orders.csv");
+}
+
+// --- Leads (agent-locator listings imported from agents_data/) -------------
+
+export type LeadState = { state: string; divisionCount: number; agentCount: number };
+export type LeadDivision = { division: string; pincodeCount: number; agentCount: number };
+export type LeadTag = { id: number; name: string; agentCount?: number };
+export type LeadAgent = {
+  id: number;
+  sno: string;
+  agentId: string;
+  company: string;
+  agentName: string;
+  address: string;
+  pincode: string;
+  city: string;
+  state: string;
+  division: string;
+  mobile: string;
+  tags: LeadTag[];
+};
+
+export function fetchLeadStates() {
+  return request<{ states: LeadState[] }>("/admin/leads/states/");
+}
+
+export function fetchLeadDivisions(state: string) {
+  return request<{ divisions: LeadDivision[] }>(`/admin/leads/divisions/?state=${encodeURIComponent(state)}`);
+}
+
+export function fetchLeadAgents(params: { state: string; division: string; search?: string; tagId?: number; page?: number; pageSize?: number }) {
+  const query = new URLSearchParams();
+  query.set("state", params.state);
+  query.set("division", params.division);
+  if (params.search) query.set("search", params.search);
+  if (params.tagId) query.set("tag", String(params.tagId));
+  if (params.page) query.set("page", String(params.page));
+  if (params.pageSize) query.set("pageSize", String(params.pageSize));
+  return request<{ count: number; page: number; pageSize: number; agents: LeadAgent[] }>(`/admin/leads/agents/?${query.toString()}`);
+}
+
+export function fetchLeadTags() {
+  return request<{ tags: LeadTag[] }>("/admin/leads/tags/");
+}
+
+export function createLeadTag(name: string) {
+  return request<{ tag: LeadTag }>("/admin/leads/tags/", { method: "POST", body: JSON.stringify({ name }) });
+}
+
+export function deleteLeadTag(tagId: number) {
+  return request<{ deleted: boolean }>(`/admin/leads/tags/${tagId}/`, { method: "DELETE" });
+}
+
+export function setLeadAgentTags(agentId: number, tagIds: number[]) {
+  return request<{ agent: LeadAgent }>(`/admin/leads/agents/${agentId}/tags/`, {
+    method: "PUT",
+    body: JSON.stringify({ tagIds }),
+  });
+}
+
+export function bulkTagLeadAgents(params: { state: string; division: string; tagId: number; count: number; action?: "assign" | "remove" }) {
+  return request<{ action: "assign" | "remove"; affected: number; totalInDivision: number; totalWithTag: number; mobiles: string[] }>(
+    "/admin/leads/agents/bulk-tag/",
+    { method: "POST", body: JSON.stringify(params) }
+  );
+}
+
+export function fetchLeadAgentMobiles(params: { state: string; division: string; search?: string; tagId?: number }) {
+  const query = new URLSearchParams();
+  query.set("state", params.state);
+  query.set("division", params.division);
+  if (params.search) query.set("search", params.search);
+  if (params.tagId) query.set("tag", String(params.tagId));
+  return request<{ mobiles: string[]; count: number }>(`/admin/leads/agents/mobiles/?${query.toString()}`);
+}
+
+export type LeadTagImportResult = {
+  status: string;
+  tag: LeadTag;
+  phonesInFile: number;
+  matchedPhones: number;
+  unmatchedPhones: number;
+  agentsTagged: number;
+};
+
+export async function importLeadAgentTags(input: File | string) {
+  const form = new FormData();
+  if (typeof input === "string") {
+    form.append("file", new Blob([input], { type: "application/json" }), "pasted.json");
+  } else {
+    form.append("file", input);
+  }
+
+  const token = getToken();
+  const res = await fetch(`${API_BASE_URL}/admin/leads/agents/import-tags/`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || `Import failed (${res.status})`);
+  }
+  return data as { results: LeadTagImportResult[]; totalPhones: number; totalMatched: number };
+}
+
+export async function importLeadState(state: string, files: File[]) {
+  const form = new FormData();
+  form.set("state", state);
+  files.forEach((file) => form.append("files", file));
+
+  const token = getToken();
+  const res = await fetch(`${API_BASE_URL}/admin/leads/import/`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || `Import failed (${res.status})`);
+  }
+  return data as { state: string; divisions: string[]; agentsImported: number };
 }
 
 // --- Notification badges (V2-A) --------------------------------------------
