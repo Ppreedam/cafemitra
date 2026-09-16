@@ -2,12 +2,13 @@
 
 import { use, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Copy, Plus, Tag as TagIcon, X } from "lucide-react";
+import { ArrowLeft, Copy, Download, Plus, Tag as TagIcon, X } from "lucide-react";
 import Pagination from "@/components/Pagination";
 import {
   bulkTagLeadAgents,
   createLeadTag,
   deleteLeadTag,
+  exportLeadAgentsCsv,
   fetchLeadAgentMobiles,
   fetchLeadAgents,
   fetchLeadTags,
@@ -74,6 +75,9 @@ export default function LeadDivisionPage({ params }: { params: Promise<{ state: 
   const [copying, setCopying] = useState(false);
   const [copyMessage, setCopyMessage] = useState("");
 
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [exporting, setExporting] = useState(false);
+
   const [tagPanelTab, setTagPanelTab] = useState<"manage" | "bulk" | "import">("manage");
   const [tagImportMode, setTagImportMode] = useState<"file" | "paste">("file");
   const [tagImportFile, setTagImportFile] = useState<File | null>(null);
@@ -89,6 +93,7 @@ export default function LeadDivisionPage({ params }: { params: Promise<{ state: 
       .then((res) => {
         setAgents(res.agents);
         setCount(res.count);
+        setSelectedIds(new Set());
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load agents."))
       .finally(() => setLoading(false));
@@ -110,6 +115,37 @@ export default function LeadDivisionPage({ params }: { params: Promise<{ state: 
   function handleSearchChange(value: string) {
     setSearch(value);
     setPage(1);
+  }
+
+  function toggleSelected(id: number) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    setSelectedIds((prev) => (prev.size === agents.length ? new Set() : new Set(agents.map((a) => a.id))));
+  }
+
+  async function handleExport() {
+    setExporting(true);
+    setError("");
+    try {
+      await exportLeadAgentsCsv({
+        state,
+        division,
+        search,
+        tagId: tagFilter || undefined,
+        ids: selectedIds.size > 0 ? Array.from(selectedIds) : undefined,
+      });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Export failed.");
+    } finally {
+      setExporting(false);
+    }
   }
 
   function handleTagFilterChange(value: string) {
@@ -518,6 +554,15 @@ export default function LeadDivisionPage({ params }: { params: Promise<{ state: 
           </button>
         )}
         {copyMessage && <span className="text-sm text-slate-500">{copyMessage}</span>}
+        <button
+          onClick={handleExport}
+          disabled={exporting}
+          className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60 ml-auto"
+          title={selectedIds.size > 0 ? `Export the ${selectedIds.size} selected agent(s)` : "Export every agent matching the current search/tag filter"}
+        >
+          <Download size={14} />
+          {exporting ? "Exporting..." : `Export CSV${selectedIds.size > 0 ? ` (${selectedIds.size} selected)` : ""}`}
+        </button>
       </div>
 
       {error && <p className="text-sm text-red-600">{error}</p>}
@@ -526,6 +571,13 @@ export default function LeadDivisionPage({ params }: { params: Promise<{ state: 
         <table className="min-w-full divide-y divide-slate-200 text-sm">
           <thead className="bg-slate-50">
             <tr className="text-left text-xs font-medium uppercase tracking-wide text-slate-500">
+              <th className="px-4 py-2.5 w-8">
+                <input
+                  type="checkbox"
+                  checked={agents.length > 0 && selectedIds.size === agents.length}
+                  onChange={toggleSelectAll}
+                />
+              </th>
               <th className="px-4 py-2.5">Pincode</th>
               <th className="px-4 py-2.5">Agent</th>
               <th className="px-4 py-2.5">Company</th>
@@ -538,19 +590,22 @@ export default function LeadDivisionPage({ params }: { params: Promise<{ state: 
           <tbody className="divide-y divide-slate-100">
             {loading ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={8} className="px-4 py-8 text-center text-slate-400">
                   Loading...
                 </td>
               </tr>
             ) : agents.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-slate-400">
+                <td colSpan={8} className="px-4 py-8 text-center text-slate-400">
                   No agents found.
                 </td>
               </tr>
             ) : (
               agents.map((agent) => (
                 <tr key={agent.id} className="hover:bg-slate-50">
+                  <td className="px-4 py-2.5">
+                    <input type="checkbox" checked={selectedIds.has(agent.id)} onChange={() => toggleSelected(agent.id)} />
+                  </td>
                   <td className="px-4 py-2.5 font-mono text-slate-700">{agent.pincode}</td>
                   <td className="px-4 py-2.5 text-slate-900">{agent.agentName || "-"}</td>
                   <td className="px-4 py-2.5 text-slate-700">{agent.company || "-"}</td>

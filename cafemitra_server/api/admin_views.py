@@ -2471,6 +2471,56 @@ def admin_lead_agent_mobiles(request):
 
 
 @csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def admin_lead_agents_export(request):
+    """CSV of one division's agents - an explicit ?ids= selection (checkboxes
+    ticked in the table) wins over the search/tag filters, same convention
+    as the customers export; with no ids, exports everything matching the
+    current search/tag filter (not just the current pagination page).
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    _, err = require_admin(request)
+    if err:
+        return err
+
+    state = request.GET.get("state", "").strip()
+    division = request.GET.get("division", "").strip()
+    if not state or not division:
+        return JsonResponse({"message": "state and division are required."}, status=400)
+
+    ids_param = request.GET.get("ids", "").strip()
+    if ids_param:
+        try:
+            ids = [int(x) for x in ids_param.split(",") if x.strip()]
+        except ValueError:
+            return JsonResponse({"message": "ids must be a comma-separated list of numbers."}, status=400)
+        agents = LeadAgent.objects.filter(state=state, division=division, id__in=ids)
+    else:
+        agents = filtered_lead_agents(request, state, division)
+
+    agents = agents.order_by("pincode", "agent_name").prefetch_related("tags")[:EXPORT_ROW_CAP]
+
+    def row(agent):
+        return [
+            agent.pincode,
+            agent.agent_name,
+            agent.company,
+            agent.city,
+            agent.mobile,
+            agent.address,
+            ", ".join(tag.name for tag in agent.tags.all()),
+        ]
+
+    return csv_response(
+        "leads.csv",
+        ["Pincode", "Agent", "Company", "City", "Mobile", "Address", "Tags"],
+        (row(agent) for agent in agents),
+    )
+
+
+@csrf_exempt
 @require_http_methods(["GET", "POST", "OPTIONS"])
 def admin_lead_tags(request):
     if request.method == "OPTIONS":

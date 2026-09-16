@@ -68,6 +68,7 @@ urlpatterns = [
     re_path(r"^admin/leads/agents/(?P<agent_id>[0-9]+)/tags/?$", admin_views.admin_lead_agent_tags),  # PUT {tagIds:[...]} replace one agent's tag set
     re_path(r"^admin/leads/agents/bulk-tag/?$", admin_views.admin_lead_bulk_tag),  # POST {state, division, tagId, count, action=assign|remove} - assign/remove a tag for the next N matching agents in a division
     re_path(r"^admin/leads/agents/mobiles/?$", admin_views.admin_lead_agent_mobiles),  # GET all mobile numbers for ?state=&division= matching the current ?search=&tag= filter, unpaginated (for "copy numbers")
+    re_path(r"^admin/leads/agents/export/?$", admin_views.admin_lead_agents_export),  # GET CSV of a division's agents - ?ids= exports exactly those, else the current ?search=&tag= filter
     re_path(r"^admin/leads/agents/import-tags/?$", admin_views.admin_lead_import_tags),  # POST multipart {file} - bulk-tag agents globally by phone number from a [{phone,name,status}] JSON delivery report
     re_path(r"^admin/leads/tags/?$", admin_views.admin_lead_tags),  # GET all tags w/ agent counts / POST create a new tag {name}
     re_path(r"^admin/leads/tags/(?P<tag_id>[0-9]+)/?$", admin_views.admin_lead_tag_detail),  # DELETE a tag (unassigns it from every agent)

@@ -1040,6 +1040,19 @@ export function fetchLeadAgentMobiles(params: { state: string; division: string;
   return request<{ mobiles: string[]; count: number }>(`/admin/leads/agents/mobiles/?${query.toString()}`);
 }
 
+export function exportLeadAgentsCsv(params: { state: string; division: string; search?: string; tagId?: number; ids?: number[] }) {
+  const query = new URLSearchParams();
+  query.set("state", params.state);
+  query.set("division", params.division);
+  if (params.ids && params.ids.length > 0) {
+    query.set("ids", params.ids.join(","));
+  } else {
+    if (params.search) query.set("search", params.search);
+    if (params.tagId) query.set("tag", String(params.tagId));
+  }
+  return downloadCsv(`/admin/leads/agents/export/?${query.toString()}`, "leads.csv");
+}
+
 export type LeadTagImportResult = {
   status: string;
   tag: LeadTag;
