@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aadhaar Card Cutter</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hind:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@cantoo/pdf-lib@2.11.1/dist/pdf-lib.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<link rel="stylesheet" href="src/styles.css">
+</head>
+<body>
+<main>
+  <h1>Aadhaar card cutter</h1>
+  <p class="lede">Upload an e-Aadhaar PDF and get just the card: front and back, with real searchable text. Adjust the photo, text size and mobile number, then download as card pages, an A4 sheet or a 4×6 sheet. Your file is processed inside this browser and is never uploaded anywhere.</p>
+
+  <section id="upload">
+    <div class="cutframe">
+      <span class="scissors" aria-hidden="true">✂</span>
+      <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose e-Aadhaar PDF">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"/><path d="M14 3v5h5"/><path d="M12 17v-6"/><path d="m9 14 3-3 3 3"/></svg>
+        <strong>Drop your e-Aadhaar PDF here</strong>
+        <span>or tap to choose a file</span>
+      </div>
+    </div>
+    <input type="file" id="file" accept="application/pdf,.pdf">
+  </section>
+
+  <section class="result" id="result">
+    <div class="pair" id="pair">
+      <figure><canvas id="c1"></canvas><figcaption>Front</figcaption></figure>
+      <figure><canvas id="c2"></canvas><figcaption>Back</figcaption></figure>
+    </div>
+
+    <div class="panel">
+      <div class="row">
+        <div class="lbl">Photo<small>Brightness, contrast and sharpness</small></div>
+        <div class="inline"><button class="ghost" id="openPhoto">Clean up photo</button><span id="photoState" class="row-note"></span></div>
+      </div>
+      <div class="row">
+        <label for="frontSize">Front text size<small>Name, DOB and gender in Hindi and English</small></label>
+        <div class="slider"><input type="range" id="frontSize" min="85" max="140" step="1" value="100"><output id="frontOut">100%</output></div>
+      </div>
+      <div class="row">
+        <label for="frontGap">Front line spacing<small>Space between name, DOB, gender and mobile</small></label>
+        <div class="slider"><input type="range" id="frontGap" min="70" max="140" step="1" value="90"><output id="frontGapOut">90%</output></div>
+      </div>
+      <div class="row">
+        <label for="backSize">Back address size<small>Long lines wrap below instead of touching the QR code</small></label>
+        <div class="slider"><input type="range" id="backSize" min="85" max="150" step="1" value="100"><output id="backOut">100%</output></div>
+      </div>
+      <div class="row">
+        <label for="backGap">Address line spacing<small>Space between address lines</small></label>
+        <div class="slider"><input type="range" id="backGap" min="70" max="140" step="1" value="100"><output id="backGapOut">100%</output></div>
+      </div>
+      <div class="row">
+        <div class="lbl">Bold text</div>
+        <div class="inline">
+          <label class="check"><input type="checkbox" id="boldFront"> Front details</label>
+          <label class="check"><input type="checkbox" id="boldBack"> Back address</label>
+        </div>
+      </div>
+      <div class="row">
+        <div class="lbl">Info box<small>“Aadhaar is proof of identity…” box on the front</small></div>
+        <label class="check"><input type="checkbox" id="removeInfo"> Remove this box</label>
+      </div>
+      <div class="row">
+        <div class="lbl">Mobile number<small>Printed below gender on the front</small></div>
+        <div class="inline">
+          <label class="check"><input type="checkbox" id="mobOn"> Add</label>
+          <input class="text" id="mob" inputmode="numeric" maxlength="10" placeholder="10 digits" aria-label="Mobile number">
+        </div>
+      </div>
+      <div class="row">
+        <div class="lbl">Sheets<small>For A4 and 4×6 downloads</small></div>
+        <label class="check"><input type="checkbox" id="outline" checked> Draw thin cutting lines</label>
+      </div>
+      <p class="notes" id="notes" role="status"></p>
+    </div>
+
+    <div class="downloads">
+      <button class="primary dlbtn" data-kind="card">Download card PDF<small>2 pages, front and back</small></button>
+      <button class="primary dlbtn" data-kind="a4">Download A4 sheet<small>Both sides, actual card size</small></button>
+      <button class="primary dlbtn" data-kind="4x6">Download 4×6 sheet<small>Photo paper, both sides</small></button>
+      <button class="ghost" id="again">Cut another Aadhaar</button>
+    </div>
+  </section>
+
+  <p class="status" id="status" role="status"></p>
+
+  <p class="note">Works with the standard e-Aadhaar letter downloaded from the UIDAI website. Sheets place the card at standard PVC size (85.6 × 54 mm): print at 100% / actual size, not "fit to page". The UIDAI digital signature does not carry over to an edited copy.</p>
+</main>
+
+<div class="backdrop" id="pwModal" role="dialog" aria-modal="true" aria-labelledby="pwTitle">
+  <form class="dialog" id="pwForm" autocomplete="off">
+    <h2 id="pwTitle">Enter PDF password</h2>
+    <p>The e-Aadhaar password is the first 4 letters of the name in capitals plus the year of birth, for example <code>RAHU1990</code>.</p>
+    <div class="field">
+      <input id="pw" type="password" autocapitalize="characters" spellcheck="false" aria-label="PDF password">
+      <button type="button" id="toggle" aria-label="Show password">Show</button>
+    </div>
+    <p class="err" id="pwErr" role="alert"></p>
+    <div class="actions">
+      <button type="button" class="ghost" id="pwCancel">Cancel</button>
+      <button type="submit" class="primary" id="pwOk">Unlock and cut</button>
+    </div>
+  </form>
+</div>
+
+<div class="backdrop" id="photoModal" role="dialog" aria-modal="true" aria-labelledby="phTitle">
+  <div class="dialog photo-dialog">
+    <h2 id="phTitle">Clean up photo</h2>
+    <p>Changes apply to the photo on the card. The original is kept, so you can reset any time.</p>
+    <div class="photo-grid">
+      <figure><canvas id="phBefore"></canvas><figcaption>Original</figcaption></figure>
+      <figure><canvas id="phAfter"></canvas><figcaption>Cleaned</figcaption></figure>
+    </div>
+    <div class="photo-ctrls">
+      <label for="phB">Brightness</label>
+      <div class="slider"><input type="range" id="phB" min="-60" max="60" value="0"><output id="phBo">0</output></div>
+      <label for="phC">Contrast</label>
+      <div class="slider"><input type="range" id="phC" min="-60" max="60" value="0"><output id="phCo">0</output></div>
+      <label for="phS">Sharpness</label>
+      <div class="slider"><input type="range" id="phS" min="0" max="100" value="0"><output id="phSo">0</output></div>
+      <label class="check"><input type="checkbox" id="phAuto"> Auto-fix dull or faded colours</label>
+    </div>
+    <div class="actions">
+      <button type="button" class="ghost" id="phReset">Reset</button>
+      <button type="button" class="ghost" id="phCancel">Cancel</button>
+      <button type="button" class="primary" id="phApply">Apply to card</button>
+    </div>
+  </div>
+</div>
+<script src="src/aadhaar-core.js"></script>
+<script src="src/app.js"></script>
+</body>
+</html>
