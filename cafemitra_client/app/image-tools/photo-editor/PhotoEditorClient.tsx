@@ -6,6 +6,7 @@ import JSZip from "jszip";
 import {DashboardShell} from "../../DashboardShell";import {PdfToolUpload} from "../../pdf-tools/PdfToolUpload";import {CropEditor,DEFAULT_CROP_QUAD,PerspectiveCropEditor,warpQuadToCanvas,quadOutputSize,type CropQuad} from "../../CropEditor";import "./photo-editor.css";
 import "./photo-editor-objects.css";
 import {apiFetch} from "@/lib/api";
+import {trackToolEvent} from "@/lib/analytics";
 import {stashPhotoForPrintSheet} from "@/lib/printSheetHandoff";
 import {fetchPricingServiceByKey,type PriceItem} from "@/lib/pricing";
 import {COMMON_RATIOS,ID_PHOTO_RATIOS,PRINT_SIZE_RATIOS} from "../../../lib/cropRatios";
@@ -200,7 +201,7 @@ export default function PhotoEditorClient({ children }: { children?: ReactNode }
     window.addEventListener("pointermove",onMove);
     window.addEventListener("pointerup",onUp);
   }
-  function save(){if(!photo||!edit||!canvas.current)return;canvas.current.toBlob(blob=>{if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=`${photo.file.name.replace(/\.[^.]+$/,"")}-edited.${format==="jpeg"?"jpg":format}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);},`image/${format}`,.92);}
+  function save(){if(!photo||!edit||!canvas.current)return;canvas.current.toBlob(blob=>{if(!blob)return;const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=`${photo.file.name.replace(/\.[^.]+$/,"")}-edited.${format==="jpeg"?"jpg":format}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);trackToolEvent("image_tools","photo_editor_save",{format});},`image/${format}`,.92);}
 
   // Straight crop only narrows cropX/Y/W/H (a % window into the source
   // photo) - it never touches outW/outH, the destination canvas size. Left

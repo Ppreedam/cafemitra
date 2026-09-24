@@ -4412,15 +4412,20 @@ def save_raw_passport_photo(request):
     if ai_mode in (PassportAIConfig.MODE_OPENAI_PRIMARY, PassportAIConfig.MODE_GEMINI_PRIMARY):
         # *_PRIMARY mode: call the chosen provider immediately, before the
         # PrintPilot Agent ever sees this job, so the shop gets a photo
-        # without waiting on a desktop agent poll at all. If that call fails
-        # or isn't reachable right now, just leave the order PENDING - it
-        # silently drops into the normal agent queue (resolve_passport_photo)
-        # instead of failing the upload outright. Wrapped in try/except (unlike
-        # apply_ai_fallback's callers, which run from a poll and can afford to
-        # let an exception surface) because this runs inline in the upload
-        # request - any crash here, including a save() on a DB connection that
-        # Supabase's pooler dropped while this ~5-90s call was in flight, must
-        # not turn a successful upload into a 500.
+        # without waiting on a desktop agent poll at all. On failure the order
+        # is marked FAILED right here rather than left PENDING: for these two
+        # modes apply_ai_fallback() has no second provider to try (see its own
+        # docstring) and just give_up()s the moment something polls it, so
+        # leaving it PENDING only delays the same outcome - and only if a
+        # client happens to poll again after PASSPORT_PHOTO_STALE_JOB_SECONDS,
+        # which for a closed browser tab / no further poll may never happen,
+        # leaving the order stuck looking like nothing happened at all.
+        # Wrapped in try/except (unlike apply_ai_fallback's callers, which run
+        # from a poll and can afford to let an exception surface) because this
+        # runs inline in the upload request - any crash here, including a
+        # save() on a DB connection that Supabase's pooler dropped while this
+        # ~5-90s call was in flight, must not turn a successful upload into a
+        # 500.
         try:
             content_type, image_bytes = data_uri_to_bytes(order.original_filename)
             if ai_mode == PassportAIConfig.MODE_OPENAI_PRIMARY:
@@ -4431,14 +4436,19 @@ def save_raw_passport_photo(request):
                 result_type, result = generate_passport_photo_with_gemini(prompt, image_bytes, content_type)
                 is_gemini_output = True
                 provider_label = "Gemini"
+            # Force a fresh DB connection before writing the result back - the
+            # one opened for order creation above may have sat idle for the
+            # whole call and been dropped by the pooler.
+            connection.close()
             if result_type:
-                # Force a fresh DB connection before writing the result back -
-                # the one opened for order creation above may have sat idle
-                # for the whole call and been dropped by the pooler.
-                connection.close()
                 _finalize_passport_photo(order, result_type, result, is_gemini_output=is_gemini_output)
             else:
                 logger.warning("%s primary generation failed for passport order %s: %s", provider_label, order.id, result)
+                order.photo_status = PrintOrder.PHOTO_STATUS_FAILED
+                order.photo_error_message = friendly_photo_error_message(result, f"{provider_label} generation failed. Please try again.")
+                order.status = PrintOrder.STATUS_FAILED
+                order.photo_updated_at = timezone.now()
+                order.save(update_fields=["photo_status", "photo_error_message", "status", "photo_updated_at"])
         except Exception:
             logger.exception("Primary AI generation crashed for passport order %s", order.id)
 

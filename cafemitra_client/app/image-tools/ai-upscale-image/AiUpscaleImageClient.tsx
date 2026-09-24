@@ -6,6 +6,7 @@ import { Download, LoaderCircle, Plus, ShieldCheck, Sparkles, Trash2, WandSparkl
 import { DashboardShell } from "../../DashboardShell";
 import { PdfToolUpload } from "../../pdf-tools/PdfToolUpload";
 import { apiUrl } from "../../../lib/api";
+import { trackToolEvent } from "../../../lib/analytics";
 
 type ImageItem = { id: string; file: File; sourceUrl: string; width: number; height: number; result?: { blob: Blob; url: string; width: number; height: number; name: string } };
 type OutputFormat = "image/webp" | "image/png" | "image/jpeg";
@@ -38,6 +39,7 @@ export default function AiUpscaleImageClient({ children }: { children?: ReactNod
       const result = aiMode ? await aiUpscaleImage(active, scale, format) : await upscaleImage(active, scale, format); const url = URL.createObjectURL(result.blob);
       if (active.result) URL.revokeObjectURL(active.result.url);
       setItems((current) => current.map((item) => item.id === active.id ? { ...item, result: { ...result, url } } : item));
+      trackToolEvent("image_tools", "ai_upscale", { scale, ai_mode: aiMode });
     } catch (reason) { setError(reason instanceof Error ? reason.message : "This image could not be upscaled. Try a smaller image, JPG/PNG/WebP under 15 MB, or switch off AI mode."); }
     finally { setBusy(false); }
   }

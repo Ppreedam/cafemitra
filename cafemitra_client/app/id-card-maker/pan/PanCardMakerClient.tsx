@@ -21,6 +21,7 @@ import {
   X,
 } from "lucide-react";
 import { hasStoredSession } from "@/lib/api";
+import { trackToolEvent } from "@/lib/analytics";
 import { CropEditor, cropImage, type CropRect } from "../../CropEditor";
 import { DashboardShell } from "../../DashboardShell";
 import { PdfToolUpload } from "../../pdf-tools/PdfToolUpload";
@@ -293,6 +294,7 @@ async function handleFiles(files: FileList) {
       link.download = "pan-card-thermal.pdf";
       link.click();
       URL.revokeObjectURL(url);
+      trackToolEvent("id_card_maker", "pan_download_thermal_pdf");
     } catch (error) {
       console.error("Thermal PDF export failed", error);
       setOutputError("Could not build the thermal card PDF. Please try again.");
@@ -308,6 +310,7 @@ async function handleFiles(files: FileList) {
     printWindow.document.open();
     printWindow.document.write(buildA4PrintHtml(outFront, outBack, copies));
     printWindow.document.close();
+    trackToolEvent("id_card_maker", "pan_print_a4");
   }
 
   function print4x6() {
@@ -317,6 +320,7 @@ async function handleFiles(files: FileList) {
     printWindow.document.open();
     printWindow.document.write(build4x6PrintHtml(outFront, outBack));
     printWindow.document.close();
+    trackToolEvent("id_card_maker", "pan_print_4x6");
   }
 
   const activeSourcePage = template ? pages.find((page) => page.index === template[activeFace].page) || pages[0] : undefined;

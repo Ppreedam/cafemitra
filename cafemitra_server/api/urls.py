@@ -15,6 +15,8 @@ urlpatterns = [
     re_path(r"^admin/customers/(?P<customer_id>[0-9]+)/tags/?$", admin_views.admin_customer_set_tags),  # PUT {tagIds:[...]} replace one customer's tag set
     re_path(r"^admin/customer-tags/?$", admin_views.admin_customer_tags),  # GET all customer tags w/ counts / POST create a new tag {name}
     re_path(r"^admin/customer-tags/(?P<tag_id>[0-9]+)/?$", admin_views.admin_customer_tag_detail),  # DELETE a customer tag (unassigns it from every customer)
+    re_path(r"^admin/customers/(?P<customer_id>[0-9]+)/notes/?$", admin_views.admin_customer_notes),  # GET dated note timeline for one customer / POST {body} add a note
+    re_path(r"^admin/customer-notes/(?P<note_id>[0-9]+)/?$", admin_views.admin_customer_note_detail),  # DELETE a customer note
     re_path(r"^admin/shops/(?P<shop_id>[0-9]+)/?$", admin_views.admin_shop_detail),  # GET full shop detail (profile+pricing+orders+wallet) / PUT credit-limit + cash-counter permission
     re_path(r"^admin/shops/(?P<shop_id>[0-9]+)/adjust-balance/?$", admin_views.admin_shop_adjust_balance),  # POST manual wallet credit/debit with a mandatory reason (audit-logged)
     re_path(r"^admin/shops/(?P<shop_id>[0-9]+)/suspend/?$", admin_views.admin_shop_suspend),  # POST deactivate a shop account

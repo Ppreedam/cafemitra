@@ -7,13 +7,12 @@ import Topbar from "@/components/Topbar";
 import { fetchAdminMe, fetchNotifications, type AdminNotifications, type AdminRoleValue, type AdminUser } from "@/lib/api";
 import { getToken } from "@/lib/auth";
 
-const NOTIFICATION_POLL_MS = 30000;
-
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [user, setUser] = useState<AdminUser | null>(null);
   const [role, setRole] = useState<AdminRoleValue | null>(null);
   const [notifications, setNotifications] = useState<AdminNotifications | null>(null);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
@@ -30,20 +29,22 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
       .finally(() => setChecking(false));
   }, [router]);
 
+  function loadNotifications() {
+    setNotificationsLoading(true);
+    fetchNotifications()
+      .then(setNotifications)
+      .catch(() => {
+        // Notification badges are non-critical - a failed load just skips
+        // updating the counts until the admin refreshes again.
+      })
+      .finally(() => setNotificationsLoading(false));
+  }
+
+  // Loaded once on page load only (no background polling) - the admin
+  // refreshes manually via the bell icon's refresh button in Topbar.
   useEffect(() => {
     if (checking) return;
-    function poll() {
-      fetchNotifications()
-        .then(setNotifications)
-        .catch(() => {
-          // Notification badges are non-critical - a transient poll failure
-          // (e.g. a slow request) shouldn't surface an error to the admin,
-          // it just skips updating the counts until the next poll.
-        });
-    }
-    poll();
-    const interval = setInterval(poll, NOTIFICATION_POLL_MS);
-    return () => clearInterval(interval);
+    loadNotifications();
   }, [checking]);
 
   if (checking) {
@@ -58,7 +59,7 @@ export default function ProtectedLayout({ children }: { children: React.ReactNod
     <div className="flex min-h-screen">
       <Sidebar user={user} role={role} notifications={notifications} />
       <div className="flex-1 flex flex-col min-w-0">
-        <Topbar notifications={notifications} />
+        <Topbar notifications={notifications} onRefreshNotifications={loadNotifications} notificationsLoading={notificationsLoading} />
         <main className="flex-1 min-w-0 p-6">{children}</main>
       </div>
     </div>

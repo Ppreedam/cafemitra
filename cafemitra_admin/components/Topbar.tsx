@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Bell, Zap, Wallet, Inbox, Users, AlertTriangle, Download, UserPlus, History } from "lucide-react";
+import { Bell, Zap, Wallet, Inbox, Users, AlertTriangle, Download, RefreshCw, UserPlus, History } from "lucide-react";
 import { exportOrdersCsv, exportWalletLedgerCsv, type AdminNotifications } from "@/lib/api";
 
 function useClickOutside(onOutside: () => void) {
@@ -17,7 +17,15 @@ function useClickOutside(onOutside: () => void) {
   return ref;
 }
 
-export default function Topbar({ notifications }: { notifications: AdminNotifications | null }) {
+export default function Topbar({
+  notifications,
+  onRefreshNotifications,
+  notificationsLoading,
+}: {
+  notifications: AdminNotifications | null;
+  onRefreshNotifications: () => void;
+  notificationsLoading: boolean;
+}) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showActions, setShowActions] = useState(false);
 
@@ -107,6 +115,17 @@ export default function Topbar({ notifications }: { notifications: AdminNotifica
         </button>
         {showNotifications && (
           <div className="absolute right-0 mt-2 w-80 rounded-md border border-slate-200 bg-white shadow-lg z-20 py-1">
+            <div className="flex items-center justify-between px-3 py-1.5 border-b border-slate-100">
+              <span className="text-xs font-medium text-slate-500">Notifications</span>
+              <button
+                onClick={onRefreshNotifications}
+                disabled={notificationsLoading}
+                title="Refresh notifications"
+                className="inline-flex items-center justify-center rounded p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600 disabled:opacity-50"
+              >
+                <RefreshCw size={13} className={notificationsLoading ? "animate-spin" : ""} />
+              </button>
+            </div>
             {notificationItems.length === 0 && <p className="px-3 py-4 text-sm text-slate-500 text-center">Nothing needs attention.</p>}
             {notificationItems.map((item) => {
               const Icon = item.icon;

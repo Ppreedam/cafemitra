@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ArrowLeft, ChevronDown, ChevronUp, Download, Eye, FolderOpen, LogIn, Printer, RotateCcw, Save, Sparkles, Wallet } from "lucide-react";
 import { apiFetch, hasStoredSession } from "@/lib/api";
+import { trackToolEvent } from "@/lib/analytics";
 import { TEMPLATES, type TemplateId } from "../templates";
 import { useTemplatePrices } from "../useTemplatePrices";
 import { useListOps } from "../useListOps";
@@ -257,6 +258,7 @@ export default function ResumeBuilderClient() {
       await chargeResumeDownload(resume.template);
       const blob = await buildResumePdf(resume);
       triggerPdfDownload(blob, `${resumeFileSlug(resume.fullName)}-resume.pdf`);
+      trackToolEvent("resume_builder", "download_pdf", { template: resume.template });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not generate the PDF. Please try again.");
     } finally {
@@ -274,6 +276,7 @@ export default function ResumeBuilderClient() {
       await chargeResumeDownload(resume.template);
       const blob = await buildResumePdf(resume);
       printPdfBlob(blob);
+      trackToolEvent("resume_builder", "print_pdf", { template: resume.template });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not prepare the resume for printing. Please try again.");
     } finally {

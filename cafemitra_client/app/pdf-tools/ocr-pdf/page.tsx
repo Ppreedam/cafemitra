@@ -9,6 +9,7 @@ import { RelatedToolSuggestions } from "../ToolDiscovery";
 import { usePdfPasswordGate } from "../usePdfPasswordGate";
 import OcrSeoContent from "./OcrSeoContent";
 import { apiUrl } from "../../../lib/api";
+import { trackToolEvent } from "../../../lib/analytics";
 
 type OcrPage = { index: number; image: string };
 type OcrResult = { pdf: Blob; pdfUrl: string; text: string; size: number };
@@ -46,6 +47,7 @@ export default function OcrPdfPage() {
       setResult({ pdf: blob, pdfUrl: URL.createObjectURL(blob), text: String(data.text || ""), size: blob.size });
       setProgress(100);
       setStatus("Text extraction completed");
+      trackToolEvent("pdf_tools", "ocr_extract_text", { pages: selectedIndices.length });
     } catch (reason) { console.error(reason); setError(reason instanceof Error ? reason.message : "PDF text could not be extracted. Please try again."); }
     finally { setProcessing(false); }
   }

@@ -6,6 +6,7 @@ import { ArrowRight, Check, Download, FileArchive, FileText, Grid2X2, Layers3, L
 import { DashboardShell } from "../../DashboardShell";
 import { PdfToolUpload } from "../PdfToolUpload";
 import { usePdfPasswordGate } from "../usePdfPasswordGate";
+import { trackToolEvent } from "../../../lib/analytics";
 
 type PagePreview = { index: number; image: string };
 type PageRange = { id: string; from: number; to: number };
@@ -70,6 +71,7 @@ export function SplitPdfTool({ initialMode = "range", toolTitle = "Split PDF", u
         nextResults.push({ name: `${baseName(file.name)}-${toolTitle === "Extract pages" ? "extracted" : mode}-${index + 1}.pdf`, blob, url, pages: group.length }); setProgress(Math.round(((index + 1) / outputGroups.length) * 100));
       }
       setResults(nextResults);
+      trackToolEvent("pdf_tools", toolTitle === "Extract pages" ? "extract-pages" : "split-pdf", { mode });
     } catch (reason) { console.error(reason); setError(reason instanceof Error ? reason.message : "PDF could not be split."); }
     finally { setProcessing(false); }
   }

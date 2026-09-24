@@ -6,6 +6,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { Bookmark, Check, Download, LogIn, Plus, Printer, QrCode, Share2, Trash2 } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
 import { apiFetch, hasStoredSession } from "@/lib/api";
+import { trackToolEvent } from "@/lib/analytics";
 
 type UpiPayee = { id: number; label: string; vpa: string; isDefault: boolean };
 type UpiQrRecord = { id: number; label: string; vpa: string; amount: number | null; note: string; orderRef: string; createdAt: string };
@@ -367,6 +368,7 @@ export default function UpiQrGeneratorClient() {
 
   async function shareQr() {
     if (!cardDataUrl) return;
+    trackToolEvent("upi_qr_generator", "share");
     try {
       const blob = await (await fetch(cardDataUrl)).blob();
       const file = new File([blob], "upi-qr.png", { type: "image/png" });
@@ -395,6 +397,7 @@ export default function UpiQrGeneratorClient() {
     printWindow.document.open();
     printWindow.document.write(buildQrStandeeHtml(cardDataUrl));
     printWindow.document.close();
+    trackToolEvent("upi_qr_generator", "print");
   }
 
   return (
@@ -544,6 +547,7 @@ export default function UpiQrGeneratorClient() {
                 className={`resbuild-btn-primary ${!cardDataUrl ? "upiqr-disabled-link" : ""}`}
                 href={cardDataUrl || undefined}
                 download={`upi-qr-${(resolvedLabel || "repetigo").replace(/\s+/g, "-").toLowerCase()}.png`}
+                onClick={() => trackToolEvent("upi_qr_generator", "download")}
               >
                 <Download size={16} /> Download
               </a>

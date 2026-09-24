@@ -6,6 +6,7 @@ import { Archive, Check, Download, Eye, FilePlus2, Gauge, Info, LoaderCircle, Pl
 import { DashboardShell } from "../../DashboardShell";
 import { PdfToolUpload } from "../PdfToolUpload";
 import { usePdfPasswordGate } from "../usePdfPasswordGate";
+import { trackToolEvent } from "../../../lib/analytics";
 
 type CompressItem = {
   id: string;
@@ -97,6 +98,7 @@ export default function CompressPdfClient({ children }: { children?: ReactNode }
         const result = { blob, url: URL.createObjectURL(blob), size: blob.size }; resultUrls.current.add(result.url);
         setItems((current) => current.map((entry) => entry.id === item.id ? { ...entry, result, progress: 100 } : entry));
       }
+      trackToolEvent("pdf_tools", "compress-pdf", { file_count: targets.length });
     } catch (reason) {
       console.error(reason); setError("Compression could not be completed. Try a lower compression level or remove the problematic PDF.");
     } finally { setCompressing(false); }

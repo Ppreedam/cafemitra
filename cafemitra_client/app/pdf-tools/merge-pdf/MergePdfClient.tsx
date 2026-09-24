@@ -7,6 +7,7 @@ import Link from "next/link";
 import { DashboardShell } from "../../DashboardShell";
 import { PdfToolUpload } from "../PdfToolUpload";
 import { usePdfPasswordGate } from "../usePdfPasswordGate";
+import { trackToolEvent } from "../../../lib/analytics";
 
 type PdfPage = { index: number; thumbnail: string; removed: boolean };
 type PdfItem = { id: string; file: File; pages: PdfPage[]; loading: boolean };
@@ -66,6 +67,7 @@ export default function MergePdfClient({ children }: { children?: ReactNode }) {
       }
       const bytes = await merged.save();
       setResultUrl(URL.createObjectURL(new Blob([bytes], { type: "application/pdf" })));
+      trackToolEvent("pdf_tools", "merge-pdf", { file_count: items.length });
     } catch (reason) {
       console.error(reason); setError("PDFs could not be merged. Please remove any protected or damaged file and try again.");
     } finally { setMerging(false); }

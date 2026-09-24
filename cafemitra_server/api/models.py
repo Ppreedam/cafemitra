@@ -683,3 +683,20 @@ class CustomerTag(models.Model):
         return self.name
 
 
+class CustomerNote(models.Model):
+    """Dated freeform note an admin staff member writes about a customer
+    (shop owner) account - an append-only log, unlike CustomerTag's on/off
+    label set."""
+
+    customer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="notes")
+    author = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="written_customer_notes")
+    body = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"Note on {self.customer_id} at {self.created_at}"
+
+

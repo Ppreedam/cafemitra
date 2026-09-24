@@ -361,13 +361,25 @@ export type CustomerDetailResponse = {
   couponsUsed: CustomerCouponUsed[];
 };
 
-export function fetchCustomers(params: { search?: string; page?: number; pageSize?: number; sort?: "orders_asc" | "orders_desc"; tagId?: number }) {
+export function fetchCustomers(params: {
+  search?: string;
+  page?: number;
+  pageSize?: number;
+  sort?: "orders_asc" | "orders_desc" | "wallet_asc" | "wallet_desc";
+  tagId?: number;
+  walletOp?: "gte" | "lte";
+  walletValue?: string;
+}) {
   const query = new URLSearchParams();
   if (params.search) query.set("search", params.search);
   if (params.pageSize) query.set("pageSize", String(params.pageSize));
   if (params.page) query.set("page", String(params.page));
   if (params.sort) query.set("sort", params.sort);
   if (params.tagId) query.set("tag", String(params.tagId));
+  if (params.walletOp && params.walletValue) {
+    query.set("walletOp", params.walletOp);
+    query.set("walletValue", params.walletValue);
+  }
   return request<CustomerListResponse>(`/admin/customers/?${query.toString()}`);
 }
 
@@ -388,6 +400,23 @@ export function setCustomerTags(customerId: number, tagIds: number[]) {
     method: "PUT",
     body: JSON.stringify({ tagIds }),
   });
+}
+
+export type CustomerNote = { id: number; body: string; authorName: string; createdAt: string };
+
+export function fetchCustomerNotes(customerId: number) {
+  return request<{ notes: CustomerNote[] }>(`/admin/customers/${customerId}/notes/`);
+}
+
+export function createCustomerNote(customerId: number, body: string) {
+  return request<{ note: CustomerNote }>(`/admin/customers/${customerId}/notes/`, {
+    method: "POST",
+    body: JSON.stringify({ body }),
+  });
+}
+
+export function deleteCustomerNote(noteId: number) {
+  return request<{ deleted: boolean }>(`/admin/customer-notes/${noteId}/`, { method: "DELETE" });
 }
 
 export function exportCustomersCsv(params?: { search?: string; ids?: number[] }) {

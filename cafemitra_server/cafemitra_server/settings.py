@@ -121,7 +121,22 @@ if DATABASE_URL:
             "PASSWORD": unquote(parsed_db_url.password or ""),
             "HOST": parsed_db_url.hostname,
             "PORT": parsed_db_url.port or 5432,
-            "OPTIONS": {"sslmode": "require"},
+            "OPTIONS": {
+                "sslmode": "require",
+                # Without these, a connection that goes dead mid-request (WiFi
+                # drop, NAT/router silently killing an "idle" TCP flow, ISP
+                # blip) sits blocked waiting on a read until the OS's own TCP
+                # retransmission timeout finally gives up - tens of seconds
+                # later - then surfaces as "SSL connection has been closed
+                # unexpectedly". These make libpq probe the socket every 10s
+                # after 10s of no activity and give up after 3 missed probes,
+                # so a dead connection is detected (and the query fails fast)
+                # in ~30-40s instead of ~75s+.
+                "keepalives": 1,
+                "keepalives_idle": 10,
+                "keepalives_interval": 10,
+                "keepalives_count": 3,
+            },
             # Deliberately NOT setting CONN_MAX_AGE here. This DB sits behind
             # Supabase's SESSION-mode pooler, which caps concurrent clients
             # at pool_size=15 platform-wide (shared across every Django

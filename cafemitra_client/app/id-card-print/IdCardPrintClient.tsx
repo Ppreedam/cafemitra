@@ -10,6 +10,7 @@ import { WalletLimitBanner } from "../WalletLimitBanner";
 import { CropEditor, cropImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, warpPerspectiveCrop, type CropQuad, type CropRect } from "../CropEditor";
 import { apiFetch, hasStoredSession } from "@/lib/api";
 import { useToolPrice } from "@/lib/useToolPrice";
+import { trackToolEvent } from "@/lib/analytics";
 import IdCardPrintSeoContent from "./IdCardPrintSeoContent";
 
 async function chargeIdCardPrint() {
@@ -206,6 +207,7 @@ export default function IdCardPrintClient() {
       printWindow.document.open();
       printWindow.document.write(buildCardPrintSheetHtml(printable, colorMode));
       printWindow.document.close();
+      trackToolEvent("id_card_print", "print_sheet", { card_count: printable.length });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not prepare the print job. Please try again.");
     } finally {

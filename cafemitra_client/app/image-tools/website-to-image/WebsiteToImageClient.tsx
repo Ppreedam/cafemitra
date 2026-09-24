@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Download, Globe2, Image as ImageIcon, LoaderCircle, Monitor, ShieldCheck } from "lucide-react";
 import { apiUrl } from "../../../lib/api";
+import { trackToolEvent } from "../../../lib/analytics";
 import "../image-preview-fixes.css";
 
 export default function WebsiteToImageClient() {
@@ -37,6 +38,7 @@ export default function WebsiteToImageClient() {
       const finalUrl = URL.createObjectURL(blob);
       const host = new URL(normalizeUrl(url)).hostname.replace(/^www\./, "").replace(/[^a-z0-9.-]/gi, "-");
       setResult({ url: finalUrl, blob, name: `${host}-${fullPage ? "full-page" : "viewport"}.${blob.type.includes("jpeg") ? "jpg" : "png"}` });
+      trackToolEvent("image_tools", "website_to_image", { full_page: fullPage, format });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Website screenshot could not be created.");
     } finally {

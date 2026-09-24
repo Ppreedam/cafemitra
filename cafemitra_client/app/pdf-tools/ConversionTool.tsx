@@ -7,6 +7,7 @@ import { Archive, ArrowLeft, ArrowRight, Check, Download, FileImage, FileText, I
 import { PdfToolUpload } from "./PdfToolUpload";
 import { RelatedToolSuggestions, ToolPromotionRail } from "./ToolDiscovery";
 import { usePdfPasswordGate } from "./usePdfPasswordGate";
+import { trackToolEvent } from "../../lib/analytics";
 
 export type ConversionSlug = "jpg-to-pdf" | "word-to-pdf" | "powerpoint-to-pdf" | "excel-to-pdf" | "html-to-pdf" | "markdown-to-pdf" | "pdf-to-jpg" | "pdf-to-word" | "pdf-to-powerpoint" | "pdf-to-excel" | "pdf-to-pdfa";
 type Config = { title: string; description: string; icon: LucideIcon; accept: string; button: string; drop: string; multiple: boolean; action: string; output: string; note: string };
@@ -63,6 +64,7 @@ export default function ConversionTool({ slug, children, uploadTitle, uploadDesc
       if (slug === "jpg-to-pdf") { made.push(await imagesToPdf(files, orientation)); setProgress(100); }
       else for (let index = 0; index < files.length; index += 1) { const outputs = await convertFile(slug, files[index], { quality: quality / 100, orientation, dpi }); made.push(...outputs); setProgress(Math.round(((index + 1) / files.length) * 100)); }
       setResults(made.map((item) => ({ ...item, url: URL.createObjectURL(item.blob) })));
+      trackToolEvent("pdf_tools", slug, { file_count: files.length });
     } catch (reason) { setError(reason instanceof Error ? reason.message : "This file could not be converted."); }
     finally { setBusy(false); }
   }

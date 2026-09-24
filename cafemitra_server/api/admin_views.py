@@ -3,7 +3,7 @@ import json
 import re
 import secrets
 import string
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from datetime import datetime, timedelta
 
 from django.conf import settings
@@ -19,7 +19,7 @@ from django.http import HttpResponse, JsonResponse
 
 from .admin_activity import log_admin_activity
 from .admin_auth import get_admin_role, require_admin, require_section
-from .models import AdminActivityLog, AdminRole, Agent, ContactMessage, Coupon, CouponRedemption, CustomerTag, LeadAgent, LeadTag, PassportAIConfig, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTransaction, WalletTopup, WithdrawalRequest
+from .models import AdminActivityLog, AdminRole, Agent, ContactMessage, Coupon, CouponRedemption, CustomerNote, CustomerTag, LeadAgent, LeadTag, PassportAIConfig, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTransaction, WalletTopup, WithdrawalRequest
 from .views import (
     ORDER_LIST_DEFERRED_FIELDS,
     cafe_code_for_user,
@@ -495,6 +495,16 @@ def admin_customers(request):
     if tag_id:
         customers = customers.filter(customer_tags__id=tag_id)
 
+    wallet_op = request.GET.get("walletOp", "").strip()
+    wallet_value_raw = request.GET.get("walletValue", "").strip()
+    if wallet_op in ("gte", "lte") and wallet_value_raw:
+        try:
+            wallet_value = Decimal(wallet_value_raw)
+        except (InvalidOperation, ValueError):
+            wallet_value = None
+        if wallet_value is not None:
+            customers = customers.filter(**{f"profile__balance__{wallet_op}": wallet_value})
+
     try:
         page = max(1, int(request.GET.get("page", 1)))
     except (TypeError, ValueError):
@@ -512,6 +522,8 @@ def admin_customers(request):
     if sort in ("orders_asc", "orders_desc"):
         customers = customers.annotate(order_count=Count("print_orders", distinct=True))
         customers = customers.order_by("order_count" if sort == "orders_asc" else "-order_count", "-date_joined")
+    elif sort in ("wallet_asc", "wallet_desc"):
+        customers = customers.order_by("profile__balance" if sort == "wallet_asc" else "-profile__balance", "-date_joined")
     else:
         customers = customers.order_by("-date_joined")
 
@@ -610,6 +622,61 @@ def admin_customer_set_tags(request, customer_id):
     )
 
     return JsonResponse({"tags": [public_customer_tag(t) for t in tags]})
+
+
+def public_customer_note(note):
+    return {
+        "id": note.id,
+        "body": note.body,
+        "authorName": note.author.get_full_name() or note.author.email if note.author else "",
+        "createdAt": note.created_at.isoformat(),
+    }
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST", "OPTIONS"])
+def admin_customer_notes(request, customer_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "customers")
+    if err:
+        return err
+
+    customer_user = get_shop_user(customer_id)
+    if not customer_user:
+        return JsonResponse({"message": "Customer not found."}, status=404)
+
+    if request.method == "POST":
+        body = parse_body(request)
+        text = str(body.get("body", "")).strip()
+        if not text:
+            return JsonResponse({"message": "Note text is required."}, status=400)
+        note = CustomerNote.objects.create(customer=customer_user, author=admin_user, body=text)
+        log_admin_activity(admin_user, "customers.note.create", "customer", customer_id, text[:120])
+        return JsonResponse({"note": public_customer_note(note)}, status=201)
+
+    notes = customer_user.notes.select_related("author").all()
+    return JsonResponse({"notes": [public_customer_note(n) for n in notes]})
+
+
+@csrf_exempt
+@require_http_methods(["DELETE", "OPTIONS"])
+def admin_customer_note_detail(request, note_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "customers")
+    if err:
+        return err
+
+    note = CustomerNote.objects.filter(id=note_id).first()
+    if not note:
+        return JsonResponse({"message": "Note not found."}, status=404)
+    customer_id = note.customer_id
+    note.delete()
+    log_admin_activity(admin_user, "customers.note.delete", "customer", customer_id, "")
+    return JsonResponse({"deleted": True})
 
 
 @csrf_exempt

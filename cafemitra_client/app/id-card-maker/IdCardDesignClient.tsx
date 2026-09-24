@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ArrowLeft, Braces, ChevronDown, ChevronUp, Contrast, Loader2, LogIn, Palette, Printer, QrCode, User } from "lucide-react";
 import { hasStoredSession } from "@/lib/api";
+import { trackToolEvent } from "@/lib/analytics";
 import { DashboardShell } from "../DashboardShell";
 import { WalletLimitBanner } from "../WalletLimitBanner";
 import { DOC_FIELDS, DOC_LAYOUT, DOC_TYPES, ocrStorageKey, type DocLayout, type DocType, type FieldDef } from "./docTypes";
@@ -105,6 +106,7 @@ export default function IdCardDesignClient({ docType }: { docType: DocType }) {
     printWindow.document.open();
     printWindow.document.write(buildIdCardSheetHtml({ layout, fields, values, photoUrl, colorMode, copies }));
     printWindow.document.close();
+    trackToolEvent("id_card_maker", "print_sheet", { doc_type: docType });
   }
 
   return (

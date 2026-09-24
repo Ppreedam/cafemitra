@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ArrowLeft, ChevronDown, ChevronUp, Download, Eye, FolderOpen, LogIn, Printer, RotateCcw, Save, Sparkles, Wallet } from "lucide-react";
 import { apiFetch, hasStoredSession } from "@/lib/api";
+import { trackToolEvent } from "@/lib/analytics";
 import { useTemplatePrices } from "../../resume-builder/useTemplatePrices";
 import { resumeFileSlug, triggerPdfDownload } from "../../resume-builder/downloadPdf";
 import TemplatePicker from "../../resume-builder/TemplatePicker";
@@ -237,6 +238,7 @@ export default function BiodataBuilderClient() {
       await chargeBiodataDownload(data.template);
       const blob = await buildBiodataPdf(data);
       triggerPdfDownload(blob, `${resumeFileSlug(data.fullName, "biodata")}-biodata.pdf`);
+      trackToolEvent("biodata_maker", "download_pdf", { template: data.template });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not generate the PDF. Please try again.");
     } finally {
@@ -254,6 +256,7 @@ export default function BiodataBuilderClient() {
       await chargeBiodataDownload(data.template);
       const blob = await buildBiodataPdf(data);
       printPdfBlob(blob);
+      trackToolEvent("biodata_maker", "print_pdf", { template: data.template });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not prepare the biodata for printing. Please try again.");
     } finally {

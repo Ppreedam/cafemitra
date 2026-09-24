@@ -10,6 +10,7 @@ import { apiFetch, apiUrl, dataUriToBlob, hasStoredSession } from "@/lib/api";
 import { useToolPrice } from "@/lib/useToolPrice";
 import PhotoPrintSheetSeoContent from "./PhotoPrintSheetSeoContent";
 import { takePendingPrintSheetPhoto } from "@/lib/printSheetHandoff";
+import { trackToolEvent } from "@/lib/analytics";
 
 async function chargePhotoPrintSheet() {
   const response = await apiFetch("/api/tools/photo-print-sheet-charge/", { method: "POST" });
@@ -264,6 +265,7 @@ export default function PhotoPrintSheetClient() {
         downloadCanvas(canvas, `print-sheet-${paperMeta.badge.toLowerCase()}-page-${pageIndex + 1}.png`);
         if (pageIndex < pages.length - 1) await new Promise((resolve) => setTimeout(resolve, 350));
       }
+      trackToolEvent("photo_print_sheet", "download_hd", { total_tiles: totalTiles });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not generate the print sheet. Please try again.");
     } finally {
@@ -284,6 +286,7 @@ export default function PhotoPrintSheetClient() {
     try {
       await chargePhotoPrintSheet();
       openPrintWindow(paperMeta, pages);
+      trackToolEvent("photo_print_sheet", "print_sheet", { total_tiles: totalTiles });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not prepare the print job. Please try again.");
     } finally {

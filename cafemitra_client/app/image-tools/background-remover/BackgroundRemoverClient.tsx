@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { Download, ImageIcon, RotateCcw, Sparkles, Upload, WandSparkles } from "lucide-react";
 import { DashboardShell } from "../../DashboardShell";
 import { apiUrl } from "../../../lib/api";
+import { trackToolEvent } from "../../../lib/analytics";
 
 const BG_COLOR_SWATCHES = [
   { label: "White", value: "#ffffff" },
@@ -110,6 +111,7 @@ export default function BackgroundRemoverClient({ children }: { children?: React
       if (rawResultUrl) URL.revokeObjectURL(rawResultUrl);
       setRawResultUrl(URL.createObjectURL(blob));
       setProgress(100);
+      trackToolEvent("image_tools", "remove_background", { enhance_edges: enhanceEdges });
     } catch (reason) {
       console.error(reason);
       setError(reason instanceof Error ? reason.message : "Background could not be removed. Please try again.");
