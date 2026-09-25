@@ -1,10 +1,10 @@
 "use client";
 
 import type React from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { Contrast, Crop, LogIn, Palette, Plus, Printer, RotateCcw, RotateCw, SlidersHorizontal, Trash2, Upload, Wallet, X } from "lucide-react";
+import { CircleAlert, CircleCheck, Contrast, Crop, LoaderCircle, LogIn, Palette, Plus, Printer, RefreshCw, RotateCcw, RotateCw, ScanLine, SlidersHorizontal, Trash2, Upload, Wallet, Wand2, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
 import { WalletLimitBanner } from "../WalletLimitBanner";
 import { CropEditor, cropImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, warpPerspectiveCrop, type CropQuad, type CropRect } from "../CropEditor";
@@ -12,6 +12,8 @@ import { apiFetch, hasStoredSession } from "@/lib/api";
 import { useToolPrice } from "@/lib/useToolPrice";
 import { trackToolEvent } from "@/lib/analytics";
 import IdCardPrintSeoContent from "./IdCardPrintSeoContent";
+import { onScannerEngineLoading, scanCard, type ScanMode } from "./cardScan";
+import { bakeTone, isNeutralTone, NEUTRAL_TONE, TonedImage, ToneControl, type Tone } from "./ToneControl";
 
 async function chargeIdCardPrint() {
   const response = await apiFetch("/api/tools/id-card-print-charge/", { method: "POST" });
@@ -23,11 +25,19 @@ async function chargeIdCardPrint() {
 type Side = "front" | "back";
 type ColorMode = "color" | "bw";
 
+type ScanStatus = "idle" | "scanning" | "done" | "notfound" | "error";
+
 type SideState = {
   file: File | null;
   url: string;
   cropRect: CropRect;
   cropQuad: CropQuad;
+  // The photo as uploaded, kept so the card can be re-straightened from it
+  // (Auto Fix, or dragging the detected corners in Perspective crop).
+  original?: { file: File; url: string };
+  scan?: ScanStatus;
+  // Manual brightness / contrast, shown live and applied when printing.
+  tone?: Tone;
 };
 
 type CropMode = "straight" | "perspective";
@@ -43,6 +53,13 @@ type SlotRef = { cardId: string; side: Side };
 type FilterValues = { brightness: number; contrast: number; saturation: number };
 
 const EMPTY_SIDE: SideState = { file: null, url: "", cropRect: DEFAULT_CROP_RECT, cropQuad: DEFAULT_CROP_QUAD };
+const SCAN_MODES: Array<{ value: ScanMode | "off"; label: string }> = [
+  { value: "clean", label: "Auto: straighten + clean" },
+  { value: "photocopy", label: "Auto: straighten + photocopy B/W" },
+  { value: "original", label: "Auto: straighten only" },
+  { value: "off", label: "Auto off" },
+];
+const SCAN_MODE_KEY = "cafemitra_idcard_print_scan_mode";
 const CARD_ASPECT_RATIO = "85.6/53.98";
 const CARD_ASPECT_RATIO_NUMBER = 85.6 / 53.98;
 const DEFAULT_FILTER: FilterValues = { brightness: 100, contrast: 100, saturation: 100 };
@@ -70,6 +87,28 @@ export default function IdCardPrintClient() {
   const [error, setError] = useState("");
   const [loginPrompt, setLoginPrompt] = useState(false);
   const [chargeConfirm, setChargeConfirm] = useState<{ resolve: (ok: boolean) => void } | null>(null);
+  const [scanMode, setScanMode] = useState<ScanMode | "off">("clean");
+  const [engineLoading, setEngineLoading] = useState(false);
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(SCAN_MODE_KEY);
+      if (saved && SCAN_MODES.some((m) => m.value === saved)) setScanMode(saved as ScanMode | "off");
+    } catch {
+      // Private mode etc. - keep the default.
+    }
+    onScannerEngineLoading(() => setEngineLoading(true));
+    return () => onScannerEngineLoading(null);
+  }, []);
+
+  function changeScanMode(mode: ScanMode | "off") {
+    setScanMode(mode);
+    try {
+      localStorage.setItem(SCAN_MODE_KEY, mode);
+    } catch {
+      // Not persisted - fine.
+    }
+  }
   const loginNextUrl = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
 
   // Uploading, cropping, and previewing cards is free for anyone. Login (and
@@ -102,11 +141,62 @@ export default function IdCardPrintClient() {
     setCards((prev) => prev.map((card) => (card.id === cardId ? { ...card, [side]: next } : card)));
   }
 
+  function releaseSide(state: SideState) {
+    if (state.url) URL.revokeObjectURL(state.url);
+    if (state.original && state.original.url !== state.url) URL.revokeObjectURL(state.original.url);
+  }
+
+  // Updates one side only if it still shows the same uploaded photo - a scan
+  // that finishes after the user replaced/removed the photo is dropped.
+  function updateIfSame(cardId: string, side: Side, originalUrl: string, update: (state: SideState) => SideState) {
+    setCards((prev) =>
+      prev.map((card) => {
+        if (card.id !== cardId || card[side].original?.url !== originalUrl) return card;
+        return { ...card, [side]: update(card[side]) };
+      }),
+    );
+  }
+
+  // Finds the card in the photo, straightens it to card size and cleans it.
+  // quad = null detects the corners; a quad re-uses corners the user set.
+  async function runScan(cardId: string, side: Side, original: { file: File; url: string }, quad: CropQuad | null, mode: ScanMode) {
+    updateIfSame(cardId, side, original.url, (state) => ({ ...state, scan: "scanning" }));
+    try {
+      const result = await scanCard(original.file, mode, quad);
+      setEngineLoading(false);
+      if (!result.found) {
+        updateIfSame(cardId, side, original.url, (state) => ({ ...state, scan: "notfound" }));
+        return;
+      }
+      const file = new File([result.blob], original.file.name.replace(/(\.[^.]+)?$/, "-card.jpg"), { type: "image/jpeg" });
+      updateIfSame(cardId, side, original.url, (state) => {
+        if (state.url && state.url !== original.url) URL.revokeObjectURL(state.url);
+        return { ...state, file, url: URL.createObjectURL(file), cropQuad: result.quad, cropRect: DEFAULT_CROP_RECT, scan: "done" };
+      });
+      trackToolEvent("id_card_print", quad ? "manual_perspective_scan" : "auto_scan", { mode });
+    } catch (reason) {
+      console.error(reason);
+      setEngineLoading(false);
+      updateIfSame(cardId, side, original.url, (state) => ({ ...state, scan: "error" }));
+    }
+  }
+
   function handleFileChange(cardId: string, side: Side, selected?: File | null) {
     if (!selected) return;
-    const current = getSide(cardId, side);
-    if (current.url) URL.revokeObjectURL(current.url);
-    setSide(cardId, side, { file: selected, url: URL.createObjectURL(selected), cropRect: DEFAULT_CROP_RECT, cropQuad: DEFAULT_CROP_QUAD });
+    releaseSide(getSide(cardId, side));
+    const url = URL.createObjectURL(selected);
+    const original = { file: selected, url };
+    const auto = scanMode !== "off";
+    setSide(cardId, side, { file: selected, url, cropRect: DEFAULT_CROP_RECT, cropQuad: DEFAULT_CROP_QUAD, original, scan: auto ? "scanning" : "idle" });
+    if (auto) void runScan(cardId, side, original, null, scanMode as ScanMode);
+  }
+
+  function autoFix(target: SlotRef) {
+    const current = getSide(target.cardId, target.side);
+    const original = current.original || (current.file ? { file: current.file, url: current.url } : null);
+    if (!original) return;
+    if (!current.original) setSide(target.cardId, target.side, { ...current, original });
+    void runScan(target.cardId, target.side, original, null, scanMode === "off" ? "clean" : scanMode);
   }
 
   function handleDrop(cardId: string, side: Side, event: React.DragEvent<HTMLLabelElement>) {
@@ -116,20 +206,20 @@ export default function IdCardPrintClient() {
   }
 
   function clearSide(cardId: string, side: Side) {
-    const current = getSide(cardId, side);
-    if (current.url) URL.revokeObjectURL(current.url);
+    releaseSide(getSide(cardId, side));
     setSide(cardId, side, EMPTY_SIDE);
     setActive((current) => (sameSlot(current, { cardId, side }) ? null : current));
   }
 
-  async function rotateSide(cardId: string, side: Side) {
+  async function rotateSide(cardId: string, side: Side, quarterTurns = 1) {
     const current = getSide(cardId, side);
     if (!current.url || !current.file) return;
     try {
-      const rotatedBlob = await rotateImage90(current.url);
+      const rotatedBlob = await rotateImage(current.url, quarterTurns);
       const rotatedFile = new File([rotatedBlob], current.file.name.replace(/\.[^.]+$/, ".png"), { type: "image/png" });
-      URL.revokeObjectURL(current.url);
-      setSide(cardId, side, { file: rotatedFile, url: URL.createObjectURL(rotatedFile), cropRect: DEFAULT_CROP_RECT, cropQuad: DEFAULT_CROP_QUAD });
+      releaseSide(current);
+      const url = URL.createObjectURL(rotatedFile);
+      setSide(cardId, side, { file: rotatedFile, url, cropRect: DEFAULT_CROP_RECT, cropQuad: DEFAULT_CROP_QUAD, original: { file: rotatedFile, url }, scan: "idle", tone: current.tone });
     } catch {
       // Leave the photo as-is if rotation fails.
     }
@@ -147,11 +237,19 @@ export default function IdCardPrintClient() {
     if (!cropTarget) return;
     const current = getSide(cropTarget.cardId, cropTarget.side);
     if (!current.url) return;
+    // Perspective crop on an uploaded photo: re-straighten from the original
+    // with the corners as placed, and clean it the same way as Auto.
+    if (cropMode === "perspective" && current.original && scanMode !== "off") {
+      const target = cropTarget;
+      setCropTarget(null);
+      await runScan(target.cardId, target.side, current.original, current.cropQuad, scanMode);
+      return;
+    }
     try {
       const croppedBlob = cropMode === "perspective" ? await warpPerspectiveCrop(current.url, current.cropQuad, CARD_ASPECT_RATIO_NUMBER) : await cropImage(current.url, current.cropRect);
       const croppedFile = new File([croppedBlob], (current.file?.name || "photo").replace(/(\.[^.]+)?$/, "-cropped.png"), { type: "image/png" });
       URL.revokeObjectURL(current.url);
-      setSide(cropTarget.cardId, cropTarget.side, { file: croppedFile, url: URL.createObjectURL(croppedFile), cropRect: DEFAULT_CROP_RECT, cropQuad: DEFAULT_CROP_QUAD });
+      setSide(cropTarget.cardId, cropTarget.side, { file: croppedFile, url: URL.createObjectURL(croppedFile), cropRect: DEFAULT_CROP_RECT, cropQuad: DEFAULT_CROP_QUAD, tone: current.tone });
       setCropTarget(null);
     } catch {
       // Crop dialog stays open so the user can retry.
@@ -171,11 +269,15 @@ export default function IdCardPrintClient() {
       const adjustedBlob = await applyFilterAdjustments(current.url, filterValues);
       const adjustedFile = new File([adjustedBlob], (current.file?.name || "photo").replace(/(\.[^.]+)?$/, "-adjusted.png"), { type: "image/png" });
       URL.revokeObjectURL(current.url);
-      setSide(filterTarget.cardId, filterTarget.side, { file: adjustedFile, url: URL.createObjectURL(adjustedFile), cropRect: current.cropRect, cropQuad: current.cropQuad });
+      setSide(filterTarget.cardId, filterTarget.side, { file: adjustedFile, url: URL.createObjectURL(adjustedFile), cropRect: current.cropRect, cropQuad: current.cropQuad, tone: current.tone });
       setFilterTarget(null);
     } catch {
       // Panel stays open so the user can retry.
     }
+  }
+
+  function updateTone(cardId: string, side: Side, tone: Tone) {
+    setSide(cardId, side, { ...getSide(cardId, side), tone });
   }
 
   function addCard() {
@@ -194,8 +296,8 @@ export default function IdCardPrintClient() {
   }
 
   async function printSheet() {
-    const printable = cards.filter((card) => card.front.url).map((card) => ({ frontUrl: card.front.url, backUrl: card.back.url }));
-    if (!printable.length || printBusy) return;
+    const withFront = cards.filter((card) => card.front.url);
+    if (!withFront.length || printBusy) return;
     if (!requireLogin()) return;
     if (!(await requestChargeConfirm())) return;
     setPrintBusy(true);
@@ -204,6 +306,16 @@ export default function IdCardPrintClient() {
       await chargeIdCardPrint();
       const printWindow = window.open("", "_blank");
       if (!printWindow) return;
+      const baked: string[] = [];
+      const printUrl = async (state: SideState) => {
+        if (!state.url || isNeutralTone(state.tone)) return state.url;
+        const url = await bakeTone(state.url, state.tone as Tone);
+        baked.push(url);
+        return url;
+      };
+      const printable = await Promise.all(withFront.map(async (card) => ({ frontUrl: await printUrl(card.front), backUrl: await printUrl(card.back) })));
+      // The print window has loaded them by then.
+      if (baked.length) window.setTimeout(() => baked.forEach((url) => URL.revokeObjectURL(url)), 120000);
       printWindow.document.open();
       printWindow.document.write(buildCardPrintSheetHtml(printable, colorMode));
       printWindow.document.close();
@@ -218,6 +330,9 @@ export default function IdCardPrintClient() {
   const readyCount = cards.filter((card) => card.front.url).length;
   const activeState = active ? getSide(active.cardId, active.side) : null;
   const cropState = cropTarget ? getSide(cropTarget.cardId, cropTarget.side) : null;
+  // Perspective crop works on the uploaded photo, so the detected corners line up.
+  const cropImageUrl = cropState ? (cropMode === "perspective" && cropState.original && scanMode !== "off" ? cropState.original.url : cropState.url) : "";
+  const scanning = cards.some((card) => card.front.scan === "scanning" || card.back.scan === "scanning");
   const filterState = filterTarget ? getSide(filterTarget.cardId, filterTarget.side) : null;
 
   return (
@@ -247,6 +362,10 @@ export default function IdCardPrintClient() {
                 <SlidersHorizontal size={17} />
                 <span>Filter &amp; Light</span>
               </button>
+              <button type="button" disabled={!active || activeState?.scan === "scanning"} onClick={() => active && autoFix(active)} title="Find the card edges again, straighten and clean">
+                <Wand2 size={17} />
+                <span>Auto Fix</span>
+              </button>
               <button type="button" disabled={!active} onClick={() => active && setCropTarget(active)}>
                 <Crop size={17} />
                 <span>Crop</span>
@@ -255,12 +374,27 @@ export default function IdCardPrintClient() {
                 <RotateCw size={17} />
                 <span>Rotate</span>
               </button>
+              <button type="button" disabled={!active} onClick={() => active && void rotateSide(active.cardId, active.side, 2)} title="Turn an upside-down card the right way up">
+                <RefreshCw size={17} />
+                <span>Turn 180°</span>
+              </button>
               <button type="button" disabled={!active} onClick={() => active && clearSide(active.cardId, active.side)}>
                 <X size={17} />
                 <span>Remove</span>
               </button>
             </div>
             <div className="idcard-toolbar-actions">
+              <label className="idcard-scan-mode" title="What happens to a photo right after upload">
+                <ScanLine size={15} />
+                <select value={scanMode} onChange={(event) => changeScanMode(event.target.value as ScanMode | "off")}>
+                  {SCAN_MODES.map((mode) => (
+                    <option key={mode.value} value={mode.value}>
+                      {mode.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <div className="idcard-toolbar-divider" />
               <div className="idcard-toggle-group">
                 <button type="button" className={colorMode === "color" ? "active" : ""} onClick={() => setColorMode("color")}>
                   <Palette size={14} /> Color
@@ -270,7 +404,7 @@ export default function IdCardPrintClient() {
                 </button>
               </div>
               <div className="idcard-toolbar-divider" />
-              <button className="idcard-print-cta" type="button" disabled={!readyCount || printBusy} onClick={() => void printSheet()}>
+              <button className="idcard-print-cta" type="button" disabled={!readyCount || printBusy || scanning} onClick={() => void printSheet()}>
                 <Printer size={16} /> {printBusy ? "Preparing…" : "Print A4 Sheet"}
               </button>
             </div>
@@ -291,27 +425,55 @@ export default function IdCardPrintClient() {
                   {(["front", "back"] as Side[]).map((side) => {
                     const state = side === "front" ? card.front : card.back;
                     const isActive = sameSlot(active, { cardId: card.id, side });
+                    const tone = state.tone ?? NEUTRAL_TONE;
+                    // Front's panel on its left, back's on its right.
+                    const tonePanel = (
+                      <ToneControl
+                        label={side === "front" ? "Front" : "Back"}
+                        tone={tone}
+                        disabled={!state.url || state.scan === "scanning"}
+                        onChange={(next) => updateTone(card.id, side, next)}
+                      />
+                    );
                     return (
-                      <div key={side} className="idcard-side-slot">
-                        <span className="idcard-side-label">
-                          {side === "front" ? "Front" : "Back"}
-                          {side === "back" ? <em> (optional)</em> : null}
-                        </span>
-                        {state.url ? (
-                          <div
-                            className={`idcard-card-slot filled${isActive ? " active" : ""}`}
-                            onClick={() => setActive((current) => (sameSlot(current, { cardId: card.id, side }) ? null : { cardId: card.id, side }))}
-                          >
-                            <img src={state.url} alt={`${side === "front" ? "Front" : "Back"} of ID card ${index + 1}`} />
-                          </div>
-                        ) : (
-                          <label className="idcard-card-slot empty" onDragOver={(event) => event.preventDefault()} onDrop={(event) => handleDrop(card.id, side, event)}>
-                            <Upload size={22} />
-                            <strong>Upload {side === "front" ? "Front" : "Back"} Photo</strong>
-                            <span>{side === "back" ? "Skip this if the card has nothing worth printing on the back." : "Drag & drop or choose a JPG/PNG file."}</span>
-                            <input accept=".jpg,.jpeg,.png" type="file" onChange={(event) => handleFileChange(card.id, side, event.target.files?.[0])} />
-                          </label>
-                        )}
+                      <div key={side} className={`idcard-side-group ${side}`}>
+                        {side === "front" ? tonePanel : null}
+                        <div className="idcard-side-slot">
+                          <span className="idcard-side-label">
+                            {side === "front" ? "Front" : "Back"}
+                            {side === "back" ? <em> (optional)</em> : null}
+                          </span>
+                          {state.url ? (
+                            <div
+                              className={`idcard-card-slot filled${isActive ? " active" : ""}`}
+                              onClick={() => setActive((current) => (sameSlot(current, { cardId: card.id, side }) ? null : { cardId: card.id, side }))}
+                            >
+                              <TonedImage url={state.url} tone={state.tone} alt={`${side === "front" ? "Front" : "Back"} of ID card ${index + 1}`} />
+                              {state.scan === "scanning" ? (
+                                <span className="idcard-scan-overlay">
+                                  <LoaderCircle size={22} className="spin" />
+                                  {engineLoading ? "Loading scanner…" : "Straightening & cleaning…"}
+                                </span>
+                              ) : state.scan === "done" ? (
+                                <span className="idcard-scan-badge ok">
+                                  <CircleCheck size={13} /> Auto-straightened
+                                </span>
+                              ) : state.scan === "notfound" || state.scan === "error" ? (
+                                <span className="idcard-scan-badge warn">
+                                  <CircleAlert size={13} /> {state.scan === "notfound" ? "Card edges not found - use Crop" : "Auto clean failed - use Crop"}
+                                </span>
+                              ) : null}
+                            </div>
+                          ) : (
+                            <label className="idcard-card-slot empty" onDragOver={(event) => event.preventDefault()} onDrop={(event) => handleDrop(card.id, side, event)}>
+                              <Upload size={22} />
+                              <strong>Upload {side === "front" ? "Front" : "Back"} Photo</strong>
+                              <span>{side === "back" ? "Skip this if the card has nothing worth printing on the back." : "Drag & drop or choose a JPG/PNG file."}</span>
+                              <input accept=".jpg,.jpeg,.png" type="file" onChange={(event) => handleFileChange(card.id, side, event.target.files?.[0])} />
+                            </label>
+                          )}
+                        </div>
+                        {side === "back" ? tonePanel : null}
                       </div>
                     );
                   })}
@@ -325,13 +487,15 @@ export default function IdCardPrintClient() {
           </button>
 
           <p className="customer-inline-help">
-            {readyCount ? "Click a card to select it, then use Crop / Rotate / Remove above. Back is optional - upload only a front for cards like PAN." : "Each card slot above is the upload target itself - upload a front photo to print."}
+            {readyCount
+              ? "Photos are straightened and cleaned automatically. Click a card to select it, then use Auto Fix / Crop / Rotate / Remove above. Back is optional - upload only a front for cards like PAN."
+              : "Each card slot above is the upload target itself - upload a front photo, even one taken at an angle: the card is found, straightened and cleaned for printing."}
           </p>
           {error ? <div className="profile-alert error">{error}</div> : null}
         </article>
       </div>
 
-      {cropTarget && cropState?.url ? (
+      {cropTarget && cropState?.url && cropImageUrl ? (
         <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Crop photo">
           <div className="crop-window">
             <div className="document-preview-head">
@@ -354,14 +518,14 @@ export default function IdCardPrintClient() {
               </div>
               {cropMode === "straight" ? (
                 <CropEditor
-                  fileUrl={cropState.url}
+                  fileUrl={cropImageUrl}
                   rect={cropState.cropRect}
                   onRectChange={(rect) => updateCropRect(cropTarget.cardId, cropTarget.side, rect)}
                   aspectRatio={CARD_ASPECT_RATIO}
                 />
               ) : (
                 <PerspectiveCropEditor
-                  fileUrl={cropState.url}
+                  fileUrl={cropImageUrl}
                   quad={cropState.cropQuad}
                   onQuadChange={(quad) => updateCropQuad(cropTarget.cardId, cropTarget.side, quad)}
                 />
@@ -469,20 +633,21 @@ export default function IdCardPrintClient() {
   );
 }
 
-async function rotateImage90(url: string): Promise<Blob> {
+async function rotateImage(url: string, quarterTurns: number): Promise<Blob> {
   const image = await new Promise<HTMLImageElement>((resolve, reject) => {
     const el = new Image();
     el.onload = () => resolve(el);
     el.onerror = reject;
     el.src = url;
   });
+  const turns = ((quarterTurns % 4) + 4) % 4;
   const canvas = document.createElement("canvas");
-  canvas.width = image.naturalHeight;
-  canvas.height = image.naturalWidth;
+  canvas.width = turns % 2 ? image.naturalHeight : image.naturalWidth;
+  canvas.height = turns % 2 ? image.naturalWidth : image.naturalHeight;
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Canvas unavailable");
   context.translate(canvas.width / 2, canvas.height / 2);
-  context.rotate(Math.PI / 2);
+  context.rotate((Math.PI / 2) * turns);
   context.drawImage(image, -image.naturalWidth / 2, -image.naturalHeight / 2);
   return new Promise((resolve, reject) => canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Rotation failed"))), "image/png", 0.95));
 }
