@@ -190,6 +190,11 @@ function clampPoint(point: CropPoint): CropPoint {
   return { x: clamp(point.x, 0, 100), y: clamp(point.y, 0, 100) };
 }
 
+// Diameter of the magnifier loupe and how much it zooms in, in CSS px /
+// multiplier - see the comment above its render below.
+const MAGNIFIER_SIZE = 128;
+const MAGNIFIER_ZOOM = 2.5;
+
 export function PerspectiveCropEditor({ fileUrl, quad, onQuadChange }: { fileUrl: string; quad: CropQuad; onQuadChange: (quad: CropQuad) => void }) {
   const stageRef = useRef<HTMLDivElement | null>(null);
   const dragRef = useRef<QuadDrag | null>(null);
@@ -198,6 +203,13 @@ export function PerspectiveCropEditor({ fileUrl, quad, onQuadChange }: { fileUrl
   // undistorted - the user is matching corners against how the document
   // actually looks in the photo, and any stretching would throw that off.
   const [naturalRatio, setNaturalRatio] = useState<number | null>(null);
+  // Which corner is actively being dragged, if any - drives the magnifier
+  // loupe below. A fingertip/cursor covers the exact pixel a shop owner is
+  // trying to line up against a card's corner, so this shows a zoomed,
+  // full-opacity copy of that spot just above (or below, near the top edge)
+  // the handle, the same "loupe while dragging" pattern document-scanner
+  // apps (Adobe Scan/CamScanner/Office Lens) use for precise corner placement.
+  const [draggingCorner, setDraggingCorner] = useState<number | null>(null);
 
   function pointFromEvent(event: { clientX: number; clientY: number }, bounds: DOMRect): CropPoint {
     return clampPoint({
@@ -219,6 +231,7 @@ export function PerspectiveCropEditor({ fileUrl, quad, onQuadChange }: { fileUrl
     event.stopPropagation();
     event.currentTarget.setPointerCapture(event.pointerId);
     dragRef.current = { corner, rect: stageRef.current!.getBoundingClientRect() };
+    setDraggingCorner(corner);
   }
 
   // Clicking anywhere along an edge - not just the corner dot - grabs
@@ -232,12 +245,14 @@ export function PerspectiveCropEditor({ fileUrl, quad, onQuadChange }: { fileUrl
     const corner = distance(point, quad[cornerA]) <= distance(point, quad[cornerB]) ? cornerA : cornerB;
     event.currentTarget.setPointerCapture(event.pointerId);
     dragRef.current = { corner, rect: bounds };
+    setDraggingCorner(corner);
     const next = quad.map((c, index) => (index === corner ? point : c)) as CropQuad;
     onQuadChange(next);
   }
 
   function stopDrag() {
     dragRef.current = null;
+    setDraggingCorner(null);
   }
 
   const polygonPoints = quad.map((point) => `${point.x},${point.y}`).join(" ");
@@ -287,7 +302,47 @@ export function PerspectiveCropEditor({ fileUrl, quad, onQuadChange }: { fileUrl
           onPointerDown={(event) => startCornerDrag(event, index)}
         />
       ))}
+      {draggingCorner !== null && <CropMagnifier fileUrl={fileUrl} point={quad[draggingCorner]} stageRef={stageRef} />}
       </div>
+    </div>
+  );
+}
+
+/** Zoomed, full-opacity loupe of the area around the corner currently being
+ * dragged, floated just clear of the handle so the finger/cursor doesn't
+ * block the exact pixel being aligned. Renders a second, undimmed copy of
+ * the image rather than reusing the stage's own (which sits at 0.58 opacity
+ * for the dim/shade effect elsewhere in this editor). */
+function CropMagnifier({ fileUrl, point, stageRef }: { fileUrl: string; point: CropPoint; stageRef: React.RefObject<HTMLDivElement | null> }) {
+  const bounds = stageRef.current?.getBoundingClientRect();
+  if (!bounds || !bounds.width || !bounds.height) return null;
+
+  const targetPxX = (point.x / 100) * bounds.width;
+  const targetPxY = (point.y / 100) * bounds.height;
+  const imgWidth = bounds.width * MAGNIFIER_ZOOM;
+  const imgHeight = bounds.height * MAGNIFIER_ZOOM;
+  const imgLeft = MAGNIFIER_SIZE / 2 - targetPxX * MAGNIFIER_ZOOM;
+  const imgTop = MAGNIFIER_SIZE / 2 - targetPxY * MAGNIFIER_ZOOM;
+  // Flip below the handle near the top edge, otherwise the loupe would be
+  // pushed (partly) outside the stage instead of just clear of the finger.
+  const placeBelow = point.y < 30;
+
+  return (
+    <div
+      className="crop-magnifier"
+      style={{
+        left: `${point.x}%`,
+        top: `${point.y}%`,
+        transform: placeBelow ? "translate(-50%, 20px)" : "translate(-50%, calc(-100% - 20px))",
+      }}
+    >
+      <img
+        src={fileUrl}
+        alt=""
+        draggable={false}
+        style={{ width: `${imgWidth}px`, height: `${imgHeight}px`, left: `${imgLeft}px`, top: `${imgTop}px` }}
+      />
+      <span className="crop-magnifier-crosshair" />
     </div>
   );
 }

@@ -101,6 +101,8 @@ export default function CustomerScanPage() {
   const [cropQuad, setCropQuad] = useState<CropQuad>(DEFAULT_CROP_QUAD);
   const [cropMode, setCropMode] = useState<"straight" | "perspective">("perspective");
   const [isProcessingPdf, setIsProcessingPdf] = useState(false);
+  const [pageRangeInput, setPageRangeInput] = useState("");
+  const [pageRangeError, setPageRangeError] = useState("");
   const [isCombiningFiles, setIsCombiningFiles] = useState(false);
   const [isCleanScanProcessing, setIsCleanScanProcessing] = useState(false);
   const [cleanScanProgress, setCleanScanProgress] = useState<CleanScanProgress | null>(null);
@@ -700,6 +702,76 @@ export default function CustomerScanPage() {
     }
   }
 
+  // Parses input like "1,3,5-7" into a sorted, deduped list of 1-based page
+  // numbers, all validated against the document's actual page count. `null`
+  // means the input couldn't be parsed or referenced an out-of-range page -
+  // the caller shows a single, specific error rather than guessing which
+  // part was wrong.
+  function parsePageSelection(input: string, maxPages: number): number[] | null {
+    const parts = input.trim().split(",").map((part) => part.trim()).filter(Boolean);
+    if (!parts.length) return null;
+
+    const pageNumbers = new Set<number>();
+    for (const part of parts) {
+      const rangeMatch = part.match(/^(\d+)\s*-\s*(\d+)$/);
+      if (rangeMatch) {
+        const start = Number(rangeMatch[1]);
+        const end = Number(rangeMatch[2]);
+        if (start < 1 || end > maxPages || start > end) return null;
+        for (let page = start; page <= end; page += 1) pageNumbers.add(page);
+      } else if (/^\d+$/.test(part)) {
+        const page = Number(part);
+        if (page < 1 || page > maxPages) return null;
+        pageNumbers.add(page);
+      } else {
+        return null;
+      }
+    }
+    return pageNumbers.size ? Array.from(pageNumbers).sort((a, b) => a - b) : null;
+  }
+
+  async function extractPdfPages(pageNumbers: number[]) {
+    if (!fileUrl || !hasPdfFile || isProcessingPdf) return;
+
+    setIsProcessingPdf(true);
+    try {
+      const { PDFDocument } = await import("pdf-lib");
+      const sourceBytes = await fetch(fileUrl).then((response) => response.arrayBuffer());
+      const sourceDoc = await PDFDocument.load(sourceBytes);
+      const newDoc = await PDFDocument.create();
+      const copiedPages = await newDoc.copyPages(sourceDoc, pageNumbers.map((page) => page - 1));
+      copiedPages.forEach((page) => newDoc.addPage(page));
+      const updatedBytes = await newDoc.save();
+      const updatedBlob = new Blob([updatedBytes], { type: "application/pdf" });
+      const updatedUrl = URL.createObjectURL(updatedBlob);
+
+      URL.revokeObjectURL(fileUrl);
+      setFinalFile(updatedBlob);
+      setFileUrl(updatedUrl);
+      setPages(newDoc.getPageCount());
+      setPageRangeInput("");
+      setPageRangeError("");
+      setIsPreviewOpen(false);
+      setOrder(null);
+      setOrderError("");
+      if (newDoc.getPageCount() <= 1) setIsPageManagerOpen(false);
+    } catch {
+      alert("Could not extract the selected pages. Please upload the file again and try.");
+    } finally {
+      setIsProcessingPdf(false);
+    }
+  }
+
+  function handleExtractPages() {
+    const selected = parsePageSelection(pageRangeInput, pages);
+    if (!selected) {
+      setPageRangeError(`Enter valid page numbers between 1 and ${pages}, e.g. "1,3,5-7".`);
+      return;
+    }
+    setPageRangeError("");
+    void extractPdfPages(selected);
+  }
+
   async function runCleanScan() {
     if (!fileUrl || isCleanScanProcessing) return;
 
@@ -1094,7 +1166,7 @@ export default function CustomerScanPage() {
                 <div className="document-actions">
                   {hasPdfFile && !isIdCardPrint ? (
                     <button type="button" onClick={() => setIsPageManagerOpen(true)} disabled={pages <= 1 || isProcessingPdf || isCleanScanProcessing}>
-                      <Trash2 size={16} /> Remove Page
+                      <Trash2 size={16} /> Manage Pages
                     </button>
                   ) : null}
                   {canCropImage ? (
@@ -1538,16 +1610,38 @@ export default function CustomerScanPage() {
       ) : null}
 
       {isPageManagerOpen ? (
-        <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Remove PDF pages">
+        <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Manage PDF pages">
           <div className="page-manager-window">
             <div className="document-preview-head">
               <div>
-                <strong>Remove Pages</strong>
+                <strong>Manage Pages</strong>
                 <span>{fileName}</span>
               </div>
               <button type="button" onClick={() => setIsPageManagerOpen(false)} aria-label="Close page manager">
                 <X size={18} />
               </button>
+            </div>
+            <div className="page-extract-bar">
+              <label htmlFor="page-extract-input">Keep only these pages</label>
+              <div className="page-extract-row">
+                <input
+                  id="page-extract-input"
+                  type="text"
+                  inputMode="text"
+                  placeholder={`e.g. 1,3,5-7 (1-${pages})`}
+                  value={pageRangeInput}
+                  onChange={(event) => {
+                    setPageRangeInput(event.target.value);
+                    if (pageRangeError) setPageRangeError("");
+                  }}
+                  disabled={isProcessingPdf}
+                />
+                <button type="button" onClick={handleExtractPages} disabled={isProcessingPdf || !pageRangeInput.trim()}>
+                  <Crop size={15} /> Extract
+                </button>
+              </div>
+              {pageRangeError ? <p className="page-extract-error">{pageRangeError}</p> : null}
+              <p className="page-extract-hint">Type page numbers separated by commas, or a range like 2-4. Everything else gets removed.</p>
             </div>
             <div className="page-manager-body">
               {Array.from({ length: pages }, (_, index) => (

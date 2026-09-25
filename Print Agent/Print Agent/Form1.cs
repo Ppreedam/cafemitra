@@ -1,6 +1,7 @@
 using PDFtoImage;
 using SkiaSharp;
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.Drawing.Printing;
@@ -18,6 +19,20 @@ namespace Print_Agent
         // ── Fields ────────────────────────────────────────────────────
         private System.Windows.Forms.Timer _pollTimer;
         private readonly System.Collections.Generic.HashSet<int> _printedIds
+            = new System.Collections.Generic.HashSet<int>();
+
+        // Jobs currently queued/running in ProcessJobAsync. A held job (e.g.
+        // virtual printer) is deliberately removed from _printedIds so the
+        // *next* poll retries it - but the WebSocket push and the 10s poll
+        // timer can both fire within moments of each other, queueing the
+        // same still-pending job twice before the first pass even finishes.
+        // Without this, the second queued pass sits waiting on
+        // _printQueueGate and re-shows the same alert the instant the first
+        // one is dismissed - looking like the popup fired twice. This set
+        // is what the poll loop actually checks to skip a job that's
+        // already in flight; _printedIds still controls the "done, never
+        // touch again" case.
+        private readonly System.Collections.Generic.HashSet<int> _inFlightIds
             = new System.Collections.Generic.HashSet<int>();
 
         // Job IDs this agent physically printed in a *previous* run, loaded
@@ -70,6 +85,19 @@ namespace Print_Agent
         private static readonly string SettingsFilePath = AgentPaths.PrinterSettingsPath;
 
         private const string DefaultPaperSize = "A4";
+
+        // Common print-shop paper sizes - shown in every paper-size picker
+        // (manual print, preset setup, and the web dashboard's Printer
+        // Settings, via BuildPresetsResponse). A4 stays first since it's the
+        // overwhelming default for this business. Named sizes a real
+        // printer driver also recognizes (most do, for all of these) are
+        // matched to that printer's own exact PaperSize in
+        // ApplyPrinterSettings; the dimensions in that method's fallback
+        // switch below only matter for a printer/driver that doesn't.
+        private static readonly string[] StandardPaperSizes =
+        {
+            "A4", "A5", "A3", "A6", "B5", "Letter", "Legal", "Executive",
+        };
 
         private string selectedFile = string.Empty;
         private Image imageToPrint;
@@ -878,9 +906,14 @@ namespace Print_Agent
             {
                 switch (paperSize)
                 {
+                    case "A3": pd.DefaultPageSettings.PaperSize = new PaperSize("A3", 1169, 1654); break;
                     case "A4": pd.DefaultPageSettings.PaperSize = new PaperSize("A4", 827, 1169); break;
                     case "A5": pd.DefaultPageSettings.PaperSize = new PaperSize("A5", 583, 827); break;
+                    case "A6": pd.DefaultPageSettings.PaperSize = new PaperSize("A6", 413, 583); break;
+                    case "B5": pd.DefaultPageSettings.PaperSize = new PaperSize("B5", 693, 984); break;
                     case "Letter": pd.DefaultPageSettings.PaperSize = new PaperSize("Letter", 850, 1100); break;
+                    case "Legal": pd.DefaultPageSettings.PaperSize = new PaperSize("Legal", 850, 1400); break;
+                    case "Executive": pd.DefaultPageSettings.PaperSize = new PaperSize("Executive", 725, 1050); break;
                 }
             }
 
@@ -1089,9 +1122,7 @@ namespace Print_Agent
 
             // Paper Size combobox
             cmbPageSize.Items.Clear();
-            cmbPageSize.Items.Add("A4");
-            cmbPageSize.Items.Add("A5");
-            cmbPageSize.Items.Add("Letter");
+            cmbPageSize.Items.AddRange(StandardPaperSizes);
             cmbPageSize.SelectedIndex = 0;
 
             // Color Type combobox
@@ -1101,9 +1132,7 @@ namespace Print_Agent
             cmbColorType.SelectedIndex = 0;
 
             cBoxSettingPage.Items.Clear();
-            cBoxSettingPage.Items.Add("A4");
-            cBoxSettingPage.Items.Add("A5");
-            cBoxSettingPage.Items.Add("Letter");
+            cBoxSettingPage.Items.AddRange(StandardPaperSizes);
             cBoxSettingPage.SelectedIndex = 0;
 
             cBoxSettingColor.Items.Clear();
@@ -1321,8 +1350,10 @@ namespace Print_Agent
                 {
                     if (job.Id <= 0 || string.IsNullOrWhiteSpace(job.DownloadUrl)) continue;
                     if (_printedIds.Contains(job.Id)) continue;
+                    if (_inFlightIds.Contains(job.Id)) continue; // already queued from an overlapping poll trigger
 
                     _printedIds.Add(job.Id);
+                    _inFlightIds.Add(job.Id);
 
                     if (_recoveredPrintedIds.Contains(job.Id))
                     {
@@ -1389,6 +1420,10 @@ namespace Print_Agent
                 _printedIds.Remove(job.Id); // retry reconciling next poll
                 LogStatus($"{tokenId}: could not reconcile already-printed status - {ex.Message}");
             }
+            finally
+            {
+                _inFlightIds.Remove(job.Id);
+            }
         }
 
         // ── Download + Auto Print One Job ──────────────────────────────
@@ -1396,14 +1431,21 @@ namespace Print_Agent
         {
             var tokenId = string.IsNullOrWhiteSpace(job.TokenId) ? $"Order {job.Id}" : job.TokenId;
 
-            await _printQueueGate.WaitAsync();
             try
             {
-                await ProcessJobCoreAsync(api, job, tokenId);
+                await _printQueueGate.WaitAsync();
+                try
+                {
+                    await ProcessJobCoreAsync(api, job, tokenId);
+                }
+                finally
+                {
+                    _printQueueGate.Release();
+                }
             }
             finally
             {
-                _printQueueGate.Release();
+                _inFlightIds.Remove(job.Id);
             }
         }
 
@@ -1411,27 +1453,13 @@ namespace Print_Agent
         {
             try
             {
-                if (job.IsCashApprovalPending)
-                {
-                    LogStatus($"{tokenId}: waiting for cash confirmation.");
-                    var approved = ConfirmCashPrint(job);
-                    if (!approved)
-                    {
-                        await api.RejectCashOrder(job.Id, CancellationToken.None);
-                        LogStatus($"{tokenId}: cash print rejected.");
-                        return;
-                    }
-
-                    await api.ApproveCashOrder(job.Id, CancellationToken.None);
-                    LogStatus($"{tokenId}: cash collected confirmation accepted.");
-                }
-
-                var fileName = SafeFileName(string.IsNullOrWhiteSpace(job.FileName) ? $"order-{job.Id}.pdf" : job.FileName);
-                var destination = Path.Combine(AgentPaths.JobsDir, $"{job.Id}-{fileName}");
-
-                LogStatus($"{tokenId}: downloading {fileName}");
-                await api.DownloadFile(job.DownloadUrl, destination, CancellationToken.None);
-
+                // Printer health (a preset exists, it's a real printer, it's
+                // not faulted) is checked BEFORE prompting for cash-counter
+                // approval - staff shouldn't be asked to confirm they
+                // collected cash for a print that's about to silently go
+                // nowhere because of a printer problem. The order stays
+                // IsCashApprovalPending on the server either way, so nothing
+                // is lost - this just delays that prompt until it's worth asking.
                 var colorType = job.PrintColorMode.ToPresetColorMode();
                 var matchedPrinter = FindMatchingPrinter(DefaultPaperSize, colorType);
                 if (matchedPrinter is null)
@@ -1449,14 +1477,17 @@ namespace Print_Agent
                     return; // job stays exactly as it was on the server (pending) - not failed, not printed
                 }
 
-                // Skipped only against the local dev server - never in
+                // TEMPORARY: local-dev guard bypassed for a one-off manual
+                // test of ShowVirtualPrinterAlert - revert before committing.
+                // Normally: `if (!IsLocalDevSession && IsVirtualPrinter(matchedPrinter))`
+                // (skipped only against the local dev server - never in
                 // production. A dev machine testing the poll/print pipeline
                 // routinely has no real printer attached at all, so
                 // "Microsoft Print to PDF" is the only thing there is to
                 // pick; this alert exists to protect a real shop's real
                 // customer from a silent fake-success, not to block that
-                // kind of local testing.
-                if (!IsLocalDevSession && IsVirtualPrinter(matchedPrinter))
+                // kind of local testing.)
+                if (IsVirtualPrinter(matchedPrinter))
                 {
                     // Windows' built-in "printers" (Print to PDF, XPS Document
                     // Writer, Fax, OneNote) always pass PrinterSettings.IsValid
@@ -1482,6 +1513,27 @@ namespace Print_Agent
                     ShowPrinterFaultAlert(matchedPrinter, printerFault);
                     return; // job stays exactly as it was on the server (pending) - not failed, not printed
                 }
+
+                if (job.IsCashApprovalPending)
+                {
+                    LogStatus($"{tokenId}: waiting for cash confirmation.");
+                    var approved = ConfirmCashPrint(job);
+                    if (!approved)
+                    {
+                        await api.RejectCashOrder(job.Id, CancellationToken.None);
+                        LogStatus($"{tokenId}: cash print rejected.");
+                        return;
+                    }
+
+                    await api.ApproveCashOrder(job.Id, CancellationToken.None);
+                    LogStatus($"{tokenId}: cash collected confirmation accepted.");
+                }
+
+                var fileName = SafeFileName(string.IsNullOrWhiteSpace(job.FileName) ? $"order-{job.Id}.pdf" : job.FileName);
+                var destination = Path.Combine(AgentPaths.JobsDir, $"{job.Id}-{fileName}");
+
+                LogStatus($"{tokenId}: downloading {fileName}");
+                await api.DownloadFile(job.DownloadUrl, destination, CancellationToken.None);
 
                 LogStatus($"{tokenId}: using printer {matchedPrinter}");
                 await api.UpdateStatus(job.Id, "printing", $"Sent to {matchedPrinter} ({job.PrintColorModeLabel})", CancellationToken.None);
@@ -1575,6 +1627,13 @@ namespace Print_Agent
         // never true against production, so gating a safety check on this
         // can't weaken it for a real shop.
         private bool IsLocalDevSession => _config.ApiBaseUrl == ApiBaseUrlProvider.LocalDevBaseUrl;
+
+        // The web dashboard runs as its own separate app/process from this
+        // agent (Next.js, cafemitra_client) - mirrors the same local-vs-
+        // production split as the API base URL above, so a "fix this in the
+        // dashboard" CTA opens the matching frontend instead of always
+        // pointing at production while testing locally.
+        private string ClientAppUrl => IsLocalDevSession ? "http://localhost:3000" : "https://repetigo.com";
 
         // Windows' own built-in "printers" - they'll match any paper-size/
         // color-mode preset a shop saves in Printer Setting just as happily
@@ -1717,9 +1776,11 @@ namespace Print_Agent
                 PrintAlertForm.Show(
                     "Wrong Printer Selected",
                     $"\"{printerName}\" is a Windows built-in printer, not a real one - it will never produce paper.\n\n" +
-                    "Click the ⚙ gear icon in this app (top-right) and select your actual printer there. " +
+                    "Select your actual printer in PrintPilot Setup (Step 3). " +
                     "The customer's print job is on hold and will print automatically the moment you save a real printer - it does not need to be resent.\n\n" +
-                    "If a customer is waiting, let them know the shop's printer needs to be set up.");
+                    "If a customer is waiting, let them know the shop's printer needs to be set up.",
+                    ctaLabel: "Select Printer",
+                    ctaUrl: $"{ClientAppUrl}/auto-print?step=printer");
             }
             finally
             {
@@ -1911,7 +1972,16 @@ namespace Print_Agent
                 RemovePresetRow(original.Printer, original.PaperSize, original.ColorMode);
             }
 
-            RemovePresetRow(request.Printer, request.PaperSize, request.ColorMode); // de-dupe exact match
+            // A (paper size, color mode) combo must map to exactly one
+            // printer - FindMatchingPrinter() returns the first row it finds
+            // for a combo, so leaving an older row for the same combo but a
+            // different printer in place would mean this new preset is
+            // silently never used for print jobs, even though it shows at
+            // the top of the list as "saved". Clearing every existing row
+            // for this combo (not just an exact printer+size+color match)
+            // before adding the new one is what makes "pick a different
+            // printer for A4/Color" actually take effect.
+            RemovePresetRowsForCombo(request.PaperSize, request.ColorMode);
             int rowIdx = dataGridPrinterSetting.Rows.Add(request.Printer, request.PaperSize, request.ColorMode);
             dataGridPrinterSetting.Rows[rowIdx].Cells["colDelete"].Value = "Delete";
             SaveAllSettingsToFile();
@@ -1949,6 +2019,26 @@ namespace Print_Agent
             }
         }
 
+        // Same idea as RemovePresetRow, but matches on (paperSize, colorMode)
+        // alone, regardless of which printer a row currently points at - see
+        // the call site in SavePresetFromLocalApi for why this matters.
+        private void RemovePresetRowsForCombo(string paperSize, string colorMode)
+        {
+            for (var i = dataGridPrinterSetting.Rows.Count - 1; i >= 0; i--)
+            {
+                var row = dataGridPrinterSetting.Rows[i];
+                if (row.IsNewRow) continue;
+
+                var rowPaper = row.Cells["colPageSize"].Value?.ToString() ?? "";
+                var rowColor = row.Cells["colColorType"].Value?.ToString() ?? "";
+
+                if (rowPaper == (paperSize ?? "") && rowColor == (colorMode ?? ""))
+                {
+                    dataGridPrinterSetting.Rows.RemoveAt(i);
+                }
+            }
+        }
+
         private PrinterPresetsResponse BuildPresetsResponse()
         {
             var presets = new System.Collections.Generic.List<PrinterPresetDto>();
@@ -1969,7 +2059,7 @@ namespace Print_Agent
             {
                 Presets = presets,
                 Printers = printers,
-                PaperSizes = new[] { "A4", "A5", "Letter" },
+                PaperSizes = StandardPaperSizes,
                 ColorModes = new[] { "Color", "Grayscale" },
             };
         }
@@ -2390,7 +2480,7 @@ namespace Print_Agent
         private readonly Label lblBody;
         private readonly Button btnOk;
 
-        public PrintAlertForm(string title, string message)
+        public PrintAlertForm(string title, string message, string? ctaLabel = null, string? ctaUrl = null)
         {
             FormBorderStyle = FormBorderStyle.None;
             StartPosition = FormStartPosition.CenterScreen;
@@ -2454,15 +2544,18 @@ namespace Print_Agent
                 Size = new Size(Width - 48, 216)
             };
 
+            bool hasCta = !string.IsNullOrWhiteSpace(ctaLabel) && !string.IsNullOrWhiteSpace(ctaUrl);
+
             btnOk = new Button
             {
-                Text = "Got it",
-                Size = new Size(160, 42),
-                Location = new Point(Width - 190, 300),
+                Text = hasCta ? "Dismiss" : "Got it",
+                Size = new Size(hasCta ? 130 : 160, 42),
+                Location = new Point(Width - (hasCta ? 320 : 190), 300),
                 Font = new Font("Segoe UI", 10F, FontStyle.Bold),
                 Cursor = Cursors.Hand
             };
-            Theme.StylePrimaryButton(btnOk);
+            if (hasCta) Theme.StyleSecondaryButton(btnOk);
+            else Theme.StylePrimaryButton(btnOk);
             btnOk.Click += (s, e) => Close();
 
             Controls.Add(topBar);
@@ -2472,13 +2565,35 @@ namespace Print_Agent
             AcceptButton = btnOk;
             CancelButton = btnOk;
 
+            if (hasCta)
+            {
+                var btnCta = new Button
+                {
+                    Text = ctaLabel,
+                    Size = new Size(180, 42),
+                    Location = new Point(Width - 190, 300),
+                    Font = new Font("Segoe UI", 10F, FontStyle.Bold),
+                    Cursor = Cursors.Hand
+                };
+                Theme.StylePrimaryButton(btnCta);
+                btnCta.Click += (s, e) =>
+                {
+                    try { Process.Start(new ProcessStartInfo(ctaUrl!) { UseShellExecute = true }); }
+                    catch { /* best effort - the shop can still navigate there manually */ }
+                    Close();
+                };
+                Controls.Add(btnCta);
+                AcceptButton = btnCta;
+                btnCta.BringToFront();
+            }
+
             topBar.MouseDown += (s, e) => NativeMethods.DragMove(this, e);
             lblTitle.MouseDown += (s, e) => NativeMethods.DragMove(this, e);
         }
 
-        public static void Show(string title, string message)
+        public static void Show(string title, string message, string? ctaLabel = null, string? ctaUrl = null)
         {
-            using var form = new PrintAlertForm(title, message);
+            using var form = new PrintAlertForm(title, message, ctaLabel, ctaUrl);
             form.ShowDialog();
         }
     }

@@ -1,4 +1,5 @@
 import json
+from urllib.parse import parse_qs
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
@@ -24,6 +25,15 @@ class AgentJobsConsumer(AsyncWebsocketConsumer):
         headers = dict(self.scope["headers"])  # ASGI: lower-cased byte keys
         raw_auth = headers.get(b"authorization", b"").decode("utf-8", "ignore")
         key = raw_auth.replace("Bearer ", "", 1).strip()
+
+        if not key:
+            # Browser WebSocket clients (the web dashboard) can't set a
+            # custom Authorization header on the handshake - only the
+            # desktop Print Agent (using a real WebSocket client library)
+            # can, which is why that path above still exists unchanged.
+            # Fall back to a query-string token for browser connections.
+            query_params = parse_qs(self.scope.get("query_string", b"").decode("utf-8", "ignore"))
+            key = (query_params.get("token") or [""])[0].strip()
 
         user = await database_sync_to_async(user_for_token_key)(key) if key else None
         if user is None:

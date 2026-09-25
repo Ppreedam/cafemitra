@@ -1964,6 +1964,62 @@ button.nav-dropdown-trigger {
   display: none;
 }
 
+.virtual-printer-alert-backdrop {
+  position: fixed;
+  z-index: 300;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(22, 26, 46, 0.72);
+  backdrop-filter: blur(4px);
+}
+.virtual-printer-alert {
+  width: min(420px, 100%);
+  border-radius: 16px;
+  background: #fff;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.3);
+  padding: 22px 24px;
+}
+.virtual-printer-alert h2 {
+  margin: 0 0 10px;
+  color: #b91c1c;
+  font-size: 1.05rem;
+}
+.virtual-printer-alert p {
+  margin: 0;
+  color: #4b5171;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+.virtual-printer-alert-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+.virtual-printer-alert-dismiss {
+  border: 1.5px solid #e0e2ee;
+  border-radius: 9px;
+  background: #fff;
+  padding: 9px 16px;
+  color: #4b5171;
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+.virtual-printer-alert-cta {
+  border: 0;
+  border-radius: 9px;
+  background: #4a90d9;
+  padding: 9px 16px;
+  color: #fff;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
 .topbar {
   position: relative;
   z-index: 120;
@@ -7662,13 +7718,95 @@ img.profile-photo {
 
 .page-manager-window {
   display: grid;
-  grid-template-rows: auto 1fr;
+  grid-template-rows: auto auto 1fr;
   width: min(820px, 100%);
   max-height: min(86vh, 760px);
   overflow: hidden;
   border-radius: 8px;
   background: #fff;
   box-shadow: 0 28px 70px rgba(9, 15, 42, 0.24);
+}
+
+.page-extract-bar {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+}
+
+.page-extract-bar label {
+  font-size: 0.82rem;
+  font-weight: 750;
+  color: #3f496d;
+}
+
+.page-extract-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.page-extract-row input {
+  flex: 1 1 200px;
+  min-width: 0;
+  min-height: 44px;
+  border: 1.5px solid #d9deeb;
+  border-radius: 8px;
+  padding: 0 12px;
+  /* 16px, not smaller - iOS Safari auto-zooms the page on focusing any
+     input whose font-size is under 16px, which is jarring inside a modal. */
+  font-size: 16px;
+}
+
+.page-extract-row input:focus {
+  outline: none;
+  border-color: var(--violet);
+}
+
+.page-extract-row button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  background: var(--brand-hero-gradient);
+  font-weight: 750;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.page-extract-row button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.page-extract-error {
+  color: #c7354d;
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.page-extract-hint {
+  color: #6b7598;
+  font-size: 0.76rem;
+}
+
+/* Stacks the input above the button once there isn't room to sit
+   side-by-side, rather than letting the button shrink to something too
+   small to comfortably tap. */
+@media (max-width: 480px) {
+  .page-extract-row {
+    flex-direction: column;
+  }
+  .page-extract-row input,
+  .page-extract-row button {
+    width: 100%;
+  }
 }
 
 .page-manager-body {
@@ -7930,6 +8068,39 @@ img.profile-photo {
 .crop-quad-handle:active {
   cursor: grabbing;
   background: #1d4ed8;
+}
+
+/* Zoomed loupe shown near the handle while dragging a perspective-crop
+   corner - see CropMagnifier in CropEditor.tsx. */
+.crop-magnifier {
+  position: absolute;
+  width: 128px;
+  height: 128px;
+  border-radius: 999px;
+  border: 3px solid #fff;
+  box-shadow: 0 10px 28px rgba(9, 15, 42, 0.45);
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 5;
+  background: #111827;
+}
+.crop-magnifier img {
+  position: absolute;
+  max-width: none;
+  max-height: none;
+  object-fit: fill;
+  opacity: 1;
+}
+.crop-magnifier-crosshair {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  transform: translate(-50%, -50%);
+  border: 1.5px solid #2563eb;
+  border-radius: 999px;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.85);
 }
 
 /* Contains the perspective stage by BOTH width and height, preserving the
@@ -10154,6 +10325,20 @@ img.profile-photo {
 
   .document-preview-actions {
     padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+
+  .page-manager-window {
+    width: 100%;
+    height: calc(100dvh - 20px);
+    max-height: none;
+  }
+
+  .page-extract-bar {
+    padding: 12px;
+  }
+
+  .page-manager-body {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .confirm-dialog {
@@ -19015,6 +19200,36 @@ img.profile-photo {
   object-fit: contain;
 }
 
+.idcard-filter-preview-pair {
+  gap: 10px;
+  padding: 10px;
+}
+
+.idcard-filter-preview-pair img {
+  max-width: calc(50% - 5px);
+  max-height: 380px;
+}
+
+.idcard-filter-both-toggle {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px !important;
+  cursor: pointer;
+}
+
+.idcard-filter-both-toggle input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--violet);
+}
+
+.idcard-filter-both-toggle span {
+  color: #3f496d;
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
 .idcard-filter-controls {
   display: grid;
   align-content: start;
@@ -19117,7 +19332,14 @@ img.profile-photo {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  /* contain, not cover: a freshly uploaded photo is almost never already at
+     the card's exact ratio, and cover was center-cropping it to fill the
+     box - silently hiding real content (e.g. the QR/header strip on an
+     Aadhaar back) the shop owner hadn't actually chosen to crop away yet.
+     Once a photo has gone through the Crop tool it's already at this exact
+     ratio, so contain vs cover makes no visual difference there. */
+  object-fit: contain;
+  background: #f3f4f8;
 }
 
 .idcard-card-slot input {

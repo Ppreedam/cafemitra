@@ -1007,8 +1007,9 @@ body{background:#f2f2f2;}
 .card img{width:100%;height:100%;object-fit:cover;}
 @media print{
   body{background:#fff;}
-  .page{margin:0;}
+  .page{margin:0;min-height:0;}
   @page{size:A4;margin:0;}
+  body > :not(.page){display:none !important;}
 }
 </style>
 </head>
@@ -1035,8 +1036,9 @@ body{background:#f2f2f2;}
 .card img{width:100%;height:100%;object-fit:cover;}
 @media print{
   body{background:#fff;}
-  .page{margin:0;}
+  .page{margin:0;height:auto;}
   @page{size:4in 6in;margin:0;}
+  body > :not(.page){display:none !important;}
 }
 </style>
 </head>

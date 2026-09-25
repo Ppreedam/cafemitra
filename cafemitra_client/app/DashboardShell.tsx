@@ -19,7 +19,10 @@ import {
 } from "lucide-react";
 import { ProfileTopbar } from "./profile/ProfileTopbar";
 import { recordServiceVisit } from "@/lib/recentServices";
-import { apiUrl } from "@/lib/api";
+import { apiUrl, getAuthToken, hasStoredSession, wsUrl } from "@/lib/api";
+import { fetchPricingServiceByKey } from "@/lib/pricing";
+import { isVirtualPrinter } from "@/lib/printpilot-agent";
+import { useRouter } from "next/navigation";
 
 type NavItem = {
   name: string;
@@ -67,9 +70,59 @@ const printerServiceKeyByPath: Record<string, string> = {
 };
 
 export function DashboardShell({ activePath, children }: { activePath: string; children: ReactNode }) {
+  const router = useRouter();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [disabledTools, setDisabledTools] = useState<Set<string>>(new Set());
+  const [virtualPrinterAlert, setVirtualPrinterAlert] = useState<string | null>(null);
   const printerServiceKey = printerServiceKeyByPath[activePath] || "auto_document_print";
+
+  // Listens on the same signal-only WebSocket the desktop Print Agent uses
+  // ("a new job exists, go check") so a shop owner sees this warning the
+  // instant a PrintPilot job lands, no matter which page they're on -
+  // rather than only when they happen to revisit /auto-print.
+  useEffect(() => {
+    if (!hasStoredSession()) return;
+    const token = getAuthToken();
+    if (!token) return;
+
+    let cancelled = false;
+    let socket: WebSocket | null = null;
+    let reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+
+    async function checkSelectedPrinter() {
+      try {
+        const service = await fetchPricingServiceByKey("auto_document_print");
+        const printer = String(service?.settings.selectedPrinter || "");
+        if (printer && isVirtualPrinter(printer)) setVirtualPrinterAlert(printer);
+      } catch {
+        // Non-critical - just skip this alert check if the fetch fails.
+      }
+    }
+
+    function connect() {
+      if (cancelled) return;
+      socket = new WebSocket(wsUrl("/ws/agent/jobs/", token));
+      socket.onmessage = (event) => {
+        try {
+          const data = JSON.parse(event.data);
+          if (data.type === "job_available") void checkSelectedPrinter();
+        } catch {
+          // Ignore malformed frames.
+        }
+      };
+      socket.onclose = () => {
+        if (cancelled) return;
+        reconnectTimer = setTimeout(connect, 5000);
+      };
+    }
+    connect();
+
+    return () => {
+      cancelled = true;
+      if (reconnectTimer) clearTimeout(reconnectTimer);
+      socket?.close();
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -111,6 +164,42 @@ export function DashboardShell({ activePath, children }: { activePath: string; c
         />
         {children}
       </section>
+
+      {virtualPrinterAlert && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="virtual-printer-alert-backdrop"
+          onMouseDown={(e) => e.target === e.currentTarget && setVirtualPrinterAlert(null)}
+        >
+          <div className="virtual-printer-alert">
+            <h2>Wrong printer selected</h2>
+            <p>
+              A new PrintPilot job just came in, but your selected printer is <strong>{virtualPrinterAlert}</strong> - a
+              virtual printer that never produces physical paper. Please select a real printer.
+            </p>
+            <div className="virtual-printer-alert-actions">
+              <button
+                type="button"
+                className="virtual-printer-alert-dismiss"
+                onClick={() => setVirtualPrinterAlert(null)}
+              >
+                Dismiss
+              </button>
+              <button
+                type="button"
+                className="virtual-printer-alert-cta"
+                onClick={() => {
+                  setVirtualPrinterAlert(null);
+                  router.push("/auto-print?step=printer");
+                }}
+              >
+                Select printer
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

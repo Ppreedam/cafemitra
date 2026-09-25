@@ -627,6 +627,10 @@ body{background:#f2f2f2;display:flex;justify-content:center;align-items:center;m
   body{background:white;min-height:0;}
   .card{box-shadow:none;margin:0 auto;}
   @page{size:A5;margin:0;}
+  /* Hides any browser-extension-injected overlay (ad blockers, page
+     analysis tools, etc.) from the printed output - see the matching note
+     in IdCardPrintClient.tsx's buildCardPrintSheetHtml. */
+  body > :not(.card){display:none !important;}
 }
 </style>
 </head>

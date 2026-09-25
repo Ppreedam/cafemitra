@@ -353,8 +353,9 @@ body{background:#f2f2f2;font-family:Arial, Helvetica, sans-serif;${colorMode ===
 .idnum{padding:1.5mm 3mm;font-size:3mm;font-weight:700;letter-spacing:.4mm;border-top:1px solid #eee;}
 @media print{
   body{background:white;}
-  .page{margin:0;box-shadow:none;}
+  .page{margin:0;min-height:0;box-shadow:none;}
   @page{size:A4;margin:0;}
+  body > :not(.page){display:none !important;}
 }
 </style>
 </head>

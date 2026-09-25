@@ -65,6 +65,7 @@ export default function IdCardPrintClient() {
   const [cropMode, setCropMode] = useState<CropMode>("perspective");
   const [filterTarget, setFilterTarget] = useState<SlotRef | null>(null);
   const [filterValues, setFilterValues] = useState<FilterValues>(DEFAULT_FILTER);
+  const [applyFilterToBothSides, setApplyFilterToBothSides] = useState(false);
   const [colorMode, setColorMode] = useState<ColorMode>("color");
   const [printBusy, setPrintBusy] = useState(false);
   const [error, setError] = useState("");
@@ -160,18 +161,24 @@ export default function IdCardPrintClient() {
 
   function openFilter(target: SlotRef) {
     setFilterValues(DEFAULT_FILTER);
+    setApplyFilterToBothSides(false);
     setFilterTarget(target);
   }
 
   async function applyFilter() {
     if (!filterTarget) return;
-    const current = getSide(filterTarget.cardId, filterTarget.side);
-    if (!current.url) return;
+    const otherSide: Side = filterTarget.side === "front" ? "back" : "front";
+    const hasOtherSide = !!getSide(filterTarget.cardId, otherSide).url;
+    const sides: Side[] = applyFilterToBothSides && hasOtherSide ? [filterTarget.side, otherSide] : [filterTarget.side];
     try {
-      const adjustedBlob = await applyFilterAdjustments(current.url, filterValues);
-      const adjustedFile = new File([adjustedBlob], (current.file?.name || "photo").replace(/(\.[^.]+)?$/, "-adjusted.png"), { type: "image/png" });
-      URL.revokeObjectURL(current.url);
-      setSide(filterTarget.cardId, filterTarget.side, { file: adjustedFile, url: URL.createObjectURL(adjustedFile), cropRect: current.cropRect, cropQuad: current.cropQuad });
+      for (const side of sides) {
+        const current = getSide(filterTarget.cardId, side);
+        if (!current.url) continue;
+        const adjustedBlob = await applyFilterAdjustments(current.url, filterValues);
+        const adjustedFile = new File([adjustedBlob], (current.file?.name || "photo").replace(/(\.[^.]+)?$/, "-adjusted.png"), { type: "image/png" });
+        URL.revokeObjectURL(current.url);
+        setSide(filterTarget.cardId, side, { file: adjustedFile, url: URL.createObjectURL(adjustedFile), cropRect: current.cropRect, cropQuad: current.cropQuad });
+      }
       setFilterTarget(null);
     } catch {
       // Panel stays open so the user can retry.
@@ -387,12 +394,16 @@ export default function IdCardPrintClient() {
         </div>
       ) : null}
 
-      {filterTarget && filterState?.url ? (
+      {filterTarget && filterState?.url ? (() => {
+        const otherSide: Side = filterTarget.side === "front" ? "back" : "front";
+        const otherSideState = getSide(filterTarget.cardId, otherSide);
+        const bothSelected = applyFilterToBothSides && !!otherSideState.url;
+        return (
         <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Filter and light">
           <div className="crop-window">
             <div className="document-preview-head">
               <div>
-                <strong>Filter &amp; Light - {filterTarget.side === "front" ? "Front" : "Back"} Photo</strong>
+                <strong>Filter &amp; Light - {bothSelected ? "Front & Back Photo" : filterTarget.side === "front" ? "Front" : "Back"} Photo</strong>
                 <span>{filterState.file?.name}</span>
               </div>
               <button type="button" onClick={() => setFilterTarget(null)} aria-label="Close filter panel">
@@ -400,12 +411,19 @@ export default function IdCardPrintClient() {
               </button>
             </div>
             <div className="crop-body">
-              <div className="idcard-filter-preview">
+              <div className={bothSelected ? "idcard-filter-preview idcard-filter-preview-pair" : "idcard-filter-preview"}>
                 <img
                   src={filterState.url}
                   alt="Preview with adjustments"
                   style={{ filter: `brightness(${filterValues.brightness}%) contrast(${filterValues.contrast}%) saturate(${filterValues.saturation}%)` }}
                 />
+                {bothSelected ? (
+                  <img
+                    src={otherSideState.url}
+                    alt="Preview with adjustments (other side)"
+                    style={{ filter: `brightness(${filterValues.brightness}%) contrast(${filterValues.contrast}%) saturate(${filterValues.saturation}%)` }}
+                  />
+                ) : null}
               </div>
               <div className="idcard-filter-controls">
                 <label>
@@ -420,17 +438,28 @@ export default function IdCardPrintClient() {
                   <span>Saturation <b>{filterValues.saturation}%</b></span>
                   <input type="range" min={0} max={200} value={filterValues.saturation} onChange={(event) => setFilterValues((prev) => ({ ...prev, saturation: Number(event.target.value) }))} />
                 </label>
+                {otherSideState.url ? (
+                  <label className="idcard-filter-both-toggle">
+                    <input
+                      type="checkbox"
+                      checked={applyFilterToBothSides}
+                      onChange={(event) => setApplyFilterToBothSides(event.target.checked)}
+                    />
+                    <span>Apply to both Front &amp; Back</span>
+                  </label>
+                ) : null}
                 <button type="button" onClick={() => setFilterValues(DEFAULT_FILTER)}>
                   <RotateCcw size={16} /> Reset
                 </button>
                 <button type="button" onClick={applyFilter}>
-                  <SlidersHorizontal size={17} /> Apply
+                  <SlidersHorizontal size={17} /> Apply{bothSelected ? " to Both" : ""}
                 </button>
               </div>
             </div>
           </div>
         </div>
-      ) : null}
+        );
+      })() : null}
 
       {chargeConfirm ? (
         <div className="resbuild-confirm-overlay" onClick={() => answerChargeConfirm(false)}>
@@ -522,8 +551,21 @@ body{background:#f2f2f2;font-family:Arial, Helvetica, sans-serif;${colorMode ===
 .card img{width:100%;height:100%;object-fit:cover;}
 @media print{
   body{background:white;}
-  .page{margin:0;box-shadow:none;}
+  /* min-height:297mm (set above, for the on-screen preview to look like a
+     full A4 sheet) sized the printable box to EXACTLY one page's height
+     with zero slack - any sub-millimeter rounding in the browser's mm-to-
+     print-unit conversion then overflowed it, forcing a near-blank 2nd
+     page for even a single card. Sizing to content here removes that risk
+     entirely; it only ever mattered for the screen preview anyway. */
+  .page{margin:0;min-height:0;box-shadow:none;}
   @page{size:A4;margin:0;}
+  /* Browser extensions (ad blockers, "analyze this page" tools, etc.) often
+     inject their own floating button straight onto <body> via a content
+     script, completely outside this page's own markup - nothing here can
+     prevent that injection, but this hides anything that isn't our own
+     .page content specifically from the PRINTED output, regardless of what
+     it is or which extension added it. */
+  body > :not(.page){display:none !important;}
 }
 </style>
 </head>

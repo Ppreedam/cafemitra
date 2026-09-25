@@ -1,3 +1,15 @@
+// Mirrors VirtualPrinterMarkers/IsVirtualPrinter in the desktop Print Agent
+// (Print Agent/Print Agent/Form1.cs) - these Windows "printers" always
+// report as valid/online but never produce physical paper (they write a
+// PDF, a fax queue entry, a OneNote page instead), so a shop that leaves
+// one selected has jobs silently going nowhere.
+const VIRTUAL_PRINTER_MARKERS = ["Print to PDF", "XPS Document Writer", "OneNote", "Fax"];
+
+export function isVirtualPrinter(printerName: string) {
+  const name = printerName.toLowerCase();
+  return VIRTUAL_PRINTER_MARKERS.some((marker) => name.includes(marker.toLowerCase()));
+}
+
 export type AgentHealth = {
   app?: string;
   status?: "running" | "stopped";
@@ -63,7 +75,7 @@ export type PrinterPresetsResult = {
 };
 
 export const fallbackPrinters = ["Microsoft Print to PDF", "Fax"];
-export const fallbackPaperSizes = ["A4", "A5", "Letter"];
+export const fallbackPaperSizes = ["A4", "A5", "A3", "A6", "B5", "Letter", "Legal", "Executive"];
 export const fallbackColorModes = ["Color", "Grayscale"];
 
 const agentStatusEndpoints = ["http://127.0.0.1:8765/status"];

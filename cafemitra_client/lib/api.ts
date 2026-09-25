@@ -31,6 +31,16 @@ export function apiUrl(path: string) {
   return `${baseUrl}${apiPath}`;
 }
 
+// Mirrors apiUrl() but for the ws:// scheme + a query-string token, since
+// the browser WebSocket API can't set a custom Authorization header on the
+// handshake the way apiFetch() does for normal requests.
+export function wsUrl(path: string, token: string) {
+  const httpBase = runtimeApiBaseUrl();
+  const wsBase = httpBase.replace(/^https:/, "wss:").replace(/^http:/, "ws:");
+  const wsPath = path.startsWith("/") ? path : `/${path}`;
+  return `${wsBase}${wsPath}?token=${encodeURIComponent(token)}`;
+}
+
 // `fetch()` on a data: URI throws in some runtimes ("The 'data' scheme is
 // not supported"), so decode it into a Blob directly instead of fetching it.
 export function dataUriToBlob(dataUri: string): Blob {

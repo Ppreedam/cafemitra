@@ -221,6 +221,7 @@ body{background:#f2f2f2;font-family:Arial, Helvetica, sans-serif;}
   .page{margin:0;page-break-after:always;}
   .page:last-child{page-break-after:auto;}
   @page{${pageRuleCss}margin:0;}
+  body > :not(.page){display:none !important;}
 }
 </style>
 </head>

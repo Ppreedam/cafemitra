@@ -411,6 +411,7 @@ body{background:#f2f2f2;}
 @media print{
   body{background:#fff;}
   @page{size:85.6mm 53.98mm;margin:0;}
+  body > :not(.card-page){display:none !important;}
 }
 </style>
 </head>

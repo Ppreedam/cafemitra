@@ -3,7 +3,7 @@
 import Link from "next/link";
 import type React from "react";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   BarChart3,
   Bell,
@@ -190,7 +190,19 @@ const paymentModeOptions = [
 ];
 export default function AutoPrintClient() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeStep, setActiveStep] = useState(0);
+
+  // Lets a deep link (e.g. the desktop agent's "wrong printer" alert CTA)
+  // land directly on a given step instead of always starting at Step 1 -
+  // ?step=<step key>, matching SetupStep["key"].
+  useEffect(() => {
+    const stepKey = searchParams.get("step");
+    if (!stepKey) return;
+    const index = setupSteps.findIndex((step) => step.key === stepKey);
+    if (index >= 0) setActiveStep(index);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   // Self-hosted MP4 is tried first for each step's guide video; the YouTube
   // embed is kept only as a fallback for when the MP4 fails to load, since
   // relying on YouTube alone pulls in its own player chrome/related-video

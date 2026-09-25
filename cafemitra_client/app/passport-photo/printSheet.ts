@@ -41,7 +41,8 @@ export function buildPrintSheetHtml(
 ) {
   const { perRow, max } = maxTilesForPaper(size, tileWidthIn, tileHeightIn);
   const actualCount = Math.max(1, Math.min(count, max));
-  const pageSizeCss = size === "a4" ? "width:210mm;height:297mm;" : "width:4in;height:6in;";
+  const pageWidthCss = size === "a4" ? "width:210mm;" : "width:4in;";
+  const pageSizeCss = pageWidthCss + (size === "a4" ? "height:297mm;" : "height:6in;");
   const pageRuleCss = size === "a4" ? "size:A4;" : "size:4in 6in;";
   const pagePaddingCss = size === "a4" ? "4mm 12mm 12mm 6mm" : "2mm 3mm 3mm 3mm";
 
@@ -74,8 +75,9 @@ body{background:#f2f2f2;font-family:Arial, Helvetica, sans-serif;}
 .photo img{width:100%;height:100%;object-fit:cover;object-position:center;}
 @media print{
   body{background:white;}
-  .page{margin:0;${pageSizeCss}padding:${pagePaddingCss};box-shadow:none;}
+  .page{margin:0;${pageWidthCss}height:auto;padding:${pagePaddingCss};box-shadow:none;}
   @page{${pageRuleCss}margin:0;}
+  body > :not(.page){display:none !important;}
 }
 </style>
 </head>
