@@ -19112,7 +19112,7 @@ img.profile-photo {
   display: grid;
   gap: 8px;
   width: 100%;
-  max-width: 340px;
+  max-width: 420px;
 }
 
 .idcard-side-label {
@@ -19301,7 +19301,7 @@ img.profile-photo {
 .idcard-card-slot {
   position: relative;
   width: 100%;
-  max-width: 340px;
+  max-width: 420px;
   aspect-ratio: 85.6 / 53.98;
   border-radius: 10px;
   overflow: hidden;
@@ -21184,4 +21184,179 @@ img.profile-photo {
   .idstudio-nav button {
     flex: 1;
   }
+}
+
+/* ---------- ID Card Print: auto card scan ---------- */
+.idcard-card-slot.filled {
+  position: relative;
+}
+
+.idcard-scan-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--ink);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.idcard-scan-badge {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(13, 23, 72, 0.15);
+}
+
+.idcard-scan-badge.ok {
+  background: #e7f8ef;
+  color: #0f7a4a;
+}
+
+.idcard-scan-badge.warn {
+  background: #fff4e8;
+  color: #9a4a00;
+}
+
+.idcard-scan-mode {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+}
+
+.idcard-scan-mode select {
+  height: 32px;
+  padding: 0 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--paper);
+  color: var(--ink);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+/* ---------- ID Card Print: brightness / contrast per side ---------- */
+.idcard-side-group {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+}
+
+.idcard-side-group .idcard-side-slot {
+  flex: 0 1 420px;
+  width: 420px;
+  min-width: 0;
+}
+
+@media (max-width: 720px) {
+  .idcard-side-group {
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  .idcard-side-group .idcard-side-slot {
+    flex: none;
+    width: 100%;
+  }
+}
+
+.idcard-tone-panel {
+  display: grid;
+  gap: 10px;
+  width: 150px;
+  padding: 10px;
+  border: 1px solid #d9deeb;
+  border-radius: 10px;
+  background: #fbfcff;
+  color: #4d587a;
+  font-size: 0.74rem;
+}
+
+.idcard-tone-panel.disabled {
+  opacity: 0.55;
+}
+
+.idcard-tone-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.idcard-tone-head strong {
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.idcard-tone-head button {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border: 1px solid #d9deeb;
+  border-radius: 6px;
+  background: #fff;
+  color: #4d587a;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.idcard-tone-head button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.idcard-tone-slider {
+  display: grid;
+  gap: 2px;
+}
+
+.idcard-tone-slider span {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: 700;
+}
+
+.idcard-tone-slider input[type="number"] {
+  width: 52px;
+  padding: 1px 4px;
+  border: 1px solid #d9deeb;
+  border-radius: 5px;
+  font-size: 0.72rem;
+  text-align: right;
+}
+
+.idcard-tone-slider input[type="range"] {
+  width: 100%;
+  accent-color: var(--violet);
+}
+
+.idcard-tone-slider em {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-style: normal;
+}
+
+.idcard-tone-slider em i {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.12);
 }
