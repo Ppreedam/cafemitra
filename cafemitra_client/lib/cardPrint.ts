@@ -34,6 +34,9 @@ const DETECTORS: Array<{ key: CardTypeKey; pattern: RegExp }> = [
   { key: "voter_id", pattern: /election commission of india|elector'?s photo identity|\bepic\b/i },
   { key: "driving_licence", pattern: /driving licen[cs]e|transport department|\bmcwg\b|\blmv\b/i },
   { key: "passport", pattern: /republic of india.*passport|passport.{0,20}republic of india|\bpassport no\b/i },
+  // e-PAN text layers often carry only the values (labels are images), so
+  // fall back to the PAN number itself: 5 letters (4th = holder type), 4 digits, 1 letter.
+  { key: "pan", pattern: /\b[A-Z]{3}[PCHABGJLFT][A-Z]\d{4}[A-Z]\b/ },
 ];
 
 export function detectCardType(fullText: string): CardTypeInfo {

@@ -12,6 +12,8 @@
     "postinstall": "node scripts/copy-opencv.js"
   },
   "dependencies": {
+    "@cantoo/fontkit": "^2.0.12",
+    "@cantoo/pdf-lib": "^2.11.1",
     "@pdfsmaller/pdf-decrypt": "^1.0.1",
     "@pdfsmaller/pdf-encrypt": "^1.0.2",
     "@techstark/opencv-js": "^4.10.0-release.1",

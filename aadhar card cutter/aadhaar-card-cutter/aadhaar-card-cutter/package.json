@@ -1,0 +1,14 @@
+{
+  "name": "aadhaar-card-cutter",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Browser-only e-Aadhaar card cropper with password unlock, text resize/wrap, bold, photo clean-up and print sheets",
+  "scripts": {
+    "start": "npx serve .",
+    "test": "node test/node-test.js"
+  },
+  "devDependencies": {
+    "@cantoo/pdf-lib": "2.11.1",
+    "pdfjs-dist": "3.11.174"
+  }
+}
