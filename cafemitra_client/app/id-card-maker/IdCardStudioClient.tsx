@@ -133,6 +133,15 @@ type Prefs = {
   passwordFromFilename: boolean;
   showPassword: boolean;
   rememberPassword: boolean;
+  // e-EPIC voter card, clean and original (percent of the letter's size / line gap).
+  voterFrontSize: number;
+  voterAddressSize: number;
+  voterFrontGap: number;
+  voterAddressGap: number;
+  voterFrontBold: boolean;
+  voterAddressBold: boolean;
+  // e-PAN card (NSDL / UTI), clean and original.
+  panBold: boolean;
 };
 
 const DEFAULT_PREFS: Prefs = {
@@ -180,6 +189,13 @@ const DEFAULT_PREFS: Prefs = {
   passwordFromFilename: false,
   showPassword: false,
   rememberPassword: false,
+  voterFrontSize: 100,
+  voterAddressSize: 100,
+  voterFrontGap: 100,
+  voterAddressGap: 100,
+  voterFrontBold: false,
+  voterAddressBold: false,
+  panBold: false,
 };
 
 const PREFS_KEY = "cafemitra_idcard_settings";
@@ -290,6 +306,17 @@ export default function IdCardStudioClient() {
 
   const isAadhaar = card?.mode === "aadhaar";
   const isClean = isAadhaar && prefs.design === "clean";
+  const isVoter = card?.mode === "voter";
+  const isCleanVoter = isVoter && prefs.design === "clean";
+  const isPan = card?.mode === "pan";
+  const isCleanPan = isPan && prefs.design === "clean";
+  const photoSource = (isAadhaar && card?.meta?.photo?.jpeg) || (isVoter && card?.voter?.photoJpeg) || (isPan && card?.pan?.photoJpeg) || null;
+  // Largest sizes whose widest line still fits across this voter card (the
+  // letter's lines cannot re-wrap). Height is fitted when the card is built.
+  const voterMax = {
+    front: Math.max(100, Math.min(150, Math.floor((card?.voter?.details?.maxScale ?? 1.5) * 100))),
+    address: Math.max(100, Math.min(150, Math.floor((card?.voter?.address?.maxScale ?? 1.5) * 100))),
+  };
   const mobileValid = /^\d{10}$/.test(mobile);
 
   const currentSettings = useCallback(
@@ -327,6 +354,16 @@ export default function IdCardStudioClient() {
         mobile: prefs.mobileNumber && mobileValid ? mobile : "",
         photoJpeg,
       },
+      voter: {
+        frontScale: prefs.voterFrontSize / 100,
+        backScale: prefs.voterAddressSize / 100,
+        frontGap: prefs.voterFrontGap / 100,
+        backGap: prefs.voterAddressGap / 100,
+        boldFront: prefs.voterFrontBold,
+        boldBack: prefs.voterAddressBold,
+        photoJpeg,
+      },
+      pan: { bold: prefs.panBold, photoJpeg },
     }),
     [adjust, prefs, mobile, mobileValid, photoJpeg],
   );
@@ -550,7 +587,9 @@ export default function IdCardStudioClient() {
           <span className="idstudio-type" style={{ "--type-color": card?.type.color || "#667795" } as React.CSSProperties}>
             {card ? card.type.label : "No card"}
           </span>
-          <small>{card ? (isClean ? "Clean design" : isAadhaar ? "Original cut" : card.mode === "raster" ? "Image cut" : "Crop cut") : "Aadhaar · PAN · Voter · DL"}</small>
+          <small>{card
+            ? `${card.pan ? `${card.pan.variant.toUpperCase()} · ` : ""}${isClean || isCleanVoter || isCleanPan ? "Clean design" : isAadhaar || isVoter || isPan ? "Original cut" : card.mode === "raster" ? "Image cut" : "Crop cut"}`
+            : "Aadhaar · PAN · Voter · DL"}</small>
           <button type="button" className="idstudio-btn" onClick={() => setModal("help")}>
             <CircleHelp size={15} /> Help
           </button>
@@ -608,7 +647,7 @@ export default function IdCardStudioClient() {
         </section>
 
         <section className="idstudio-box idstudio-actions">
-          <button type="button" className="idstudio-btn" disabled={!isAadhaar || !card?.meta?.photo} onClick={() => setModal("photo")} title={isAadhaar ? undefined : "Photo editing works with standard e-Aadhaar PDFs"}>
+          <button type="button" className="idstudio-btn" disabled={!photoSource} onClick={() => setModal("photo")} title={photoSource ? undefined : "Photo editing works with standard e-Aadhaar and e-EPIC PDFs"}>
             <ImageIcon size={15} /> Photo Editor
           </button>
           <button
@@ -735,7 +774,7 @@ export default function IdCardStudioClient() {
       <div className="idstudio-bottombar">
         <label>
           <span>Design</span>
-          <select value={prefs.design} disabled={!isAadhaar} onChange={(event) => setPref("design", event.target.value as AadhaarDesign)}>
+          <select value={prefs.design} disabled={!isAadhaar && !isVoter && !isPan} onChange={(event) => setPref("design", event.target.value as AadhaarDesign)}>
             <option value="clean">Clean card</option>
             <option value="original">Original cut</option>
           </select>
@@ -749,7 +788,7 @@ export default function IdCardStudioClient() {
           <span>Border</span>
           <select
             value={borderValue}
-            disabled={!isClean}
+            disabled={!isClean && !isCleanVoter}
             onChange={(event) => {
               const value = Number(event.target.value);
               setPrefs((p) => ({ ...p, photoBorder: value || p.photoBorder, elements: { ...p.elements, photoFrame: value > 0 } }));
@@ -811,7 +850,7 @@ export default function IdCardStudioClient() {
           <ol className="idstudio-help-steps">
             <li>Click <b>File</b> (or the folder icon) and choose the downloaded PDF: e-Aadhaar, e-PAN, e-EPIC voter card, DL and so on. You can pick several at once.</li>
             <li>If the PDF is locked, type the <b>Password</b> and press <b>Go!</b>. e-Aadhaar: first 4 letters of the name in capitals + birth year (RAHU1990). e-PAN: date of birth as DDMMYYYY.</li>
-            <li>e-Aadhaar PDFs are redrawn as a clean card: new header and footer, bigger photo. Use the bottom bar and <b>Settings</b> to change text size, photo size, border and which parts are printed.</li>
+            <li>e-Aadhaar PDFs are redrawn as a clean card: new header and footer, bigger photo. Use the bottom bar and <b>Settings</b> to change text size, photo size, border and which parts are printed. e-EPIC voter cards and NSDL / UTI e-PAN cards print on a plain white background (set Design to Original for the coloured card).</li>
             <li>For other cards, or with Design set to Original, use <b>Adjust Card</b> (move) and <b>Adjust Zoom</b> (size) if the cut is slightly off. The centre button resets.</li>
             <li>Press <b>Print Card</b> and pick PVC card, A4 or 4x6. Print at 100% / Actual size. Press <b>Save</b> in Settings to keep your setup for next time.</li>
           </ol>
@@ -819,9 +858,9 @@ export default function IdCardStudioClient() {
         </Dialog>
       ) : null}
 
-      {modal === "photo" && card?.meta?.photo ? (
+      {modal === "photo" && photoSource ? (
         <PhotoEditor
-          jpeg={card.meta.photo.jpeg}
+          jpeg={photoSource}
           initial={photoParams}
           onClose={() => setModal("")}
           onApply={(params, jpeg) => {
@@ -921,6 +960,53 @@ export default function IdCardStudioClient() {
             </div>
 
             <div className="idstudio-settings-col">
+              <fieldset className="idstudio-fieldset">
+                <legend>Voter ID card</legend>
+                <small className="idstudio-muted">For the e-EPIC card, clean and original cut. If the text would not fit, the gap closes first, then the size.</small>
+                <SliderSetting label="Front text size" hint="Name, father's name, gender, DOB" min={70} max={voterMax.front} value={Math.min(prefs.voterFrontSize, voterMax.front)} onChange={(value) => setPref("voterFrontSize", value)} />
+                <SliderSetting label="Front line gap" hint="Space between the front lines" min={80} max={160} value={prefs.voterFrontGap} onChange={(value) => setPref("voterFrontGap", value)} />
+                <label className="idstudio-check">
+                  <input type="checkbox" checked={prefs.voterFrontBold} onChange={(event) => setPref("voterFrontBold", event.target.checked)} />
+                  <span>Front text bold</span>
+                </label>
+                <SliderSetting label="Address size" hint="Back of the card" min={70} max={voterMax.address} value={Math.min(prefs.voterAddressSize, voterMax.address)} onChange={(value) => setPref("voterAddressSize", value)} />
+                <SliderSetting label="Address line gap" hint="Space between the address lines" min={80} max={160} value={prefs.voterAddressGap} onChange={(value) => setPref("voterAddressGap", value)} />
+                <label className="idstudio-check">
+                  <input type="checkbox" checked={prefs.voterAddressBold} onChange={(event) => setPref("voterAddressBold", event.target.checked)} />
+                  <span>Address bold</span>
+                </label>
+                <div className="idstudio-setting">
+                  <div>
+                    <strong>Photo</strong>
+                    <small>Brightness, contrast, sharpness, auto-fix</small>
+                  </div>
+                  <button type="button" className="idstudio-btn small" disabled={!isVoter || !photoSource} onClick={() => setModal("photo")}>
+                    <ImageIcon size={14} /> Clean photo
+                  </button>
+                </div>
+              </fieldset>
+
+              <fieldset className="idstudio-fieldset">
+                <legend>PAN card</legend>
+                <small className="idstudio-muted">NSDL and UTI e-PAN are found automatically, clean and original cut.</small>
+                <label className="idstudio-check">
+                  <input type="checkbox" checked={prefs.panBold} onChange={(event) => setPref("panBold", event.target.checked)} />
+                  <span>
+                    Bold text
+                    <small>PAN number, name, father&apos;s name, date of birth</small>
+                  </span>
+                </label>
+                <div className="idstudio-setting">
+                  <div>
+                    <strong>Photo</strong>
+                    <small>Brightness, contrast, sharpness, auto-fix</small>
+                  </div>
+                  <button type="button" className="idstudio-btn small" disabled={!isPan || !photoSource} onClick={() => setModal("photo")}>
+                    <ImageIcon size={14} /> Clean photo
+                  </button>
+                </div>
+              </fieldset>
+
               <fieldset className="idstudio-fieldset">
                 <legend>Text</legend>
                 <label className="idstudio-setting">
