@@ -13,6 +13,8 @@
 import makeAadhaarCore, { type AadhaarCore, type AadhaarEditOptions, type AadhaarMeta } from "./aadhaarCore";
 import { detectCardType, getCardTemplate, type CardTypeInfo } from "./cardPrint";
 import type { PDFDocument, PDFPage } from "@cantoo/pdf-lib";
+import { buildVoterCard, inspectVoter, type TextItem, type VoterLayout } from "./voterCard";
+import { buildPanCard, inspectPan, type PanCut, type PanLayout } from "./panCard";
 
 export type Face = "front" | "back";
 // PDF points measured from the top-left of the page; `page` is 0-based.
@@ -25,7 +27,7 @@ export type OutputKind = "card" | "a4" | "4x6";
 export type LoadedCard = {
   fileName: string;
   type: CardTypeInfo;
-  mode: "aadhaar" | "crop" | "raster";
+  mode: "aadhaar" | "voter" | "pan" | "crop" | "raster";
   pageSizes: { w: number; h: number }[];
   plain: Uint8Array | null;
   meta: AadhaarMeta | null;
@@ -37,6 +39,10 @@ export type LoadedCard = {
   // Rotated text boxes on page 1 (PDF units, origin bottom-left) - the
   // "Aadhaar no. issued" and "Details as on" dates on an e-Aadhaar.
   rotated: { x0: number; x1: number; y0: number; y1: number }[];
+  // Standard e-EPIC letters only: card faces and photo found on page 1.
+  voter?: VoterLayout;
+  // Standard NSDL / UTI e-PAN letters only: variant, card faces and photo.
+  pan?: PanLayout;
 };
 
 // "clean" redraws an e-Aadhaar on a fresh card: new header/footer, bigger
@@ -88,6 +94,11 @@ export type CardSettings = {
   rotateBack: boolean;
   // Small text such as "PDF PRINTOUT" on the front; "" for none.
   stamp: string;
+  // e-EPIC card (clean and original): text scales and line gaps (1 = as
+  // printed on the letter), bold, cleaned photo.
+  voter?: { frontScale: number; backScale: number; frontGap: number; backGap: number; boldFront: boolean; boldBack: boolean; photoJpeg: Uint8Array | null };
+  // e-PAN card (clean and original): bold values, cleaned photo.
+  pan?: { bold: boolean; photoJpeg: Uint8Array | null };
 };
 
 export class PdfPasswordError extends Error {
@@ -167,6 +178,7 @@ export async function loadCardPdf(file: File, password: string): Promise<LoadedC
   const pageSizes: { w: number; h: number }[] = [];
   const texts: string[] = [];
   const rotated: LoadedCard["rotated"] = [];
+  const firstPageText: TextItem[] = [];
   for (let n = 1; n <= pdf.numPages; n++) {
     const page = await pdf.getPage(n);
     const view = page.getViewport({ scale: 1 });
@@ -179,6 +191,7 @@ export async function loadCardPdf(file: File, password: string): Promise<LoadedC
         if (!item.str?.trim() || !item.transform) continue;
         const box = rotatedBox(item.transform, item.width || 0);
         if (box) rotated.push(box);
+        else firstPageText.push({ x: item.transform[4], y: item.transform[5], w: item.width || 0, size: Math.abs(item.transform[3]) });
       }
     }
   }
@@ -266,6 +279,32 @@ export async function loadCardPdf(file: File, password: string): Promise<LoadedC
     };
   }
 
+  if (type.key === "voter_id") {
+    try {
+      const voter = await inspectVoter(doc, (await loadCore()).tokenize, firstPageText);
+      if (voter) {
+        const h = pageSizes[0].h;
+        const toBox = (b: VoterLayout["front"]): FaceBox => ({ page: 0, x0: b.x0, x1: b.x1, top: h - b.y1, bottom: h - b.y0 });
+        return { fileName: file.name, type, mode: "voter", pageSizes, plain, meta: null, base: { front: toBox(voter.front), back: toBox(voter.back) }, pageImages: [], numbers, rotated, voter, notice: "" };
+      }
+    } catch (error) {
+      console.error("e-EPIC layout inspection failed, using crop template", error);
+    }
+  }
+
+  if (type.key === "pan") {
+    try {
+      const pan = await inspectPan(doc, (await loadCore()).tokenize);
+      if (pan) {
+        const h = pageSizes[0].h;
+        const toBox = (b: PanLayout["front"]): FaceBox => ({ page: 0, x0: b.x0, x1: b.x1, top: h - b.y1, bottom: h - b.y0 });
+        return { fileName: file.name, type, mode: "pan", pageSizes, plain, meta: null, base: { front: toBox(pan.front), back: toBox(pan.back) }, pageImages: [], numbers, rotated, pan, notice: "" };
+      }
+    } catch (error) {
+      console.error("e-PAN layout inspection failed, using crop template", error);
+    }
+  }
+
   return { fileName: file.name, type, mode: "crop", pageSizes, plain, meta: null, base: templateBoxes(), pageImages: [], numbers, rotated, notice: "" };
 }
 
@@ -288,6 +327,25 @@ function readNumbers(text: string) {
   const rest = vidMatch ? text.replace(vidMatch[0], " ") : text;
   const aadhaarMatch = rest.match(/(?:^|[^\dX])([\dX]{4}\s[\dX]{4}\s\d{4})(?![\d])/);
   return { aadhaar: aadhaarMatch ? aadhaarMatch[1] : "", vid };
+}
+
+// Renders `region` (top-left page units) of page 1 of `bytes` onto a canvas.
+async function renderRegion(bytes: Uint8Array, region: PanCut, scale: number): Promise<HTMLCanvasElement> {
+  const pdfjs = await loadPdfJs();
+  const task = pdfjs.getDocument({ data: bytes.slice(0), isEvalSupported: false });
+  try {
+    const page = await (await task.promise).getPage(1);
+    const viewport = page.getViewport({ scale, offsetX: -region.x0 * scale, offsetY: -region.top * scale });
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.ceil((region.x1 - region.x0) * scale);
+    canvas.height = Math.ceil((region.bottom - region.top) * scale);
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Canvas unavailable");
+    await page.render({ canvas, canvasContext: context, viewport }).promise;
+    return canvas;
+  } finally {
+    await task.destroy();
+  }
 }
 
 async function renderPageImage(page: { getViewport: (o: { scale: number }) => { width: number; height: number }; render: (o: object) => { promise: Promise<void> } }) {
@@ -341,6 +399,16 @@ export async function buildCardPdf(card: LoadedCard, settings: CardSettings, kin
     } else if (card.mode === "aadhaar" && card.meta) {
       const core = await loadCore();
       notes = await core.applyEdits(src, card.meta, settings.aadhaar);
+    } else if (card.mode === "voter" && card.voter) {
+      const clean = settings.design === "clean";
+      const photoBorder = clean && settings.clean.elements.photoFrame ? settings.clean.photoBorder : 0;
+      const voter = { frontScale: 1, backScale: 1, frontGap: 1, backGap: 1, boldFront: false, boldBack: false, photoJpeg: null, ...settings.voter };
+      const built = await buildVoterCard(out, src, card.voter, faces, { clean, photoBorder, ...voter }, (await loadCore()).tokenize, CARD_W, CARD_H);
+      drawables.push(...built.drawables);
+      notes = built.notes;
+    } else if (card.mode === "pan" && card.pan) {
+      const pan = { bold: false, photoJpeg: null, ...settings.pan };
+      drawables.push(...(await buildPanCard(out, src, card.plain, card.pan, faces, { clean: settings.design === "clean", ...pan }, (await loadCore()).tokenize, renderRegion, CARD_W, CARD_H)));
     }
     if (!drawables.length) for (const face of faces) {
       const srcPage = src.getPage(face.page);

@@ -1,3 +1,4 @@
+import importlib.util
 import os
 from pathlib import Path
 from urllib.parse import unquote, urlparse
@@ -108,6 +109,13 @@ CHANNEL_LAYERS = {
         },
     },
 }
+
+# A dev machine without channels_redis installed (no Redis) runs the Print
+# Agent WebSocket on the in-process layer instead of crashing every
+# handshake with InvalidChannelLayerError. Fine for a single runserver /
+# daphne process; production installs channels_redis, so it keeps Redis.
+if importlib.util.find_spec("channels_redis") is None:
+    CHANNEL_LAYERS = {"default": {"BACKEND": "channels.layers.InMemoryChannelLayer"}}
 
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 

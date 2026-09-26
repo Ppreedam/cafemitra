@@ -43,6 +43,7 @@ export type AadhaarCore = {
   inspect(plainBytes: Uint8Array): Promise<AadhaarMeta>;
   applyEdits(doc: PDFDocument, meta: AadhaarMeta, opts: AadhaarEditOptions): Promise<string[]>;
   stripText(doc: PDFDocument): void;
+  tokenize(content: string): Array<{ op: string; operands: Array<{ value?: unknown; start: number; end: number }>; start: number; end: number }>;
   CARD_W: number;
   CARD_H: number;
 };

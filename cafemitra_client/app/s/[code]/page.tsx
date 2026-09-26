@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Clock3, Crop, Download, Eye, EyeOff, FileText, IdCard, Image as ImageIcon, LoaderCircle, LockKeyhole, Printer, ShieldCheck, Trash2, Upload, Wallet, X } from "lucide-react";
+import { CircleAlert, CircleCheck, Clock3, Crop, Download, Eye, EyeOff, FileText, IdCard, Image as ImageIcon, LoaderCircle, LockKeyhole, Printer, ShieldCheck, Trash2, Upload, Wallet, X } from "lucide-react";
 import { apiUrl } from "@/lib/api";
 import { calculatePriceItemRate, formatPriceItem, getAllowedPaymentModes, mergePricingDefaults, type PriceItem, type PricingService } from "@/lib/pricing";
 import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
@@ -12,6 +12,17 @@ import PublicResumeBuilder from "./PublicResumeBuilder";
 import PublicBiodataMaker from "./PublicBiodataMaker";
 import IdCardPrintUpload from "./IdCardPrintUpload";
 import { applyCleanScanToFile, type CleanScanProgress } from "./cleanScan/cleanScanEngine";
+import { scanDocument } from "../../id-card-print/cardScan";
+
+type DocLook = "bw" | "color" | "original";
+
+const DEFAULT_DOC_DARKNESS = 25;
+
+const DOC_LOOKS: Array<{ value: DocLook; label: string }> = [
+  { value: "bw", label: "B/W" },
+  { value: "color", label: "Color" },
+  { value: "original", label: "Original" },
+];
 
 type PublicShop = {
   code: string;
@@ -107,6 +118,15 @@ export default function CustomerScanPage() {
   const [isCleanScanProcessing, setIsCleanScanProcessing] = useState(false);
   const [cleanScanProgress, setCleanScanProgress] = useState<CleanScanProgress | null>(null);
   const cleanScanAbortRef = useRef<AbortController | null>(null);
+  // Auto clean of an uploaded document photo (no crop - the whole photo).
+  // look = how the page is shown: scanner black & white, colour kept, or
+  // the photo exactly as uploaded (original).
+  const [autoScan, setAutoScan] = useState<{ status: "working" | "done" | "cleaned" | "original" | "error"; look: DocLook; original: File } | null>(null);
+  const autoScanTokenRef = useRef(0);
+  // Black & white darkness, 0 (light) .. 100 (dark).
+  const [docDarkness, setDocDarkness] = useState(DEFAULT_DOC_DARKNESS);
+  const darknessTimerRef = useRef<number | null>(null);
+  const [combineStatus, setCombineStatus] = useState("");
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
   const [isDeletingDocument, setIsDeletingDocument] = useState(false);
   const [order, setOrder] = useState<PrintOrder | null>(null);
@@ -202,6 +222,9 @@ export default function CustomerScanPage() {
   const hasPdfFile = isPdfFile(fileType, fileName);
   const hasImageFile = isImageFile(fileType, fileName);
   const canCropImage = (selectedService === "auto_document_print" || isPassportPhoto) && hasImageFile;
+  // Document photos are scanned automatically; passport photos and ID cards have their own flows.
+  const autoScansImages = !isPassportPhoto && !isIdCardPrint;
+  const autoScanWorking = autoScan?.status === "working";
   const showServiceSelector = (data?.services.length || 0) > 1;
   const activeStep = showServiceSelector
     ? order || (hasUploadedFile && optionsTouched)
@@ -484,6 +507,68 @@ export default function CustomerScanPage() {
     }
 
     await applyUploadedFile(file);
+    if (isImageUpload && autoScansImages) void autoScanImage(file);
+  }
+
+  // Shows the new image file in place of the current one (same upload).
+  function replaceImageFile(file: File) {
+    const nextUrl = URL.createObjectURL(file);
+    setFileUrl((previous) => {
+      if (previous) URL.revokeObjectURL(previous);
+      return nextUrl;
+    });
+    setFinalFile(file);
+    setFileName(file.name);
+    setFileType(file.type);
+    setCropRect(DEFAULT_CROP_RECT);
+    setCropQuad(DEFAULT_CROP_QUAD);
+  }
+
+  // Cleans the document photo for printing (no automatic crop - the whole
+  // photo is kept). The photo shows at once; the cleaned one replaces it when
+  // ready (unless the customer has moved on to another file meanwhile).
+  async function autoScanImage(original: File, look: DocLook = "bw", darkness = docDarkness) {
+    if (look === "original") {
+      autoScanTokenRef.current++;
+      replaceImageFile(original);
+      setAutoScan({ status: "original", look, original });
+      return;
+    }
+    const token = ++autoScanTokenRef.current;
+    setAutoScan({ status: "working", look, original });
+    try {
+      const result = await scanDocument(original, look === "bw" ? "photocopy" : "clean", null, darkness);
+      if (token !== autoScanTokenRef.current) return;
+      if (!result.found) {
+        setAutoScan({ status: "error", look, original });
+        return;
+      }
+      replaceImageFile(new File([result.blob], original.name.replace(/(\.[^.]+)?$/, "-scan.jpg"), { type: "image/jpeg" }));
+      setAutoScan({ status: result.detected ? "done" : "cleaned", look, original });
+    } catch (reason) {
+      console.error(reason);
+      if (token === autoScanTokenRef.current) setAutoScan({ status: "error", look, original });
+    }
+  }
+
+  // The slider moves at once; the page is re-cleaned once it stops for a moment.
+  function changeDocDarkness(value: number) {
+    setDocDarkness(value);
+    if (darknessTimerRef.current) window.clearTimeout(darknessTimerRef.current);
+    const original = autoScan?.original;
+    if (!original) return;
+    darknessTimerRef.current = window.setTimeout(() => void autoScanImage(original, "bw", value), 400);
+  }
+
+  // For a photo in a multi-file upload: the scanned page, or the photo as it
+  // is if scanning fails.
+  async function scannedOrOriginal(file: File) {
+    try {
+      const result = await scanDocument(file, "photocopy", null, docDarkness);
+      return result.found ? result.blob : file;
+    } catch {
+      return file;
+    }
   }
 
   // Merges every selected file into one combined PDF (images become full-page
@@ -505,6 +590,8 @@ export default function CustomerScanPage() {
     try {
       const [{ PDFDocument }, { isEncrypted }] = await Promise.all([import("pdf-lib"), import("@pdfsmaller/pdf-decrypt")]);
       const mergedDoc = await PDFDocument.create();
+      const imageCount = files.filter((file) => !(file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf"))).length;
+      let imageIndex = 0;
 
       for (const file of files) {
         const bytes = new Uint8Array(await file.arrayBuffer());
@@ -526,7 +613,14 @@ export default function CustomerScanPage() {
           // and throws, which was silently aborting the whole merge whenever
           // a JPG was mixed in. The canvas re-encode uses the browser's own
           // decoder instead, which handles any JPEG/PNG variant.
-          const pngBytes = await imageFileToPngBytes(file);
+          let source: Blob = file;
+          if (autoScansImages) {
+            imageIndex += 1;
+            setCombineStatus(`Cleaning photo ${imageIndex}/${imageCount}…`);
+            source = await scannedOrOriginal(file);
+            setCombineStatus("");
+          }
+          const pngBytes = await imageFileToPngBytes(source);
           const image = await mergedDoc.embedPng(pngBytes);
           const page = mergedDoc.addPage([image.width, image.height]);
           page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
@@ -546,10 +640,14 @@ export default function CustomerScanPage() {
       alert("Could not combine the selected files. Please try uploading them one at a time.");
     } finally {
       setIsCombiningFiles(false);
+      setCombineStatus("");
     }
   }
 
   async function applyUploadedFile(file: File, knownPages?: number) {
+    // A newer upload - drop any auto scan still running for the previous one.
+    autoScanTokenRef.current++;
+    setAutoScan(null);
     if (fileUrl) URL.revokeObjectURL(fileUrl);
     if (passportSheetUrl) URL.revokeObjectURL(passportSheetUrl);
     const nextUrl = URL.createObjectURL(file);
@@ -612,6 +710,8 @@ export default function CustomerScanPage() {
   }
 
   function clearUploadedFileState() {
+    autoScanTokenRef.current++;
+    setAutoScan(null);
     if (fileUrl) URL.revokeObjectURL(fileUrl);
     if (passportSheetUrl) URL.revokeObjectURL(passportSheetUrl);
     setFinalFile(null);
@@ -816,7 +916,7 @@ export default function CustomerScanPage() {
   }
 
   async function createPrintOrder() {
-    if (!finalFile || !selectedItem || !activeService) return;
+    if (!finalFile || !selectedItem || !activeService || autoScanWorking) return;
     if (!isCafeOpen) {
       setOrderError("This print shop is currently closed. Please try again when the service is open.");
       return;
@@ -1170,12 +1270,12 @@ export default function CustomerScanPage() {
                     </button>
                   ) : null}
                   {canCropImage ? (
-                    <button type="button" onClick={() => setIsCropOpen(true)} disabled={isCleanScanProcessing}>
+                    <button type="button" onClick={() => setIsCropOpen(true)} disabled={isCleanScanProcessing || autoScanWorking}>
                       <Crop size={16} /> Crop
                     </button>
                   ) : null}
                   {!isPassportPhoto && !isIdCardPrint ? (
-                    <button type="button" onClick={runCleanScan} disabled={isCleanScanProcessing}>
+                    <button type="button" onClick={runCleanScan} disabled={isCleanScanProcessing || autoScanWorking}>
                       <ImageIcon size={16} /> {isCleanScanProcessing ? "Cleaning…" : "Clean Scan"}
                     </button>
                   ) : null}
@@ -1183,6 +1283,46 @@ export default function CustomerScanPage() {
                     <X size={16} /> Remove
                   </button>
                 </div>
+                {autoScan ? (
+                  <div className={`doc-autoscan ${autoScan.status}`}>
+                    {autoScan.status === "working" ? (
+                      <span>
+                        <LoaderCircle size={15} className="spin" /> Cleaning your document…
+                      </span>
+                    ) : autoScan.status === "done" || autoScan.status === "cleaned" ? (
+                      <span>
+                        <CircleCheck size={15} /> Document cleaned for printing - use Crop if needed
+                      </span>
+                    ) : autoScan.status === "error" ? (
+                      <span>
+                        <CircleAlert size={15} /> Auto clean failed - original photo kept
+                      </span>
+                    ) : (
+                      <span>Showing your original photo</span>
+                    )}
+                    <div className="doc-autoscan-looks" role="group" aria-label="Page look">
+                      {DOC_LOOKS.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={autoScan.look === option.value && autoScan.status !== "error" ? "active" : ""}
+                          disabled={autoScanWorking}
+                          onClick={() => void autoScanImage(autoScan.original, option.value)}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                    {autoScan.look === "bw" && autoScan.status !== "error" ? (
+                      <label className="doc-autoscan-darkness">
+                        <span>Light</span>
+                        <input type="range" min={0} max={100} value={docDarkness} onChange={(event) => changeDocDarkness(Number(event.target.value))} aria-label="Black and white darkness" />
+                        <span>Dark</span>
+                        <b>{docDarkness}</b>
+                      </label>
+                    ) : null}
+                  </div>
+                ) : null}
                 {isCleanScanProcessing ? (
                   <div className="clean-scan-progress">
                     <span>
@@ -1239,7 +1379,7 @@ export default function CustomerScanPage() {
               <strong>{isPassportPhoto ? "Upload Passport Photo" : "Upload PDF, JPG, PNG, JPEG"}</strong>
               <span>
                 {isCombiningFiles
-                  ? "Combining your files into one document…"
+                  ? combineStatus || "Combining your files into one document…"
                   : isPassportPhoto
                     ? "Upload a JPG, PNG, or JPEG image. A 6-piece printable sheet will be created after cropping."
                     : "Pages will be detected automatically. You can also select multiple files at once - they'll be combined and priced together."}
@@ -1533,7 +1673,7 @@ export default function CustomerScanPage() {
               </button>
             </div>
           ) : (
-            <button type="button" onClick={createPrintOrder} disabled={!hasUploadedFile || !finalFile || isSubmittingOrder || Boolean(order)}>
+            <button type="button" onClick={createPrintOrder} disabled={!hasUploadedFile || !finalFile || isSubmittingOrder || Boolean(order) || autoScanWorking}>
               <Wallet size={18} /> {isSubmittingOrder ? "Creating Order..." : order ? "Order Created" : "Continue to Payment"}
             </button>
           )}
@@ -1787,7 +1927,7 @@ async function detectPdfPages(file: File) {
   }
 }
 
-async function imageFileToPngBytes(file: File): Promise<Uint8Array> {
+async function imageFileToPngBytes(file: Blob): Promise<Uint8Array> {
   const objectUrl = URL.createObjectURL(file);
   try {
     const image = await loadImage(objectUrl);
