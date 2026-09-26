@@ -84,7 +84,19 @@ async function loadPixels(source: Blob) {
 
 // quad = null finds the card automatically; a quad (percent of the image,
 // TL/TR/BR/BL) uses those corners instead, e.g. after a manual adjustment.
-export async function scanCard(source: Blob, mode: ScanMode, quad: CropQuad | null = null): Promise<ScanResult> {
+export function scanCard(source: Blob, mode: ScanMode, quad: CropQuad | null = null): Promise<ScanResult> {
+  return runScan(source, mode, quad, "card");
+}
+
+// A photo of a document page, cleaned for printing (the whole photo - no
+// automatic crop). Always resolves found: true. A quad (percent of the
+// image) straightens that area first.
+// darkness (black & white only): 0 light .. 100 dark, default 25.
+export function scanDocument(source: Blob, mode: ScanMode = "clean", quad: CropQuad | null = null, darkness?: number): Promise<ScanResult> {
+  return runScan(source, mode, quad, "document", darkness);
+}
+
+async function runScan(source: Blob, mode: ScanMode, quad: CropQuad | null, kind: "card" | "document", darkness?: number): Promise<ScanResult> {
   const pixels = await loadPixels(source);
   const w = getWorker();
   const id = nextId++;
@@ -100,6 +112,8 @@ export async function scanCard(source: Blob, mode: ScanMode, quad: CropQuad | nu
         buffer,
         quad: quad ? quad.flatMap((p) => [p.x, p.y]) : null,
         mode,
+        kind,
+        darkness,
         outWidth: OUT_WIDTH,
         outHeight: OUT_HEIGHT,
       },

@@ -50,7 +50,7 @@ type CardEntry = {
 
 type SlotRef = { cardId: string; side: Side };
 
-type FilterValues = { brightness: number; contrast: number; saturation: number };
+type FilterValues = { saturation: number };
 
 const EMPTY_SIDE: SideState = { file: null, url: "", cropRect: DEFAULT_CROP_RECT, cropQuad: DEFAULT_CROP_QUAD };
 const SCAN_MODES: Array<{ value: ScanMode | "off"; label: string }> = [
@@ -62,7 +62,7 @@ const SCAN_MODES: Array<{ value: ScanMode | "off"; label: string }> = [
 const SCAN_MODE_KEY = "cafemitra_idcard_print_scan_mode";
 const CARD_ASPECT_RATIO = "85.6/53.98";
 const CARD_ASPECT_RATIO_NUMBER = 85.6 / 53.98;
-const DEFAULT_FILTER: FilterValues = { brightness: 100, contrast: 100, saturation: 100 };
+const DEFAULT_FILTER: FilterValues = { saturation: 100 };
 
 function newCard(): CardEntry {
   return { id: crypto.randomUUID(), front: EMPTY_SIDE, back: EMPTY_SIDE };
@@ -82,6 +82,9 @@ export default function IdCardPrintClient() {
   const [cropMode, setCropMode] = useState<CropMode>("perspective");
   const [filterTarget, setFilterTarget] = useState<SlotRef | null>(null);
   const [filterValues, setFilterValues] = useState<FilterValues>(DEFAULT_FILTER);
+  // Brightness / Contrast / Black / Red / Yellow / Blue being set in the
+  // Filter & Light window; stored on the side(s) on Apply.
+  const [filterTone, setFilterTone] = useState<Tone>(NEUTRAL_TONE);
   const [applyFilterToBothSides, setApplyFilterToBothSides] = useState(false);
   const [colorMode, setColorMode] = useState<ColorMode>("color");
   const [printBusy, setPrintBusy] = useState(false);
@@ -259,6 +262,7 @@ export default function IdCardPrintClient() {
 
   function openFilter(target: SlotRef) {
     setFilterValues(DEFAULT_FILTER);
+    setFilterTone({ ...NEUTRAL_TONE, ...getSide(target.cardId, target.side).tone });
     setApplyFilterToBothSides(false);
     setFilterTarget(target);
   }
@@ -272,19 +276,21 @@ export default function IdCardPrintClient() {
       for (const side of sides) {
         const current = getSide(filterTarget.cardId, side);
         if (!current.url) continue;
+        // The tone stays a setting (shown live, applied at print); only
+        // saturation is baked into the photo.
+        if (filterValues.saturation === DEFAULT_FILTER.saturation) {
+          setSide(filterTarget.cardId, side, { ...current, tone: filterTone });
+          continue;
+        }
         const adjustedBlob = await applyFilterAdjustments(current.url, filterValues);
         const adjustedFile = new File([adjustedBlob], (current.file?.name || "photo").replace(/(\.[^.]+)?$/, "-adjusted.png"), { type: "image/png" });
         URL.revokeObjectURL(current.url);
-        setSide(filterTarget.cardId, side, { file: adjustedFile, url: URL.createObjectURL(adjustedFile), cropRect: current.cropRect, cropQuad: current.cropQuad, tone: current.tone });
+        setSide(filterTarget.cardId, side, { file: adjustedFile, url: URL.createObjectURL(adjustedFile), cropRect: current.cropRect, cropQuad: current.cropQuad, tone: filterTone });
       }
       setFilterTarget(null);
     } catch {
       // Panel stays open so the user can retry.
     }
-  }
-
-  function updateTone(cardId: string, side: Side, tone: Tone) {
-    setSide(cardId, side, { ...getSide(cardId, side), tone });
   }
 
   function addCard() {
@@ -432,19 +438,8 @@ export default function IdCardPrintClient() {
                   {(["front", "back"] as Side[]).map((side) => {
                     const state = side === "front" ? card.front : card.back;
                     const isActive = sameSlot(active, { cardId: card.id, side });
-                    const tone = state.tone ?? NEUTRAL_TONE;
-                    // Front's panel on its left, back's on its right.
-                    const tonePanel = (
-                      <ToneControl
-                        label={side === "front" ? "Front" : "Back"}
-                        tone={tone}
-                        disabled={!state.url || state.scan === "scanning"}
-                        onChange={(next) => updateTone(card.id, side, next)}
-                      />
-                    );
                     return (
                       <div key={side} className={`idcard-side-group ${side}`}>
-                        {side === "front" ? tonePanel : null}
                         <div className="idcard-side-slot">
                           <span className="idcard-side-label">
                             {side === "front" ? "Front" : "Back"}
@@ -480,7 +475,6 @@ export default function IdCardPrintClient() {
                             </label>
                           )}
                         </div>
-                        {side === "back" ? tonePanel : null}
                       </div>
                     );
                   })}
@@ -567,7 +561,7 @@ export default function IdCardPrintClient() {
           <div className="crop-window">
             <div className="document-preview-head">
               <div>
-                <strong>Filter &amp; Light - {bothSelected ? "Front & Back Photo" : filterTarget.side === "front" ? "Front" : "Back"} Photo</strong>
+                <strong>Filter &amp; Light - {bothSelected ? "Front & Back" : filterTarget.side === "front" ? "Front" : "Back"} Photo</strong>
                 <span>{filterState.file?.name}</span>
               </div>
               <button type="button" onClick={() => setFilterTarget(null)} aria-label="Close filter panel">
@@ -576,28 +570,17 @@ export default function IdCardPrintClient() {
             </div>
             <div className="crop-body">
               <div className={bothSelected ? "idcard-filter-preview idcard-filter-preview-pair" : "idcard-filter-preview"}>
-                <img
-                  src={filterState.url}
-                  alt="Preview with adjustments"
-                  style={{ filter: `brightness(${filterValues.brightness}%) contrast(${filterValues.contrast}%) saturate(${filterValues.saturation}%)` }}
-                />
+                <span className="idcard-filter-preview-img" style={{ filter: `saturate(${filterValues.saturation}%)` }}>
+                  <TonedImage url={filterState.url} tone={filterTone} alt="Preview with adjustments" />
+                </span>
                 {bothSelected ? (
-                  <img
-                    src={otherSideState.url}
-                    alt="Preview with adjustments (other side)"
-                    style={{ filter: `brightness(${filterValues.brightness}%) contrast(${filterValues.contrast}%) saturate(${filterValues.saturation}%)` }}
-                  />
+                  <span className="idcard-filter-preview-img" style={{ filter: `saturate(${filterValues.saturation}%)` }}>
+                    <TonedImage url={otherSideState.url} tone={filterTone} alt="Preview with adjustments (other side)" />
+                  </span>
                 ) : null}
               </div>
               <div className="idcard-filter-controls">
-                <label>
-                  <span>Brightness <b>{filterValues.brightness}%</b></span>
-                  <input type="range" min={0} max={200} value={filterValues.brightness} onChange={(event) => setFilterValues((prev) => ({ ...prev, brightness: Number(event.target.value) }))} />
-                </label>
-                <label>
-                  <span>Contrast <b>{filterValues.contrast}%</b></span>
-                  <input type="range" min={0} max={200} value={filterValues.contrast} onChange={(event) => setFilterValues((prev) => ({ ...prev, contrast: Number(event.target.value) }))} />
-                </label>
+                <ToneControl label="Light & Colour" tone={filterTone} disabled={false} onChange={setFilterTone} />
                 <label>
                   <span>Saturation <b>{filterValues.saturation}%</b></span>
                   <input type="range" min={0} max={200} value={filterValues.saturation} onChange={(event) => setFilterValues((prev) => ({ ...prev, saturation: Number(event.target.value) }))} />
@@ -612,7 +595,13 @@ export default function IdCardPrintClient() {
                     <span>Apply to both Front &amp; Back</span>
                   </label>
                 ) : null}
-                <button type="button" onClick={() => setFilterValues(DEFAULT_FILTER)}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterValues(DEFAULT_FILTER);
+                    setFilterTone(NEUTRAL_TONE);
+                  }}
+                >
                   <RotateCcw size={16} /> Reset
                 </button>
                 <button type="button" onClick={applyFilter}>
@@ -693,7 +682,7 @@ async function applyFilterAdjustments(url: string, values: FilterValues): Promis
   canvas.height = image.naturalHeight;
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Canvas unavailable");
-  context.filter = `brightness(${values.brightness}%) contrast(${values.contrast}%) saturate(${values.saturation}%)`;
+  context.filter = `saturate(${values.saturation}%)`;
   context.drawImage(image, 0, 0);
   return new Promise((resolve, reject) => canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Filter apply failed"))), "image/png", 0.95));
 }

@@ -1,13 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type React from "react";
-import { Contrast, Crop, Palette, Plus, RotateCcw, RotateCw, SlidersHorizontal, Trash2, Upload, X } from "lucide-react";
+import { CircleAlert, CircleCheck, Contrast, Crop, LoaderCircle, Palette, Plus, RotateCcw, RotateCw, SlidersHorizontal, Trash2, Upload, Wand2, X } from "lucide-react";
 import { CropEditor, cropImage, loadImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, warpPerspectiveCrop, type CropQuad, type CropRect } from "../../CropEditor";
+import { onScannerEngineLoading, scanCard } from "../../id-card-print/cardScan";
 
 type Side = "front" | "back";
 type ColorMode = "color" | "bw";
-type SideState = { file: File | null; url: string; cropRect: CropRect; cropQuad: CropQuad };
+type ScanStatus = "idle" | "scanning" | "done" | "notfound" | "error";
+// original = the photo as uploaded, kept so the card can be found again
+// (Auto Fix) or its corners re-placed on it (Perspective crop).
+type SideState = { file: File | null; url: string; cropRect: CropRect; cropQuad: CropQuad; original?: { file: File; url: string }; scan?: ScanStatus };
 type CardEntry = { id: string; front: SideState; back: SideState };
 type SlotRef = { cardId: string; side: Side };
 type FilterValues = { brightness: number; contrast: number; saturation: number };
@@ -140,6 +144,12 @@ export default function IdCardPrintUpload({ onComposed, busy }: { onComposed: (f
   const [colorMode, setColorMode] = useState<ColorMode>("color");
   const [composing, setComposing] = useState(false);
   const [error, setError] = useState("");
+  const [engineLoading, setEngineLoading] = useState(false);
+
+  useEffect(() => {
+    onScannerEngineLoading(() => setEngineLoading(true));
+    return () => onScannerEngineLoading(null);
+  }, []);
 
   function getSide(cardId: string, side: Side): SideState {
     return cards.find((card) => card.id === cardId)?.[side] || EMPTY_SIDE;
@@ -149,12 +159,62 @@ export default function IdCardPrintUpload({ onComposed, busy }: { onComposed: (f
     setCards((prev) => prev.map((card) => (card.id === cardId ? { ...card, [side]: next } : card)));
   }
 
+  function releaseSide(state: SideState) {
+    if (state.url) URL.revokeObjectURL(state.url);
+    if (state.original && state.original.url !== state.url) URL.revokeObjectURL(state.original.url);
+  }
+
+  // Updates one side only if it still shows the same uploaded photo - a scan
+  // that finishes after the photo was replaced or removed is dropped.
+  function updateIfSame(cardId: string, side: Side, originalUrl: string, update: (state: SideState) => SideState) {
+    setCards((prev) =>
+      prev.map((card) => {
+        if (card.id !== cardId || card[side].original?.url !== originalUrl) return card;
+        return { ...card, [side]: update(card[side]) };
+      }),
+    );
+  }
+
+  // Same as the dashboard ID Card Print: finds the card in the photo,
+  // straightens it to card size and cleans it. quad = null detects the
+  // corners; a quad uses the corners the customer placed.
+  async function runScan(cardId: string, side: Side, original: { file: File; url: string }, quad: CropQuad | null) {
+    updateIfSame(cardId, side, original.url, (state) => ({ ...state, scan: "scanning" }));
+    try {
+      const result = await scanCard(original.file, "clean", quad);
+      setEngineLoading(false);
+      if (!result.found) {
+        updateIfSame(cardId, side, original.url, (state) => ({ ...state, scan: "notfound" }));
+        return;
+      }
+      const file = new File([result.blob], original.file.name.replace(/(\.[^.]+)?$/, "-card.jpg"), { type: "image/jpeg" });
+      updateIfSame(cardId, side, original.url, (state) => {
+        if (state.url && state.url !== original.url) URL.revokeObjectURL(state.url);
+        return { ...state, file, url: URL.createObjectURL(file), cropQuad: result.quad, cropRect: DEFAULT_CROP_RECT, scan: "done" };
+      });
+    } catch (reason) {
+      console.error(reason);
+      setEngineLoading(false);
+      updateIfSame(cardId, side, original.url, (state) => ({ ...state, scan: "error" }));
+    }
+  }
+
   function handleFileChange(cardId: string, side: Side, selected?: File | null) {
     if (!selected) return;
-    const current = getSide(cardId, side);
-    if (current.url) URL.revokeObjectURL(current.url);
-    setSide(cardId, side, { file: selected, url: URL.createObjectURL(selected), cropRect: DEFAULT_CROP_RECT, cropQuad: DEFAULT_CROP_QUAD });
+    releaseSide(getSide(cardId, side));
+    const url = URL.createObjectURL(selected);
+    const original = { file: selected, url };
+    setSide(cardId, side, { file: selected, url, cropRect: DEFAULT_CROP_RECT, cropQuad: DEFAULT_CROP_QUAD, original, scan: "scanning" });
     setError("");
+    void runScan(cardId, side, original, null);
+  }
+
+  function autoFix(target: SlotRef) {
+    const current = getSide(target.cardId, target.side);
+    const original = current.original || (current.file ? { file: current.file, url: current.url } : null);
+    if (!original) return;
+    if (!current.original) setSide(target.cardId, target.side, { ...current, original });
+    void runScan(target.cardId, target.side, original, null);
   }
 
   function handleDrop(cardId: string, side: Side, event: React.DragEvent<HTMLLabelElement>) {
@@ -164,8 +224,7 @@ export default function IdCardPrintUpload({ onComposed, busy }: { onComposed: (f
   }
 
   function clearSide(cardId: string, side: Side) {
-    const current = getSide(cardId, side);
-    if (current.url) URL.revokeObjectURL(current.url);
+    releaseSide(getSide(cardId, side));
     setSide(cardId, side, EMPTY_SIDE);
     setActive((currentActive) => (sameSlot(currentActive, { cardId, side }) ? null : currentActive));
   }
@@ -176,8 +235,9 @@ export default function IdCardPrintUpload({ onComposed, busy }: { onComposed: (f
     try {
       const rotatedBlob = await rotateImage90(current.url);
       const rotatedFile = new File([rotatedBlob], current.file.name.replace(/\.[^.]+$/, ".png"), { type: "image/png" });
-      URL.revokeObjectURL(current.url);
-      setSide(cardId, side, { file: rotatedFile, url: URL.createObjectURL(rotatedFile), cropRect: DEFAULT_CROP_RECT, cropQuad: DEFAULT_CROP_QUAD });
+      releaseSide(current);
+      const url = URL.createObjectURL(rotatedFile);
+      setSide(cardId, side, { file: rotatedFile, url, cropRect: DEFAULT_CROP_RECT, cropQuad: DEFAULT_CROP_QUAD, original: { file: rotatedFile, url }, scan: "idle" });
     } catch {
       // Leave the photo as-is if rotation fails.
     }
@@ -195,6 +255,14 @@ export default function IdCardPrintUpload({ onComposed, busy }: { onComposed: (f
     if (!cropTarget) return;
     const current = getSide(cropTarget.cardId, cropTarget.side);
     if (!current.url) return;
+    // Perspective crop on an uploaded photo: straighten again from the
+    // original with the corners as placed, and clean it like the auto scan.
+    if (cropMode === "perspective" && current.original) {
+      const target = cropTarget;
+      setCropTarget(null);
+      await runScan(target.cardId, target.side, current.original, current.cropQuad);
+      return;
+    }
     try {
       const croppedBlob = cropMode === "perspective" ? await warpPerspectiveCrop(current.url, current.cropQuad, CARD_ASPECT_RATIO_NUMBER) : await cropImage(current.url, current.cropRect);
       const croppedFile = new File([croppedBlob], (current.file?.name || "photo").replace(/(\.[^.]+)?$/, "-cropped.png"), { type: "image/png" });
@@ -235,6 +303,8 @@ export default function IdCardPrintUpload({ onComposed, busy }: { onComposed: (f
       const card = prev.find((entry) => entry.id === cardId);
       if (card?.front.url) URL.revokeObjectURL(card.front.url);
       if (card?.back.url) URL.revokeObjectURL(card.back.url);
+      if (card?.front.original && card.front.original.url !== card.front.url) URL.revokeObjectURL(card.front.original.url);
+      if (card?.back.original && card.back.original.url !== card.back.url) URL.revokeObjectURL(card.back.original.url);
       const next = prev.filter((entry) => entry.id !== cardId);
       return next.length ? next : [newCard()];
     });
@@ -242,7 +312,7 @@ export default function IdCardPrintUpload({ onComposed, busy }: { onComposed: (f
   }
 
   async function composeAndContinue() {
-    if (!readyCount || composing || busy) return;
+    if (!readyCount || composing || busy || scanning) return;
     setComposing(true);
     setError("");
     try {
@@ -259,6 +329,9 @@ export default function IdCardPrintUpload({ onComposed, busy }: { onComposed: (f
   const activeState = active ? getSide(active.cardId, active.side) : null;
   const cropState = cropTarget ? getSide(cropTarget.cardId, cropTarget.side) : null;
   const filterState = filterTarget ? getSide(filterTarget.cardId, filterTarget.side) : null;
+  const scanning = cards.some((card) => card.front.scan === "scanning" || card.back.scan === "scanning");
+  // Perspective crop works on the uploaded photo, so the detected corners line up.
+  const cropImageUrl = cropState ? (cropMode === "perspective" && cropState.original ? cropState.original.url : cropState.url) : "";
 
   return (
     <>
@@ -267,6 +340,10 @@ export default function IdCardPrintUpload({ onComposed, busy }: { onComposed: (f
           <button type="button" disabled={!active} onClick={() => active && openFilter(active)}>
             <SlidersHorizontal size={17} />
             <span>Filter &amp; Light</span>
+          </button>
+          <button type="button" disabled={!active || activeState?.scan === "scanning"} onClick={() => active && autoFix(active)} title="Find the card edges again, straighten and clean">
+            <Wand2 size={17} />
+            <span>Auto Fix</span>
           </button>
           <button type="button" disabled={!active} onClick={() => active && setCropTarget(active)}>
             <Crop size={17} />
@@ -291,7 +368,7 @@ export default function IdCardPrintUpload({ onComposed, busy }: { onComposed: (f
             </button>
           </div>
           <div className="idcard-toolbar-divider" />
-          <button className="idcard-print-cta" type="button" disabled={!readyCount || composing || busy} onClick={composeAndContinue}>
+          <button className="idcard-print-cta" type="button" disabled={!readyCount || composing || busy || scanning} onClick={composeAndContinue}>
             {composing ? "Preparing…" : "Continue"}
           </button>
         </div>
@@ -324,6 +401,20 @@ export default function IdCardPrintUpload({ onComposed, busy }: { onComposed: (f
                         onClick={() => setActive((current) => (sameSlot(current, { cardId: card.id, side }) ? null : { cardId: card.id, side }))}
                       >
                         <img src={state.url} alt={`${side === "front" ? "Front" : "Back"} of ID card ${index + 1}`} />
+                        {state.scan === "scanning" ? (
+                          <span className="idcard-scan-overlay">
+                            <LoaderCircle size={22} className="spin" />
+                            {engineLoading ? "Loading scanner…" : "Straightening & cleaning…"}
+                          </span>
+                        ) : state.scan === "done" ? (
+                          <span className="idcard-scan-badge ok">
+                            <CircleCheck size={13} /> Auto-straightened
+                          </span>
+                        ) : state.scan === "notfound" || state.scan === "error" ? (
+                          <span className="idcard-scan-badge warn">
+                            <CircleAlert size={13} /> {state.scan === "notfound" ? "Card edges not found - use Crop" : "Auto clean failed - use Crop"}
+                          </span>
+                        ) : null}
                       </div>
                     ) : (
                       <label className="idcard-card-slot empty" onDragOver={(event) => event.preventDefault()} onDrop={(event) => handleDrop(card.id, side, event)}>
@@ -348,7 +439,9 @@ export default function IdCardPrintUpload({ onComposed, busy }: { onComposed: (f
       {error ? <p className="customer-inline-help" style={{ color: "#c7354d" }}>{error}</p> : null}
 
       <p className="customer-inline-help">
-        {readyCount ? "Click a card to select it, then use Filter & Light / Crop / Rotate / Remove above. Back is optional - upload only a front for cards like PAN." : "Each card slot above is the upload target itself - upload a front photo to continue."}
+        {readyCount
+          ? "Photos are straightened and cleaned automatically. Click a card to select it, then use Auto Fix / Crop / Rotate / Remove above. Back is optional - upload only a front for cards like PAN."
+          : "Each card slot above is the upload target itself - upload a front photo, even one taken at an angle: the card is found, straightened and cleaned for printing."}
       </p>
 
       {cropTarget && cropState?.url ? (
@@ -374,14 +467,14 @@ export default function IdCardPrintUpload({ onComposed, busy }: { onComposed: (f
               </div>
               {cropMode === "straight" ? (
                 <CropEditor
-                  fileUrl={cropState.url}
+                  fileUrl={cropImageUrl}
                   rect={cropState.cropRect}
                   onRectChange={(rect) => updateCropRect(cropTarget.cardId, cropTarget.side, rect)}
                   aspectRatio={CARD_ASPECT_RATIO}
                 />
               ) : (
                 <PerspectiveCropEditor
-                  fileUrl={cropState.url}
+                  fileUrl={cropImageUrl}
                   quad={cropState.cropQuad}
                   onQuadChange={(quad) => updateCropQuad(cropTarget.cardId, cropTarget.side, quad)}
                 />

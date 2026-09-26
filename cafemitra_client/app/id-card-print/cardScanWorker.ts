@@ -17,9 +17,17 @@ type ScanRequest = {
   // Card corners in percent of the image (TL, TR, BR, BL); null = detect.
   quad: number[] | null;
   mode: ScanMode;
+  // "document": any paper page (A4, bill, letter...) - its own shape and
+  // size, not CR80; outWidth / outHeight are ignored.
+  kind?: "card" | "document";
+  // Black & white documents: 0 (light) .. 100 (dark); default DOC_DARKNESS.
+  darkness?: number;
   outWidth: number;
   outHeight: number;
 };
+
+// Set per request: documents take any page shape, cards are scored against CR80.
+let documentMode = false;
 
 const ctx = self as unknown as {
   postMessage: (message: unknown, transfer?: Transferable[]) => void;
@@ -98,6 +106,20 @@ function orderCorners(pts: Pt[]): Pt[] {
 }
 
 const dist = (a: Pt, b: Pt) => Math.hypot(a.x - b.x, a.y - b.y);
+
+// True when every corner of `inner` lies inside convex `outer` (or within `tol` px of it).
+function encloses(outer: Pt[], inner: Pt[], tol: number) {
+  const c = centroid(outer);
+  return inner.every((p) =>
+    [0, 1, 2, 3].every((i) => {
+      const a = outer[i], b = outer[(i + 1) % 4];
+      const len = dist(a, b) || 1;
+      const side = ((b.x - a.x) * (p.y - a.y) - (b.y - a.y) * (p.x - a.x)) / len;
+      const ref = ((b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)) / len;
+      return Math.sign(side) === Math.sign(ref) || Math.abs(side) <= tol;
+    }),
+  );
+}
 
 function polygonArea(pts: Pt[]) {
   let s = 0;
@@ -459,7 +481,8 @@ function combineScore(f: QuadFeatures): { score: number; sides: (number | null)[
   const sideScores = f.sides.map((s) => {
     // Off-frame side: believable only when the card's neighbouring edges
     // really run on into the frame edge.
-    if (s.step === null) return s.run > 0.45 ? 0.5 : 0.12;
+    // A document page often runs past the photo's edge, so there it counts as is.
+    if (s.step === null) return s.run > 0.45 ? 0.5 : documentMode ? 0.3 : 0.12;
     // Wide strips either side: different regions for a real edge, the same
     // card on both sides for a printed line, the same background on both
     // sides for a pouch outline. A real edge has card paper just inside it
@@ -473,12 +496,27 @@ function combineScore(f: QuadFeatures): { score: number; sides: (number | null)[
   // ratios is fine, nearer 1.59 is better; a card cut off by the frame can
   // be any shape.
   const border = f.sides.some((s) => s.step === null);
-  const [lo, hi] = border ? [1.0, 2.8] : [1.15, 1.85];
+  const [lo, hi] = border ? [1.0, 2.8] : documentMode ? [1.0, 2.6] : [1.15, 1.85];
   let aspect = f.ratio < lo ? Math.exp(-Math.log(lo / f.ratio) * 5) : f.ratio > hi ? Math.exp(-Math.log(f.ratio / hi) * 5) : 1;
-  if (!border) aspect *= Math.exp(-Math.abs(Math.log(f.ratio / CARD_RATIO)) * 2);
-  const size = Math.sqrt(Math.min(1, f.coverage / 0.06)) * Math.pow(f.coverage, 0.2);
+  if (!border && !documentMode) aspect *= Math.exp(-Math.abs(Math.log(f.ratio / CARD_RATIO)) * 2);
+  // A page photo is taken to show the page, so a bigger outline is likelier
+  // the page; a line printed across it (a header rule) must not win.
+  const size = Math.sqrt(Math.min(1, f.coverage / 0.06)) * Math.pow(f.coverage, documentMode ? 0.6 : 0.2);
   const paper = Math.min(1, 0.3 + f.paper * 1.2);
   return { score: edge * aspect * size * paper, sides: sideScores };
+}
+
+// Cheap first pass: the basic shape tests and the colour step along the
+// four sides, nothing else.
+function quickScore(img: LabImage, quad: Pt[], band: number) {
+  if (!isConvex(quad) || !saneAngles(quad)) return 0;
+  const coverage = polygonArea(quad) / (img.W * img.H);
+  if (coverage < 0.03 || coverage > 0.97 || quadShape(quad).ratio > 2.8) return 0;
+  const c = centroid(quad);
+  const steps = [0, 1, 2, 3].map((i) => sideStep(img, quad[i], quad[(i + 1) % 4], c, band));
+  if (steps.filter((v) => v === null).length > 2) return 0;
+  const vals = steps.map((v) => (v === null ? 0.5 : v));
+  return (vals.reduce((a, v) => a + v, 0) / 4) * (0.3 + 0.7 * Math.min(...vals)) * Math.sqrt(Math.min(1, coverage / 0.06));
 }
 
 function scoreQuad(img: LabImage, quad: Pt[], band: number): Scored {
@@ -820,14 +858,39 @@ function detectQuad(cv: CV, rgba: Mat): Pt[] | null {
 
   cleanup.forEach((m) => m.delete());
 
-  let scored = [...contourQuads, ...lq].map((q) => scoreQuad(lab, q, band)).filter((s) => s.score > 0);
+  // Text lines on a document (and busy backgrounds) give thousands of
+  // four-line combinations: keep the ones with a real colour step along
+  // their sides before the full (slow) scoring.
+  const seen = new Set<string>();
+  const unique = [...contourQuads, ...lq].filter((q) => {
+    const key = q.map((p) => `${Math.round(p.x / 4)},${Math.round(p.y / 4)}`).join(" ");
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  const shortlist = unique.length <= 300 ? unique : unique
+    .map((q) => ({ q, v: quickScore(lab, q, band) }))
+    .filter((c) => c.v > 0)
+    .sort((a, b) => b.v - a.v)
+    .slice(0, 300)
+    .map((c) => c.q);
+  let scored = shortlist.map((q) => scoreQuad(lab, q, band)).filter((s) => s.score > 0);
   if ((ctx as { debug?: boolean }).debug) (ctx as unknown as { cands: unknown }).cands = { k, box, lab, band, all: scored.map((s) => ({ ...s })), raw: [...contourQuads, ...lq] };
   if (!scored.length) return null;
   scored.sort((a, b) => b.score - a.score);
   if ((ctx as { debug?: boolean }).debug)
     scored.slice(0, 6).forEach((c) => console.log("cand", c.score.toFixed(3), c.sides.map((s) => (s === null ? "B" : s.toFixed(2))).join(","), JSON.stringify(c.quad.map((p) => [Math.round(p.x / k), Math.round(p.y / k)]))));
-  const best = scored[0];
+  let best = scored[0];
   if (!best || best.score < 0.12) return null;
+  // A document's printed rules (a header line, a table border) can outscore
+  // the page's own soft edge against a pale wall. A near-equal outline that
+  // encloses the winner is the page itself.
+  if (documentMode) {
+    const outer = scored
+      .filter((c) => c !== best && c.score >= best.score * 0.9 && polygonArea(c.quad) > polygonArea(best.quad) * 1.04 && encloses(c.quad, best.quad, band * 4))
+      .sort((a, b) => polygonArea(b.quad) - polygonArea(a.quad))[0];
+    if (outer) best = outer;
+  }
   return snapQuad(lab, best.quad, band).map((p) => ({ x: (p.x + box.x) / k, y: (p.y + box.y) / k }));
 }
 
@@ -951,7 +1014,9 @@ function enhance(cv: CV, rgba: Mat, mode: ScanMode): Mat {
 
   // Illumination map: close the lightness at low resolution with a kernel
   // bigger than the photo/text blocks, so only the lighting remains.
-  const q = 4;
+  // Lighting is smooth, so ~120px on the short side is plenty - and keeps
+  // the big closing kernel cheap on a 3000px page.
+  const q = Math.max(4, Math.min(L.rows, L.cols) / 120);
   const smallL = t(new cv.Mat());
   cv.resize(L, smallL, new cv.Size(Math.max(8, Math.round(L.cols / q)), Math.max(8, Math.round(L.rows / q))), 0, 0, cv.INTER_AREA);
   const ks = oddify(Math.min(smallL.rows, smallL.cols) * 0.55, 15);
@@ -971,9 +1036,11 @@ function enhance(cv: CV, rgba: Mat, mode: ScanMode): Mat {
 
   // Levels: background (the bright majority) to white, darkest 1% to black.
   const hist: number[] = new Array(256).fill(0);
-  for (let i = 0; i < flat.data.length; i++) hist[flat.data[i]]++;
-  const black = percentile(hist, flat.data.length, 0.01);
-  const white = Math.max(black + 40, Math.min(250, percentile(hist, flat.data.length, 0.6)));
+  // mat.data builds a fresh view on every access - read it once, not per pixel.
+  const fd: Uint8Array = flat.data;
+  for (let i = 0; i < fd.length; i++) hist[fd[i]]++;
+  const black = percentile(hist, fd.length, 0.01);
+  const white = Math.max(black + 40, Math.min(250, percentile(hist, fd.length, 0.6)));
   const lut = new Uint8Array(256);
   const gamma = mode === "photocopy" ? 1.15 : 1.05;
   for (let v = 0; v < 256; v++) {
@@ -996,9 +1063,9 @@ function enhance(cv: CV, rgba: Mat, mode: ScanMode): Mat {
     // give colours a small lift so faded prints look fresh.
     let sa = 0, sb = 0, n = 0;
     const Ld = L.data, Ad = A.data, Bd = B.data;
-    const bright = percentile(hist, flat.data.length, 0.7);
-    for (let i = 0; i < flat.data.length; i += 3) {
-      if (flat.data[i] >= 235 || Ld[i] >= bright) {
+    const bright = percentile(hist, fd.length, 0.7);
+    for (let i = 0; i < fd.length; i += 3) {
+      if (fd[i] >= 235 || Ld[i] >= bright) {
         sa += Ad[i];
         sb += Bd[i];
         n++;
@@ -1031,12 +1098,118 @@ function enhance(cv: CV, rgba: Mat, mode: ScanMode): Mat {
   return out;
 }
 
+// Scanner-style black & white for a document page: paper pure white, print
+// and handwriting (black, blue or red ink alike) solid black, with smooth
+// stroke edges - the look of a good photocopy.
+function enhanceDocument(cv: CV, rgba: Mat, darkness = DOC_DARKNESS): Mat {
+  const del: Mat[] = [];
+  const t = <T,>(m: T): T => {
+    del.push(m);
+    return m;
+  };
+  const rgb = t(new cv.Mat());
+  cv.cvtColor(rgba, rgb, cv.COLOR_RGBA2RGB);
+  const parts = t(new cv.MatVector());
+  cv.split(rgb, parts);
+  // Darkest channel: coloured ink is dark in at least one of R, G, B, paper in none.
+  const ink = t(new cv.Mat());
+  cv.min(t(parts.get(0)), t(parts.get(1)), ink);
+  cv.min(ink, t(parts.get(2)), ink);
+  // Paper brightness everywhere (lighting, shadows, curl): close away the
+  // strokes on a small copy, smooth, scale back up.
+  const q = Math.max(2, Math.min(ink.rows, ink.cols) / 200);
+  const small = t(new cv.Mat());
+  cv.resize(ink, small, new cv.Size(Math.round(ink.cols / q), Math.round(ink.rows / q)), 0, 0, cv.INTER_AREA);
+  const ks = oddify(Math.min(small.rows, small.cols) * DOC_CLOSE, 5);
+  const paperSmall = t(new cv.Mat());
+  cv.morphologyEx(small, paperSmall, cv.MORPH_CLOSE, t(cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(ks, ks))));
+  cv.GaussianBlur(paperSmall, paperSmall, new cv.Size(oddify(ks * 1.5), oddify(ks * 1.5)), 0);
+  const paper = t(new cv.Mat());
+  cv.resize(paperSmall, paper, new cv.Size(ink.cols, ink.rows), 0, 0, cv.INTER_LINEAR);
+  // Ink relative to the paper right around it: 255 = paper, lower = darker.
+  const inkF = t(new cv.Mat()), paperF = t(new cv.Mat()), ratio = t(new cv.Mat());
+  ink.convertTo(inkF, cv.CV_32F);
+  paper.convertTo(paperF, cv.CV_32F, 1, 1);
+  cv.divide(inkF, paperF, ratio, 255);
+  const flat = t(new cv.Mat());
+  ratio.convertTo(flat, cv.CV_8U);
+  // Top of the slider: faint ballpoint handwriting printed bold, as a
+  // photocopier does.
+  if (darkness >= 80) cv.erode(flat, flat, t(cv.getStructuringElement(cv.MORPH_ELLIPSE, new cv.Size(3, 3))));
+  cv.GaussianBlur(flat, flat, new cv.Size(0, 0), DOC_SOFT);
+  // Tone curve: paper (and faint paper texture) to white, print and
+  // handwriting to dark grey-black, keeping each stroke's own width and its
+  // smooth edges - a clean scan, not a hard threshold. Darker moves the
+  // white point up and deepens the mid tones, so faint ink prints stronger.
+  const dk = Math.max(0, Math.min(100, darkness));
+  const white = DOC_WHITE_BASE + dk * DOC_WHITE_STEP;
+  const black = DOC_BLACK_BASE + dk * DOC_BLACK_STEP;
+  // Below ~35 the curve lifts mid tones (gamma < 1): strokes print as dark grey.
+  const gamma = DOC_GAMMA_BASE + dk * DOC_GAMMA_STEP;
+  const lut = new Uint8Array(256);
+  for (let v = 0; v < 256; v++) {
+    const x = Math.min(1, Math.max(0, (v - black) / (white - black)));
+    lut[v] = Math.round(255 * Math.pow(x, gamma));
+  }
+  const d: Uint8Array = flat.data;
+  for (let i = 0; i < d.length; i++) d[i] = lut[d[i]];
+  const out = new cv.Mat();
+  cv.cvtColor(flat, out, cv.COLOR_GRAY2RGBA);
+  del.forEach((m) => m.delete());
+  return out;
+}
+
+const DOC_CLOSE = 0.04, DOC_SOFT = 0.5, DOC_DARKNESS = 25;
+const DOC_WHITE_BASE = 200, DOC_WHITE_STEP = 0.35, DOC_BLACK_BASE = 0, DOC_BLACK_STEP = 1.8, DOC_GAMMA_BASE = 0.6, DOC_GAMMA_STEP = 0.012;
+
+// A document photo: cleaned as it is - the whole photo, no automatic crop
+// (page detection was not reliable enough on real documents). Corners
+// passed in (a manual perspective crop) are still straightened first.
+function scanDocument(cv: CV, src: Mat, request: ScanRequest) {
+  const { id, width, height, mode } = request;
+  const quad = request.quad ? [0, 1, 2, 3].map((i) => ({ x: (request.quad![i * 2] / 100) * width, y: (request.quad![i * 2 + 1] / 100) * height })) : null;
+  let page: Mat;
+  if (quad) {
+    const w = (dist(quad[0], quad[1]) + dist(quad[3], quad[2])) / 2;
+    const h = (dist(quad[0], quad[3]) + dist(quad[1], quad[2])) / 2;
+    // Keep the photo's detail; 1600-3000px on the long side prints sharp at A4.
+    const long = Math.max(w, h);
+    const k = Math.min(3000, Math.max(1600, long)) / long;
+    const outW = Math.round(w * k), outH = Math.round(h * k);
+    const srcPts = cv.matFromArray(4, 1, cv.CV_32FC2, quad.flatMap((p) => [p.x, p.y]));
+    const dstPts = cv.matFromArray(4, 1, cv.CV_32FC2, [0, 0, outW, 0, outW, outH, 0, outH]);
+    const M = cv.getPerspectiveTransform(srcPts, dstPts);
+    page = new cv.Mat();
+    cv.warpPerspective(src, page, M, new cv.Size(outW, outH), cv.INTER_CUBIC, cv.BORDER_REPLICATE, new cv.Scalar());
+    [srcPts, dstPts, M].forEach((m) => m.delete());
+  } else {
+    page = src.clone();
+  }
+  let result = page;
+  if (mode !== "original") {
+    // "photocopy" = scanner black & white; "clean" = colour kept, just cleaned.
+    result = mode === "photocopy" ? enhanceDocument(cv, page, request.darkness) : enhance(cv, page, mode);
+    page.delete();
+  }
+  const outBuffer = new Uint8ClampedArray(result.data).buffer;
+  const outW = result.cols, outH = result.rows;
+  result.delete();
+  const full = [0, 0, width, 0, width, height, 0, height];
+  const quadPercent = (quad ? quad.flatMap((p) => [p.x, p.y]) : full).map((v, i) => (v / (i % 2 ? height : width)) * 100);
+  ctx.postMessage({ type: "result", id, found: true, detected: Boolean(quad), quad: quadPercent, width: outW, height: outH, buffer: outBuffer }, [outBuffer]);
+}
+
 async function handleScan(request: ScanRequest) {
   const { id, width, height, buffer, mode, outWidth, outHeight } = request;
   let src: Mat = null;
+  documentMode = request.kind === "document";
   try {
     const { instance: cv } = await loadOpenCv();
     src = cv.matFromImageData(new ImageData(new Uint8ClampedArray(buffer), width, height));
+    if (documentMode) {
+      scanDocument(cv, src, request);
+      return;
+    }
     let quad: Pt[] | null = null;
     let detected = false;
     if (request.quad) {
