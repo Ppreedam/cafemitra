@@ -310,6 +310,16 @@ internal sealed class UpdaterForm : Form
     private async Task CopyOverInstallDirWithRetry(string sourceDir, string installDir)
     {
         Directory.CreateDirectory(installDir);
+
+        // Best-effort cleanup of *.old leftovers TryRenameAside creates below
+        // (from a previous update that hit the self-lock case). Harmless
+        // clutter otherwise, but no reason to let it pile up release after
+        // release.
+        foreach (var stale in Directory.GetFiles(installDir, "*.old", SearchOption.AllDirectories))
+        {
+            try { File.Delete(stale); } catch { /* best effort */ }
+        }
+
         foreach (var sourceFile in Directory.GetFiles(sourceDir, "*", SearchOption.AllDirectories))
         {
             var relativePath = Path.GetRelativePath(sourceDir, sourceFile);
@@ -333,9 +343,37 @@ internal sealed class UpdaterForm : Form
                 }
                 catch (IOException) when (attempt < maxAttempts)
                 {
+                    // Updater.exe/Updater.dll are this process's own running
+                    // image - always still locked against being overwritten
+                    // no matter how long we wait, unlike a just-closed
+                    // PrintAgent.exe that's merely finishing up. Windows does
+                    // allow renaming a running executable's file out of the
+                    // way though (the loader only holds FILE_SHARE_DELETE),
+                    // so move the old copy aside and retry immediately.
+                    TryRenameAside(destinationFile);
                     await Task.Delay(500 * attempt);
                 }
             }
+        }
+    }
+
+    private static void TryRenameAside(string path)
+    {
+        try
+        {
+            if (!File.Exists(path))
+            {
+                return;
+            }
+            var staleName = path + ".old";
+            File.Delete(staleName);
+            File.Move(path, staleName);
+        }
+        catch
+        {
+            // Wasn't the self-lock case (or something else is holding it) -
+            // the surrounding retry loop's own File.Copy is what actually
+            // reports failure if every attempt runs out.
         }
     }
 
