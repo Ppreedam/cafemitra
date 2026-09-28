@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import type React from "react";
+import Link from "next/link";
 import { DashboardShell } from "../DashboardShell";
-import IdCardStudioClient from "./IdCardStudioClient";
+import { DOC_TYPES } from "./docTypes";
 
 const pageUrl = "https://repetigo.com/id-card-maker";
 
@@ -30,9 +32,46 @@ export default function IdCardMakerHubPage() {
         <div className="idstudio-head">
           <span className="auto-print-kicker">PrintPilot ID Card Maker</span>
           <h1>ID Card Maker from PDF</h1>
-          <p>Open an e-Aadhaar, e-PAN, Voter ID or DL PDF, enter the password if it asks, adjust the cut and print a card-sized copy.</p>
+          <p>Choose the document type you want to recreate. Upload the downloaded PDF, review the extracted details, and print a card-sized copy.</p>
         </div>
-        <IdCardStudioClient />
+        <div className="idcard-type-grid">
+          {DOC_TYPES.map((doc) => {
+            const Icon = doc.icon;
+            const style = { "--doc-color": doc.color } as React.CSSProperties;
+            const inner = (
+              <>
+                {doc.comingSoon ? <span className="idcard-coming-soon-badge">Coming Soon</span> : null}
+                <div className={`idcard-type-tile-band${doc.realistic ? " is-govt-doc" : ""}`}>
+                  <span className="idcard-type-tile-icon">
+                    <Icon size={18} />
+                  </span>
+                  <span className="idcard-type-tile-code">{doc.shortLabel}</span>
+                </div>
+                {doc.tricolor ? (
+                  <div className="idcard-type-tile-tricolor" aria-hidden>
+                    <span />
+                    <span />
+                    <span />
+                  </div>
+                ) : null}
+                <div className="idcard-type-tile-body">
+                  <h2>{doc.label}</h2>
+                  <p>{doc.description}</p>
+                </div>
+              </>
+            );
+            const tileClass = `idcard-type-tile${doc.comingSoon ? " is-coming-soon" : ""}${doc.tricolor ? " is-govt-doc-tile" : ""}`;
+            return doc.comingSoon ? (
+              <div key={doc.key} className={tileClass} style={style} aria-disabled="true">
+                {inner}
+              </div>
+            ) : (
+              <Link key={doc.key} href={`/id-card-maker/${doc.key}`} className={tileClass} style={style}>
+                {inner}
+              </Link>
+            );
+          })}
+        </div>
       </div>
     </DashboardShell>
   );

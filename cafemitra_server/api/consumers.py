@@ -4,7 +4,12 @@ from urllib.parse import parse_qs
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncWebsocketConsumer
 
+from .models import UserProfile
 from .views import user_for_token_key
+
+
+def _set_agent_ws_connected(user_id, connected):
+    UserProfile.objects.filter(user_id=user_id).update(agent_ws_connected=connected)
 
 # Application-defined close code for "missing/invalid/expired token" (RFC
 # 6455 reserves 4000-4999 for app use). Rejecting before accept() makes
@@ -41,12 +46,19 @@ class AgentJobsConsumer(AsyncWebsocketConsumer):
             return
 
         self.group_name = f"agent-jobs-{user.id}"
+        self.user_id = user.id
         await self.channel_layer.group_add(self.group_name, self.channel_name)
         await self.accept()
+        # See UserProfile.agent_ws_connected - lets the website confirm the
+        # agent is alive via RepetiGo's own server when the browser's direct
+        # 127.0.0.1:8765 request can't get through.
+        await database_sync_to_async(_set_agent_ws_connected)(self.user_id, True)
 
     async def disconnect(self, close_code):
         if hasattr(self, "group_name"):
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
+        if hasattr(self, "user_id"):
+            await database_sync_to_async(_set_agent_ws_connected)(self.user_id, False)
 
     async def receive(self, text_data=None, bytes_data=None):
         # The agent never sends anything meaningful - ClientWebSocket's

@@ -35,6 +35,8 @@ export function ToolSearch() {
       <Search size={16} className="topbar-search-icon" aria-hidden />
       <input
         type="text"
+        name="tool-search"
+        autoComplete="off"
         value={query}
         placeholder="Search tools - try 'compress'"
         aria-label="Search tools"

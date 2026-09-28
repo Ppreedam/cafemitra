@@ -18760,11 +18760,53 @@ img.profile-photo {
   background: rgba(255, 255, 255, 0.22);
 }
 
+/* The real cards (Aadhaar, PAN) are pale/white documents with the colour
+   carried by text, a line or a hologram tint, not a solid fill - a flat
+   colour block reads as "a coloured tile", not "this document". Swap the
+   header to a pale tint of the doc's own colour to match. */
+.idcard-type-tile-band.is-govt-doc {
+  background: linear-gradient(180deg, color-mix(in srgb, var(--doc-color, var(--violet)) 20%, #fff), color-mix(in srgb, var(--doc-color, var(--violet)) 10%, #fff));
+  color: var(--doc-color, var(--violet));
+}
+
+.idcard-type-tile-band.is-govt-doc .idcard-type-tile-icon {
+  background: color-mix(in srgb, var(--doc-color, var(--violet)) 14%, #fff);
+  color: var(--doc-color, var(--violet));
+}
+
+/* Echoes the red baseline under the real card's "आधार" wordmark. */
+.idcard-type-tile.is-govt-doc-tile {
+  border-bottom: 3px solid #d32f2f;
+}
+
 .idcard-type-tile-code {
   font-size: 0.68rem;
   font-weight: 800;
   letter-spacing: 0.06em;
   opacity: 0.92;
+}
+
+/* India's tricolour, as a thin strip under the header band - the strongest
+   single cue that a tile is a Government of India document (Aadhaar). */
+.idcard-type-tile-tricolor {
+  display: flex;
+  height: 6px;
+}
+
+.idcard-type-tile-tricolor span {
+  flex: 1;
+}
+
+.idcard-type-tile-tricolor span:nth-child(1) {
+  background: #FF9933;
+}
+
+.idcard-type-tile-tricolor span:nth-child(2) {
+  background: #ffffff;
+}
+
+.idcard-type-tile-tricolor span:nth-child(3) {
+  background: #138808;
 }
 
 .idcard-type-tile-body {
@@ -19428,7 +19470,8 @@ img.profile-photo {
   overflow-x: auto;
 }
 
-.idcard-toolbar button {
+.idcard-toolbar button,
+.idcard-toolbar-report {
   display: flex;
   min-width: 78px;
   align-items: center;
@@ -19442,11 +19485,33 @@ img.profile-photo {
   font-size: 0.68rem;
   font-weight: 700;
   cursor: pointer;
+  text-decoration: none;
 }
 
 .idcard-toolbar button:disabled {
   color: #b7bdd6;
   cursor: not-allowed;
+}
+
+/* Draws the eye to "Reset to Original" once Auto Fix (or a manual crop/
+   filter) has actually changed the photo - the way back to the raw upload
+   should not be easy to miss. */
+.idcard-toolbar button.highlight {
+  position: relative;
+  color: #1d4ed8;
+  background: #eaf1ff;
+}
+
+.idcard-toolbar button.highlight:hover {
+  background: #dce9ff;
+}
+
+.idcard-toolbar button.highlight::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: var(--brand-hero-gradient);
 }
 
 .idcard-toolbar-actions {
@@ -20484,11 +20549,11 @@ img.profile-photo {
   grid-column: 1 / -1;
   border: 0;
   border-radius: 999px;
-  background: radial-gradient(circle at 35% 30%, #ffe27a, #e5a50a 70%, #b77b00);
+  background: radial-gradient(circle at 35% 30%, #6dd5ed, #2563eb 70%, #0b1f4d);
   color: #fff;
   font-weight: 900;
   text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
-  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.15), 0 3px 8px rgba(183, 123, 0, 0.35);
+  box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.15), 0 3px 8px rgba(37, 99, 235, 0.35);
   cursor: pointer;
 }
 
@@ -20588,8 +20653,8 @@ img.profile-photo {
   grid-template-rows: repeat(3, 22px);
   padding: 4px;
   border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #ffe27a, #e5a50a 70%, #a86f00);
-  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.15), 0 3px 8px rgba(168, 111, 0, 0.3);
+  background: radial-gradient(circle at 35% 30%, #6dd5ed, #2563eb 70%, #0b1f4d);
+  box-shadow: inset 0 -3px 0 rgba(0, 0, 0, 0.15), 0 3px 8px rgba(37, 99, 235, 0.3);
 }
 
 .idstudio-pad button {
@@ -20598,7 +20663,7 @@ img.profile-photo {
   padding: 0;
   border: 0;
   background: transparent;
-  color: #5a3a00;
+  color: #0b1f4d;
   cursor: pointer;
 }
 
@@ -20664,6 +20729,7 @@ img.profile-photo {
 }
 
 .idstudio-stage {
+  position: relative;
   display: grid;
   place-items: center;
   min-height: 360px;
@@ -20676,6 +20742,21 @@ img.profile-photo {
 .idstudio-stage.drag {
   outline: 3px dashed var(--violet);
   outline-offset: -8px;
+}
+
+.idstudio-output-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 8px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 700;
 }
 
 .idstudio-cards {

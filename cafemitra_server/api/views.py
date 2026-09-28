@@ -657,7 +657,11 @@ def id_card_print_charge(request):
     dialog - this only gates and charges RepetiGo's own per-use fee. Shares
     the "id_card_print" tool_key with the QR-upload customer flow (see
     resolve_print_tool_key) - same billable action either way, one shared
-    admin-configurable price.
+    admin-configurable price (free today - no billable ToolPricing row yet).
+
+    Also logs a PrintOrder every time regardless of price, purely so this
+    owner-usage shows up in Orders (who's using the tool, and how often) -
+    same non-physical-print PrintOrder rails id_card_maker_charge uses.
     """
     if request.method == "OPTIONS":
         return JsonResponse({})
@@ -675,7 +679,95 @@ def id_card_print_charge(request):
     if not charged:
         return JsonResponse({"message": charge_message}, status=402)
 
+    body = parse_body(request)
+    try:
+        card_count = max(1, int(body.get("cardCount") or 1))
+    except (TypeError, ValueError):
+        card_count = 1
+    service_name = f"ID Card Print - {card_count} card{'s' if card_count != 1 else ''}"
+
+    tool = ToolPricing.objects.filter(tool_key=tool_key).first()
+    rate = tool_price_for_context(tool, None) if tool else Decimal("0.00")
+    token_number, token_id = next_order_token(user)
+    PrintOrder.objects.create(
+        user=user,
+        shop_code=cafe_code_for_user(user),
+        token_number=token_number,
+        token_id=token_id,
+        service_key="id_card_print",
+        service_name=service_name,
+        price_label=service_name,
+        rate=rate,
+        pages=1,
+        copies=card_count,
+        total_amount=rate,
+        payment_mode="Wallet",
+        payment_status=PrintOrder.PAYMENT_PAID,
+        status=PrintOrder.STATUS_PRINTED,
+        printed_at=timezone.now(),
+    )
+
     return JsonResponse({"ok": True, "toolKey": tool_key})
+
+
+ID_CARD_MAKER_SERVICE_NAMES = {"aadhaar": "Aadhaar Card", "pan": "PAN Card", "voter_id": "Voter ID Card"}
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def id_card_maker_charge(request):
+    """Gate + charge one ID Card Maker generation. Called by the client once
+    per loaded card, on whichever of "Print Card" / "Download PDF" happens
+    first (see IdCardStudioClient's chargedRef) - the card itself is built
+    entirely client-side (pdf-lib), so this only gates/charges RepetiGo's
+    per-use fee (the "id_card_maker" ToolPricing row) and, unlike
+    id_card_print_charge, also logs a PrintOrder so the generation shows up
+    in Orders - same non-physical-print PrintOrder rails resume_builder's
+    and biodata_maker's own-use logging use (never STATUS_QUEUED, so the
+    desktop Print Agent's job poll never sees it).
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Please log in to print or download your ID card."}, status=401)
+
+    body = parse_body(request)
+    doc_type = str(body.get("docType") or "").strip().lower()
+    service_name = ID_CARD_MAKER_SERVICE_NAMES.get(doc_type, "ID Card")
+
+    tool_key = "id_card_maker"
+    allowed, limit_message = wallet_usage_gate(user, tool_key)
+    if not allowed:
+        return JsonResponse({"message": limit_message}, status=402)
+
+    charged, charge_message, _txn = charge_wallet_for_tool(user, tool_key)
+    if not charged:
+        return JsonResponse({"message": charge_message}, status=402)
+
+    tool = ToolPricing.objects.filter(tool_key=tool_key).first()
+    rate = tool_price_for_context(tool, None) if tool else Decimal("0.00")
+    token_number, token_id = next_order_token(user)
+    order = PrintOrder.objects.create(
+        user=user,
+        shop_code=cafe_code_for_user(user),
+        token_number=token_number,
+        token_id=token_id,
+        service_key="id_card_maker",
+        service_name=service_name,
+        price_label=f"{service_name} - ID Card Maker",
+        rate=rate,
+        pages=1,
+        copies=1,
+        total_amount=rate,
+        payment_mode="Wallet",
+        payment_status=PrintOrder.PAYMENT_PAID,
+        status=PrintOrder.STATUS_PRINTED,
+        printed_at=timezone.now(),
+    )
+
+    return JsonResponse({"ok": True, "toolKey": tool_key, "orderId": order.id})
 
 
 @csrf_exempt
@@ -2772,6 +2864,12 @@ def login_user(request):
     if not user:
         return JsonResponse({"message": "Invalid email or password."}, status=401)
 
+    # Self-heals accounts that got activated (via verify_email) but never
+    # actually received their signup bonus - e.g. a request that died between
+    # the two separate, non-atomic writes in verify_email. ensure_signup_wallet_bonus
+    # is a no-op if the bonus was already credited, so this is safe on every login.
+    ensure_signup_wallet_bonus(user)
+
     return token_response(user)
 
 
@@ -2787,11 +2885,16 @@ def verify_email(request):
     if not token or token.expires_at <= timezone.now():
         return JsonResponse({"message": "Verification link is invalid or expired."}, status=400)
 
-    token.used_at = timezone.now()
-    token.user.is_active = True
-    token.user.save(update_fields=["is_active"])
-    token.save(update_fields=["used_at"])
-    ensure_signup_wallet_bonus(token.user)
+    # Atomic so a failure in the bonus credit rolls back activation + token
+    # consumption too, instead of leaving the account "verified" with the
+    # token burned and no way to retry the bonus (see login_user's self-heal
+    # for accounts that already got stuck like this before this fix).
+    with transaction.atomic():
+        token.used_at = timezone.now()
+        token.user.is_active = True
+        token.user.save(update_fields=["is_active"])
+        token.save(update_fields=["used_at"])
+        ensure_signup_wallet_bonus(token.user)
     return token_response(token.user)
 
 
@@ -3105,6 +3208,18 @@ def request_withdrawal(request):
     return JsonResponse({"withdrawal": public_withdrawal(withdrawal), "balance": float(wallet_balance(user))}, status=201)
 
 
+def missing_profile_fields_for_coupon(user):
+    shop = getattr(user, "shop", None)
+    checks = [
+        ("Address", shop.address if shop else ""),
+        ("City", shop.city if shop else ""),
+        ("State", shop.state if shop else ""),
+        ("PIN Code", shop.pin_code if shop else ""),
+        ("WhatsApp Number", shop.whatsapp if shop else ""),
+    ]
+    return [label for label, value in checks if not str(value or "").strip()]
+
+
 @csrf_exempt
 @require_http_methods(["POST", "OPTIONS"])
 def redeem_coupon(request):
@@ -3133,6 +3248,19 @@ def redeem_coupon(request):
             return JsonResponse({"message": "This coupon code has reached its redemption limit."}, status=400)
         if CouponRedemption.objects.filter(coupon=coupon, user=user).exists():
             return JsonResponse({"message": "You have already redeemed this coupon."}, status=400)
+
+        # LAUNCHBONUS is meant for real, reachable shops - gate it on a
+        # complete profile so support isn't chasing customers who redeemed
+        # it with no address/WhatsApp on file (address/WhatsApp are normally
+        # optional on the profile form; this coupon is the one place they're
+        # required).
+        if coupon.code.upper() == "LAUNCHBONUS":
+            missing = missing_profile_fields_for_coupon(user)
+            if missing:
+                return JsonResponse(
+                    {"message": f"Complete your shop profile before redeeming this coupon. Missing: {', '.join(missing)}."},
+                    status=400,
+                )
 
         txn = create_wallet_transaction(
             user,
@@ -3290,7 +3418,10 @@ def public_print_order(request, code):
     pages = positive_int(request.POST.get("pages"), 1)
     copies = positive_int(request.POST.get("copies"), 1)
     price_item_id = str(request.POST.get("priceItemId", "")).strip()
-    rate = pricing_rate(pricing.settings, price_item_id, pages, money(request.POST.get("rate")))
+    # Page-range rates bracket on the total sheets printed (pages x copies),
+    # not the source document's own page count - a 2-page PDF x 4 copies is
+    # 8 printed sheets, which can fall in a different range than 2 pages alone.
+    rate = pricing_rate(pricing.settings, price_item_id, pages * copies, money(request.POST.get("rate")))
     total = money(request.POST.get("totalAmount"))
     calculated_total = (rate * pages * copies).quantize(Decimal("0.01"))
     if total != calculated_total:
@@ -4122,6 +4253,40 @@ def public_delete_order_document(request, order_id):
     order.agent_message = "Customer deleted document after print."
     order.save(update_fields=["document", "agent_message"])
     return JsonResponse({"order": public_order(order), "message": "Document deleted successfully."})
+
+
+AGENT_POLL_STALE_AFTER = timedelta(seconds=60)
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def agent_ws_status(request):
+    """Server-side fallback for the website's Verify Agent step, for when
+    the browser's own direct http://127.0.0.1:8765 request can't get
+    through (see printpilot-agent.ts) - e.g. Chrome's Private Network
+    Access blocking an outdated agent build, a firewall, antivirus, etc.
+    The agent's actual connection to RepetiGo (the one that makes printing
+    work) is what's checked here instead: either a live AgentJobsConsumer
+    WebSocket (see consumers.py, real-time) or a recent /agent/jobs/ HTTP
+    poll (the agent's own fallback transport when its WebSocket is down).
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    profile, _ = UserProfile.objects.get_or_create(user=user, defaults={"phone": ""})
+    polled_recently = bool(profile.agent_last_seen_at) and (timezone.now() - profile.agent_last_seen_at) <= AGENT_POLL_STALE_AFTER
+    connected = profile.agent_ws_connected or polled_recently
+    return JsonResponse(
+        {
+            "connected": connected,
+            "viaWebSocket": profile.agent_ws_connected,
+            "lastSeenAt": profile.agent_last_seen_at.isoformat() if profile.agent_last_seen_at else None,
+        }
+    )
 
 
 @csrf_exempt

@@ -62,8 +62,21 @@ class UserProfile(models.Model):
     # Stamped on every GET /agent/jobs/ poll (see views.agent_jobs) - the
     # simplest possible "is this shop's desktop Print Agent alive" signal,
     # since the agent doesn't report its version or send a dedicated
-    # heartbeat today.
+    # heartbeat today. Only updated while the agent is in HTTP-polling mode
+    # (see agent_ws_connected below) - the desktop agent stops this poll
+    # entirely once its WebSocket connects, so this field alone goes stale
+    # exactly while the agent is healthiest.
     agent_last_seen_at = models.DateTimeField(null=True, blank=True)
+    # True for as long as this shop's desktop Print Agent has a live
+    # AgentJobsConsumer WebSocket connection open (see api/consumers.py's
+    # connect()/disconnect()) - sets/clears in real time, unlike
+    # agent_last_seen_at which only moves on an HTTP poll. Lets the website's
+    # Verify Agent step confirm the agent is alive via the RepetiGo server
+    # itself when the browser's own direct 127.0.0.1:8765 request can't get
+    # through (e.g. Chrome's Private Network Access blocking it on an
+    # outdated agent build) - the print pipeline these two checks describe is
+    # what actually matters, not whether the browser can reach localhost.
+    agent_ws_connected = models.BooleanField(default=False)
 
     def __str__(self) -> str:
         return self.user.get_full_name() or self.user.email

@@ -661,9 +661,13 @@ function peeledPaper(img: LabImage, a: Pt, b: Pt, a2: Pt, b2: Pt, ref: Ref) {
   return n ? like / n : 0;
 }
 
-// Fine placement of each side: slide and tilt it a little outwards or up to
+// Fine placement of each side: slide and tilt it up to ~15% outwards or
 // ~12% inwards and keep the position that fits the card outline best. Peels
-// off a laminate pouch's margin that was taken for the card's edge.
+// off a laminate pouch's margin that was taken for the card's edge, and
+// (moving the other way) recovers a side the initial contour placed too far
+// in - a busy or textured card border can outscore the card's own true,
+// softer edge in the first pass. peeledPaper still guards both directions:
+// what the move crosses must not read as the card's own paper.
 function snapQuad(img: LabImage, quad: Pt[], band: number): Pt[] {
   const ref = paperRef(img, quad);
   const c = centroid(quad);
@@ -681,7 +685,7 @@ function snapQuad(img: LabImage, quad: Pt[], band: number): Pt[] {
     let best = { v: base ?? -1, a, b };
     if (base !== null) {
       const D = i % 2 === 0 ? h : w;
-      const lo = -0.012 * D, hi = 0.12 * D;
+      const lo = -0.15 * D, hi = 0.12 * D;
       const at = (oa: number, ob: number) => ({ a: { x: a.x + nx * oa, y: a.y + ny * oa }, b: { x: b.x + nx * ob, y: b.y + ny * ob } });
       const tryAt = (oa: number, ob: number) => {
         const cand = at(oa, ob);
@@ -723,19 +727,24 @@ function trimBars(rgba: Mat) {
     return (d[i] + d[i + 1] + d[i + 2]) / 3;
   };
   // A bar line: nearly all of it one flat, very dark or very bright tone
-  // (a few icons or letters allowed).
-  const isBar = (n: number, at: (j: number) => number) => {
+  // (a few icons or letters allowed). Returns which, so a scan can tell a
+  // real bar (one flat tone) from a dark background giving way to a bright
+  // card - which must not be swallowed as if it were more bar.
+  const isBar = (n: number, at: (j: number) => number): "dark" | "bright" | false => {
     const vals: number[] = [];
     for (let j = 0; j < n; j += 2) vals.push(at(j));
     vals.sort((p, q) => p - q);
     const med = vals[vals.length >> 1];
     if (med > 45 && med < 225) return false;
-    return vals.filter((v) => Math.abs(v - med) < 18).length >= vals.length * 0.85;
+    if (vals.filter((v) => Math.abs(v - med) < 18).length < vals.length * 0.85) return false;
+    return med <= 45 ? "dark" : "bright";
   };
   const scan = (count: number, span: number, at: (i: number, j: number) => number) => {
-    let last = -1, gap = 0;
+    let last = -1, gap = 0, tone: "dark" | "bright" | null = null;
     for (let i = 0; i < count * 0.4; i++) {
-      if (isBar(span, (j) => at(i, j))) {
+      const bar = isBar(span, (j) => at(i, j));
+      if (bar && (tone === null || bar === tone)) {
+        tone = bar;
         last = i;
         gap = 0;
       } else if (++gap > count * 0.03) break;
@@ -1071,8 +1080,10 @@ function enhance(cv: CV, rgba: Mat, mode: ScanMode): Mat {
         n++;
       }
     }
-    // Capped: a strongly coloured card background must not be "corrected" to grey.
-    const clampCast = (v: number) => Math.max(-10, Math.min(10, v));
+    // Capped small: a genuinely coloured card background (PAN's pale blue,
+    // say) must not be "corrected" towards grey - only a mild camera/lighting
+    // cast is worth neutralising.
+    const clampCast = (v: number) => Math.max(-4, Math.min(4, v));
     const da = n ? clampCast(sa / n - 128) : 0, db = n ? clampCast(sb / n - 128) : 0;
     const boost = 1.12;
     for (let i = 0; i < Ad.length; i++) {
@@ -1087,10 +1098,16 @@ function enhance(cv: CV, rgba: Mat, mode: ScanMode): Mat {
     cv.merge(merged, lab2);
     const rgb2 = t(new cv.Mat());
     cv.cvtColor(lab2, rgb2, cv.COLOR_Lab2RGB);
+    // Two-radius unsharp: a tight pass crisps text strokes and QR modules,
+    // a wider one lifts overall clarity the way a flatbed scan reads.
+    const blurredFine = t(new cv.Mat());
+    cv.GaussianBlur(rgb2, blurredFine, new cv.Size(0, 0), 0.6);
+    const sharpFine = t(new cv.Mat());
+    cv.addWeighted(rgb2, 1.35, blurredFine, -0.35, 0, sharpFine);
     const blurred = t(new cv.Mat());
-    cv.GaussianBlur(rgb2, blurred, new cv.Size(0, 0), 1.2);
+    cv.GaussianBlur(sharpFine, blurred, new cv.Size(0, 0), 1.2);
     const sharp = t(new cv.Mat());
-    cv.addWeighted(rgb2, 1.45, blurred, -0.45, 0, sharp);
+    cv.addWeighted(sharpFine, 1.45, blurred, -0.45, 0, sharp);
     out = new cv.Mat();
     cv.cvtColor(sharp, out, cv.COLOR_RGB2RGBA);
   }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import IdCardUploadClient from "../IdCardUploadClient";
+import { DashboardShell } from "../../DashboardShell";
+import IdCardStudioClient from "../IdCardStudioClient";
 import { JsonLd, StructuredSeoCopy } from "../SeoContent";
 
 const pageUrl = "https://repetigo.com/id-card-maker/aadhaar";
@@ -79,17 +80,25 @@ const faqSchemaQuestions = [
 
 export default function AadhaarCardMakerPage() {
   return (
-    <IdCardUploadClient docType="aadhaar">
-      <JsonLd
-        toolName="RepetiGo Aadhaar Card Maker"
-        description="Free tool to recreate a printable Aadhaar card from a downloaded e-Aadhaar PDF."
-        pageUrl={pageUrl}
-        breadcrumbLabel="Aadhaar Card Maker"
-        faqSchemaQuestions={faqSchemaQuestions}
-      />
-      <article className="tool-seo-content" id="aadhaar-card-maker-guide">
-        <StructuredSeoCopy content={aadhaarContent} />
-      </article>
-    </IdCardUploadClient>
+    <DashboardShell activePath="/id-card-maker">
+      <div className="dashboard idcard-page idstudio-page">
+        <div className="idstudio-head">
+          <span className="auto-print-kicker">PrintPilot ID Card Maker</span>
+          <h1>Aadhaar Card Maker from PDF</h1>
+          <p>Open an e-Aadhaar PDF, enter the password if it asks, adjust the cut and print a card-sized copy.</p>
+        </div>
+        <IdCardStudioClient />
+        <JsonLd
+          toolName="RepetiGo Aadhaar Card Maker"
+          description="Free tool to recreate a printable Aadhaar card from a downloaded e-Aadhaar PDF."
+          pageUrl={pageUrl}
+          breadcrumbLabel="Aadhaar Card Maker"
+          faqSchemaQuestions={faqSchemaQuestions}
+        />
+        <article className="tool-seo-content" id="aadhaar-card-maker-guide">
+          <StructuredSeoCopy content={aadhaarContent} />
+        </article>
+      </div>
+    </DashboardShell>
   );
 }

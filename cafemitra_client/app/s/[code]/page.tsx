@@ -217,8 +217,9 @@ export default function CustomerScanPage() {
   const isPassportPhoto = selectedService === "passport_photo";
   const isIdCardPrint = selectedService === "id_card_print";
   const hasUploadedFile = Boolean(fileUrl);
-  const selectedRate = calculatePriceItemRate(selectedItem, isPassportPhoto ? 1 : pages);
-  const amount = hasUploadedFile ? Math.max(0, selectedRate * (isPassportPhoto ? copies : pages * copies)) : 0;
+  const totalUnits = isPassportPhoto ? copies : pages * copies;
+  const selectedRate = calculatePriceItemRate(selectedItem, isPassportPhoto ? 1 : totalUnits);
+  const amount = hasUploadedFile ? Math.max(0, selectedRate * totalUnits) : 0;
   const hasPdfFile = isPdfFile(fileType, fileName);
   const hasImageFile = isImageFile(fileType, fileName);
   const canCropImage = (selectedService === "auto_document_print" || isPassportPhoto) && hasImageFile;

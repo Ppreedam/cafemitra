@@ -112,7 +112,10 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(siteStructuredData) }}
         />
       </head>
-      <body>
+      {/* Browser extensions (Grammarly, password managers, etc.) inject their
+          own attributes onto <body> before React hydrates - suppressed here
+          so that harmless mismatch doesn't surface as a hydration error. */}
+      <body suppressHydrationWarning>
         {shouldLoadAnalytics ? (
           <noscript>
             <iframe

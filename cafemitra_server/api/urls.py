@@ -98,6 +98,7 @@ urlpatterns = [
     re_path(r"^tools/biodata-maker/saved/(?P<order_id>[0-9]+)/delete/?$", views.biodata_maker_delete),  # POST delete one saved biodata
     re_path(r"^tools/biodata-maker/saved/(?P<order_id>[0-9]+)/mark-paid/?$", views.mark_biodata_order_paid),  # POST owner confirms cash payment for a customer's biodata order
     re_path(r"^tools/id-card-print-charge/?$", views.id_card_print_charge),  # POST gate+charge one ID Card Print job (free until the "id_card_print" ToolPricing row is configured)
+    re_path(r"^tools/id-card-maker-charge/?$", views.id_card_maker_charge),  # POST gate+charge (Rs. 5, "id_card_maker" ToolPricing row) one ID Card Maker generation, also logs a PrintOrder so it shows in Orders
     re_path(r"^tools/photo-print-sheet-charge/?$", views.photo_print_sheet_charge),  # POST gate+charge one Photo Print Sheet job (free until the "photo_print_sheet" ToolPricing row is configured)
     re_path(r"^tools/upi-qr/payees/?$", views.upi_payee_list),  # GET the caller's saved UPI payee accounts
     re_path(r"^tools/upi-qr/payees/save/?$", views.upi_payee_save),  # POST save a UPI payee account (free, no wallet charge - tool has no per-use cost)
@@ -174,6 +175,7 @@ urlpatterns = [
     re_path(r"^agent/passport-jobs/(?P<job_id>[0-9]+)/original-image/?$", views.agent_passport_original_image),  # GET raw upload decoded from base64
 
     # --- Agent (desktop Print Agent, print queue) ---------------------------
+    re_path(r"^agent/ws-status/?$", views.agent_ws_status),  # GET server-side "is my Print Agent alive" fallback for the Verify Agent step (WebSocket connect state or a recent /agent/jobs/ poll)
     re_path(r"^agent/jobs/?$", views.agent_jobs),  # GET list queued/approved print jobs (excludes passport_photo)
     re_path(r"^agent/jobs/(?P<order_id>[0-9]+)/status/?$", views.agent_job_status),  # POST update a job's print status (printing/printed/failed)
     re_path(r"^agent/jobs/(?P<order_id>[0-9]+)/gemini-photo/?$", views.agent_upload_gemini_photo),  # POST attach an AI-generated photo to any order

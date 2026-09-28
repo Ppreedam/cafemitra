@@ -22,10 +22,12 @@ import {
   RotateCcw,
   Save,
   Settings,
+  Wallet,
   X,
 } from "lucide-react";
-import { hasStoredSession } from "@/lib/api";
+import { apiFetch, hasStoredSession } from "@/lib/api";
 import { trackToolEvent } from "@/lib/analytics";
+import { useToolPrice } from "@/lib/useToolPrice";
 import { BUSINESS } from "@/lib/businessInfo";
 import {
   PHOTO_DEFAULTS,
@@ -264,6 +266,12 @@ type Modal = "" | "help" | "photo" | "settings" | "print" | "login";
 export default function IdCardStudioClient() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
+  // True once this loaded card has already been charged for - reset
+  // whenever a new card is loaded, so Print Card and Download PDF only
+  // charge once between them, whichever happens first (see makeOutput).
+  const chargedRef = useRef(false);
+  const price = useToolPrice("id_card_maker");
+  const [chargeConfirm, setChargeConfirm] = useState<{ resolve: (ok: boolean) => void } | null>(null);
 
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
   const [files, setFiles] = useState<File[]>([]);
@@ -289,6 +297,11 @@ export default function IdCardStudioClient() {
   const [outputKind, setOutputKind] = useState<OutputKind>("card");
   const [busyOutput, setBusyOutput] = useState(false);
   const [settingsNote, setSettingsNote] = useState("");
+
+  // A new card (or clearing back to none) is a fresh billable generation.
+  useEffect(() => {
+    chargedRef.current = false;
+  }, [card]);
 
   // Saved settings are read after mount so the server render stays default.
   useEffect(() => {
@@ -541,18 +554,60 @@ export default function IdCardStudioClient() {
     return requireLogin();
   }
 
+  // No price loaded yet, or the tool is still free - skip the modal
+  // entirely (price is then a no-op charge server-side too).
+  function requestChargeConfirm() {
+    if (!price) return Promise.resolve(true);
+    return new Promise<boolean>((resolve) => setChargeConfirm({ resolve }));
+  }
+
+  function answerChargeConfirm(ok: boolean) {
+    chargeConfirm?.resolve(ok);
+    setChargeConfirm(null);
+  }
+
+  async function chargeIdCardMaker(docType: string) {
+    const response = await apiFetch("/api/tools/id-card-maker-charge/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ docType }),
+    });
+    if (response.ok) return;
+    const data = await response.json().catch(() => ({}));
+    throw new Error(data.message || "Could not verify your wallet balance. Please try again.");
+  }
+
   async function makeOutput(kind: OutputKind, action: "print" | "download") {
     if (!card || !validateBeforeOutput()) return;
-    // Open the tab synchronously so pop-up blockers allow it.
-    const printWindow = action === "print" ? window.open("", "_blank") : null;
+    // Close the Print Card dialog right away - everything below happens
+    // after this, and shouldn't leave the picker sitting open meanwhile.
+    setModal("");
     setBusyOutput(true);
     try {
+      // Build first, with the "Building your card…" overlay showing (see
+      // idstudio-output-overlay below) - only once it actually exists do we
+      // ask to charge for it, so a build failure never costs anything.
       const { bytes } = await buildCardPdf(card, currentSettings(), kind);
+
+      // First output for this card: confirm and charge before delivering it.
+      // A card already charged for (chargedRef true) skips straight through.
+      if (!chargedRef.current) {
+        if (!(await requestChargeConfirm())) return;
+        try {
+          await chargeIdCardMaker(card.type.key);
+          chargedRef.current = true;
+        } catch (error) {
+          setStatus({ text: error instanceof Error ? error.message : "Could not verify your wallet balance. Please try again.", error: true });
+          return;
+        }
+      }
+
       const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/pdf" }));
       const baseName = card.fileName.replace(/\.pdf$/i, "") || "id-card";
       const suffix = kind === "card" ? "card" : kind === "a4" ? "A4-sheet" : "4x6-sheet";
-      if (printWindow) {
-        printWindow.location.href = url;
+      if (action === "print") {
+        const printWindow = window.open("", "_blank");
+        if (printWindow) printWindow.location.href = url;
       } else {
         const link = document.createElement("a");
         link.href = url;
@@ -560,12 +615,10 @@ export default function IdCardStudioClient() {
         link.click();
       }
       setTimeout(() => URL.revokeObjectURL(url), 60_000);
-      setModal("");
       setStatus({ text: action === "print" ? "Opened in a new tab. Print at 100% / Actual size, not Fit to page." : `Saved ${baseName}-${suffix}.pdf.` });
       trackToolEvent("id_card_maker", `${action}_${kind}_${card.type.key}`);
     } catch (error) {
       console.error(error);
-      printWindow?.close();
       setStatus({ text: "Could not build this PDF. Try resetting Adjust Card.", error: true });
     } finally {
       setBusyOutput(false);
@@ -763,6 +816,12 @@ export default function IdCardStudioClient() {
             <span>{loading ? "Unlocking and finding the card" : "or click to choose. Select several files to step through them with Previous / Next."}</span>
           </button>
         )}
+        {busyOutput ? (
+          <div className="idstudio-output-overlay">
+            <LoaderCircle size={26} className="spin" />
+            Building your card…
+          </div>
+        ) : null}
       </div>
 
       {status.text || notes.length ? (
@@ -1191,6 +1250,28 @@ export default function IdCardStudioClient() {
               <Link className="resbuild-btn-primary" href={`/login?next=${encodeURIComponent("/id-card-maker")}`}>
                 Login
               </Link>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {chargeConfirm ? (
+        <div className="resbuild-confirm-overlay" onClick={() => answerChargeConfirm(false)}>
+          <div className="resbuild-confirm-modal" onClick={(event) => event.stopPropagation()}>
+            <span className="resbuild-confirm-icon">
+              <Wallet size={20} />
+            </span>
+            <h3>Confirm wallet charge</h3>
+            <p>
+              This will deduct <strong>₹{price}</strong> from your RepetiGo wallet for this card.
+            </p>
+            <div className="resbuild-confirm-actions">
+              <button type="button" className="resbuild-btn-secondary" onClick={() => answerChargeConfirm(false)}>
+                Cancel
+              </button>
+              <button type="button" className="resbuild-btn-primary" onClick={() => answerChargeConfirm(true)}>
+                OK, Continue
+              </button>
             </div>
           </div>
         </div>

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import PanCardMakerClient from "./PanCardMakerClient";
+import { DashboardShell } from "../../DashboardShell";
+import IdCardStudioClient from "../IdCardStudioClient";
 import { JsonLd, StructuredSeoCopy } from "../SeoContent";
 
 const pageUrl = "https://repetigo.com/id-card-maker/pan";
@@ -80,17 +81,25 @@ const faqSchemaQuestions = [
 
 export default function PanCardMakerPage() {
   return (
-    <PanCardMakerClient>
-      <JsonLd
-        toolName="RepetiGo PAN Card Maker"
-        description="Free tool to recreate a printable PAN card from a downloaded e-PAN PDF."
-        pageUrl={pageUrl}
-        breadcrumbLabel="PAN Card Maker"
-        faqSchemaQuestions={faqSchemaQuestions}
-      />
-      <article className="tool-seo-content" id="pan-card-maker-guide">
-        <StructuredSeoCopy content={panContent} />
-      </article>
-    </PanCardMakerClient>
+    <DashboardShell activePath="/id-card-maker">
+      <div className="dashboard idcard-page idstudio-page">
+        <div className="idstudio-head">
+          <span className="auto-print-kicker">PrintPilot ID Card Maker</span>
+          <h1>PAN Card Maker from PDF</h1>
+          <p>Open an e-PAN PDF, enter the password if it asks, adjust the cut and print a card-sized copy.</p>
+        </div>
+        <IdCardStudioClient />
+        <JsonLd
+          toolName="RepetiGo PAN Card Maker"
+          description="Free tool to recreate a printable PAN card from a downloaded e-PAN PDF."
+          pageUrl={pageUrl}
+          breadcrumbLabel="PAN Card Maker"
+          faqSchemaQuestions={faqSchemaQuestions}
+        />
+        <article className="tool-seo-content" id="pan-card-maker-guide">
+          <StructuredSeoCopy content={panContent} />
+        </article>
+      </div>
+    </DashboardShell>
   );
 }

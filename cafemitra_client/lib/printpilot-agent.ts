@@ -1,3 +1,5 @@
+import { apiFetch } from "./api";
+
 // Mirrors VirtualPrinterMarkers/IsVirtualPrinter in the desktop Print Agent
 // (Print Agent/Print Agent/Form1.cs) - these Windows "printers" always
 // report as valid/online but never produce physical paper (they write a
@@ -87,6 +89,25 @@ const agentPrinterPresetsEndpoints = ["http://127.0.0.1:8765/printer-presets"];
 const agentDeletePrinterPresetEndpoints = ["http://127.0.0.1:8765/printer-presets/delete"];
 const agentRequestTimeoutMs = 5000;
 const agentPrintRequestTimeoutMs = 30000;
+
+export type ServerAgentStatus = {
+  connected: boolean;
+  viaWebSocket: boolean;
+  lastSeenAt: string | null;
+};
+
+// Unlike everything else in this file, this hits RepetiGo's own server, not
+// the local agent - see api/views.py's agent_ws_status. It's the fallback
+// for when the browser's own http://127.0.0.1:8765 request can't get
+// through at all (Private Network Access, a firewall, antivirus, an
+// outdated agent build...): the server already knows whether this shop's
+// agent has a live WebSocket open or polled /agent/jobs/ recently, since
+// that's the exact same connection that makes printing work.
+export async function fetchServerAgentStatus(): Promise<ServerAgentStatus> {
+  const response = await apiFetch("/api/agent/ws-status/");
+  if (!response.ok) throw new Error("Could not reach RepetiGo to check the agent's status.");
+  return response.json();
+}
 
 export async function fetchAgentHealth() {
   try {

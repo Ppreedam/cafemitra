@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import IdCardUploadClient from "../IdCardUploadClient";
+import { DashboardShell } from "../../DashboardShell";
+import IdCardStudioClient from "../IdCardStudioClient";
 import { JsonLd, StructuredSeoCopy } from "../SeoContent";
 
 const pageUrl = "https://repetigo.com/id-card-maker/voter";
@@ -76,17 +77,25 @@ const faqSchemaQuestions = [
 
 export default function VoterCardMakerPage() {
   return (
-    <IdCardUploadClient docType="voter">
-      <JsonLd
-        toolName="RepetiGo Voter ID Card Maker"
-        description="Free tool to recreate a printable Voter ID card from a downloaded e-EPIC PDF."
-        pageUrl={pageUrl}
-        breadcrumbLabel="Voter ID Card Maker"
-        faqSchemaQuestions={faqSchemaQuestions}
-      />
-      <article className="tool-seo-content" id="voter-card-maker-guide">
-        <StructuredSeoCopy content={voterContent} />
-      </article>
-    </IdCardUploadClient>
+    <DashboardShell activePath="/id-card-maker">
+      <div className="dashboard idcard-page idstudio-page">
+        <div className="idstudio-head">
+          <span className="auto-print-kicker">PrintPilot ID Card Maker</span>
+          <h1>Voter ID Card Maker from PDF</h1>
+          <p>Open an e-EPIC PDF, enter the password if it asks, adjust the cut and print a card-sized copy.</p>
+        </div>
+        <IdCardStudioClient />
+        <JsonLd
+          toolName="RepetiGo Voter ID Card Maker"
+          description="Free tool to recreate a printable Voter ID card from a downloaded e-EPIC PDF."
+          pageUrl={pageUrl}
+          breadcrumbLabel="Voter ID Card Maker"
+          faqSchemaQuestions={faqSchemaQuestions}
+        />
+        <article className="tool-seo-content" id="voter-card-maker-guide">
+          <StructuredSeoCopy content={voterContent} />
+        </article>
+      </div>
+    </DashboardShell>
   );
 }

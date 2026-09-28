@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   BarChart3,
@@ -47,6 +47,7 @@ import {
   fallbackPrinters,
   fetchAgentHealth,
   fetchAgentPrinterPresets,
+  fetchServerAgentStatus,
   runAgentTestPrint,
   saveAgentPrinter,
   saveAgentPrinterPreset,
@@ -213,6 +214,10 @@ export default function AutoPrintClient() {
   const [agentHealth, setAgentHealth] = useState<AgentHealth | null>(null);
   const [agentMessage, setAgentMessage] = useState("Run the desktop agent, then check the connection.");
   const [isVerifyingAgent, setIsVerifyingAgent] = useState(false);
+  // Guards against overlapping verifyAgent() calls - the background poll
+  // (see the effect below) fires every 4s, but a single check can take
+  // longer than that once it falls through all three layers.
+  const verifyInFlightRef = useRef(false);
   const [availablePrinters, setAvailablePrinters] = useState<string[]>(fallbackPrinters);
   const [selectedPrinter, setSelectedPrinter] = useState(fallbackPrinters[0]);
   const [printerMessage, setPrinterMessage] = useState("");
@@ -301,22 +306,7 @@ export default function AutoPrintClient() {
     setShopName(storedShop.shopName || "RepetiGo Shop");
     setQrUrl(`${publicBaseUrl}/s/${code}`);
 
-    fetchPricingServices()
-      .then((services) => {
-        const autoPrint = services.find((service) => service.serviceKey === "auto_document_print");
-        if (!autoPrint) return;
-        setPriceItems(Array.isArray(autoPrint.settings.priceItems) ? autoPrint.settings.priceItems : priceItems);
-        setPaymentMode(normalizePaymentMode(String(autoPrint.settings.paymentMode ?? "Online Payment")));
-        setPricingSaved(Boolean(autoPrint.settings.pricingSaved));
-        setTestPrintDone(Boolean(autoPrint.settings.testPrintDone));
-        setIsShopOpen(autoPrint.settings.isOpen !== false);
-        const savedPrinter = String(autoPrint.settings.selectedPrinter || "").trim();
-        if (savedPrinter) {
-          setSelectedPrinter(savedPrinter);
-          setPrinterSaved(true);
-        }
-      })
-      .catch(() => undefined);
+    loadPricingSettings();
 
     fetchCashCounterStatus().then((status) => {
       setCashCounterAvailable(status.available);
@@ -326,24 +316,123 @@ export default function AutoPrintClient() {
     verifyAgent({ silent: true });
   }, [router]);
 
+  // Step 2 used to need a manual "Retry" click once the agent was actually
+  // up - poll quietly in the background after Download is clicked (no
+  // point before that) until it connects, and re-check the moment the
+  // browser tab regains focus (the likely moment right after installing
+  // and starting the agent in another window), so Verify completes on its
+  // own instead of making the owner come back and click it.
+  useEffect(() => {
+    if (!agentDownloaded || agentConnected) return;
+    const interval = window.setInterval(() => {
+      verifyAgent({ silent: true });
+    }, 4000);
+    function handleVisible() {
+      if (document.visibilityState === "visible") verifyAgent({ silent: true });
+    }
+    window.addEventListener("focus", handleVisible);
+    document.addEventListener("visibilitychange", handleVisible);
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", handleVisible);
+      document.removeEventListener("visibilitychange", handleVisible);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [agentDownloaded, agentConnected]);
+
+  // Step 3 (Select Printer) has the same gap Step 2 used to: the desktop
+  // agent can now report its own printer straight to the server (its own
+  // Printer Setup screen, right after login - see CafeMitraApi.cs's
+  // SaveSelectedPrinter), but this page only ever read that once, on
+  // mount. Poll the same settings quietly until a printer shows up, so
+  // picking it in the agent completes this step here too without a manual
+  // refresh - same reasoning as the agent-verify poll above.
+  useEffect(() => {
+    if (printerReady) return;
+    const interval = window.setInterval(() => {
+      loadPricingSettings();
+    }, 4000);
+    return () => window.clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [printerReady]);
+
   useEffect(() => {
     if (currentStep.key !== "qr" || !qrUrl || qrImage) return;
     generateQr({ copyToClipboard: false }).catch(() => undefined);
   }, [currentStep.key, qrImage, qrUrl]);
 
+  async function loadPricingSettings() {
+    try {
+      const services = await fetchPricingServices();
+      const autoPrint = services.find((service) => service.serviceKey === "auto_document_print");
+      if (!autoPrint) return;
+      setPriceItems((current) => (Array.isArray(autoPrint.settings.priceItems) ? autoPrint.settings.priceItems : current));
+      setPaymentMode(normalizePaymentMode(String(autoPrint.settings.paymentMode ?? "Online Payment")));
+      setPricingSaved(Boolean(autoPrint.settings.pricingSaved));
+      setTestPrintDone(Boolean(autoPrint.settings.testPrintDone));
+      setIsShopOpen(autoPrint.settings.isOpen !== false);
+      const savedPrinter = String(autoPrint.settings.selectedPrinter || "").trim();
+      if (savedPrinter) {
+        setSelectedPrinter(savedPrinter);
+        setPrinterSaved(true);
+      }
+    } catch {
+      // Best-effort - the mount call and the background poll both swallow
+      // failures the same way the original inline fetch did.
+    }
+  }
+
   async function verifyAgent(options: { silent?: boolean } = {}) {
+    if (verifyInFlightRef.current) return; // a poll tick landed mid-check - skip, the next one will catch up
+    verifyInFlightRef.current = true;
     if (!options.silent) {
       setIsVerifyingAgent(true);
       setAgentMessage("Checking local PrintPilot Agent...");
     }
 
     try {
+      // 1) The local agent's own /status - richest signal (printers,
+      // account, already-selected printer) when the browser can reach it.
       const health = await fetchAgentHealth();
-      const connected = health.status === "running";
+      let connected = health.status === "running";
+      let scannedPrinters = Array.isArray(health.printers) && health.printers.length ? health.printers : fallbackPrinters;
+      let viaServer = false;
+
+      // 2) The same local bridge's /printer-presets - a second real call,
+      // in case /status's own "running" flag was momentarily wrong (the
+      // desktop agent can legitimately report "stopped" for an instant
+      // around a WebSocket reconnect) while the bridge itself is clearly
+      // reachable - this call succeeding proves that on its own.
+      if (!connected) {
+        try {
+          const presets = await fetchAgentPrinterPresets();
+          if (Array.isArray(presets.printers) && presets.printers.length) {
+            connected = true;
+            scannedPrinters = presets.printers;
+          }
+        } catch {
+          // Still unreachable locally - fall through to the server check.
+        }
+      }
+
+      // 3) RepetiGo's own server, for when the browser can't reach
+      // 127.0.0.1:8765 at all (Chrome's Private Network Access blocking an
+      // outdated agent build, a firewall, antivirus...). Confirms the
+      // agent's real connection to RepetiGo - the one that actually
+      // delivers print jobs - instead of the browser's own loopback
+      // reachability, which isn't actually what matters here.
+      if (!connected) {
+        try {
+          const serverStatus = await fetchServerAgentStatus();
+          connected = serverStatus.connected;
+          viaServer = connected;
+        } catch {
+          // Couldn't even reach RepetiGo - genuinely offline.
+        }
+      }
+
       setAgentConnected(connected);
       setAgentHealth(health);
-
-      const scannedPrinters = Array.isArray(health.printers) && health.printers.length ? health.printers : fallbackPrinters;
       setAvailablePrinters(scannedPrinters);
       if (!connected) {
         setPrinterSaved(false);
@@ -357,11 +446,13 @@ export default function AutoPrintClient() {
 
       setAgentMessage(
         connected
-          ? formatAgentConnectedMessage(health)
+          ? viaServer
+            ? "Agent Connected (confirmed via RepetiGo - this browser can't reach it directly). Printer list may be out of date; reinstalling the PrintPilot Agent usually fixes this."
+            : formatAgentConnectedMessage(health)
           : "Agent found, but not running. Start it from the desktop app.",
       );
 
-      if (connected) {
+      if (connected && !viaServer) {
         await loadPrinterPresets();
       }
     } catch {
@@ -369,6 +460,7 @@ export default function AutoPrintClient() {
       setAgentHealth(null);
       setAgentMessage("Agent not found. Download, open, and start the desktop app.");
     } finally {
+      verifyInFlightRef.current = false;
       setIsVerifyingAgent(false);
     }
   }

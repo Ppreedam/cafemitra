@@ -4,19 +4,24 @@ import type React from "react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
-import { CircleAlert, CircleCheck, Contrast, Crop, LoaderCircle, LogIn, Palette, Plus, Printer, RefreshCw, RotateCcw, RotateCw, ScanLine, SlidersHorizontal, Trash2, Upload, Wallet, Wand2, X } from "lucide-react";
+import { CircleAlert, CircleCheck, Contrast, Crop, FlipVertical2, LoaderCircle, LogIn, MessageSquareWarning, Palette, Plus, Printer, RotateCcw, RotateCw, ScanLine, SlidersHorizontal, Trash2, Undo2, Upload, Wallet, Wand2, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
 import { WalletLimitBanner } from "../WalletLimitBanner";
 import { CropEditor, cropImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, warpPerspectiveCrop, type CropQuad, type CropRect } from "../CropEditor";
 import { apiFetch, hasStoredSession } from "@/lib/api";
 import { useToolPrice } from "@/lib/useToolPrice";
 import { trackToolEvent } from "@/lib/analytics";
+import { BUSINESS } from "@/lib/businessInfo";
 import IdCardPrintSeoContent from "./IdCardPrintSeoContent";
 import { onScannerEngineLoading, scanCard, type ScanMode } from "./cardScan";
 import { bakeTone, isNeutralTone, NEUTRAL_TONE, TonedImage, ToneControl, type Tone } from "./ToneControl";
 
-async function chargeIdCardPrint() {
-  const response = await apiFetch("/api/tools/id-card-print-charge/", { method: "POST" });
+async function chargeIdCardPrint(cardCount: number) {
+  const response = await apiFetch("/api/tools/id-card-print-charge/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ cardCount }),
+  });
   if (response.ok) return;
   const data = await response.json().catch(() => ({}));
   throw new Error(data.message || "Could not verify your wallet balance. Please try again.");
@@ -91,7 +96,7 @@ export default function IdCardPrintClient() {
   const [error, setError] = useState("");
   const [loginPrompt, setLoginPrompt] = useState(false);
   const [chargeConfirm, setChargeConfirm] = useState<{ resolve: (ok: boolean) => void } | null>(null);
-  const [scanMode, setScanMode] = useState<ScanMode | "off">("clean");
+  const [scanMode, setScanMode] = useState<ScanMode | "off">("original");
   const [engineLoading, setEngineLoading] = useState(false);
 
   useEffect(() => {
@@ -192,6 +197,7 @@ export default function IdCardPrintClient() {
     const original = { file: selected, url };
     const auto = scanMode !== "off";
     setSide(cardId, side, { file: selected, url, cropRect: DEFAULT_CROP_RECT, cropQuad: DEFAULT_CROP_QUAD, original, scan: auto ? "scanning" : "idle" });
+    setActive({ cardId, side });
     if (auto) void runScan(cardId, side, original, null, scanMode as ScanMode);
   }
 
@@ -200,7 +206,7 @@ export default function IdCardPrintClient() {
     const original = current.original || (current.file ? { file: current.file, url: current.url } : null);
     if (!original) return;
     if (!current.original) setSide(target.cardId, target.side, { ...current, original });
-    void runScan(target.cardId, target.side, original, null, scanMode === "off" ? "clean" : scanMode);
+    void runScan(target.cardId, target.side, original, null, scanMode === "off" ? "original" : scanMode);
   }
 
   function handleDrop(cardId: string, side: Side, event: React.DragEvent<HTMLLabelElement>) {
@@ -227,6 +233,23 @@ export default function IdCardPrintClient() {
     } catch {
       // Leave the photo as-is if rotation fails.
     }
+  }
+
+  // Undoes Auto Fix (or any manual crop/filter) and shows the photo exactly
+  // as uploaded again, so the user can crop or adjust it by hand when the
+  // automatic straighten/clean gets it wrong.
+  function resetToOriginal(target: SlotRef) {
+    const current = getSide(target.cardId, target.side);
+    if (!current.original) return;
+    if (current.url && current.url !== current.original.url) URL.revokeObjectURL(current.url);
+    setSide(target.cardId, target.side, {
+      file: current.original.file,
+      url: current.original.url,
+      cropRect: DEFAULT_CROP_RECT,
+      cropQuad: DEFAULT_CROP_QUAD,
+      original: current.original,
+      scan: "idle",
+    });
   }
 
   function updateCropRect(cardId: string, side: Side, rect: CropRect) {
@@ -316,7 +339,7 @@ export default function IdCardPrintClient() {
     setPrintBusy(true);
     setError("");
     try {
-      await chargeIdCardPrint();
+      await chargeIdCardPrint(withFront.length);
       const printWindow = window.open("", "_blank");
       if (!printWindow) return;
       const baked: string[] = [];
@@ -342,11 +365,18 @@ export default function IdCardPrintClient() {
 
   const readyCount = cards.filter((card) => card.front.url).length;
   const activeState = active ? getSide(active.cardId, active.side) : null;
+  // Auto Fix (or a manual crop/filter) has changed the photo from what was
+  // uploaded - flag the way back to it so a bad auto-straighten isn't a
+  // dead end.
+  const resetAvailable = !!active && !!activeState?.original && activeState.url !== activeState.original.url;
   const cropState = cropTarget ? getSide(cropTarget.cardId, cropTarget.side) : null;
   // Perspective crop works on the uploaded photo, so the detected corners line up.
   const cropImageUrl = cropState ? (cropMode === "perspective" && cropState.original && scanMode !== "off" ? cropState.original.url : cropState.url) : "";
   const scanning = cards.some((card) => card.front.scan === "scanning" || card.back.scan === "scanning");
   const filterState = filterTarget ? getSide(filterTarget.cardId, filterTarget.side) : null;
+  const reportHref = `https://wa.me/${BUSINESS.phone.replace(/[^\d]/g, "")}?text=${encodeURIComponent(
+    `Hi RepetiGo, ID Card Print issue.${active ? ` Side: ${active.side === "front" ? "Front" : "Back"}, mode: ${scanMode}.` : ""} Problem: `,
+  )}`;
 
   return (
     <DashboardShell activePath="/id-card-print">
@@ -371,30 +401,44 @@ export default function IdCardPrintClient() {
 
           <div className="idcard-toolbar-bar">
             <div className="idcard-toolbar">
-              <button type="button" disabled={!active} onClick={() => active && openFilter(active)}>
+              <button type="button" disabled={!active} onClick={() => active && openFilter(active)} title="Adjust brightness, colour and saturation by hand">
                 <SlidersHorizontal size={17} />
                 <span>Filter &amp; Light</span>
               </button>
-              <button type="button" disabled={!active || activeState?.scan === "scanning"} onClick={() => active && autoFix(active)} title="Find the card edges again, straighten and clean">
+              <button type="button" disabled={!active || activeState?.scan === "scanning"} onClick={() => active && autoFix(active)} title="Find the card edges again, straighten and clean automatically">
                 <Wand2 size={17} />
                 <span>Auto Fix</span>
               </button>
-              <button type="button" disabled={!active} onClick={() => active && setCropTarget(active)}>
+              <button
+                type="button"
+                className={resetAvailable ? "highlight" : undefined}
+                disabled={!resetAvailable}
+                onClick={() => active && resetToOriginal(active)}
+                title="Auto Fix not quite right? Go back to the photo you uploaded and crop or adjust it yourself"
+              >
+                <Undo2 size={17} />
+                <span>Reset to Original</span>
+              </button>
+              <button type="button" disabled={!active} onClick={() => active && setCropTarget(active)} title="Drag the corners or edges to crop by hand">
                 <Crop size={17} />
                 <span>Crop</span>
               </button>
-              <button type="button" disabled={!active} onClick={() => active && void rotateSide(active.cardId, active.side)}>
+              <button type="button" disabled={!active} onClick={() => active && void rotateSide(active.cardId, active.side)} title="Turn the photo 90° clockwise">
                 <RotateCw size={17} />
                 <span>Rotate</span>
               </button>
               <button type="button" disabled={!active} onClick={() => active && void rotateSide(active.cardId, active.side, 2)} title="Turn an upside-down card the right way up">
-                <RefreshCw size={17} />
+                <FlipVertical2 size={17} />
                 <span>Turn 180°</span>
               </button>
-              <button type="button" disabled={!active} onClick={() => active && clearSide(active.cardId, active.side)}>
-                <X size={17} />
+              <button type="button" disabled={!active} onClick={() => active && clearSide(active.cardId, active.side)} title="Delete this photo and start over">
+                <Trash2 size={17} />
                 <span>Remove</span>
               </button>
+              <a className="idcard-toolbar-report" href={reportHref} target="_blank" rel="noopener noreferrer" title="Something not working right? Message us on WhatsApp">
+                <MessageSquareWarning size={17} />
+                <span>Report Issue</span>
+              </a>
             </div>
             <div className="idcard-toolbar-actions">
               <label className="idcard-scan-mode" title="What happens to a photo right after upload">

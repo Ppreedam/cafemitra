@@ -71,6 +71,14 @@ namespace Print_Agent
         // printed/failed status update) before the next one starts.
         private readonly SemaphoreSlim _printQueueGate = new(1, 1);
         private CancellationTokenSource _autoLoginStop;
+        // True right after a real login (manual Sign In, or the auto-login
+        // retry loop - NOT the silent saved-session resume on startup, see
+        // BootstrapLoginAsync) opens the Settings overlay to prompt for a
+        // printer. Lets btnSavePrinterSetting_Click close the overlay back
+        // to the normal signed-in screen only for that one onboarding save,
+        // without changing the gear icon's everyday behaviour (stays open
+        // so multiple presets can be added in a row).
+        private bool _awaitingPostLoginPrinterSetup;
 
         // Was Path.Combine(AppDomain.CurrentDomain.BaseDirectory,
         // "printer_settings.txt") - tied to wherever this exact copy of the
@@ -451,6 +459,21 @@ namespace Print_Agent
             pnlSettings.Visible = show;
             pnlAccount.Visible = !show;
             (show ? (Control)pnlSettings : pnlAccount).BringToFront();
+            if (!show) _awaitingPostLoginPrinterSetup = false;
+        }
+
+        // Called once for each real login (manual Sign In or an auto-login
+        // retry succeeding) - not the silent saved-session resume on
+        // startup. Opens straight into Printer Setup so the printer gets
+        // picked right away, same step the website's own setup wizard has;
+        // btnSavePrinterSetting_Click closes it back to the signed-in
+        // screen once that first save happens.
+        private void OnRealLoginSuccess()
+        {
+            UpdateAccountLabel();
+            _wsClient?.Start();
+            _awaitingPostLoginPrinterSetup = true;
+            ShowSettingsOverlay(true);
         }
 
         private void btnGear_Click(object sender, EventArgs e) => ShowSettingsOverlay(true);
@@ -611,9 +634,8 @@ namespace Print_Agent
                     _config.OwnerEmail = response.User?.Email ?? email;
                     _config.ShopName = response.Shop?.ShopName ?? "";
                     AgentConfig.Save(_configPath, _config);
-                    UpdateAccountLabel();
+                    OnRealLoginSuccess();
                     LogStatus("Auto-login successful.");
-                    _wsClient?.Start();
                     return;
                 }
                 catch (AuthenticationFailedException error)
@@ -664,10 +686,9 @@ namespace Print_Agent
 
                 CredentialStore.Save(email, password);
 
-                UpdateAccountLabel();
+                OnRealLoginSuccess();
                 txtPassword.Clear();
                 LogStatus("Login successful. This device will sign in automatically next time.");
-                _wsClient?.Start();
                 StopLoginReminder();
             }
             catch (AuthenticationFailedException error)
@@ -770,6 +791,34 @@ namespace Print_Agent
             dataGridPrinterSetting.Rows[rowIdx].Cells["colDelete"].Value = "Delete";
 
             LogStatus("Settings saved successfully.");
+
+            // Only for the post-login prompt (see OnRealLoginSuccess) - the
+            // gear icon's everyday use of this same button keeps the
+            // overlay open so more than one preset can be added in a row.
+            if (_awaitingPostLoginPrinterSetup)
+            {
+                ShowSettingsOverlay(false);
+                // Report straight to RepetiGo's server (not just locally) so
+                // the website's "Select Printer" setup step can complete
+                // even if that browser can't reach this agent's own
+                // 127.0.0.1:8765 bridge. Fire-and-forget - the overlay
+                // closes right away either way; a failure here just means
+                // the website falls back to its own local-bridge save next.
+                _ = ReportSelectedPrinterAsync(printer);
+            }
+        }
+
+        private async Task ReportSelectedPrinterAsync(string printerName)
+        {
+            try
+            {
+                await NewApi().SaveSelectedPrinter(printerName, CancellationToken.None);
+                LogStatus($"Printer setup reported to RepetiGo: {printerName}.");
+            }
+            catch (Exception error)
+            {
+                LogStatus($"Could not report printer setup to RepetiGo (website's own Select Printer step will still work): {error.Message}");
+            }
         }
 
         // ── Delete Row on Cell Click ──────────────────────────────────

@@ -16,12 +16,16 @@ export type CardTypeInfo = {
   color: string;
 };
 
+// Colors drawn from RepetiGo's own palette (globals.css :root) - the brand
+// gradient's blue/cyan/teal stops plus the violet and navy accents used
+// throughout the app - so a card type's badge reads as part of the product,
+// not an arbitrary color.
 export const CARD_TYPES: Record<CardTypeKey, CardTypeInfo> = {
-  aadhaar: { key: "aadhaar", label: "Aadhaar Card", color: "#e9546a" },
-  pan: { key: "pan", label: "PAN Card", color: "#2563eb" },
-  voter_id: { key: "voter_id", label: "Voter ID Card", color: "#f97316" },
-  driving_licence: { key: "driving_licence", label: "Driving Licence", color: "#16a1bd" },
-  passport: { key: "passport", label: "Passport", color: "#5740ed" },
+  aadhaar: { key: "aadhaar", label: "Aadhaar Card", color: "#2563eb" }, // --brand-blue
+  pan: { key: "pan", label: "PAN Card", color: "#5740ed" }, // --violet
+  voter_id: { key: "voter_id", label: "Voter ID Card", color: "#14b8a6" }, // --brand-teal
+  driving_licence: { key: "driving_licence", label: "Driving Licence", color: "#1d9bf0" }, // brand gradient mid-stop
+  passport: { key: "passport", label: "Passport", color: "#0b1f4d" }, // --brand-navy
   generic: { key: "generic", label: "ID Document", color: "#667795" },
 };
 

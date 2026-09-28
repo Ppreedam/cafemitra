@@ -66,6 +66,24 @@ internal sealed class CafeMitraApi(HttpClient http, AgentConfig config, string c
         await SendJson<System.Text.Json.JsonElement>(HttpMethod.Post, $"api/orders/{orderId}/reject-cash/", null, token);
     }
 
+    // Reports the printer picked in Printer Setup straight to RepetiGo's
+    // own server - the exact same call the website's own "Select Printer"
+    // step makes (PUT /api/pricing-settings/, merged into the existing
+    // settings, never overwrites paymentMode/priceItems/etc.). Doing it
+    // from here means the website's setup wizard can show this step
+    // complete even if that browser can never reach this agent's own
+    // 127.0.0.1:8765 bridge directly (Private Network Access, a firewall,
+    // antivirus...) - see PRINT_AGENT_VERIFY_TROUBLESHOOTING.md.
+    public async Task SaveSelectedPrinter(string printerName, CancellationToken token)
+    {
+        await SendJson<System.Text.Json.JsonElement>(
+            HttpMethod.Put,
+            "api/pricing-settings/",
+            new { serviceKey = "auto_document_print", settings = new { selectedPrinter = printerName } },
+            token
+        );
+    }
+
     // The one-off, non-401 failures seen in the field (a fresh download
     // 404'ing immediately after the file was confirmed written, then
     // succeeding seconds later on a manual retry of the exact same URL)
