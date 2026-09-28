@@ -1526,17 +1526,14 @@ namespace Print_Agent
                     return; // job stays exactly as it was on the server (pending) - not failed, not printed
                 }
 
-                // TEMPORARY: local-dev guard bypassed for a one-off manual
-                // test of ShowVirtualPrinterAlert - revert before committing.
-                // Normally: `if (!IsLocalDevSession && IsVirtualPrinter(matchedPrinter))`
-                // (skipped only against the local dev server - never in
+                // Skipped only against the local dev server - never in
                 // production. A dev machine testing the poll/print pipeline
                 // routinely has no real printer attached at all, so
                 // "Microsoft Print to PDF" is the only thing there is to
                 // pick; this alert exists to protect a real shop's real
                 // customer from a silent fake-success, not to block that
-                // kind of local testing.)
-                if (IsVirtualPrinter(matchedPrinter))
+                // kind of local testing.
+                if (!IsLocalDevSession && IsVirtualPrinter(matchedPrinter))
                 {
                     // Windows' built-in "printers" (Print to PDF, XPS Document
                     // Writer, Fax, OneNote) always pass PrinterSettings.IsValid
