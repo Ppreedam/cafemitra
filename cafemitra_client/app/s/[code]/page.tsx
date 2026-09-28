@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { CircleAlert, CircleCheck, Clock3, Crop, Download, Eye, EyeOff, FileText, IdCard, Image as ImageIcon, LoaderCircle, LockKeyhole, Printer, ShieldCheck, Trash2, Upload, Wallet, X } from "lucide-react";
+import { CircleAlert, CircleCheck, Clock3, Crop, Download, Eye, EyeOff, FileText, IdCard, Image as ImageIcon, LoaderCircle, LockKeyhole, Printer, ShieldCheck, Trash2, Undo2, Upload, Wallet, X } from "lucide-react";
 import { apiUrl } from "@/lib/api";
 import { calculatePriceItemRate, formatPriceItem, getAllowedPaymentModes, mergePricingDefaults, type PriceItem, type PricingService } from "@/lib/pricing";
 import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
@@ -123,6 +123,12 @@ export default function CustomerScanPage() {
   // the photo exactly as uploaded (original).
   const [autoScan, setAutoScan] = useState<{ status: "working" | "done" | "cleaned" | "original" | "error"; look: DocLook; original: File } | null>(null);
   const autoScanTokenRef = useRef(0);
+  // The exact file the customer uploaded, before any crop - never
+  // reassigned after upload. autoScan.original is the re-scan source and
+  // moves to the cropped version once a crop is applied (see
+  // applyImageCrop); this stays put so "Reset" can always get back to the
+  // untouched upload.
+  const trueOriginalRef = useRef<File | null>(null);
   // Black & white darkness, 0 (light) .. 100 (dark).
   const [docDarkness, setDocDarkness] = useState(DEFAULT_DOC_DARKNESS);
   const darknessTimerRef = useRef<number | null>(null);
@@ -508,7 +514,10 @@ export default function CustomerScanPage() {
     }
 
     await applyUploadedFile(file);
-    if (isImageUpload && autoScansImages) void autoScanImage(file);
+    if (isImageUpload && autoScansImages) {
+      trueOriginalRef.current = file;
+      void autoScanImage(file, "original");
+    }
   }
 
   // Shows the new image file in place of the current one (same upload).
@@ -550,6 +559,14 @@ export default function CustomerScanPage() {
       console.error(reason);
       if (token === autoScanTokenRef.current) setAutoScan({ status: "error", look, original });
     }
+  }
+
+  // Discards any crop (and re-picks the current look against the untouched
+  // upload) - the only way back to the full photo once a crop is applied,
+  // since applyImageCrop rebases autoScan.original onto the cropped image.
+  function resetToTrueOriginal() {
+    if (!trueOriginalRef.current) return;
+    void autoScanImage(trueOriginalRef.current, "original");
   }
 
   // The slider moves at once; the page is re-cleaned once it stops for a moment.
@@ -758,6 +775,29 @@ export default function CustomerScanPage() {
       setFileType("image/png");
       setIsCropOpen(false);
       setIsPreviewOpen(false);
+
+      // Rebase future B/W / Color / Original switches onto this crop instead
+      // of the pre-crop upload - crop the true original the same way (rect/
+      // quad are percentage-based, so this lines up regardless of the auto-
+      // scan possibly having resized the currently-shown image) so switching
+      // looks later never re-processes an already-cleaned image, and never
+      // silently drops the crop back to the full, uncropped photo.
+      if (trueOriginalRef.current) {
+        const trueOriginalUrl = URL.createObjectURL(trueOriginalRef.current);
+        try {
+          const croppedOriginalBlob =
+            cropMode === "perspective" ? await warpPerspectiveCrop(trueOriginalUrl, cropQuad) : await cropImage(trueOriginalUrl, cropRect);
+          const croppedOriginalFile = new File(
+            [croppedOriginalBlob],
+            trueOriginalRef.current.name.replace(/(\.[^.]+)?$/, "-cropped.png"),
+            { type: "image/png" },
+          );
+          setAutoScan((current) => (current ? { ...current, original: croppedOriginalFile } : current));
+        } finally {
+          URL.revokeObjectURL(trueOriginalUrl);
+        }
+      }
+
       setCropRect(DEFAULT_CROP_RECT);
       setCropQuad(DEFAULT_CROP_QUAD);
       setOrder(null);
@@ -1273,6 +1313,16 @@ export default function CustomerScanPage() {
                   {canCropImage ? (
                     <button type="button" onClick={() => setIsCropOpen(true)} disabled={isCleanScanProcessing || autoScanWorking}>
                       <Crop size={16} /> Crop
+                    </button>
+                  ) : null}
+                  {canCropImage && autoScan && fileName.endsWith("-cropped.png") ? (
+                    <button
+                      type="button"
+                      onClick={resetToTrueOriginal}
+                      disabled={isCleanScanProcessing || autoScanWorking}
+                      title="Discard the crop and go back to the full, uncropped photo"
+                    >
+                      <Undo2 size={16} /> Reset to Original
                     </button>
                   ) : null}
                   {!isPassportPhoto && !isIdCardPrint ? (
