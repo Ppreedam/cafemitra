@@ -23,7 +23,7 @@ from django.contrib.auth import authenticate, get_user_model
 from django.conf import settings
 from django.core.mail import send_mail
 from django.db import connection, transaction
-from django.db.models import Count, Max, Q, Sum
+from django.db.models import Count, F, Max, Q, Sum
 from django.db.models.functions import Substr
 from django.http import FileResponse, HttpResponse, HttpResponseRedirect, JsonResponse
 from django.utils.html import escape
@@ -35,7 +35,7 @@ from django.views.decorators.http import require_http_methods
 from .background_remover.remove_background import BackgroundRemovalError, remove_background_bytes
 from .background_remover.passport_photo_processor import ProcessingError, enhance_transparent_bytes
 from .background_remover.watermark_remover import remove_gemini_watermark
-from .models import Agent, AuthToken, ContactMessage, Coupon, CouponRedemption, EmailVerificationToken, PassportAIConfig, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UpiPayee, UpiQrRecord, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
+from .models import Agent, AuthToken, ContactMessage, Coupon, CouponRedemption, EmailVerificationToken, PassportAIConfig, PasswordResetToken, PoolerNode, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UpiPayee, UpiQrRecord, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from cafemitra_server.product_setting import PAYMENT_GATEWAYS, active_payment_gateway
 
 User = get_user_model()
@@ -4679,6 +4679,136 @@ def save_manual_passport_photo(request):
     return JsonResponse({"id": order.id, "order": public_order(order)})
 
 
+# GPT Pooler priority / failover (see models.PoolerNode). A pooler polls
+# every ~5s, so a few missed polls = offline (power cut, crash, network
+# drop) and the next pooler in priority order takes over.
+POOLER_ONLINE_WINDOW_SECONDS = 20
+# A job still unclaimed this long is offered to every enabled pooler
+# regardless of priority, in case the top pooler is heartbeating but stuck.
+POOLER_OVERFLOW_SECONDS = 25
+
+
+def pooler_email(user):
+    return (user.email or "").strip().lower()
+
+
+def pooler_is_online(node, now=None):
+    now = now or timezone.now()
+    return bool(node.last_seen_at) and (now - node.last_seen_at).total_seconds() <= POOLER_ONLINE_WINDOW_SECONDS
+
+
+def pooler_node_for_user(user):
+    node, _ = PoolerNode.objects.get_or_create(
+        email=pooler_email(user), defaults={"priority": PoolerNode.DEFAULT_PRIORITY}
+    )
+    return node
+
+
+def touch_pooler_node(user, request):
+    """Record a heartbeat from the pooler's job poll. The pooler reports its
+    capacity as query params (freeWorkers/totalWorkers/machine); an older
+    pooler that sends none is treated as having capacity, so it keeps
+    working the way it did before priorities existed."""
+    node = pooler_node_for_user(user)
+
+    def int_param(name, default):
+        try:
+            return max(0, int(request.GET.get(name, default)))
+        except (TypeError, ValueError):
+            return default
+
+    node.total_workers = int_param("totalWorkers", node.total_workers or 1)
+    node.free_workers = int_param("freeWorkers", 1)
+    node.machine_name = str(request.GET.get("machine", node.machine_name))[:120]
+    node.last_seen_at = timezone.now()
+    node.save(update_fields=["total_workers", "free_workers", "machine_name", "last_seen_at", "updated_at"])
+    return node
+
+
+def pooler_may_pull(node, now=None):
+    """True when `node` should get new jobs: it is enabled, and every
+    enabled pooler with a higher priority (lower number) is either offline
+    or has no free worker right now."""
+    if not node.is_enabled:
+        return False
+    now = now or timezone.now()
+    higher_with_capacity = PoolerNode.objects.filter(
+        is_enabled=True,
+        priority__lt=node.priority,
+        free_workers__gt=0,
+        last_seen_at__gte=now - timedelta(seconds=POOLER_ONLINE_WINDOW_SECONDS),
+    )
+    return not higher_with_capacity.exists()
+
+
+def pooler_may_take_job(node, order):
+    if pooler_may_pull(node):
+        return True
+    if not node.is_enabled:
+        return False
+    waited = (timezone.now() - order.photo_updated_at).total_seconds() if order.photo_updated_at else 0
+    return waited >= POOLER_OVERFLOW_SECONDS
+
+
+def requeue_jobs_of_offline_poolers():
+    """Hand jobs held by a pooler that has gone offline back to the queue,
+    so the next pooler in line finishes them instead of the order waiting
+    for resolve_passport_photo's stale-job fallback."""
+    cutoff = timezone.now() - timedelta(seconds=POOLER_ONLINE_WINDOW_SECONDS)
+    offline_emails = PoolerNode.objects.filter(
+        Q(last_seen_at__isnull=True) | Q(last_seen_at__lt=cutoff)
+    ).values_list("email", flat=True)
+    PrintOrder.objects.filter(
+        service_key="passport_photo",
+        photo_status=PrintOrder.PHOTO_STATUS_CLAIMED,
+        photo_claimed_by_email__in=list(offline_emails),
+    ).update(
+        photo_status=PrintOrder.PHOTO_STATUS_PENDING,
+        photo_claimed_by_email="",
+        photo_updated_at=timezone.now(),
+    )
+
+
+def pooler_nodes_payload():
+    now = timezone.now()
+    nodes = list(PoolerNode.objects.all())
+    # The pooler that gets new jobs right now: first online, enabled node
+    # (by priority) that still has a free worker.
+    active = next((n for n in nodes if n.is_enabled and pooler_is_online(n, now) and n.free_workers > 0), None)
+
+    def status(node):
+        if not node.is_enabled:
+            return "disabled"
+        if not pooler_is_online(node, now):
+            return "offline"
+        if active and node.id == active.id:
+            return "active"
+        return "busy" if node.free_workers == 0 else "standby"
+
+    return [public_pooler_node(n, status=status(n)) for n in nodes]
+
+
+def public_pooler_node(node, can_pull=None, status=None):
+    payload = {
+        "id": node.id,
+        "email": node.email,
+        "priority": node.priority,
+        "isEnabled": node.is_enabled,
+        "isOnline": pooler_is_online(node),
+        "machineName": node.machine_name,
+        "totalWorkers": node.total_workers,
+        "freeWorkers": node.free_workers,
+        "lastSeenAt": node.last_seen_at.isoformat() if node.last_seen_at else None,
+        "jobsCompleted": node.jobs_completed,
+        "lastJobAt": node.last_job_at.isoformat() if node.last_job_at else None,
+    }
+    if can_pull is not None:
+        payload["canPull"] = can_pull
+    if status is not None:
+        payload["status"] = status
+    return payload
+
+
 def public_passport_job(order, request):
     # The raw upload is stored as a base64 data URI on the order (no file on
     # disk), but the desktop PrintPilot Agent downloads it over plain HTTP -
@@ -4768,12 +4898,31 @@ def agent_passport_jobs(request):
     # excluded for the same reason: an online-payment order must not run
     # (and bill) the AI generation until the gateway actually confirms
     # payment, which is what flips it to STATUS_QUEUED.
+    #
+    # The poll doubles as the GPT Pooler's heartbeat, and only the pooler
+    # currently at the top of the priority order gets the queue - see
+    # pooler_may_pull. A lower-priority pooler still sees jobs that have sat
+    # unclaimed past POOLER_OVERFLOW_SECONDS, as a safety net for a
+    # higher-priority pooler that is "online" but not actually picking up.
+    node = touch_pooler_node(user, request)
+    requeue_jobs_of_offline_poolers()
+
     jobs = PrintOrder.objects.filter(
         service_key="passport_photo", photo_status=PrintOrder.PHOTO_STATUS_PENDING,
     ).exclude(
         status__in=[PrintOrder.STATUS_AWAITING_APPROVAL, PrintOrder.STATUS_AWAITING_PAYMENT]
-    ).order_by("created_at")[:20]
-    return JsonResponse({"jobs": [public_passport_job(job, request) for job in jobs]})
+    )
+    can_pull = pooler_may_pull(node)
+    if not can_pull:
+        overflow_cutoff = timezone.now() - timedelta(seconds=POOLER_OVERFLOW_SECONDS)
+        jobs = jobs.filter(photo_updated_at__lte=overflow_cutoff) if node.is_enabled else jobs.none()
+    jobs = jobs.order_by("created_at")[:20]
+    return JsonResponse(
+        {
+            "jobs": [public_passport_job(job, request) for job in jobs],
+            "pooler": public_pooler_node(node, can_pull=can_pull),
+        }
+    )
 
 
 @csrf_exempt
@@ -4799,10 +4948,15 @@ def claim_passport_job(request, job_id):
             return JsonResponse({"message": "This cash-counter order is still waiting for the shop owner's approval."}, status=409)
         if order.status == PrintOrder.STATUS_AWAITING_PAYMENT:
             return JsonResponse({"message": "This order is still waiting for online payment to be confirmed."}, status=409)
+        if not pooler_may_take_job(pooler_node_for_user(user), order):
+            # Same priority rule as agent_passport_jobs - a lower-priority
+            # pooler claiming by id can't jump ahead of an online one above it.
+            return JsonResponse({"message": "A higher-priority pooler is handling this job."}, status=409)
 
         order.photo_status = PrintOrder.PHOTO_STATUS_CLAIMED
         order.photo_updated_at = timezone.now()
-        order.save(update_fields=["photo_status", "photo_updated_at"])
+        order.photo_claimed_by_email = pooler_email(user)
+        order.save(update_fields=["photo_status", "photo_updated_at", "photo_claimed_by_email"])
 
     return JsonResponse(public_passport_job(order, request))
 
@@ -4828,6 +4982,15 @@ def complete_passport_job(request, job_id):
         return JsonResponse({"message": "This cash-counter order is still waiting for the shop owner's approval."}, status=409)
     if order.status == PrintOrder.STATUS_AWAITING_PAYMENT:
         return JsonResponse({"message": "This order is still waiting for online payment to be confirmed."}, status=409)
+    caller_email = pooler_email(user)
+    if order.photo_status == PrintOrder.PHOTO_STATUS_PENDING or (
+        order.photo_claimed_by_email and order.photo_claimed_by_email != caller_email
+    ):
+        # The job was handed back to the queue (this pooler went offline -
+        # see requeue_jobs_of_offline_poolers) and is now waiting for, or
+        # held by, another pooler. Accepting this late result too would
+        # complete - and bill - the same order twice.
+        return JsonResponse({"message": "This job was reassigned to another pooler."}, status=409)
 
     if str(request.POST.get("status", "")).strip() == PrintOrder.PHOTO_STATUS_FAILED:
         order.photo_status = PrintOrder.PHOTO_STATUS_FAILED
@@ -4855,7 +5018,46 @@ def complete_passport_job(request, job_id):
     # Bill the order's own owner even when the bulk agent (a different
     # account) is the one completing the job on their behalf.
     charge_wallet_for_tool(order.user, "passport_photo", quantity=1, order=order)
+    PoolerNode.objects.filter(email=caller_email).update(
+        jobs_completed=F("jobs_completed") + 1, last_job_at=timezone.now()
+    )
     return JsonResponse(public_passport_job(order, request))
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def pooler_go_offline(request):
+    """Called by the GPT Pooler when it is closed normally, so the next
+    pooler in line takes over immediately instead of waiting out
+    POOLER_ONLINE_WINDOW_SECONDS. Any job it had claimed goes back to the
+    queue. A power cut never reaches this - that case is covered by the
+    heartbeat timing out."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    PoolerNode.objects.filter(email=pooler_email(user)).update(last_seen_at=None, free_workers=0)
+    requeue_jobs_of_offline_poolers()
+    return JsonResponse({"ok": True})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def pooler_status(request):
+    """Every registered pooler with its priority and live status - which
+    one is currently pulling jobs, which are standing by, which are
+    offline."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    return JsonResponse({"nodes": pooler_nodes_payload()})
 
 
 @csrf_exempt

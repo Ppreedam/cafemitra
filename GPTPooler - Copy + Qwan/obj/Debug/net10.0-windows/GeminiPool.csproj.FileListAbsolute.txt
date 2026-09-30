@@ -1,0 +1,109 @@
+D:\gemini\GeminiPool\bin\Debug\net10.0-windows\runtimes\win-x86\native\WebView2Loader.dll
+D:\gemini\GeminiPool\bin\Debug\net10.0-windows\runtimes\win-x64\native\WebView2Loader.dll
+D:\gemini\GeminiPool\bin\Debug\net10.0-windows\runtimes\win-arm64\native\WebView2Loader.dll
+D:\gemini\GeminiPool\bin\Debug\net10.0-windows\GeminiPool.exe
+D:\gemini\GeminiPool\bin\Debug\net10.0-windows\GeminiPool.deps.json
+D:\gemini\GeminiPool\bin\Debug\net10.0-windows\GeminiPool.runtimeconfig.json
+D:\gemini\GeminiPool\bin\Debug\net10.0-windows\GeminiPool.dll
+D:\gemini\GeminiPool\bin\Debug\net10.0-windows\GeminiPool.pdb
+D:\gemini\GeminiPool\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.Core.dll
+D:\gemini\GeminiPool\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.WinForms.dll
+D:\gemini\GeminiPool\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.Wpf.dll
+D:\gemini\GeminiPool\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.Core.xml
+D:\gemini\GeminiPool\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.WinForms.xml
+D:\gemini\GeminiPool\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.Wpf.xml
+D:\gemini\GeminiPool\obj\Debug\net10.0-windows\GeminiPool.csproj.AssemblyReference.cache
+D:\gemini\GeminiPool\obj\Debug\net10.0-windows\GeminiPool.GeneratedMSBuildEditorConfig.editorconfig
+D:\gemini\GeminiPool\obj\Debug\net10.0-windows\GeminiPool.AssemblyInfoInputs.cache
+D:\gemini\GeminiPool\obj\Debug\net10.0-windows\GeminiPool.AssemblyInfo.cs
+D:\gemini\GeminiPool\obj\Debug\net10.0-windows\GeminiPool.csproj.CoreCompileInputs.cache
+D:\gemini\GeminiPool\obj\Debug\net10.0-windows\GeminiPool.csproj.Up2Date
+D:\gemini\GeminiPool\obj\Debug\net10.0-windows\GeminiPool.dll
+D:\gemini\GeminiPool\obj\Debug\net10.0-windows\refint\GeminiPool.dll
+D:\gemini\GeminiPool\obj\Debug\net10.0-windows\GeminiPool.pdb
+D:\gemini\GeminiPool\obj\Debug\net10.0-windows\GeminiPool.genruntimeconfig.cache
+D:\gemini\GeminiPool\obj\Debug\net10.0-windows\ref\GeminiPool.dll
+D:\gemini\GeminiPool\obj\Debug\net10.0-windows\GeminiPool.Form1.resources
+D:\gemini\GeminiPool\obj\Debug\net10.0-windows\GeminiPool.csproj.GenerateResource.cache
+d:\gptPooler\GPTPooler\bin\Debug\net10.0-windows\runtimes\win-x86\native\WebView2Loader.dll
+d:\gptPooler\GPTPooler\bin\Debug\net10.0-windows\runtimes\win-x64\native\WebView2Loader.dll
+d:\gptPooler\GPTPooler\bin\Debug\net10.0-windows\runtimes\win-arm64\native\WebView2Loader.dll
+d:\gptPooler\GPTPooler\bin\Debug\net10.0-windows\GeminiPool.exe
+d:\gptPooler\GPTPooler\bin\Debug\net10.0-windows\GeminiPool.deps.json
+d:\gptPooler\GPTPooler\bin\Debug\net10.0-windows\GeminiPool.runtimeconfig.json
+d:\gptPooler\GPTPooler\bin\Debug\net10.0-windows\GeminiPool.dll
+d:\gptPooler\GPTPooler\bin\Debug\net10.0-windows\GeminiPool.pdb
+d:\gptPooler\GPTPooler\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.Core.dll
+d:\gptPooler\GPTPooler\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.WinForms.dll
+d:\gptPooler\GPTPooler\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.Wpf.dll
+d:\gptPooler\GPTPooler\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.Core.xml
+d:\gptPooler\GPTPooler\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.WinForms.xml
+d:\gptPooler\GPTPooler\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.Wpf.xml
+d:\gptPooler\GPTPooler\obj\Debug\net10.0-windows\GeminiPool.csproj.AssemblyReference.cache
+d:\gptPooler\GPTPooler\obj\Debug\net10.0-windows\GeminiPool.Form1.resources
+d:\gptPooler\GPTPooler\obj\Debug\net10.0-windows\GeminiPool.csproj.GenerateResource.cache
+d:\gptPooler\GPTPooler\obj\Debug\net10.0-windows\GeminiPool.GeneratedMSBuildEditorConfig.editorconfig
+d:\gptPooler\GPTPooler\obj\Debug\net10.0-windows\GeminiPool.AssemblyInfoInputs.cache
+d:\gptPooler\GPTPooler\obj\Debug\net10.0-windows\GeminiPool.AssemblyInfo.cs
+d:\gptPooler\GPTPooler\obj\Debug\net10.0-windows\GeminiPool.csproj.CoreCompileInputs.cache
+d:\gptPooler\GPTPooler\obj\Debug\net10.0-windows\GeminiPool.csproj.Up2Date
+d:\gptPooler\GPTPooler\obj\Debug\net10.0-windows\GeminiPool.dll
+d:\gptPooler\GPTPooler\obj\Debug\net10.0-windows\refint\GeminiPool.dll
+d:\gptPooler\GPTPooler\obj\Debug\net10.0-windows\GeminiPool.pdb
+d:\gptPooler\GPTPooler\obj\Debug\net10.0-windows\GeminiPool.genruntimeconfig.cache
+d:\gptPooler\GPTPooler\obj\Debug\net10.0-windows\ref\GeminiPool.dll
+D:\gptPooler\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\runtimes\win-x86\native\WebView2Loader.dll
+D:\gptPooler\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\runtimes\win-x64\native\WebView2Loader.dll
+D:\gptPooler\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\runtimes\win-arm64\native\WebView2Loader.dll
+D:\gptPooler\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\GeminiPool.exe
+D:\gptPooler\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\GeminiPool.deps.json
+D:\gptPooler\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\GeminiPool.runtimeconfig.json
+D:\gptPooler\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\GeminiPool.dll
+D:\gptPooler\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\GeminiPool.pdb
+D:\gptPooler\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.Core.dll
+D:\gptPooler\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.WinForms.dll
+D:\gptPooler\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.Wpf.dll
+D:\gptPooler\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.Core.xml
+D:\gptPooler\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.WinForms.xml
+D:\gptPooler\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.Wpf.xml
+D:\gptPooler\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\GeminiPool.csproj.AssemblyReference.cache
+D:\gptPooler\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\GeminiPool.Form1.resources
+D:\gptPooler\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\GeminiPool.csproj.GenerateResource.cache
+D:\gptPooler\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\GeminiPool.GeneratedMSBuildEditorConfig.editorconfig
+D:\gptPooler\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\GeminiPool.AssemblyInfoInputs.cache
+D:\gptPooler\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\GeminiPool.AssemblyInfo.cs
+D:\gptPooler\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\GeminiPool.csproj.CoreCompileInputs.cache
+D:\gptPooler\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\GeminiPool.csproj.Up2Date
+D:\gptPooler\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\GeminiPool.dll
+D:\gptPooler\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\refint\GeminiPool.dll
+D:\gptPooler\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\GeminiPool.pdb
+D:\gptPooler\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\GeminiPool.genruntimeconfig.cache
+D:\gptPooler\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\ref\GeminiPool.dll
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\runtimes\win-x86\native\WebView2Loader.dll
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\runtimes\win-x64\native\WebView2Loader.dll
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\runtimes\win-arm64\native\WebView2Loader.dll
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\GeminiPool.exe
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\GeminiPool.deps.json
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\GeminiPool.runtimeconfig.json
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\GeminiPool.dll
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\GeminiPool.pdb
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.Core.dll
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.WinForms.dll
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.Wpf.dll
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.Core.xml
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.WinForms.xml
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\bin\Debug\net10.0-windows\Microsoft.Web.WebView2.Wpf.xml
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\GeminiPool.csproj.AssemblyReference.cache
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\GeminiPool.Form1.resources
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\GeminiPool.csproj.GenerateResource.cache
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\GeminiPool.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\GeminiPool.AssemblyInfoInputs.cache
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\GeminiPool.AssemblyInfo.cs
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\GeminiPool.csproj.CoreCompileInputs.cache
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\GeminiPool.sourcelink.json
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\GeminiPool.csproj.Up2Date
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\GeminiPool.dll
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\refint\GeminiPool.dll
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\GeminiPool.pdb
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\GeminiPool.genruntimeconfig.cache
+C:\Users\Administrator\Music\print\cafemitra\GPTPooler - Copy + Qwan\obj\Debug\net10.0-windows\ref\GeminiPool.dll

@@ -1,0 +1,153 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\Administrator\\Music\\print\\cafemitra\\GPTPooler - Copy \u002B Qwan\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{6214B0F1-7F04-38B0-55D8-5683799C804B}|GeminiPool.csproj|c:\\users\\administrator\\music\\print\\cafemitra\\gptpooler - copy \u002B qwan\\agentconfig.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{6214B0F1-7F04-38B0-55D8-5683799C804B}|GeminiPool.csproj|solutionrelative:agentconfig.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6214B0F1-7F04-38B0-55D8-5683799C804B}|GeminiPool.csproj|c:\\users\\administrator\\music\\print\\cafemitra\\gptpooler - copy \u002B qwan\\credentialstore.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{6214B0F1-7F04-38B0-55D8-5683799C804B}|GeminiPool.csproj|solutionrelative:credentialstore.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6214B0F1-7F04-38B0-55D8-5683799C804B}|GeminiPool.csproj|c:\\users\\administrator\\music\\print\\cafemitra\\gptpooler - copy \u002B qwan\\cafemitraapi.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{6214B0F1-7F04-38B0-55D8-5683799C804B}|GeminiPool.csproj|solutionrelative:cafemitraapi.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6214B0F1-7F04-38B0-55D8-5683799C804B}|GeminiPool.csproj|c:\\users\\administrator\\music\\print\\cafemitra\\gptpooler - copy \u002B qwan\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{6214B0F1-7F04-38B0-55D8-5683799C804B}|GeminiPool.csproj|solutionrelative:form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6214B0F1-7F04-38B0-55D8-5683799C804B}|GeminiPool.csproj|C:\\Users\\Administrator\\Music\\print\\cafemitra\\GPTPooler - Copy \u002B Qwan\\form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{6214B0F1-7F04-38B0-55D8-5683799C804B}|GeminiPool.csproj|solutionrelative:form1.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6214B0F1-7F04-38B0-55D8-5683799C804B}|GeminiPool.csproj|c:\\users\\administrator\\music\\print\\cafemitra\\gptpooler - copy \u002B qwan\\geminiworker.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{6214B0F1-7F04-38B0-55D8-5683799C804B}|GeminiPool.csproj|solutionrelative:geminiworker.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6214B0F1-7F04-38B0-55D8-5683799C804B}|GeminiPool.csproj|c:\\users\\administrator\\music\\print\\cafemitra\\gptpooler - copy \u002B qwan\\models.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{6214B0F1-7F04-38B0-55D8-5683799C804B}|GeminiPool.csproj|solutionrelative:models.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{6214B0F1-7F04-38B0-55D8-5683799C804B}|GeminiPool.csproj|c:\\users\\administrator\\music\\print\\cafemitra\\gptpooler - copy \u002B qwan\\program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{6214B0F1-7F04-38B0-55D8-5683799C804B}|GeminiPool.csproj|solutionrelative:program.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 6,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:1:0:{d212f56b-c48a-434c-a121-1c5d80b59b9f}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "Models.cs",
+              "DocumentMoniker": "C:\\Users\\Administrator\\Music\\print\\cafemitra\\GPTPooler - Copy \u002B Qwan\\Models.cs",
+              "RelativeDocumentMoniker": "Models.cs",
+              "ToolTip": "C:\\Users\\Administrator\\Music\\print\\cafemitra\\GPTPooler - Copy \u002B Qwan\\Models.cs",
+              "RelativeToolTip": "Models.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAA4AAAAKAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-27T17:36:12.272Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "Program.cs",
+              "DocumentMoniker": "C:\\Users\\Administrator\\Music\\print\\cafemitra\\GPTPooler - Copy \u002B Qwan\\Program.cs",
+              "RelativeDocumentMoniker": "Program.cs",
+              "ToolTip": "C:\\Users\\Administrator\\Music\\print\\cafemitra\\GPTPooler - Copy \u002B Qwan\\Program.cs",
+              "RelativeToolTip": "Program.cs",
+              "ViewState": "AgIAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-27T17:36:09.674Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "GeminiWorker.cs",
+              "DocumentMoniker": "C:\\Users\\Administrator\\Music\\print\\cafemitra\\GPTPooler - Copy \u002B Qwan\\GeminiWorker.cs",
+              "RelativeDocumentMoniker": "GeminiWorker.cs",
+              "ToolTip": "C:\\Users\\Administrator\\Music\\print\\cafemitra\\GPTPooler - Copy \u002B Qwan\\GeminiWorker.cs",
+              "RelativeToolTip": "GeminiWorker.cs",
+              "ViewState": "AgIAAF0CAAAAAAAAAAAqwH4CAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-09T13:41:27.312Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "CafeMitraApi.cs",
+              "DocumentMoniker": "C:\\Users\\Administrator\\Music\\print\\cafemitra\\GPTPooler - Copy \u002B Qwan\\CafeMitraApi.cs",
+              "RelativeDocumentMoniker": "CafeMitraApi.cs",
+              "ToolTip": "C:\\Users\\Administrator\\Music\\print\\cafemitra\\GPTPooler - Copy \u002B Qwan\\CafeMitraApi.cs",
+              "RelativeToolTip": "CafeMitraApi.cs",
+              "ViewState": "AgIAADAAAAAAAAAAAAAowKgAAAAKAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-09T13:20:07.74Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Form1.cs",
+              "DocumentMoniker": "C:\\Users\\Administrator\\Music\\print\\cafemitra\\GPTPooler - Copy \u002B Qwan\\Form1.cs",
+              "RelativeDocumentMoniker": "Form1.cs",
+              "ToolTip": "C:\\Users\\Administrator\\Music\\print\\cafemitra\\GPTPooler - Copy \u002B Qwan\\Form1.cs",
+              "RelativeToolTip": "Form1.cs",
+              "ViewState": "AgIAAFYAAAAAAAAAAAAowGYAAAAeAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-09T12:10:53.155Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "AgentConfig.cs",
+              "DocumentMoniker": "C:\\Users\\Administrator\\Music\\print\\cafemitra\\GPTPooler - Copy \u002B Qwan\\AgentConfig.cs",
+              "RelativeDocumentMoniker": "AgentConfig.cs",
+              "ToolTip": "C:\\Users\\Administrator\\Music\\print\\cafemitra\\GPTPooler - Copy \u002B Qwan\\AgentConfig.cs*",
+              "RelativeToolTip": "AgentConfig.cs*",
+              "ViewState": "AgIAAA0AAAAAAAAAAAAgwBUAAABJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-09T12:59:20.547Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "CredentialStore.cs",
+              "DocumentMoniker": "C:\\Users\\Administrator\\Music\\print\\cafemitra\\GPTPooler - Copy \u002B Qwan\\CredentialStore.cs",
+              "RelativeDocumentMoniker": "CredentialStore.cs",
+              "ToolTip": "C:\\Users\\Administrator\\Music\\print\\cafemitra\\GPTPooler - Copy \u002B Qwan\\CredentialStore.cs",
+              "RelativeToolTip": "CredentialStore.cs",
+              "ViewState": "AgIAAEYAAAAAAAAAAAAAAAAAAAAFAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-09T12:59:11.616Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "Form1.cs [Design]",
+              "DocumentMoniker": "C:\\Users\\Administrator\\Music\\print\\cafemitra\\GPTPooler - Copy \u002B Qwan\\Form1.cs",
+              "RelativeDocumentMoniker": "Form1.cs",
+              "ToolTip": "D:\\gptPooler\\GPTPooler - Copy \u002B Qwan\\Form1.cs [Design]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-08-20T19:34:29.394Z"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

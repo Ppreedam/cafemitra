@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AdminActivityLog, AdminRole, Agent, PassportAIConfig, ToolPricing, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
+from .models import AdminActivityLog, AdminRole, Agent, PassportAIConfig, PoolerNode, ToolPricing, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 
 
 @admin.register(AdminActivityLog)
@@ -51,6 +51,13 @@ class ToolPricingAdmin(admin.ModelAdmin):
 class PassportAIConfigAdmin(admin.ModelAdmin):
     list_display = ("id", "mode", "updated_at")
     list_editable = ("mode",)
+
+
+@admin.register(PoolerNode)
+class PoolerNodeAdmin(admin.ModelAdmin):
+    list_display = ("email", "priority", "is_enabled", "machine_name", "free_workers", "total_workers", "last_seen_at", "jobs_completed")
+    list_editable = ("priority", "is_enabled")
+    search_fields = ("email", "machine_name")
 
 
 @admin.register(WithdrawalRequest)
