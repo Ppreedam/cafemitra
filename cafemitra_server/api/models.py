@@ -293,6 +293,11 @@ class PrintOrder(models.Model):
     photo_status = models.CharField(max_length=20, blank=True, default="")
     photo_error_message = models.TextField(blank=True, default="")
     photo_updated_at = models.DateTimeField(null=True, blank=True)
+    # Email of the GPT Pooler account that currently holds this job (see
+    # PoolerNode) - lets a job abandoned by a pooler that went offline be
+    # handed back to the queue, and stops that pooler from completing it
+    # later once another pooler has taken it over.
+    photo_claimed_by_email = models.CharField(max_length=254, blank=True, default="")
 
     # resume_builder-specific: the full structured resume (name, sections,
     # experience, etc.) as JSON, so a saved resume can be reopened and
@@ -476,6 +481,43 @@ class PassportAIConfig(models.Model):
     def get_solo(cls):
         config, _ = cls.objects.get_or_create(id=1)
         return config
+
+
+class PoolerNode(models.Model):
+    """One desktop GPT Pooler install, keyed by the account email it is
+    logged in with. Several poolers can run at once (one per laptop); only
+    the online, enabled node with the lowest `priority` number pulls
+    passport-photo jobs. A lower-priority node takes over when every node
+    above it is offline (no heartbeat for POOLER_ONLINE_WINDOW_SECONDS, e.g.
+    a power cut) or has no free worker left. See views.pooler_may_pull.
+
+    The heartbeat is the pooler's regular job-list poll itself
+    (views.agent_passport_jobs), so no separate keep-alive is needed.
+    """
+
+    email = models.EmailField(unique=True)
+    # 1 = highest priority. An unknown account that starts polling is
+    # auto-registered at DEFAULT_PRIORITY, i.e. below every configured node.
+    priority = models.PositiveIntegerField(default=100)
+    is_enabled = models.BooleanField(default=True)
+
+    machine_name = models.CharField(max_length=120, blank=True, default="")
+    total_workers = models.PositiveIntegerField(default=0)
+    free_workers = models.PositiveIntegerField(default=0)
+    last_seen_at = models.DateTimeField(null=True, blank=True)
+    jobs_completed = models.PositiveIntegerField(default=0)
+    last_job_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    DEFAULT_PRIORITY = 100
+
+    class Meta:
+        ordering = ["priority", "id"]
+
+    def __str__(self) -> str:
+        return f"PoolerNode({self.email}, priority={self.priority})"
 
 
 class ToolPricing(models.Model):
