@@ -46,6 +46,8 @@ urlpatterns = [
     re_path(r"^admin/contact-messages/(?P<message_id>[0-9]+)/?$", admin_views.admin_contact_message_detail),  # PUT mark resolved/unread + internal note
     re_path(r"^admin/print-agent/stats/?$", admin_views.admin_print_agent_stats),  # GET desktop Print Agent last-seen per shop + recent failed jobs
     re_path(r"^admin/passport-ai-settings/?$", admin_views.admin_passport_ai_settings),  # GET/PUT OpenAI passport-photo backup/primary config
+    re_path(r"^admin/gpt-pooler/nodes/?$", admin_views.admin_pooler_nodes),  # GET GPT Pooler priority table + live status / POST add an account email with a priority
+    re_path(r"^admin/gpt-pooler/nodes/(?P<node_id>[0-9]+)/?$", admin_views.admin_pooler_node_detail),  # PUT edit priority/isEnabled / DELETE remove a pooler account
     re_path(r"^admin/wallet/ledger/export/?$", admin_views.admin_wallet_ledger_export),  # GET CSV download of the filtered wallet ledger (same filters as the JSON list, capped at 5000 rows)
     re_path(r"^admin/orders/export/?$", admin_views.admin_orders_export),  # GET CSV download of the filtered order list (same filters as the JSON list, capped at 5000 rows)
     re_path(r"^admin/notifications/?$", admin_views.admin_notifications),  # GET cheap poll-friendly counts for sidebar badges
@@ -169,7 +171,7 @@ urlpatterns = [
     re_path(r"^api-passport-photo-check/?$", views.check_passport_photo),  # POST poll for the AI-generated final passport photo
 
     # --- Family Passport Photo (authenticated, multi-photo AI merge) -------
-    re_path(r"^save-raw-family-photo/?$", views.save_raw_family_photo),  # POST upload 2-6 photos + prompt, generates a merged group photo inline
+    re_path(r"^save-raw-family-photo/?$", views.save_raw_family_photo),  # POST upload 2-6 photos + prompt; queued for the GPT Pooler (or generated inline in *_PRIMARY AI modes)
     re_path(r"^api-family-photo-check/?$", views.check_family_photo),  # POST poll for the AI-generated family photo
 
     # --- Agent Passport Jobs (desktop Print Agent, AI photo queue) ---------
@@ -177,6 +179,9 @@ urlpatterns = [
     re_path(r"^agent/passport-jobs/(?P<job_id>[0-9]+)/claim/?$", views.claim_passport_job),  # POST atomically claim a pending job
     re_path(r"^agent/passport-jobs/(?P<job_id>[0-9]+)/complete/?$", views.complete_passport_job),  # POST upload final photo, or report failure
     re_path(r"^agent/passport-jobs/(?P<job_id>[0-9]+)/original-image/?$", views.agent_passport_original_image),  # GET raw upload decoded from base64
+    re_path(r"^agent/passport-jobs/(?P<job_id>[0-9]+)/input-image/(?P<index>[0-9]+)/?$", views.agent_passport_input_image),  # GET one family member photo decoded from base64
+    re_path(r"^agent/pooler/status/?$", views.pooler_status),  # GET every GPT Pooler with priority + live status (active/standby/busy/offline/disabled)
+    re_path(r"^agent/pooler/offline/?$", views.pooler_go_offline),  # POST pooler closing normally - hand over to the next priority now, requeue its claimed jobs
 
     # --- Agent (desktop Print Agent, print queue) ---------------------------
     re_path(r"^agent/ws-status/?$", views.agent_ws_status),  # GET server-side "is my Print Agent alive" fallback for the Verify Agent step (WebSocket connect state or a recent /agent/jobs/ poll)

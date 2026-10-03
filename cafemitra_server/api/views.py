@@ -23,7 +23,7 @@ from django.contrib.auth import authenticate, get_user_model
 from django.conf import settings
 from django.core.mail import send_mail
 from django.db import connection, transaction
-from django.db.models import Count, Max, Q, Sum
+from django.db.models import Count, F, Max, Q, Sum
 from django.db.models.functions import Substr
 from django.http import FileResponse, HttpResponse, HttpResponseRedirect, JsonResponse
 from django.utils.html import escape
@@ -35,7 +35,7 @@ from django.views.decorators.http import require_http_methods
 from .background_remover.remove_background import BackgroundRemovalError, remove_background_bytes
 from .background_remover.passport_photo_processor import ProcessingError, enhance_transparent_bytes
 from .background_remover.watermark_remover import remove_gemini_watermark
-from .models import Agent, AuthToken, ContactMessage, Coupon, CouponRedemption, EmailVerificationToken, PassportAIConfig, PasswordResetToken, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UpiPayee, UpiQrRecord, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
+from .models import Agent, AuthToken, ContactMessage, Coupon, CouponRedemption, EmailVerificationToken, PassportAIConfig, PasswordResetToken, PoolerNode, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UpiPayee, UpiQrRecord, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from cafemitra_server.product_setting import PAYMENT_GATEWAYS, active_payment_gateway
 
 User = get_user_model()
@@ -2685,7 +2685,8 @@ def apply_ai_fallback(order):
             order.save(update_fields=["status"])
         return False
 
-    if not order.original_filename:
+    is_family = order.service_key == "family_passport_photo"
+    if not (order.family_photo_inputs if is_family else order.original_filename):
         return give_up()
 
     try:
@@ -2695,15 +2696,21 @@ def apply_ai_fallback(order):
         return give_up()
 
     if mode == PassportAIConfig.MODE_AGENT_GEMINI_BACKUP:
-        provider_fn, is_gemini_output, provider_label = generate_passport_photo_with_gemini, True, "Gemini"
+        provider_fn = generate_family_photo_with_gemini if is_family else generate_passport_photo_with_gemini
+        is_gemini_output, provider_label = True, "Gemini"
     elif mode == PassportAIConfig.MODE_AGENT_OPENAI_BACKUP:
-        provider_fn, is_gemini_output, provider_label = generate_passport_photo_with_openai, False, "OpenAI"
+        provider_fn = generate_family_photo_with_openai if is_family else generate_passport_photo_with_openai
+        is_gemini_output, provider_label = False, "OpenAI"
     else:
         # openai_primary / gemini_primary: no agent-failure backup configured.
         return give_up()
 
-    content_type, image_bytes = data_uri_to_bytes(order.original_filename)
-    result_type, result = provider_fn(order.passport_prompt, image_bytes, content_type)
+    if is_family:
+        images = [(image_bytes, content_type) for content_type, image_bytes in map(data_uri_to_bytes, order.family_photo_inputs)]
+        result_type, result = provider_fn(order.passport_prompt, images)
+    else:
+        content_type, image_bytes = data_uri_to_bytes(order.original_filename)
+        result_type, result = provider_fn(order.passport_prompt, image_bytes, content_type)
     # Gemini can take up to GEMINI_TIMEOUT (60s) and OpenAI up to OPENAI_TIMEOUT
     # (90s) - either call can run long enough that Supabase's session-mode
     # pooler drops the DB connection this request opened before the call even
@@ -2712,7 +2719,7 @@ def apply_ai_fallback(order):
     connection.close()
     if result_type:
         try:
-            _finalize_passport_photo(order, result_type, result, is_gemini_output=is_gemini_output)
+            _finalize_passport_photo(order, result_type, result, is_gemini_output=is_gemini_output, tool_key=order.service_key)
             return True
         except Exception:
             logger.exception("Failed to save %s backup result for passport order %s", provider_label, order.id)
@@ -4638,6 +4645,9 @@ def public_shop_by_code(request, code):
 PASSPORT_PHOTO_CHECK_MAX_RETRIES = 5
 PASSPORT_PHOTO_CHECK_RETRY_DELAY_SECONDS = 5
 PASSPORT_PHOTO_STALE_JOB_SECONDS = 80
+# A family photo uploads 2-6 images into one ChatGPT chat and asks it to
+# compose a group shot, which takes noticeably longer than a single photo.
+FAMILY_PHOTO_STALE_JOB_SECONDS = 180
 PASSPORT_PHOTO_FALLBACK_RETRY_SECONDS = 20
 
 
@@ -4659,15 +4669,18 @@ def resolve_passport_photo(order):
     PASSPORT_PHOTO_STALE_JOB_SECONDS and trigger the paid fallback anyway,
     generating (and billing) the photo before it was ever approved or paid
     for."""
-    if order.service_key != "passport_photo" or order.gemini_photo or order.status in (
+    if order.service_key not in POOLER_SERVICE_KEYS or order.gemini_photo or order.status in (
         PrintOrder.STATUS_AWAITING_APPROVAL, PrintOrder.STATUS_AWAITING_PAYMENT
     ):
         return
 
+    stale_limit = (
+        FAMILY_PHOTO_STALE_JOB_SECONDS if order.service_key == "family_passport_photo" else PASSPORT_PHOTO_STALE_JOB_SECONDS
+    )
     just_failed = False
     if order.photo_status in (PrintOrder.PHOTO_STATUS_PENDING, PrintOrder.PHOTO_STATUS_CLAIMED):
         stale_seconds = (timezone.now() - order.photo_updated_at).total_seconds() if order.photo_updated_at else 0
-        if stale_seconds > PASSPORT_PHOTO_STALE_JOB_SECONDS:
+        if stale_seconds > stale_limit:
             order.photo_status = PrintOrder.PHOTO_STATUS_FAILED
             order.photo_error_message = "The PrintPilot Agent did not respond in time. Please check that it is running and connected, then try again."
             order.photo_updated_at = timezone.now()
@@ -4838,6 +4851,140 @@ def save_manual_passport_photo(request):
     return JsonResponse({"id": order.id, "order": public_order(order)})
 
 
+# GPT Pooler priority / failover (see models.PoolerNode). A pooler polls
+# every ~5s, so a few missed polls = offline (power cut, crash, network
+# drop) and the next pooler in priority order takes over.
+POOLER_ONLINE_WINDOW_SECONDS = 20
+# A job still unclaimed this long is offered to every enabled pooler
+# regardless of priority, in case the top pooler is heartbeating but stuck.
+POOLER_OVERFLOW_SECONDS = 25
+# Order types the GPT Pooler generates: a single passport photo (one input
+# image in original_filename) and a family passport photo (2-6 input
+# images in family_photo_inputs, merged into one group photo).
+POOLER_SERVICE_KEYS = ("passport_photo", "family_passport_photo")
+
+
+def pooler_email(user):
+    return (user.email or "").strip().lower()
+
+
+def pooler_is_online(node, now=None):
+    now = now or timezone.now()
+    return bool(node.last_seen_at) and (now - node.last_seen_at).total_seconds() <= POOLER_ONLINE_WINDOW_SECONDS
+
+
+def pooler_node_for_user(user):
+    node, _ = PoolerNode.objects.get_or_create(
+        email=pooler_email(user), defaults={"priority": PoolerNode.DEFAULT_PRIORITY}
+    )
+    return node
+
+
+def touch_pooler_node(user, request):
+    """Record a heartbeat from the pooler's job poll. The pooler reports its
+    capacity as query params (freeWorkers/totalWorkers/machine); an older
+    pooler that sends none is treated as having capacity, so it keeps
+    working the way it did before priorities existed."""
+    node = pooler_node_for_user(user)
+
+    def int_param(name, default):
+        try:
+            return max(0, int(request.GET.get(name, default)))
+        except (TypeError, ValueError):
+            return default
+
+    node.total_workers = int_param("totalWorkers", node.total_workers or 1)
+    node.free_workers = int_param("freeWorkers", 1)
+    node.machine_name = str(request.GET.get("machine", node.machine_name))[:120]
+    node.last_seen_at = timezone.now()
+    node.save(update_fields=["total_workers", "free_workers", "machine_name", "last_seen_at", "updated_at"])
+    return node
+
+
+def pooler_may_pull(node, now=None):
+    """True when `node` should get new jobs: it is enabled, and every
+    enabled pooler with a higher priority (lower number) is either offline
+    or has no free worker right now."""
+    if not node.is_enabled:
+        return False
+    now = now or timezone.now()
+    higher_with_capacity = PoolerNode.objects.filter(
+        is_enabled=True,
+        priority__lt=node.priority,
+        free_workers__gt=0,
+        last_seen_at__gte=now - timedelta(seconds=POOLER_ONLINE_WINDOW_SECONDS),
+    )
+    return not higher_with_capacity.exists()
+
+
+def pooler_may_take_job(node, order):
+    if pooler_may_pull(node):
+        return True
+    if not node.is_enabled:
+        return False
+    waited = (timezone.now() - order.photo_updated_at).total_seconds() if order.photo_updated_at else 0
+    return waited >= POOLER_OVERFLOW_SECONDS
+
+
+def requeue_jobs_of_offline_poolers():
+    """Hand jobs held by a pooler that has gone offline back to the queue,
+    so the next pooler in line finishes them instead of the order waiting
+    for resolve_passport_photo's stale-job fallback."""
+    cutoff = timezone.now() - timedelta(seconds=POOLER_ONLINE_WINDOW_SECONDS)
+    offline_emails = PoolerNode.objects.filter(
+        Q(last_seen_at__isnull=True) | Q(last_seen_at__lt=cutoff)
+    ).values_list("email", flat=True)
+    PrintOrder.objects.filter(
+        service_key__in=POOLER_SERVICE_KEYS,
+        photo_status=PrintOrder.PHOTO_STATUS_CLAIMED,
+        photo_claimed_by_email__in=list(offline_emails),
+    ).update(
+        photo_status=PrintOrder.PHOTO_STATUS_PENDING,
+        photo_claimed_by_email="",
+        photo_updated_at=timezone.now(),
+    )
+
+
+def pooler_nodes_payload():
+    now = timezone.now()
+    nodes = list(PoolerNode.objects.all())
+    # The pooler that gets new jobs right now: first online, enabled node
+    # (by priority) that still has a free worker.
+    active = next((n for n in nodes if n.is_enabled and pooler_is_online(n, now) and n.free_workers > 0), None)
+
+    def status(node):
+        if not node.is_enabled:
+            return "disabled"
+        if not pooler_is_online(node, now):
+            return "offline"
+        if active and node.id == active.id:
+            return "active"
+        return "busy" if node.free_workers == 0 else "standby"
+
+    return [public_pooler_node(n, status=status(n)) for n in nodes]
+
+
+def public_pooler_node(node, can_pull=None, status=None):
+    payload = {
+        "id": node.id,
+        "email": node.email,
+        "priority": node.priority,
+        "isEnabled": node.is_enabled,
+        "isOnline": pooler_is_online(node),
+        "machineName": node.machine_name,
+        "totalWorkers": node.total_workers,
+        "freeWorkers": node.free_workers,
+        "lastSeenAt": node.last_seen_at.isoformat() if node.last_seen_at else None,
+        "jobsCompleted": node.jobs_completed,
+        "lastJobAt": node.last_job_at.isoformat() if node.last_job_at else None,
+    }
+    if can_pull is not None:
+        payload["canPull"] = can_pull
+    if status is not None:
+        payload["status"] = status
+    return payload
+
+
 def public_passport_job(order, request):
     # The raw upload is stored as a base64 data URI on the order (no file on
     # disk), but the desktop PrintPilot Agent downloads it over plain HTTP -
@@ -4848,8 +4995,16 @@ def public_passport_job(order, request):
         if order.original_filename
         else ""
     )
+    # family_passport_photo: one URL per uploaded family member photo, served
+    # through agent_passport_input_image (same reasoning as above).
+    input_image_urls = [
+        request.build_absolute_uri(f"/api/agent/passport-jobs/{order.id}/input-image/{index}/")
+        for index in range(len(order.family_photo_inputs or []))
+    ]
     return {
         "id": order.id,
+        "serviceKey": order.service_key,
+        "inputImageUrls": input_image_urls,
         "prompt": order.passport_prompt,
         "status": order.photo_status,
         "priceItemId": order.price_item_id,
@@ -4923,11 +5078,11 @@ FAMILY_PHOTO_TEST_IMAGE_PATH = os.path.join(os.path.dirname(__file__), "test_ass
 @require_http_methods(["POST", "OPTIONS"])
 def save_raw_family_photo(request):
     """Family Passport Photo upload: takes one photo per family member and
-    merges them into a single AI-generated group photo. Unlike
-    save_raw_passport_photo (which can queue for the desktop PrintPilot
-    Agent), this always generates inline against Gemini, falling back to
-    OpenAI on failure - there is no per-shop agent flow for a multi-image
-    merge, so PassportAIConfig's agent-first modes don't apply here."""
+    merges them into a single AI-generated group photo. Like
+    save_raw_passport_photo, the agent-first PassportAIConfig modes queue it
+    for the GPT Pooler (which pastes every member photo into one ChatGPT
+    chat); the *_PRIMARY modes generate inline against Gemini, falling back
+    to OpenAI on failure."""
     if request.method == "OPTIONS":
         return JsonResponse({})
 
@@ -4982,6 +5137,14 @@ def save_raw_family_photo(request):
         photo_updated_at=timezone.now(),
     )
 
+    # Same routing as save_raw_passport_photo: in the agent-first modes the
+    # order is left PHOTO_STATUS_PENDING for the GPT Pooler to pick up (see
+    # agent_passport_jobs), with apply_ai_fallback as the backup if it
+    # fails or goes silent. Only the *_PRIMARY modes generate inline here.
+    ai_mode = PassportAIConfig.get_solo().mode
+    if ai_mode not in (PassportAIConfig.MODE_OPENAI_PRIMARY, PassportAIConfig.MODE_GEMINI_PRIMARY):
+        return JsonResponse({"id": order.id})
+
     # Wrapped in try/except (this runs inline in the upload request, same
     # reasoning as the *_PRIMARY branch in save_raw_passport_photo above) -
     # any crash here, including a save() on a DB connection Supabase's
@@ -4993,7 +5156,7 @@ def save_raw_family_photo(request):
             is_gemini_output = False
             provider_label = "Test mode"
         else:
-            images = [data_uri_to_bytes(uri) for uri in input_data_uris]
+            images = [(image_bytes, content_type) for content_type, image_bytes in map(data_uri_to_bytes, input_data_uris)]
             result_type, result = generate_family_photo_with_gemini(prompt, images)
             is_gemini_output = True
             provider_label = "Gemini"
@@ -5044,10 +5207,14 @@ def check_family_photo(request):
         return JsonResponse({"message": "Photo request not found."}, status=404)
 
     order.refresh_from_db()
+    resolve_passport_photo(order)
     if order.gemini_photo:
         return JsonResponse({"found": True, "imageUrl": order.gemini_photo})
 
-    if order.photo_status == PrintOrder.PHOTO_STATUS_FAILED:
+    # A pooler failure alone isn't final - resolve_passport_photo retries
+    # the configured AI backup - so only report failure once the order
+    # itself has been given up on.
+    if order.photo_status == PrintOrder.PHOTO_STATUS_FAILED and order.status == PrintOrder.STATUS_FAILED:
         return JsonResponse(
             {"found": False, "message": friendly_photo_error_message(order.photo_error_message, "Family photo generation failed. Please try again.")},
             status=200,
@@ -5079,12 +5246,31 @@ def agent_passport_jobs(request):
     # excluded for the same reason: an online-payment order must not run
     # (and bill) the AI generation until the gateway actually confirms
     # payment, which is what flips it to STATUS_QUEUED.
+    #
+    # The poll doubles as the GPT Pooler's heartbeat, and only the pooler
+    # currently at the top of the priority order gets the queue - see
+    # pooler_may_pull. A lower-priority pooler still sees jobs that have sat
+    # unclaimed past POOLER_OVERFLOW_SECONDS, as a safety net for a
+    # higher-priority pooler that is "online" but not actually picking up.
+    node = touch_pooler_node(user, request)
+    requeue_jobs_of_offline_poolers()
+
     jobs = PrintOrder.objects.filter(
-        service_key="passport_photo", photo_status=PrintOrder.PHOTO_STATUS_PENDING,
+        service_key__in=POOLER_SERVICE_KEYS, photo_status=PrintOrder.PHOTO_STATUS_PENDING,
     ).exclude(
         status__in=[PrintOrder.STATUS_AWAITING_APPROVAL, PrintOrder.STATUS_AWAITING_PAYMENT]
-    ).order_by("created_at")[:20]
-    return JsonResponse({"jobs": [public_passport_job(job, request) for job in jobs]})
+    )
+    can_pull = pooler_may_pull(node)
+    if not can_pull:
+        overflow_cutoff = timezone.now() - timedelta(seconds=POOLER_OVERFLOW_SECONDS)
+        jobs = jobs.filter(photo_updated_at__lte=overflow_cutoff) if node.is_enabled else jobs.none()
+    jobs = jobs.order_by("created_at")[:20]
+    return JsonResponse(
+        {
+            "jobs": [public_passport_job(job, request) for job in jobs],
+            "pooler": public_pooler_node(node, can_pull=can_pull),
+        }
+    )
 
 
 @csrf_exempt
@@ -5098,7 +5284,7 @@ def claim_passport_job(request, job_id):
         return JsonResponse({"message": "Unauthorized."}, status=401)
 
     with transaction.atomic():
-        order = PrintOrder.objects.select_for_update().filter(id=job_id, service_key="passport_photo").first()
+        order = PrintOrder.objects.select_for_update().filter(id=job_id, service_key__in=POOLER_SERVICE_KEYS).first()
         if not order:
             return JsonResponse({"message": "Photo job not found."}, status=404)
         if order.photo_status != PrintOrder.PHOTO_STATUS_PENDING:
@@ -5110,10 +5296,15 @@ def claim_passport_job(request, job_id):
             return JsonResponse({"message": "This cash-counter order is still waiting for the shop owner's approval."}, status=409)
         if order.status == PrintOrder.STATUS_AWAITING_PAYMENT:
             return JsonResponse({"message": "This order is still waiting for online payment to be confirmed."}, status=409)
+        if not pooler_may_take_job(pooler_node_for_user(user), order):
+            # Same priority rule as agent_passport_jobs - a lower-priority
+            # pooler claiming by id can't jump ahead of an online one above it.
+            return JsonResponse({"message": "A higher-priority pooler is handling this job."}, status=409)
 
         order.photo_status = PrintOrder.PHOTO_STATUS_CLAIMED
         order.photo_updated_at = timezone.now()
-        order.save(update_fields=["photo_status", "photo_updated_at"])
+        order.photo_claimed_by_email = pooler_email(user)
+        order.save(update_fields=["photo_status", "photo_updated_at", "photo_claimed_by_email"])
 
     return JsonResponse(public_passport_job(order, request))
 
@@ -5128,7 +5319,7 @@ def complete_passport_job(request, job_id):
     if not user:
         return JsonResponse({"message": "Unauthorized."}, status=401)
 
-    order = PrintOrder.objects.filter(id=job_id, service_key="passport_photo").first()
+    order = PrintOrder.objects.filter(id=job_id, service_key__in=POOLER_SERVICE_KEYS).first()
     if not order:
         return JsonResponse({"message": "Photo job not found."}, status=404)
     if order.status == PrintOrder.STATUS_AWAITING_APPROVAL:
@@ -5139,6 +5330,15 @@ def complete_passport_job(request, job_id):
         return JsonResponse({"message": "This cash-counter order is still waiting for the shop owner's approval."}, status=409)
     if order.status == PrintOrder.STATUS_AWAITING_PAYMENT:
         return JsonResponse({"message": "This order is still waiting for online payment to be confirmed."}, status=409)
+    caller_email = pooler_email(user)
+    if order.photo_status == PrintOrder.PHOTO_STATUS_PENDING or (
+        order.photo_claimed_by_email and order.photo_claimed_by_email != caller_email
+    ):
+        # The job was handed back to the queue (this pooler went offline -
+        # see requeue_jobs_of_offline_poolers) and is now waiting for, or
+        # held by, another pooler. Accepting this late result too would
+        # complete - and bill - the same order twice.
+        return JsonResponse({"message": "This job was reassigned to another pooler."}, status=409)
 
     if str(request.POST.get("status", "")).strip() == PrintOrder.PHOTO_STATUS_FAILED:
         order.photo_status = PrintOrder.PHOTO_STATUS_FAILED
@@ -5175,8 +5375,47 @@ def complete_passport_job(request, job_id):
     order.save(update_fields=update_fields)
     # Bill the order's own owner even when the bulk agent (a different
     # account) is the one completing the job on their behalf.
-    charge_wallet_for_tool(order.user, "passport_photo", quantity=1, order=order)
+    charge_wallet_for_tool(order.user, order.service_key, quantity=1, order=order)
+    PoolerNode.objects.filter(email=caller_email).update(
+        jobs_completed=F("jobs_completed") + 1, last_job_at=timezone.now()
+    )
     return JsonResponse(public_passport_job(order, request))
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def pooler_go_offline(request):
+    """Called by the GPT Pooler when it is closed normally, so the next
+    pooler in line takes over immediately instead of waiting out
+    POOLER_ONLINE_WINDOW_SECONDS. Any job it had claimed goes back to the
+    queue. A power cut never reaches this - that case is covered by the
+    heartbeat timing out."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    PoolerNode.objects.filter(email=pooler_email(user)).update(last_seen_at=None, free_workers=0)
+    requeue_jobs_of_offline_poolers()
+    return JsonResponse({"ok": True})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def pooler_status(request):
+    """Every registered pooler with its priority and live status - which
+    one is currently pulling jobs, which are standing by, which are
+    offline."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    return JsonResponse({"nodes": pooler_nodes_payload()})
 
 
 @csrf_exempt
@@ -5215,3 +5454,27 @@ def agent_passport_original_image(request, job_id):
         return HttpResponse(order.document.read(), content_type=content_type)
 
     return JsonResponse({"message": "Photo not found."}, status=404)
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def agent_passport_input_image(request, job_id, index):
+    """Serve one of a family_passport_photo order's uploaded member photos
+    (stored as base64 data URIs in family_photo_inputs) as a plain image
+    download for the GPT Pooler - the family counterpart of
+    agent_passport_original_image."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    caller = auth_user(request)
+    if not caller:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    order = PrintOrder.objects.filter(id=job_id, service_key="family_passport_photo").first()
+    inputs = (order.family_photo_inputs or []) if order else []
+    index = int(index)
+    if index >= len(inputs) or not str(inputs[index]).startswith("data:"):
+        return JsonResponse({"message": "Photo not found."}, status=404)
+
+    content_type, image_bytes = data_uri_to_bytes(inputs[index])
+    return HttpResponse(image_bytes, content_type=content_type)

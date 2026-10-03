@@ -19,7 +19,7 @@ from django.http import HttpResponse, JsonResponse
 
 from .admin_activity import log_admin_activity
 from .admin_auth import get_admin_role, require_admin, require_section
-from .models import AdminActivityLog, AdminRole, Agent, ContactMessage, Coupon, CouponRedemption, CustomerNote, CustomerTag, LeadAgent, LeadTag, PassportAIConfig, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTransaction, WalletTopup, WithdrawalRequest
+from .models import AdminActivityLog, AdminRole, Agent, ContactMessage, Coupon, CouponRedemption, CustomerNote, CustomerTag, LeadAgent, LeadTag, PassportAIConfig, PoolerNode, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTransaction, WalletTopup, WithdrawalRequest
 from .views import (
     ORDER_LIST_DEFERRED_FIELDS,
     cafe_code_for_user,
@@ -31,6 +31,7 @@ from .views import (
     money,
     order_list_queryset,
     parse_body,
+    pooler_nodes_payload,
     public_order,
     public_pricing,
     public_shop,
@@ -2038,6 +2039,83 @@ def admin_passport_ai_settings(request):
     log_admin_activity(admin_user, "passport_ai_config.update", "passport_ai_config", config.id, f"mode={config.mode}")
 
     return JsonResponse({"config": public_passport_ai_config(config)})
+
+
+def apply_pooler_node_fields(node, body):
+    """Shared PUT/POST field handling - returns an error message or None."""
+    if "priority" in body:
+        try:
+            priority = int(body.get("priority"))
+        except (TypeError, ValueError):
+            return "Priority must be a whole number."
+        if priority < 1:
+            return "Priority must be 1 or higher."
+        node.priority = priority
+    if "isEnabled" in body:
+        node.is_enabled = bool(body.get("isEnabled"))
+    return None
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST", "OPTIONS"])
+def admin_pooler_nodes(request):
+    """The GPT Pooler priority table (see models.PoolerNode): which account
+    pulls passport-photo jobs first, and which take over when it goes
+    offline. Lives under "tools_config" next to the passport AI settings."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "tools_config")
+    if err:
+        return err
+
+    if request.method == "GET":
+        return JsonResponse({"nodes": pooler_nodes_payload()})
+
+    body = parse_body(request)
+    email = str(body.get("email", "")).strip().lower()
+    if not email or "@" not in email:
+        return JsonResponse({"message": "A valid email is required."}, status=400)
+    if PoolerNode.objects.filter(email=email).exists():
+        return JsonResponse({"message": "This email is already in the pooler table."}, status=409)
+
+    node = PoolerNode(email=email)
+    error = apply_pooler_node_fields(node, body)
+    if error:
+        return JsonResponse({"message": error}, status=400)
+    node.save()
+    log_admin_activity(admin_user, "gpt_pooler.create", "pooler_node", node.id, f"{node.email} priority={node.priority}")
+    return JsonResponse({"nodes": pooler_nodes_payload()}, status=201)
+
+
+@csrf_exempt
+@require_http_methods(["PUT", "DELETE", "OPTIONS"])
+def admin_pooler_node_detail(request, node_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "tools_config")
+    if err:
+        return err
+
+    node = PoolerNode.objects.filter(id=node_id).first()
+    if not node:
+        return JsonResponse({"message": "Pooler not found."}, status=404)
+
+    if request.method == "DELETE":
+        log_admin_activity(admin_user, "gpt_pooler.delete", "pooler_node", node.id, node.email)
+        node.delete()
+        return JsonResponse({"nodes": pooler_nodes_payload()})
+
+    error = apply_pooler_node_fields(node, parse_body(request))
+    if error:
+        return JsonResponse({"message": error}, status=400)
+    node.save()
+    log_admin_activity(
+        admin_user, "gpt_pooler.update", "pooler_node", node.id,
+        f"{node.email} priority={node.priority} isEnabled={node.is_enabled}",
+    )
+    return JsonResponse({"nodes": pooler_nodes_payload()})
 
 
 # --- Phase 11: Reporting (CSV export) ----------------------------------------
