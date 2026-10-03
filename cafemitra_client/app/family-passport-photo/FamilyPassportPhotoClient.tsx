@@ -30,7 +30,9 @@ const avoidPhotoExamples = [
 const MIN_PHOTOS = 2;
 const MAX_PHOTOS = 6;
 const CHECK_INTERVAL_MS = 5_000;
-const MAX_CHECK_ATTEMPTS = 20;
+// ~4 min: covers the GPT Pooler's group-photo generation plus the server's
+// AI fallback if the pooler goes silent (FAMILY_PHOTO_STALE_JOB_SECONDS).
+const MAX_CHECK_ATTEMPTS = 48;
 
 type FamilySlot = { id: string; file: File | null; previewUrl: string };
 

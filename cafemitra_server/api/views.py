@@ -2685,7 +2685,8 @@ def apply_ai_fallback(order):
             order.save(update_fields=["status"])
         return False
 
-    if not order.original_filename:
+    is_family = order.service_key == "family_passport_photo"
+    if not (order.family_photo_inputs if is_family else order.original_filename):
         return give_up()
 
     try:
@@ -2695,15 +2696,21 @@ def apply_ai_fallback(order):
         return give_up()
 
     if mode == PassportAIConfig.MODE_AGENT_GEMINI_BACKUP:
-        provider_fn, is_gemini_output, provider_label = generate_passport_photo_with_gemini, True, "Gemini"
+        provider_fn = generate_family_photo_with_gemini if is_family else generate_passport_photo_with_gemini
+        is_gemini_output, provider_label = True, "Gemini"
     elif mode == PassportAIConfig.MODE_AGENT_OPENAI_BACKUP:
-        provider_fn, is_gemini_output, provider_label = generate_passport_photo_with_openai, False, "OpenAI"
+        provider_fn = generate_family_photo_with_openai if is_family else generate_passport_photo_with_openai
+        is_gemini_output, provider_label = False, "OpenAI"
     else:
         # openai_primary / gemini_primary: no agent-failure backup configured.
         return give_up()
 
-    content_type, image_bytes = data_uri_to_bytes(order.original_filename)
-    result_type, result = provider_fn(order.passport_prompt, image_bytes, content_type)
+    if is_family:
+        images = [(image_bytes, content_type) for content_type, image_bytes in map(data_uri_to_bytes, order.family_photo_inputs)]
+        result_type, result = provider_fn(order.passport_prompt, images)
+    else:
+        content_type, image_bytes = data_uri_to_bytes(order.original_filename)
+        result_type, result = provider_fn(order.passport_prompt, image_bytes, content_type)
     # Gemini can take up to GEMINI_TIMEOUT (60s) and OpenAI up to OPENAI_TIMEOUT
     # (90s) - either call can run long enough that Supabase's session-mode
     # pooler drops the DB connection this request opened before the call even
@@ -2712,7 +2719,7 @@ def apply_ai_fallback(order):
     connection.close()
     if result_type:
         try:
-            _finalize_passport_photo(order, result_type, result, is_gemini_output=is_gemini_output)
+            _finalize_passport_photo(order, result_type, result, is_gemini_output=is_gemini_output, tool_key=order.service_key)
             return True
         except Exception:
             logger.exception("Failed to save %s backup result for passport order %s", provider_label, order.id)
@@ -4638,6 +4645,9 @@ def public_shop_by_code(request, code):
 PASSPORT_PHOTO_CHECK_MAX_RETRIES = 5
 PASSPORT_PHOTO_CHECK_RETRY_DELAY_SECONDS = 5
 PASSPORT_PHOTO_STALE_JOB_SECONDS = 80
+# A family photo uploads 2-6 images into one ChatGPT chat and asks it to
+# compose a group shot, which takes noticeably longer than a single photo.
+FAMILY_PHOTO_STALE_JOB_SECONDS = 180
 PASSPORT_PHOTO_FALLBACK_RETRY_SECONDS = 20
 
 
@@ -4659,15 +4669,18 @@ def resolve_passport_photo(order):
     PASSPORT_PHOTO_STALE_JOB_SECONDS and trigger the paid fallback anyway,
     generating (and billing) the photo before it was ever approved or paid
     for."""
-    if order.service_key != "passport_photo" or order.gemini_photo or order.status in (
+    if order.service_key not in POOLER_SERVICE_KEYS or order.gemini_photo or order.status in (
         PrintOrder.STATUS_AWAITING_APPROVAL, PrintOrder.STATUS_AWAITING_PAYMENT
     ):
         return
 
+    stale_limit = (
+        FAMILY_PHOTO_STALE_JOB_SECONDS if order.service_key == "family_passport_photo" else PASSPORT_PHOTO_STALE_JOB_SECONDS
+    )
     just_failed = False
     if order.photo_status in (PrintOrder.PHOTO_STATUS_PENDING, PrintOrder.PHOTO_STATUS_CLAIMED):
         stale_seconds = (timezone.now() - order.photo_updated_at).total_seconds() if order.photo_updated_at else 0
-        if stale_seconds > PASSPORT_PHOTO_STALE_JOB_SECONDS:
+        if stale_seconds > stale_limit:
             order.photo_status = PrintOrder.PHOTO_STATUS_FAILED
             order.photo_error_message = "The PrintPilot Agent did not respond in time. Please check that it is running and connected, then try again."
             order.photo_updated_at = timezone.now()
@@ -4845,6 +4858,10 @@ POOLER_ONLINE_WINDOW_SECONDS = 20
 # A job still unclaimed this long is offered to every enabled pooler
 # regardless of priority, in case the top pooler is heartbeating but stuck.
 POOLER_OVERFLOW_SECONDS = 25
+# Order types the GPT Pooler generates: a single passport photo (one input
+# image in original_filename) and a family passport photo (2-6 input
+# images in family_photo_inputs, merged into one group photo).
+POOLER_SERVICE_KEYS = ("passport_photo", "family_passport_photo")
 
 
 def pooler_email(user):
@@ -4918,7 +4935,7 @@ def requeue_jobs_of_offline_poolers():
         Q(last_seen_at__isnull=True) | Q(last_seen_at__lt=cutoff)
     ).values_list("email", flat=True)
     PrintOrder.objects.filter(
-        service_key="passport_photo",
+        service_key__in=POOLER_SERVICE_KEYS,
         photo_status=PrintOrder.PHOTO_STATUS_CLAIMED,
         photo_claimed_by_email__in=list(offline_emails),
     ).update(
@@ -4978,8 +4995,16 @@ def public_passport_job(order, request):
         if order.original_filename
         else ""
     )
+    # family_passport_photo: one URL per uploaded family member photo, served
+    # through agent_passport_input_image (same reasoning as above).
+    input_image_urls = [
+        request.build_absolute_uri(f"/api/agent/passport-jobs/{order.id}/input-image/{index}/")
+        for index in range(len(order.family_photo_inputs or []))
+    ]
     return {
         "id": order.id,
+        "serviceKey": order.service_key,
+        "inputImageUrls": input_image_urls,
         "prompt": order.passport_prompt,
         "status": order.photo_status,
         "priceItemId": order.price_item_id,
@@ -5053,11 +5078,11 @@ FAMILY_PHOTO_TEST_IMAGE_PATH = os.path.join(os.path.dirname(__file__), "test_ass
 @require_http_methods(["POST", "OPTIONS"])
 def save_raw_family_photo(request):
     """Family Passport Photo upload: takes one photo per family member and
-    merges them into a single AI-generated group photo. Unlike
-    save_raw_passport_photo (which can queue for the desktop PrintPilot
-    Agent), this always generates inline against Gemini, falling back to
-    OpenAI on failure - there is no per-shop agent flow for a multi-image
-    merge, so PassportAIConfig's agent-first modes don't apply here."""
+    merges them into a single AI-generated group photo. Like
+    save_raw_passport_photo, the agent-first PassportAIConfig modes queue it
+    for the GPT Pooler (which pastes every member photo into one ChatGPT
+    chat); the *_PRIMARY modes generate inline against Gemini, falling back
+    to OpenAI on failure."""
     if request.method == "OPTIONS":
         return JsonResponse({})
 
@@ -5112,6 +5137,14 @@ def save_raw_family_photo(request):
         photo_updated_at=timezone.now(),
     )
 
+    # Same routing as save_raw_passport_photo: in the agent-first modes the
+    # order is left PHOTO_STATUS_PENDING for the GPT Pooler to pick up (see
+    # agent_passport_jobs), with apply_ai_fallback as the backup if it
+    # fails or goes silent. Only the *_PRIMARY modes generate inline here.
+    ai_mode = PassportAIConfig.get_solo().mode
+    if ai_mode not in (PassportAIConfig.MODE_OPENAI_PRIMARY, PassportAIConfig.MODE_GEMINI_PRIMARY):
+        return JsonResponse({"id": order.id})
+
     # Wrapped in try/except (this runs inline in the upload request, same
     # reasoning as the *_PRIMARY branch in save_raw_passport_photo above) -
     # any crash here, including a save() on a DB connection Supabase's
@@ -5123,7 +5156,7 @@ def save_raw_family_photo(request):
             is_gemini_output = False
             provider_label = "Test mode"
         else:
-            images = [data_uri_to_bytes(uri) for uri in input_data_uris]
+            images = [(image_bytes, content_type) for content_type, image_bytes in map(data_uri_to_bytes, input_data_uris)]
             result_type, result = generate_family_photo_with_gemini(prompt, images)
             is_gemini_output = True
             provider_label = "Gemini"
@@ -5174,10 +5207,14 @@ def check_family_photo(request):
         return JsonResponse({"message": "Photo request not found."}, status=404)
 
     order.refresh_from_db()
+    resolve_passport_photo(order)
     if order.gemini_photo:
         return JsonResponse({"found": True, "imageUrl": order.gemini_photo})
 
-    if order.photo_status == PrintOrder.PHOTO_STATUS_FAILED:
+    # A pooler failure alone isn't final - resolve_passport_photo retries
+    # the configured AI backup - so only report failure once the order
+    # itself has been given up on.
+    if order.photo_status == PrintOrder.PHOTO_STATUS_FAILED and order.status == PrintOrder.STATUS_FAILED:
         return JsonResponse(
             {"found": False, "message": friendly_photo_error_message(order.photo_error_message, "Family photo generation failed. Please try again.")},
             status=200,
@@ -5219,7 +5256,7 @@ def agent_passport_jobs(request):
     requeue_jobs_of_offline_poolers()
 
     jobs = PrintOrder.objects.filter(
-        service_key="passport_photo", photo_status=PrintOrder.PHOTO_STATUS_PENDING,
+        service_key__in=POOLER_SERVICE_KEYS, photo_status=PrintOrder.PHOTO_STATUS_PENDING,
     ).exclude(
         status__in=[PrintOrder.STATUS_AWAITING_APPROVAL, PrintOrder.STATUS_AWAITING_PAYMENT]
     )
@@ -5247,7 +5284,7 @@ def claim_passport_job(request, job_id):
         return JsonResponse({"message": "Unauthorized."}, status=401)
 
     with transaction.atomic():
-        order = PrintOrder.objects.select_for_update().filter(id=job_id, service_key="passport_photo").first()
+        order = PrintOrder.objects.select_for_update().filter(id=job_id, service_key__in=POOLER_SERVICE_KEYS).first()
         if not order:
             return JsonResponse({"message": "Photo job not found."}, status=404)
         if order.photo_status != PrintOrder.PHOTO_STATUS_PENDING:
@@ -5282,7 +5319,7 @@ def complete_passport_job(request, job_id):
     if not user:
         return JsonResponse({"message": "Unauthorized."}, status=401)
 
-    order = PrintOrder.objects.filter(id=job_id, service_key="passport_photo").first()
+    order = PrintOrder.objects.filter(id=job_id, service_key__in=POOLER_SERVICE_KEYS).first()
     if not order:
         return JsonResponse({"message": "Photo job not found."}, status=404)
     if order.status == PrintOrder.STATUS_AWAITING_APPROVAL:
@@ -5338,7 +5375,7 @@ def complete_passport_job(request, job_id):
     order.save(update_fields=update_fields)
     # Bill the order's own owner even when the bulk agent (a different
     # account) is the one completing the job on their behalf.
-    charge_wallet_for_tool(order.user, "passport_photo", quantity=1, order=order)
+    charge_wallet_for_tool(order.user, order.service_key, quantity=1, order=order)
     PoolerNode.objects.filter(email=caller_email).update(
         jobs_completed=F("jobs_completed") + 1, last_job_at=timezone.now()
     )
@@ -5417,3 +5454,27 @@ def agent_passport_original_image(request, job_id):
         return HttpResponse(order.document.read(), content_type=content_type)
 
     return JsonResponse({"message": "Photo not found."}, status=404)
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def agent_passport_input_image(request, job_id, index):
+    """Serve one of a family_passport_photo order's uploaded member photos
+    (stored as base64 data URIs in family_photo_inputs) as a plain image
+    download for the GPT Pooler - the family counterpart of
+    agent_passport_original_image."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    caller = auth_user(request)
+    if not caller:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    order = PrintOrder.objects.filter(id=job_id, service_key="family_passport_photo").first()
+    inputs = (order.family_photo_inputs or []) if order else []
+    index = int(index)
+    if index >= len(inputs) or not str(inputs[index]).startswith("data:"):
+        return JsonResponse({"message": "Photo not found."}, status=404)
+
+    content_type, image_bytes = data_uri_to_bytes(inputs[index])
+    return HttpResponse(image_bytes, content_type=content_type)

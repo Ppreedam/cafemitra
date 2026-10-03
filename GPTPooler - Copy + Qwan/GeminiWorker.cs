@@ -210,20 +210,26 @@ internal sealed class GeminiWorker
         }
     }
 
-    /// Runs one image+prompt job through this worker's tab.
+    /// Runs one images+prompt job through this worker's tab: one image for
+    /// a passport photo, several (one per member) for a family photo, all
+    /// pasted into the same message.
     /// Returns the saved file path of the generated image, or null on
     /// timeout/failure.
-    public async Task<string?> RunJobAsync(string imagePath, string promptText, CancellationToken token)
+    public async Task<string?> RunJobAsync(IReadOnlyList<string> imagePaths, string promptText, CancellationToken token)
     {
         SetStatus("Loading site");
         await EnsureGeminiLoadedAsync();
 
-        SetStatus("Pasting image");
-        var pasteOk = await PasteImageAsync(imagePath);
-        if (!pasteOk) return null;
+        for (var i = 0; i < imagePaths.Count; i++)
+        {
+            SetStatus(imagePaths.Count == 1 ? "Pasting image" : $"Pasting image {i + 1}/{imagePaths.Count}");
+            var pasteOk = await PasteImageAsync(imagePaths[i]);
+            if (!pasteOk) return null;
 
-        // wait for the image to finish uploading before sending the message
-        await Task.Delay(500, token);
+            // wait for the image to finish uploading before pasting the next
+            // one / sending the message - extra images take longer to upload
+            await Task.Delay(i == 0 ? 500 : 1500, token);
+        }
 
         SetStatus("Typing prompt");
         var promptOk = await InsertPromptAsync(promptText);
@@ -234,7 +240,7 @@ internal sealed class GeminiWorker
         if (!sendOk) return null;
 
         SetStatus("Waiting for image");
-        var savedPath = await SmartDownloadImageAsync(token);
+        var savedPath = await SmartDownloadImageAsync(imagePaths.Count, token);
 
         // The conversation is reset separately, via StartNewChatAsync,
         // once the caller has confirmed the generated photo was uploaded
@@ -458,7 +464,9 @@ internal sealed class GeminiWorker
     ";
 
         string sendStatus = "button_disabled";
-        for (var attempt = 0; attempt < 6 && sendStatus == "button_disabled"; attempt++)
+        // Up to ~9s: the button also stays disabled while pasted images are
+        // still uploading, which takes longer for a multi-image family job.
+        for (var attempt = 0; attempt < 30 && sendStatus == "button_disabled"; attempt++)
         {
             await Task.Delay(300);
             string result = await WebView.CoreWebView2.ExecuteScriptAsync(script);
@@ -474,7 +482,8 @@ internal sealed class GeminiWorker
         return true;
     }
 
-    private Task<string?> SmartDownloadImageAsync(CancellationToken token) => SmartDownloadChatGptImageAsync(token);
+    private Task<string?> SmartDownloadImageAsync(int inputImageCount, CancellationToken token) =>
+        SmartDownloadChatGptImageAsync(inputImageCount, token);
 
     // 1. Polls every 500ms until the page has more than targetImageIndex
     //    <img> elements (chat avatars/icons plus the generated image push
@@ -486,11 +495,15 @@ internal sealed class GeminiWorker
     //    triggers a real browser download - the same mechanism as pressing
     //    Ctrl+S - which WebView2's DownloadStarting event intercepts and
     //    redirects straight into AgentPaths.JobsDir instead of a Save dialog.
-    private async Task<string?> SmartDownloadChatGptImageAsync(CancellationToken token)
+    //
+    // With one input image the generated one is the 4th <img> on the page;
+    // every extra input image adds one more thumbnail to the sent message
+    // ahead of it, so the target index moves up by one per extra image.
+    private async Task<string?> SmartDownloadChatGptImageAsync(int inputImageCount, CancellationToken token)
     {
         const int pollIntervalMs = 100;
         const int maxAttempts = 100000000;
-        const int targetImageIndex = 3; // 4th image, 0-based
+        int targetImageIndex = 3 + Math.Max(inputImageCount - 1, 0); // 0-based
 
         string jsFindSrc = @"
 (function() {
