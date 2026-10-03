@@ -4,6 +4,7 @@ import Link from "next/link";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import DuplexPrinterCard from "./DuplexPrinterCard";
 import {
   BarChart3,
   Bell,
@@ -891,6 +892,8 @@ export default function AutoPrintClient() {
                     ))}
                     {!printerPresets.length ? <p className="printer-preset-empty">No saved printer settings yet.</p> : null}
                   </div>
+
+                  <DuplexPrinterCard agentConnected={agentConnected} />
                 </div>
               ) : null}
 

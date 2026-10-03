@@ -29,6 +29,11 @@ internal sealed class AgentConfig
     public string ShopName { get; set; } = "";
     public int PollIntervalSeconds { get; set; } = 10;
 
+    /// Duplex slot: empty printer means "not set up" (duplex jobs are held,
+    /// never sent to another printer). Mode is "auto" or "manual".
+    public string DuplexPrinter { get; set; } = "";
+    public string DuplexMode { get; set; } = "auto";
+
     public static AgentConfig Load(string path)
     {
         if (!File.Exists(path))

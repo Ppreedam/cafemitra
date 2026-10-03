@@ -104,7 +104,7 @@ namespace Print_Agent
         // switch below only matter for a printer/driver that doesn't.
         private static readonly string[] StandardPaperSizes =
         {
-            "A4", "A5", "A3", "A6", "B5", "Letter", "Legal", "Executive",
+            "A4", "A5", "A3", "A6", "B5", "Letter", "Legal", "Executive", "4x6",
         };
 
         private string selectedFile = string.Empty;
@@ -320,6 +320,7 @@ namespace Print_Agent
             Theme.StyleRoundedCard(pnlAccountCard);
             Theme.StyleRoundedCard(pnlLogsCard);
             Theme.StyleRoundedCard(pnlSettingsCard);
+            InitSetupTabs();
 
             SetupSignedInChip();
             ShowSettingsOverlay(false);
@@ -951,6 +952,27 @@ namespace Print_Agent
                 }
             }
 
+            // Photo printers name 4x6 many ways ("4 x 6 in", "Photo 4x6",
+            // "10x15cm"), so match it loosely before the fixed-size fallback.
+            if (!paperFound && paperSize == "4x6")
+            {
+                foreach (PaperSize ps in pd.PrinterSettings.PaperSizes)
+                {
+                    var name = ps.PaperName.ToLowerInvariant().Replace(" ", "").Replace("×", "x");
+                    if (name.Contains("4x6") || name.Contains("10x15"))
+                    {
+                        pd.DefaultPageSettings.PaperSize = ps;
+                        paperFound = true;
+                        break;
+                    }
+                }
+                if (!paperFound)
+                {
+                    pd.DefaultPageSettings.PaperSize = new PaperSize("4x6", 400, 600);
+                    paperFound = true;
+                }
+            }
+
             if (!paperFound)
             {
                 switch (paperSize)
@@ -1272,6 +1294,8 @@ namespace Print_Agent
                 DeletePresetFromLocalApi,
                 request => RunQrPrintFromLocalApi(request, isPoster: false),
                 request => RunQrPrintFromLocalApi(request, isPoster: true),
+                GetDuplexSettingsFromLocalApi,
+                SaveDuplexSettingsFromLocalApi,
                 LogStatus
             );
             _localServer.Start();
@@ -1310,6 +1334,7 @@ namespace Print_Agent
                     // the instant WS connected and legitimately stopped that
                     // timer (agent report itself as "stopped" while healthy).
                     _wsConnected = connected;
+                    if (connected) ReportDuplexAvailabilityIfChanged(force: true);
 
                     void ApplyPollState()
                     {
@@ -1366,6 +1391,10 @@ namespace Print_Agent
                 await PollAndPrintAsync();
             };
             _pollTimer.Start();
+
+            var duplexRecheckTimer = new System.Windows.Forms.Timer { Interval = 2 * 60 * 1000 };
+            duplexRecheckTimer.Tick += (s, ev) => ReportDuplexAvailabilityIfChanged();
+            duplexRecheckTimer.Start();
             UpdateWsIndicator(wsConnected: false); // amber until the WebSocket's first connect callback fires
 
             await BootstrapLoginAsync();
@@ -1385,7 +1414,7 @@ namespace Print_Agent
             try
             {
                 var api = NewApi();
-                var jobs = await api.FetchJobs(CancellationToken.None);
+                var jobs = await api.FetchJobs(IsDuplexAvailable(), CancellationToken.None);
                 if (jobs.Count == 0) return;
 
                 LogStatus($"Found {jobs.Count} job(s).");
@@ -1441,7 +1470,7 @@ namespace Print_Agent
                     job.FileName,
                     job.Pages,
                     job.Copies,
-                    DefaultPaperSize,
+                    job.ResolvedPaperSize,
                     job.PrintColorModeLabel,
                     $"₹{job.TotalAmount}",
                     job.PaymentMode,
@@ -1510,7 +1539,34 @@ namespace Print_Agent
                 // IsCashApprovalPending on the server either way, so nothing
                 // is lost - this just delays that prompt until it's worth asking.
                 var colorType = job.PrintColorMode.ToPresetColorMode();
-                var matchedPrinter = FindMatchingPrinter(DefaultPaperSize, colorType);
+
+                // Duplex is opt-in per job. A 1-page job has nothing to
+                // flip, so it prints through the normal single-side path.
+                var useDuplex = job.Duplex && job.Pages > 1;
+                var requestedPaper = job.ResolvedPaperSize;
+                // A3 / 4x6 orders use the same preset grid as A4: the
+                // printer saved for that paper size + color mode. A duplex
+                // job keeps the duplex printer (it may still be A3).
+                var jobPaper = (requestedPaper == "A3" || (requestedPaper == "4x6" && !useDuplex)) ? requestedPaper : DefaultPaperSize;
+                string matchedPrinter;
+                if (useDuplex)
+                {
+                    // Dedicated duplex printer only - never silently
+                    // falls back to a preset/default printer, since that
+                    // would print a double-side order single-sided.
+                    matchedPrinter = string.IsNullOrWhiteSpace(_config.DuplexPrinter) ? null : _config.DuplexPrinter;
+                }
+                else
+                {
+                    matchedPrinter = FindMatchingPrinter(jobPaper, colorType);
+                }
+                if (matchedPrinter is null && useDuplex)
+                {
+                    LogStatus($"{tokenId}: no duplex printer set - holding job until one is added.");
+                    _printedIds.Remove(job.Id);
+                    ShowDuplexNotReadyAlert("No duplex printer is set up.", "Select a duplex printer in PrintPilot Setup (Duplex Printer).");
+                    return;
+                }
                 if (matchedPrinter is null)
                 {
                     // Same silent-failure shape as an offline/virtual printer
@@ -1520,9 +1576,9 @@ namespace Print_Agent
                     // A4), and a Color order comes in - there's no A4/Color
                     // row, so this is a permanent dead end for that job
                     // until someone happens to notice and adds the preset.
-                    LogStatus($"{tokenId}: no printer preset saved for {DefaultPaperSize} / {colorType} - holding job until one is added.");
+                    LogStatus($"{tokenId}: no printer preset saved for {jobPaper} / {colorType} - holding job until one is added.");
                     _printedIds.Remove(job.Id); // retry next poll once a matching preset is saved
-                    ShowMissingPresetAlert(DefaultPaperSize, colorType);
+                    ShowMissingPresetAlert(jobPaper, colorType);
                     return; // job stays exactly as it was on the server (pending) - not failed, not printed
                 }
 
@@ -1560,6 +1616,17 @@ namespace Print_Agent
                     return; // job stays exactly as it was on the server (pending) - not failed, not printed
                 }
 
+                var duplexMode = DuplexPrintService.NormalizeMode(_config.DuplexMode);
+                if (useDuplex && duplexMode == DuplexPrintService.ModeAuto && !DuplexPrintService.CanDuplex(matchedPrinter))
+                {
+                    LogStatus($"{tokenId}: printer '{matchedPrinter}' does not report automatic two-side printing - holding job.");
+                    _printedIds.Remove(job.Id);
+                    ShowDuplexNotReadyAlert(
+                        $"\"{matchedPrinter}\" does not report automatic two-side printing.",
+                        "Switch Print Mode to Manual (Flip Pages) in PrintPilot Setup, or pick a printer that supports duplex.");
+                    return;
+                }
+
                 if (job.IsCashApprovalPending)
                 {
                     LogStatus($"{tokenId}: waiting for cash confirmation.");
@@ -1589,14 +1656,27 @@ namespace Print_Agent
                 // this is the exact path already confirmed working.
                 selectedFile = destination;
                 txtFilePath.Text = destination;
-                cmbPageSize.SelectedItem = DefaultPaperSize;
+                cmbPageSize.SelectedItem = jobPaper;
                 cmbPrinters.SelectedItem = matchedPrinter;
                 cmbColorType.SelectedItem = colorType;
 
                 var copies = Math.Max(job.Copies, 1);
                 var printedCopies = 0;
                 Exception lastPrintError = null;
-                for (var copy = 0; copy < copies; copy++)
+                var duplexNote = "";
+                var duplexHandled = useDuplex && Path.GetExtension(destination).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
+                if (duplexHandled)
+                {
+                    var duplexResult = DuplexPrintService.Print(
+                        destination, matchedPrinter, job.PrintColorMode, jobPaper, copies,
+                        duplexMode, job.DuplexEdge, AskFlipBackSide);
+                    printedCopies = duplexResult.CopiesPrinted;
+                    duplexNote = duplexResult.BackSkipped
+                        ? " Double-side: only the front side was printed (back side skipped)."
+                        : $" Double-side ({duplexMode}).";
+                    LogStatus($"{tokenId}: duplex print done ({duplexMode}, {printedCopies} cop{(printedCopies == 1 ? "y" : "ies")}).");
+                }
+                for (var copy = 0; copy < (duplexHandled ? 0 : copies); copy++)
                 {
                     if (string.IsNullOrWhiteSpace(selectedFile))
                     {
@@ -1657,7 +1737,7 @@ namespace Print_Agent
                 var printResult = printedCopies == copies
                     ? $"Printed via {matchedPrinter} ({job.PrintColorModeLabel}), {copies} cop{(copies == 1 ? "y" : "ies")}."
                     : $"Printed {printedCopies} of {copies} cop{(copies == 1 ? "y" : "ies")} via {matchedPrinter} - remaining copies failed: {lastPrintError?.Message}";
-                await api.UpdateStatus(job.Id, "printed", printResult, CancellationToken.None);
+                await api.UpdateStatus(job.Id, "printed", printResult + duplexNote, CancellationToken.None);
                 LogStatus($"{tokenId}: printed.");
             }
             catch (Exception ex)
@@ -1865,6 +1945,135 @@ namespace Print_Agent
             var invalid = Path.GetInvalidFileNameChars();
             var cleaned = new string(value.Select(ch => invalid.Contains(ch) ? '_' : ch).ToArray()).Trim();
             return string.IsNullOrWhiteSpace(cleaned) ? "print-job.pdf" : cleaned;
+        }
+
+        private volatile bool _duplexAlertShown;
+
+        // Last value the server acknowledged; null = nothing sent yet this
+        // run. A WebSocket-connected agent has its poll timer stopped, so
+        // the poll-time report alone would never fire - this one is sent on
+        // login/WS connect, when Setup changes, and from a slow recheck
+        // timer (printer unplugged, driver removed...), only when it changed.
+        private bool? _lastReportedDuplex;
+        private bool _reportingDuplex;
+
+        private async void ReportDuplexAvailabilityIfChanged(bool force = false)
+        {
+            if (_reportingDuplex || string.IsNullOrWhiteSpace(_config.AccessToken)) return;
+            var available = IsDuplexAvailable();
+            if (!force && _lastReportedDuplex == available) return;
+            _reportingDuplex = true;
+            try
+            {
+                await NewApi().ReportDuplexAvailability(available, CancellationToken.None);
+                _lastReportedDuplex = available;
+                LogStatus($"Duplex availability reported to server: {(available ? "available" : "not available")}.");
+            }
+            catch (Exception ex)
+            {
+                LogStatus($"Could not report duplex availability (will retry): {ex.Message}");
+            }
+            finally
+            {
+                _reportingDuplex = false;
+            }
+        }
+
+        // Reported to the server on every poll. True only when a duplex
+        // printer is set, still installed, and can actually print the
+        // chosen mode (Auto needs hardware duplex, Manual works anywhere).
+        private bool IsDuplexAvailable()
+        {
+            try
+            {
+                var printer = _config.DuplexPrinter;
+                if (string.IsNullOrWhiteSpace(printer)) return false;
+                if (!PrinterSettings.InstalledPrinters.Cast<string>().Contains(printer, StringComparer.OrdinalIgnoreCase)) return false;
+                // Same dev-only bypass as the print-time virtual printer check:
+                // a dev machine has no real printer to test duplex with.
+                if (!IsLocalDevSession && IsVirtualPrinter(printer)) return false;
+                return DuplexPrintService.NormalizeMode(_config.DuplexMode) == DuplexPrintService.ModeManual
+                    || DuplexPrintService.CanDuplex(printer);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private void ShowDuplexNotReadyAlert(string problem, string fix, string title = "Duplex Printing Not Ready")
+        {
+            if (_duplexAlertShown) return;
+            _duplexAlertShown = true;
+            try
+            {
+                PrintAlertForm.Show(
+                    title,
+                    $"{problem}\n\n{fix}\n\n" +
+                    "The customer's print job is on hold and will print automatically once this is fixed - it does not need to be resent.",
+                    ctaLabel: "Open Setup",
+                    ctaUrl: $"{ClientAppUrl}/auto-print?step=printer");
+            }
+            finally
+            {
+                _duplexAlertShown = false;
+            }
+        }
+
+        // Manual duplex, between the front and back pass. True = print the
+        // back side now; false = the owner chose to skip it. If the dialog
+        // can't be shown the exception propagates and the job is failed,
+        // rather than printing the back pages straight onto a new sheet.
+        private bool AskFlipBackSide()
+        {
+            if (InvokeRequired)
+            {
+                return (bool)Invoke(new Func<bool>(AskFlipBackSide));
+            }
+
+            var answer = MessageBox.Show(
+                this,
+                "FRONT SIDE PRINTED\n\nPrinted pages ko wapas printer ki tray me rakho (khaali side print head ki taraf).\n\n" +
+                "Yes  =  Back side ab print karo\nNo   =  Rehne do (sirf front side)",
+                "PrintPilot - Back Side",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Information);
+            return answer == DialogResult.Yes;
+        }
+
+        // ── Duplex slot (website Setup page, via the local bridge) ────
+        private DuplexSettingsDto GetDuplexSettingsFromLocalApi()
+        {
+            if (InvokeRequired)
+            {
+                return (DuplexSettingsDto)Invoke(new Func<DuplexSettingsDto>(GetDuplexSettingsFromLocalApi));
+            }
+
+            var installed = PrinterSettings.InstalledPrinters.Cast<string>().ToArray();
+            var printer = _config.DuplexPrinter ?? "";
+            return new DuplexSettingsDto
+            {
+                Printer = printer,
+                Mode = DuplexPrintService.NormalizeMode(_config.DuplexMode),
+                Capable = printer.Length > 0 && DuplexPrintService.CanDuplex(printer),
+                Missing = printer.Length > 0 && !installed.Contains(printer, StringComparer.OrdinalIgnoreCase),
+                Printers = installed,
+            };
+        }
+
+        private DuplexSettingsDto SaveDuplexSettingsFromLocalApi(DuplexSettingsDto request)
+        {
+            if (InvokeRequired)
+            {
+                return (DuplexSettingsDto)Invoke(new Func<DuplexSettingsDto, DuplexSettingsDto>(SaveDuplexSettingsFromLocalApi), request);
+            }
+
+            _config.DuplexPrinter = request.Printer?.Trim() ?? "";
+            _config.DuplexMode = DuplexPrintService.NormalizeMode(request.Mode);
+            AgentConfig.Save(_configPath, _config);
+            LogStatus($"Duplex printer saved from local dashboard: {(_config.DuplexPrinter.Length > 0 ? _config.DuplexPrinter : "(none)")} ({_config.DuplexMode}).");
+            ReportDuplexAvailabilityIfChanged();
+            return GetDuplexSettingsFromLocalApi();
         }
 
         private bool ConfirmCashPrint(PrintJob job)

@@ -250,7 +250,11 @@ export default function OrdersClient() {
         return;
       }
     } catch {
-      // fall through to the per-order passport photo page below
+      // fall through to the per-order tool page below
+    }
+    if (order.serviceKey === "family_passport_photo") {
+      router.push("/family-passport-photo");
+      return;
     }
     router.push(`/passport-photo?orderId=${order.id}`);
   }
@@ -451,10 +455,10 @@ export default function OrdersClient() {
                               {order.fileName || "Document"}
                             </a>
                           ) : null}
-                          {order.serviceKey === "passport_photo" && order.photoStatus === "failed" ? (
+                          {(order.serviceKey === "passport_photo" || order.serviceKey === "family_passport_photo") && order.photoStatus === "failed" ? (
                             <small className="order-status failed">{friendlyPhotoErrorMessage(order)}</small>
-                          ) : order.serviceKey === "passport_photo" && !order.hasGeminiPhoto ? (
-                            <small>Passport photo processing...</small>
+                          ) : (order.serviceKey === "passport_photo" || order.serviceKey === "family_passport_photo") && !order.hasGeminiPhoto ? (
+                            <small>{order.serviceKey === "family_passport_photo" ? "Family photo processing..." : "Passport photo processing..."}</small>
                           ) : null}
                         </td>
                         <td>{order.pages} x {order.copies}</td>
@@ -483,7 +487,7 @@ export default function OrdersClient() {
                         </td>
                         <td>
                           <span className={`order-status ${order.status}`}>{formatStatus(order.status)}</span>
-                          {order.serviceKey === "passport_photo" && (order.status === "queued" || order.status === "printed") && order.hasGeminiPhoto ? (
+                          {(order.serviceKey === "passport_photo" || order.serviceKey === "family_passport_photo") && (order.status === "queued" || order.status === "printed" || order.status === "failed") && order.hasGeminiPhoto ? (
                             <button type="button" className="orders-print-link" onClick={() => printOrderToPrintSheet(order)}>
                               <Printer size={14} /> Print
                             </button>
@@ -555,7 +559,7 @@ export default function OrdersClient() {
                 )}
               </div>
             </div>
-            {(compareOrder.status === "queued" || compareOrder.status === "printed") && compareOrder.geminiPhoto ? (
+            {(compareOrder.status === "queued" || compareOrder.status === "printed" || compareOrder.status === "failed") && compareOrder.geminiPhoto ? (
               <div className="passport-compare-actions">
                 <button
                   type="button"

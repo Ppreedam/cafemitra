@@ -32,6 +32,34 @@ internal sealed class PrintJob
     /// guessing from the price label when the server does not send one.
     public string? ColorMode { get; set; }
 
+    /// Double-side print requested at order time. Older servers don't send
+    /// these, so they default to a normal single-side job.
+    public bool Duplex { get; set; }
+    public string DuplexEdge { get; set; } = "long";
+
+    /// Explicit paper size from the server, if it ever sends one.
+    public string? PaperSize { get; set; }
+
+    /// "A3", "4x6", or "A4" (the default for everything else). Like the
+    /// color mode, this is read from the print type's name when the server
+    /// sends nothing: a shop that names a price item "A3 Color" or
+    /// "4x6 Photo" gets those orders routed to its A3 / photo printer.
+    public string ResolvedPaperSize
+    {
+        get
+        {
+            var explicitSize = (PaperSize ?? "").Trim().Replace(" ", "").Replace("×", "x").ToLowerInvariant();
+            if (explicitSize == "4x6") return "4x6";
+            if (explicitSize == "a3") return "A3";
+
+            var value = $"{PriceItemId} {PriceLabel} {ServiceName}".ToLowerInvariant().Replace("×", "x");
+            var compact = value.Replace(" ", "");
+            if (compact.Contains("4x6")) return "4x6";
+            if (System.Text.RegularExpressions.Regex.IsMatch(value, @"(^|[^a-z0-9])a3([^a-z0-9]|$)")) return "A3";
+            return "A4";
+        }
+    }
+
     public bool IsCashApprovalPending =>
         PaymentStatus.Equals("cash_counter", StringComparison.OrdinalIgnoreCase)
         && Status.Equals("awaiting_approval", StringComparison.OrdinalIgnoreCase);
@@ -171,4 +199,14 @@ internal sealed class PrinterPresetsResponse
     public IReadOnlyList<string> Printers { get; set; } = [];
     public IReadOnlyList<string> PaperSizes { get; set; } = [];
     public IReadOnlyList<string> ColorModes { get; set; } = [];
+}
+
+/// Duplex printer slot as seen over the local bridge (website Setup page).
+internal sealed class DuplexSettingsDto
+{
+    public string? Printer { get; set; }
+    public string? Mode { get; set; }
+    public bool Capable { get; set; }
+    public bool Missing { get; set; }
+    public IReadOnlyList<string> Printers { get; set; } = [];
 }

@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { CircleAlert, CircleCheck, Clock3, Crop, Download, Eye, EyeOff, FileText, IdCard, Image as ImageIcon, LoaderCircle, LockKeyhole, Printer, ShieldCheck, Trash2, Undo2, Upload, Wallet, X } from "lucide-react";
+import { CircleAlert, CircleCheck, Clock3, Copy, Crop, Download, Eye, EyeOff, FileText, IdCard, Image as ImageIcon, Info, LoaderCircle, LockKeyhole, Printer, RotateCw, ShieldCheck, Trash2, Undo2, Upload, Wallet, X } from "lucide-react";
 import { apiUrl } from "@/lib/api";
 import { calculatePriceItemRate, formatPriceItem, getAllowedPaymentModes, mergePricingDefaults, type PriceItem, type PricingService } from "@/lib/pricing";
 import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
 import { stashPhotoForPrintSheet } from "@/lib/printSheetHandoff";
-import { CropEditor, cropImage, loadImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, warpPerspectiveCrop, type CropQuad, type CropRect } from "../../CropEditor";
+import { CropEditor, cropImage, rotateImageBlob, loadImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, warpPerspectiveCrop, type CropQuad, type CropRect } from "../../CropEditor";
 import PublicResumeBuilder from "./PublicResumeBuilder";
 import PublicBiodataMaker from "./PublicBiodataMaker";
 import IdCardPrintUpload from "./IdCardPrintUpload";
@@ -35,6 +35,7 @@ type PublicShop = {
     whatsapp: string;
     logo?: string;
     banner?: string;
+    duplexAvailable?: boolean;
   };
   services: PricingService[];
   status: {
@@ -92,6 +93,8 @@ export default function CustomerScanPage() {
   const [selectedItemId, setSelectedItemId] = useState("");
   const [pages, setPages] = useState(0);
   const [copies, setCopies] = useState(1);
+  const [duplex, setDuplex] = useState(false);
+  const [duplexEdge, setDuplexEdge] = useState<"long" | "short">("long");
   const [finalFile, setFinalFile] = useState<Blob | null>(null);
   const [fileName, setFileName] = useState("");
   const [fileUrl, setFileUrl] = useState("");
@@ -101,6 +104,10 @@ export default function CustomerScanPage() {
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isPageManagerOpen, setIsPageManagerOpen] = useState(false);
   const [isCropOpen, setIsCropOpen] = useState(false);
+  const [isRotating, setIsRotating] = useState(false);
+  // Original page id of every current page (empty = untouched file), so copies
+  // made in Manage Pages can be labelled with the page they came from.
+  const [pageOrigins, setPageOrigins] = useState<number[]>([]);
   const [isDeleteDocumentOpen, setIsDeleteDocumentOpen] = useState(false);
   const [isPasswordPromptOpen, setIsPasswordPromptOpen] = useState(false);
   const [pendingPdfFile, setPendingPdfFile] = useState<File | null>(null);
@@ -115,6 +122,9 @@ export default function CustomerScanPage() {
   const [pageRangeInput, setPageRangeInput] = useState("");
   const [pageRangeError, setPageRangeError] = useState("");
   const [isCombiningFiles, setIsCombiningFiles] = useState(false);
+  // Reading a single large file (encryption check + page count) takes a moment.
+  const [isReadingUpload, setIsReadingUpload] = useState(false);
+  const isUploadBusy = isCombiningFiles || isReadingUpload;
   const [isCleanScanProcessing, setIsCleanScanProcessing] = useState(false);
   const [cleanScanProgress, setCleanScanProgress] = useState<CleanScanProgress | null>(null);
   const cleanScanAbortRef = useRef<AbortController | null>(null);
@@ -129,6 +139,11 @@ export default function CustomerScanPage() {
   // applyImageCrop); this stays put so "Reset" can always get back to the
   // untouched upload.
   const trueOriginalRef = useRef<File | null>(null);
+  // The PDF exactly as uploaded, so Manage Pages can undo all page edits.
+  const originalPdfRef = useRef<{ file: File; pages: number } | null>(null);
+  const [isPdfEdited, setIsPdfEdited] = useState(false);
+  const [copyPromptIndex, setCopyPromptIndex] = useState<number | null>(null);
+  const [copyCountInput, setCopyCountInput] = useState("1");
   // Black & white darkness, 0 (light) .. 100 (dark).
   const [docDarkness, setDocDarkness] = useState(DEFAULT_DOC_DARKNESS);
   const darknessTimerRef = useRef<number | null>(null);
@@ -228,6 +243,8 @@ export default function CustomerScanPage() {
   const amount = hasUploadedFile ? Math.max(0, selectedRate * totalUnits) : 0;
   const hasPdfFile = isPdfFile(fileType, fileName);
   const hasImageFile = isImageFile(fileType, fileName);
+  // Double-side printing only makes sense for a multi-page PDF; offered only when the shop's agent reports a working duplex printer.
+  const canDuplex = Boolean(data?.shop.duplexAvailable) && hasPdfFile && pages > 1 && !isPassportPhoto && !isIdCardPrint;
   const canCropImage = (selectedService === "auto_document_print" || isPassportPhoto) && hasImageFile;
   // Document photos are scanned automatically; passport photos and ID cards have their own flows.
   const autoScansImages = !isPassportPhoto && !isIdCardPrint;
@@ -477,7 +494,14 @@ export default function CustomerScanPage() {
     if (!files.length) return;
 
     if (files.length === 1) {
-      await handleSingleUpload(files[0]);
+      setIsReadingUpload(true);
+      // Let the spinner paint before the heavy file reads start.
+      await new Promise((resolve) => window.setTimeout(resolve, 30));
+      try {
+        await handleSingleUpload(files[0]);
+      } finally {
+        setIsReadingUpload(false);
+      }
       return;
     }
 
@@ -674,6 +698,9 @@ export default function CustomerScanPage() {
     setFileName(file.name);
     setFileType(file.type || file.name.split(".").pop()?.toLowerCase() || "");
     setIsPageManagerOpen(false);
+    setPageOrigins([]);
+    setIsPdfEdited(false);
+    originalPdfRef.current = null;
     setIsPreviewOpen(false);
     setIsCropOpen(false);
     setCropRect(DEFAULT_CROP_RECT);
@@ -684,13 +711,17 @@ export default function CustomerScanPage() {
     setPassportSheetUrl("");
     resetPaymentFlow();
 
+    const isPdfUpload = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+
     if (knownPages !== undefined) {
+      if (isPdfUpload) originalPdfRef.current = { file, pages: knownPages };
       setPages(knownPages);
       return;
     }
 
-    if (file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf")) {
+    if (isPdfUpload) {
       const detectedPages = await detectPdfPages(file);
+      originalPdfRef.current = { file, pages: detectedPages };
       setPages(detectedPages);
       return;
     }
@@ -738,6 +769,9 @@ export default function CustomerScanPage() {
     setFileName("");
     setFileType("");
     setPages(0);
+    setPageOrigins([]);
+    setIsPdfEdited(false);
+    originalPdfRef.current = null;
     setIsPreviewOpen(false);
     setIsPageManagerOpen(false);
     setIsCropOpen(false);
@@ -748,6 +782,8 @@ export default function CustomerScanPage() {
   function clearUpload() {
     clearUploadedFileState();
     setCopies(1);
+    setDuplex(false);
+    setDuplexEdge("long");
     setAttireCategory(passportAttireOptions[0].key);
     setOrder(null);
     setOrderError("");
@@ -811,6 +847,105 @@ export default function CustomerScanPage() {
     }
   }
 
+  // Rotates the shown image 90 degrees clockwise. The stored originals are
+  // rotated too, so switching B/W / Color / Original or re-cropping later
+  // keeps the new orientation.
+  async function rotateImage() {
+    if (!fileUrl || !hasImageFile || isRotating) return;
+
+    setIsRotating(true);
+    try {
+      const currentBlob = await fetch(fileUrl).then((response) => response.blob());
+      const rotatedBlob = await rotateImageBlob(currentBlob, 90);
+      const rotatedUrl = URL.createObjectURL(rotatedBlob);
+      URL.revokeObjectURL(fileUrl);
+      setFinalFile(rotatedBlob);
+      setFileUrl(rotatedUrl);
+      setIsPreviewOpen(false);
+
+      const rotateFile = async (file: File) => new File([await rotateImageBlob(file, 90)], file.name, { type: file.type });
+      if (trueOriginalRef.current) trueOriginalRef.current = await rotateFile(trueOriginalRef.current);
+      const scanOriginal = autoScan?.original;
+      if (scanOriginal) {
+        const rotatedOriginal = scanOriginal === trueOriginalRef.current ? scanOriginal : await rotateFile(scanOriginal);
+        setAutoScan((current) => (current ? { ...current, original: rotatedOriginal } : current));
+      }
+
+      setCropRect(DEFAULT_CROP_RECT);
+      setCropQuad(DEFAULT_CROP_QUAD);
+      setOrder(null);
+      setOrderError("");
+      if (passportSheetUrl) {
+        URL.revokeObjectURL(passportSheetUrl);
+        setPassportSheetUrl("");
+      }
+    } catch {
+      alert("Could not rotate the image. Please upload the image again and try.");
+    } finally {
+      setIsRotating(false);
+    }
+  }
+
+  function resetPdfPages() {
+    const original = originalPdfRef.current;
+    if (!original || isProcessingPdf) return;
+
+    const restoredUrl = URL.createObjectURL(original.file);
+    if (fileUrl) URL.revokeObjectURL(fileUrl);
+    setFinalFile(original.file);
+    setFileUrl(restoredUrl);
+    setFileName(original.file.name);
+    setPages(original.pages);
+    setCopyPromptIndex(null);
+    setPageOrigins([]);
+    setIsPdfEdited(false);
+    setPageRangeInput("");
+    setPageRangeError("");
+    setIsPreviewOpen(false);
+    setOrder(null);
+    setOrderError("");
+  }
+
+  function currentPageOrigins() {
+    return pageOrigins.length === pages ? pageOrigins : Array.from({ length: pages }, (_, index) => index + 1);
+  }
+
+  // Adds one more copy of a page right after it (click again for more).
+  async function duplicatePdfPage(pageIndex: number, count = 1) {
+    if (!fileUrl || !hasPdfFile || isProcessingPdf || pages >= 200) return;
+    const copyCount = Math.min(Math.max(1, Math.floor(count)), 200 - pages);
+
+    setIsProcessingPdf(true);
+    try {
+      const { PDFDocument } = await import("pdf-lib");
+      const sourceBytes = await fetch(fileUrl).then((response) => response.arrayBuffer());
+      const pdfDoc = await PDFDocument.load(sourceBytes, { updateMetadata: false });
+      if (pageIndex < 0 || pageIndex >= pdfDoc.getPageCount()) return;
+
+      const copiedPages = await pdfDoc.copyPages(pdfDoc, Array.from({ length: copyCount }, () => pageIndex));
+      copiedPages.forEach((copied, offset) => pdfDoc.insertPage(pageIndex + 1 + offset, copied));
+      const updatedBytes = await pdfDoc.save();
+      const updatedBlob = new Blob([updatedBytes], { type: "application/pdf" });
+      const updatedUrl = URL.createObjectURL(updatedBlob);
+
+      URL.revokeObjectURL(fileUrl);
+      setFinalFile(updatedBlob);
+      setFileUrl(updatedUrl);
+      const nextOrigins = currentPageOrigins();
+      nextOrigins.splice(pageIndex + 1, 0, ...Array.from({ length: copyCount }, () => nextOrigins[pageIndex]));
+      setPageOrigins(nextOrigins);
+      setIsPdfEdited(true);
+      setPages(pdfDoc.getPageCount());
+      setIsPreviewOpen(false);
+      setOrder(null);
+      setOrderError("");
+    } catch {
+      alert("Could not copy the PDF page. Please upload the file again and try.");
+    } finally {
+      setIsProcessingPdf(false);
+    }
+  }
+
   async function removePdfPage(pageIndex: number) {
     if (!fileUrl || !hasPdfFile || pages <= 1 || isProcessingPdf) return;
 
@@ -818,7 +953,7 @@ export default function CustomerScanPage() {
     try {
       const { PDFDocument } = await import("pdf-lib");
       const sourceBytes = await fetch(fileUrl).then((response) => response.arrayBuffer());
-      const pdfDoc = await PDFDocument.load(sourceBytes);
+      const pdfDoc = await PDFDocument.load(sourceBytes, { updateMetadata: false });
       const currentPageCount = pdfDoc.getPageCount();
 
       if (currentPageCount <= 1 || pageIndex < 0 || pageIndex >= currentPageCount) return;
@@ -829,6 +964,8 @@ export default function CustomerScanPage() {
       const updatedUrl = URL.createObjectURL(updatedBlob);
 
       URL.revokeObjectURL(fileUrl);
+      setPageOrigins(currentPageOrigins().filter((_, index) => index !== pageIndex));
+      setIsPdfEdited(true);
       setFinalFile(updatedBlob);
       setFileUrl(updatedUrl);
       setPages(pdfDoc.getPageCount());
@@ -852,10 +989,18 @@ export default function CustomerScanPage() {
     const parts = input.trim().split(",").map((part) => part.trim()).filter(Boolean);
     if (!parts.length) return null;
 
+    // "2x3" keeps page 2 three times; plain numbers/ranges are deduped.
     const pageNumbers = new Set<number>();
+    const repeated: number[] = [];
     for (const part of parts) {
+      const repeatMatch = part.match(/^(\d+)\s*[x*]\s*(\d+)$/i);
       const rangeMatch = part.match(/^(\d+)\s*-\s*(\d+)$/);
-      if (rangeMatch) {
+      if (repeatMatch) {
+        const page = Number(repeatMatch[1]);
+        const count = Number(repeatMatch[2]);
+        if (page < 1 || page > maxPages || count < 1 || count > 200) return null;
+        for (let copy = 0; copy < count; copy += 1) repeated.push(page);
+      } else if (rangeMatch) {
         const start = Number(rangeMatch[1]);
         const end = Number(rangeMatch[2]);
         if (start < 1 || end > maxPages || start > end) return null;
@@ -868,7 +1013,8 @@ export default function CustomerScanPage() {
         return null;
       }
     }
-    return pageNumbers.size ? Array.from(pageNumbers).sort((a, b) => a - b) : null;
+    const all = [...Array.from(pageNumbers), ...repeated].sort((a, b) => a - b);
+    return all.length ? all : null;
   }
 
   async function extractPdfPages(pageNumbers: number[]) {
@@ -878,7 +1024,7 @@ export default function CustomerScanPage() {
     try {
       const { PDFDocument } = await import("pdf-lib");
       const sourceBytes = await fetch(fileUrl).then((response) => response.arrayBuffer());
-      const sourceDoc = await PDFDocument.load(sourceBytes);
+      const sourceDoc = await PDFDocument.load(sourceBytes, { updateMetadata: false });
       const newDoc = await PDFDocument.create();
       const copiedPages = await newDoc.copyPages(sourceDoc, pageNumbers.map((page) => page - 1));
       copiedPages.forEach((page) => newDoc.addPage(page));
@@ -887,6 +1033,9 @@ export default function CustomerScanPage() {
       const updatedUrl = URL.createObjectURL(updatedBlob);
 
       URL.revokeObjectURL(fileUrl);
+      const sourceOrigins = currentPageOrigins();
+      setPageOrigins(pageNumbers.map((page) => sourceOrigins[page - 1]));
+      setIsPdfEdited(true);
       setFinalFile(updatedBlob);
       setFileUrl(updatedUrl);
       setPages(newDoc.getPageCount());
@@ -976,6 +1125,10 @@ export default function CustomerScanPage() {
       formData.append("rate", String(selectedRate));
       formData.append("pages", String(isPassportPhoto ? 1 : pages));
       formData.append("copies", String(copies));
+      if (canDuplex && duplex) {
+        formData.append("duplex", "true");
+        formData.append("duplexEdge", duplexEdge);
+      }
       formData.append("totalAmount", String(amount));
       formData.append("paymentMode", paymentMode);
       if (isPassportPhoto) {
@@ -1306,13 +1459,18 @@ export default function CustomerScanPage() {
                 </p>
                 <div className="document-actions">
                   {hasPdfFile && !isIdCardPrint ? (
-                    <button type="button" onClick={() => setIsPageManagerOpen(true)} disabled={pages <= 1 || isProcessingPdf || isCleanScanProcessing}>
+                    <button type="button" onClick={() => setIsPageManagerOpen(true)} disabled={(pages <= 1 && !isPdfEdited) || isProcessingPdf || isCleanScanProcessing}>
                       <Trash2 size={16} /> Manage Pages
                     </button>
                   ) : null}
                   {canCropImage ? (
                     <button type="button" onClick={() => setIsCropOpen(true)} disabled={isCleanScanProcessing || autoScanWorking}>
                       <Crop size={16} /> Crop
+                    </button>
+                  ) : null}
+                  {hasImageFile && !isIdCardPrint ? (
+                    <button type="button" onClick={rotateImage} disabled={isRotating || isCleanScanProcessing || autoScanWorking}>
+                      <RotateCw size={16} /> {isRotating ? "Rotating…" : "Rotate"}
                     </button>
                   ) : null}
                   {canCropImage && autoScan && fileName.endsWith("-cropped.png") ? (
@@ -1326,8 +1484,8 @@ export default function CustomerScanPage() {
                     </button>
                   ) : null}
                   {!isPassportPhoto && !isIdCardPrint ? (
-                    <button type="button" onClick={runCleanScan} disabled={isCleanScanProcessing || autoScanWorking}>
-                      <ImageIcon size={16} /> {isCleanScanProcessing ? "Cleaning…" : "Clean Scan"}
+                    <button type="button" onClick={runCleanScan} disabled title="Coming soon">
+                      <ImageIcon size={16} /> Clean Scan <small className="coming-soon-tag">Coming Soon</small>
                     </button>
                   ) : null}
                   <button type="button" onClick={clearUpload} disabled={isCleanScanProcessing}>
@@ -1425,22 +1583,24 @@ export default function CustomerScanPage() {
               </div>
             </div>
           ) : (
-            <label className={`customer-upload ${isCombiningFiles ? "is-busy" : ""}`}>
-              <Upload size={24} />
-              <strong>{isPassportPhoto ? "Upload Passport Photo" : "Upload PDF, JPG, PNG, JPEG"}</strong>
+            <label className={`customer-upload ${isUploadBusy ? "is-busy" : ""}`}>
+              {isReadingUpload ? <LoaderCircle size={24} className="spin" /> : <Upload size={24} />}
+              <strong>{isReadingUpload ? "Reading your document…" : isPassportPhoto ? "Upload Passport Photo" : "Upload PDF, JPG, PNG, JPEG"}</strong>
               <span>
-                {isCombiningFiles
+                {isReadingUpload
+                  ? "Large files can take a few seconds - please keep this page open."
+                  : isCombiningFiles
                   ? combineStatus || "Combining your files into one document…"
                   : isPassportPhoto
                     ? "Upload a JPG, PNG, or JPEG image. A 6-piece printable sheet will be created after cropping."
                     : "Pages will be detected automatically. You can also select multiple files at once - they'll be combined and priced together."}
               </span>
-              <em>{isCombiningFiles ? "Please wait…" : "Tap to choose a file"}</em>
+              <em>{isUploadBusy ? "Please wait…" : "Tap to choose a file"}</em>
               <input
                 accept={isPassportPhoto ? ".jpg,.jpeg,.png" : ".pdf,.jpg,.jpeg,.png"}
                 type="file"
                 multiple={!isPassportPhoto}
-                disabled={isCombiningFiles}
+                disabled={isUploadBusy}
                 onChange={(event) => handleUpload(event.target.files)}
               />
             </label>
@@ -1543,6 +1703,37 @@ export default function CustomerScanPage() {
               </button>
             </div>
           </label>
+          {canDuplex ? (
+            <div className="duplex-control">
+              <label className="duplex-toggle">
+                <input
+                  type="checkbox"
+                  checked={duplex}
+                  onChange={(event) => {
+                    setDuplex(event.target.checked);
+                    setOptionsTouched(true);
+                    resetOrderDraft();
+                  }}
+                />
+                <span>Print on both sides (double side)</span>
+              </label>
+              {duplex ? (
+                <label>
+                  <span>Flip on</span>
+                  <select
+                    value={duplexEdge}
+                    onChange={(event) => {
+                      setDuplexEdge(event.target.value === "short" ? "short" : "long");
+                      resetOrderDraft();
+                    }}
+                  >
+                    <option value="long">Long edge (portrait pages)</option>
+                    <option value="short">Short edge (landscape pages)</option>
+                  </select>
+                </label>
+              ) : null}
+            </div>
+          ) : null}
           <label>
             <span>Payment Mode</span>
             <select
@@ -1808,6 +1999,11 @@ export default function CustomerScanPage() {
                 <strong>Manage Pages</strong>
                 <span>{fileName}</span>
               </div>
+              {isPdfEdited ? (
+                <button type="button" className="page-manager-reset" onClick={resetPdfPages} disabled={isProcessingPdf}>
+                  <Undo2 size={15} /> Reset to original
+                </button>
+              ) : null}
               <button type="button" onClick={() => setIsPageManagerOpen(false)} aria-label="Close page manager">
                 <X size={18} />
               </button>
@@ -1819,7 +2015,7 @@ export default function CustomerScanPage() {
                   id="page-extract-input"
                   type="text"
                   inputMode="text"
-                  placeholder={`e.g. 1,3,5-7 (1-${pages})`}
+                  placeholder={`e.g. 1,3,5-7 or 2x3 (1-${pages})`}
                   value={pageRangeInput}
                   onChange={(event) => {
                     setPageRangeInput(event.target.value);
@@ -1832,20 +2028,122 @@ export default function CustomerScanPage() {
                 </button>
               </div>
               {pageRangeError ? <p className="page-extract-error">{pageRangeError}</p> : null}
-              <p className="page-extract-hint">Type page numbers separated by commas, or a range like 2-4. Everything else gets removed.</p>
+              <p className="page-extract-hint">Page numbers here are the current numbers shown on each card. Type them separated by commas, or a range like 2-4. Use 2x3 to keep page 2 three times. Everything else gets removed.</p>
+              {pages >= 200 ? (
+                <p className="page-extract-limit-note">
+                  <Info size={14} /> Copy is disabled for PDFs with 200 or more pages. You can still remove or extract pages.
+                </p>
+              ) : null}
             </div>
             <div className="page-manager-body">
-              {Array.from({ length: pages }, (_, index) => (
-                <div className="pdf-page-card" key={`${fileUrl}-${index}`}>
-                  <PdfPageThumb fileUrl={fileUrl} pageNumber={index + 1} />
+              {(() => {
+                const origins = currentPageOrigins();
+                // Copies sit right after their source page, so consecutive pages with the same origin form one card.
+                const groups: Array<{ start: number; count: number }> = [];
+                origins.forEach((origin, index) => {
+                  const last = groups[groups.length - 1];
+                  if (last && origins[last.start] === origin) last.count += 1;
+                  else groups.push({ start: index, count: 1 });
+                });
+                return groups;
+              })().map(({ start: index, count: groupCount }) => {
+                const origins = currentPageOrigins();
+                const firstShiftedGroup = origins.findIndex((origin, i) => origin !== i + 1 && origins.indexOf(origin) === i);
+                const lastIndex = index + groupCount - 1;
+                return (
+                <div className={`pdf-page-card${groupCount > 1 ? " is-copy" : ""}`} key={`${fileUrl}-${index}`}>
+                  <div className="pdf-page-thumb-wrap">
+                    <PdfPageThumb fileUrl={fileUrl} pageNumber={index + 1} />
+                    {groupCount > 1 ? (
+                      <span className="page-copy-badge count" title={`${groupCount} copies of original page ${origins[index]}`}>×{groupCount}</span>
+                    ) : null}
+                    {origins[index] !== index + 1 ? (
+                      <span className="page-copy-badge original" title={`Original page ${origins[index]}`}>{index === firstShiftedGroup ? `Original ${origins[index]}` : origins[index]}</span>
+                    ) : null}
+                  </div>
                   <div>
-                    <strong>Page {index + 1}</strong>
-                    <button type="button" onClick={() => removePdfPage(index)} disabled={pages <= 1 || isProcessingPdf}>
-                      <Trash2 size={15} /> Remove
+                    <strong>{groupCount > 1 ? `Pages ${index + 1}–${lastIndex + 1}` : `Page ${index + 1}`}</strong>
+                    {copyPromptIndex === index ? (
+                      <form
+                        className="pdf-page-copy-form"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          void duplicatePdfPage(index, Number(copyCountInput) || 1).then(() => setCopyPromptIndex(null));
+                        }}
+                      >
+                        <span className="pdf-page-copy-label">How many copies?</span>
+                        <div className="pdf-page-copy-stepper">
+                          <button
+                            type="button"
+                            onClick={() => setCopyCountInput(String(Math.max(1, (Number(copyCountInput) || 1) - 1)))}
+                            disabled={isProcessingPdf}
+                            aria-label="Fewer copies"
+                          >
+                            −
+                          </button>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            aria-label="Number of copies"
+                            value={copyCountInput}
+                            onChange={(event) => setCopyCountInput(event.target.value.replace(/\D/g, "").slice(0, 3))}
+                            onFocus={(event) => event.target.select()}
+                            autoFocus
+                            disabled={isProcessingPdf}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setCopyCountInput(String(Math.min(200 - pages, (Number(copyCountInput) || 0) + 1)))}
+                            disabled={isProcessingPdf}
+                            aria-label="More copies"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <div className="pdf-page-actions">
+                          <button type="submit" className="page-copy-btn" disabled={isProcessingPdf}>
+                            <Copy size={13} /> Add {Math.min(Math.max(Number(copyCountInput) || 1, 1), 200 - pages)}
+                          </button>
+                          <button type="button" className="page-copy-cancel" onClick={() => setCopyPromptIndex(null)} disabled={isProcessingPdf}>
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                    <div className="pdf-page-actions">
+                    <button
+                      type="button"
+                      className="page-copy-btn"
+                      onClick={() => {
+                        setCopyPromptIndex(index);
+                        setCopyCountInput("1");
+                      }}
+                      disabled={isProcessingPdf || pages >= 200}
+                      title={pages >= 200 ? "Copy is available only for PDFs under 200 pages" : undefined}
+                    >
+                      <Copy size={13} /> Copy
                     </button>
+                    <button type="button" onClick={() => removePdfPage(lastIndex)} disabled={pages <= 1 || isProcessingPdf} title={groupCount > 1 ? "Removes one copy" : undefined}>
+                      <Trash2 size={13} /> {groupCount > 1 ? "Remove 1" : "Remove"}
+                    </button>
+                    </div>
+                    )}
                   </div>
                 </div>
-              ))}
+                );
+              })}
+            </div>
+            {isProcessingPdf ? (
+              <div className="page-manager-busy" role="status" aria-live="polite">
+                <LoaderCircle size={28} className="spin" />
+                <span>Updating pages…</span>
+              </div>
+            ) : null}
+            <div className="page-manager-footer">
+              <button type="button" className="page-manager-done" onClick={() => setIsPageManagerOpen(false)}>
+                <CircleCheck size={17} /> Done - Use these {pages} page{pages > 1 ? "s" : ""}
+              </button>
             </div>
           </div>
         </div>
@@ -2066,6 +2364,7 @@ function drawPassportPhoto(context: CanvasRenderingContext2D, image: HTMLImageEl
 function PdfThumb({ fileName, fileUrl, pages, onPageCount, unitLabel = "page" }: { fileName: string; fileUrl: string; pages: number; onPageCount: (pages: number) => void; unitLabel?: string }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [failed, setFailed] = useState(false);
+  const [rendering, setRendering] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
@@ -2076,6 +2375,7 @@ function PdfThumb({ fileName, fileUrl, pages, onPageCount, unitLabel = "page" }:
 
       try {
         setFailed(false);
+        setRendering(true);
         const pdfjs = await import("pdfjs-dist");
         pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.mjs", import.meta.url).toString();
 
@@ -2105,6 +2405,8 @@ function PdfThumb({ fileName, fileUrl, pages, onPageCount, unitLabel = "page" }:
         await page.render({ canvasContext: context, viewport }).promise;
       } catch {
         if (!cancelled) setFailed(true);
+      } finally {
+        if (!cancelled) setRendering(false);
       }
     }
 
@@ -2118,30 +2420,85 @@ function PdfThumb({ fileName, fileUrl, pages, onPageCount, unitLabel = "page" }:
 
   return (
     <div className="pdf-thumb">
-      {failed ? <FileText size={34} /> : <canvas ref={canvasRef} aria-label={`${fileName} preview`} />}
+      {failed ? <FileText size={34} /> : <canvas ref={canvasRef} aria-label={`${fileName} preview`} hidden={rendering} />}
+      {rendering && !failed ? <LoaderCircle size={28} className="spin" aria-label="Loading preview" /> : null}
       <span>{pages || 1} {unitLabel}{pages > 1 ? "s" : ""}</span>
     </div>
   );
 }
 
+// One shared pdf.js document for every page thumbnail (instead of re-parsing
+// the whole file per thumbnail), plus a small render queue so a 285-page PDF
+// never renders hundreds of canvases at once.
+let sharedThumbPdf: { url: string; promise: Promise<any> } | null = null;
+let activeThumbRenders = 0;
+const thumbRenderWaiters: Array<() => void> = [];
+const MAX_THUMB_RENDERS = 3;
+
+function getSharedThumbPdf(url: string) {
+  if (sharedThumbPdf?.url === url) return sharedThumbPdf.promise;
+  const previous = sharedThumbPdf;
+  const promise = (async () => {
+    const pdfjs = await import("pdfjs-dist");
+    pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.mjs", import.meta.url).toString();
+    return pdfjs.getDocument({ url }).promise;
+  })();
+  sharedThumbPdf = { url, promise };
+  previous?.promise.then((pdf) => pdf.destroy()).catch(() => {});
+  return promise;
+}
+
+async function acquireThumbRenderSlot() {
+  if (activeThumbRenders >= MAX_THUMB_RENDERS) await new Promise<void>((resolve) => thumbRenderWaiters.push(resolve));
+  activeThumbRenders += 1;
+}
+
+function releaseThumbRenderSlot() {
+  activeThumbRenders -= 1;
+  thumbRenderWaiters.shift()?.();
+}
+
 function PdfPageThumb({ fileUrl, pageNumber }: { fileUrl: string; pageNumber: number }) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [failed, setFailed] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+
+  // Only render a thumbnail once it scrolls near the viewport.
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") {
+      setIsVisible(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "300px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
+    if (!isVisible) return;
     let cancelled = false;
-    let loadingTask: { destroy: () => void; promise: Promise<any> } | null = null;
 
     async function renderPage() {
       if (!fileUrl || !canvasRef.current) return;
 
+      let slotHeld = false;
       try {
         setFailed(false);
-        const pdfjs = await import("pdfjs-dist");
-        pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.mjs", import.meta.url).toString();
+        const pdf = await getSharedThumbPdf(fileUrl);
+        if (cancelled) return;
 
-        loadingTask = pdfjs.getDocument({ url: fileUrl });
-        const pdf = await loadingTask.promise;
+        await acquireThumbRenderSlot();
+        slotHeld = true;
         if (cancelled) return;
 
         const page = await pdf.getPage(pageNumber);
@@ -2152,10 +2509,10 @@ function PdfPageThumb({ fileUrl, pageNumber }: { fileUrl: string; pageNumber: nu
         const scale = cssWidth / baseViewport.width;
         const viewport = page.getViewport({ scale });
         const canvas = canvasRef.current;
-        const context = canvas.getContext("2d");
+        const context = canvas?.getContext("2d");
         const ratio = window.devicePixelRatio || 1;
 
-        if (!context) return;
+        if (!canvas || !context) return;
 
         canvas.width = Math.floor(viewport.width * ratio);
         canvas.height = Math.floor(viewport.height * ratio);
@@ -2163,8 +2520,11 @@ function PdfPageThumb({ fileUrl, pageNumber }: { fileUrl: string; pageNumber: nu
         canvas.style.height = `${viewport.height}px`;
         context.setTransform(ratio, 0, 0, ratio, 0, 0);
         await page.render({ canvasContext: context, viewport }).promise;
+        page.cleanup();
       } catch {
         if (!cancelled) setFailed(true);
+      } finally {
+        if (slotHeld) releaseThumbRenderSlot();
       }
     }
 
@@ -2172,9 +2532,12 @@ function PdfPageThumb({ fileUrl, pageNumber }: { fileUrl: string; pageNumber: nu
 
     return () => {
       cancelled = true;
-      loadingTask?.destroy();
     };
-  }, [fileUrl, pageNumber]);
+  }, [fileUrl, pageNumber, isVisible]);
 
-  return <div className="pdf-page-thumb">{failed ? <FileText size={32} /> : <canvas ref={canvasRef} aria-label={`Page ${pageNumber} preview`} />}</div>;
+  return (
+    <div className="pdf-page-thumb" ref={containerRef}>
+      {failed ? <FileText size={32} /> : <canvas ref={canvasRef} aria-label={`Page ${pageNumber} preview`} />}
+    </div>
+  );
 }

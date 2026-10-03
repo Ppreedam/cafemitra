@@ -137,6 +137,32 @@ export function loadImage(src: string) {
   });
 }
 
+// Rotates an image by a multiple of 90 degrees (clockwise when positive).
+export async function rotateImageBlob(source: Blob, degrees: number) {
+  const url = URL.createObjectURL(source);
+  try {
+    const image = await loadImage(url);
+    const turns = ((Math.round(degrees / 90) % 4) + 4) % 4;
+    const swap = turns % 2 === 1;
+    const canvas = document.createElement("canvas");
+    canvas.width = swap ? image.naturalHeight : image.naturalWidth;
+    canvas.height = swap ? image.naturalWidth : image.naturalHeight;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Canvas not supported");
+    context.fillStyle = "#fff";
+    context.fillRect(0, 0, canvas.width, canvas.height);
+    context.translate(canvas.width / 2, canvas.height / 2);
+    context.rotate((turns * Math.PI) / 2);
+    context.drawImage(image, -image.naturalWidth / 2, -image.naturalHeight / 2);
+    const type = source.type === "image/jpeg" ? "image/jpeg" : "image/png";
+    return await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Rotate failed"))), type, 0.95);
+    });
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}
+
 export async function cropImage(fileUrl: string, rect: CropRect) {
   const image = await loadImage(fileUrl);
   const sourceX = (rect.x / 100) * image.naturalWidth;

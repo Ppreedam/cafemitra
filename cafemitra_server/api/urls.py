@@ -170,6 +170,10 @@ urlpatterns = [
     re_path(r"^save-manual-passport-photo/?$", views.save_manual_passport_photo),  # POST upload a browser-edited final photo, creates the order already done
     re_path(r"^api-passport-photo-check/?$", views.check_passport_photo),  # POST poll for the AI-generated final passport photo
 
+    # --- Family Passport Photo (authenticated, multi-photo AI merge) -------
+    re_path(r"^save-raw-family-photo/?$", views.save_raw_family_photo),  # POST upload 2-6 photos + prompt, generates a merged group photo inline
+    re_path(r"^api-family-photo-check/?$", views.check_family_photo),  # POST poll for the AI-generated family photo
+
     # --- Agent Passport Jobs (desktop Print Agent, AI photo queue) ---------
     re_path(r"^agent/passport-jobs/?$", views.agent_passport_jobs),  # GET list pending passport-photo AI jobs
     re_path(r"^agent/passport-jobs/(?P<job_id>[0-9]+)/claim/?$", views.claim_passport_job),  # POST atomically claim a pending job
@@ -180,6 +184,7 @@ urlpatterns = [
 
     # --- Agent (desktop Print Agent, print queue) ---------------------------
     re_path(r"^agent/ws-status/?$", views.agent_ws_status),  # GET server-side "is my Print Agent alive" fallback for the Verify Agent step (WebSocket connect state or a recent /agent/jobs/ poll)
+    re_path(r"^agent/duplex-availability/?$", views.agent_duplex_availability),  # POST {available: bool} the agent reports whether this shop can print double-side
     re_path(r"^agent/jobs/?$", views.agent_jobs),  # GET list queued/approved print jobs (excludes passport_photo)
     re_path(r"^agent/jobs/(?P<order_id>[0-9]+)/status/?$", views.agent_job_status),  # POST update a job's print status (printing/printed/failed)
     re_path(r"^agent/jobs/(?P<order_id>[0-9]+)/gemini-photo/?$", views.agent_upload_gemini_photo),  # POST attach an AI-generated photo to any order

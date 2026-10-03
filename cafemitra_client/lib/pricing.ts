@@ -84,6 +84,14 @@ export const defaultPricingServices: PricingService[] = [
       ],
     },
   },
+  {
+    serviceKey: "family_passport_photo",
+    serviceName: "Family Passport Photo",
+    settings: {
+      paymentMode: "Online Payment",
+      priceItems: [{ id: "family_photo", label: "Family Group Photo", rate: 80 }],
+    },
+  },
 ];
 
 export async function fetchPricingServices() {

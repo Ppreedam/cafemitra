@@ -14,6 +14,7 @@ const coreServices: SearchableTool[] = [
   { name: "Orders", href: "/orders", icon: ClipboardList, group: "Core" },
   { name: "PrintPilot", href: "/auto-print", icon: Printer, group: "Services" },
   { name: "Passport Photo", href: "/passport-photo", icon: IdCard, group: "Services" },
+  { name: "Family Passport Photo", href: "/family-passport-photo", icon: Users, group: "Services" },
   { name: "ID Card Maker", href: "/id-card-maker", icon: FileScan, group: "Services" },
   { name: "ID Card Print", href: "/id-card-print", icon: IdCard, group: "Services" },
   { name: "Resume Builder", href: "/resume-builder", icon: FileUser, group: "Services" },

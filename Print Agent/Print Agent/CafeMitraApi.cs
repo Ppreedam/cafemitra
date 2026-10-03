@@ -40,10 +40,17 @@ internal sealed class CafeMitraApi(HttpClient http, AgentConfig config, string c
         return response;
     }
 
-    public async Task<IReadOnlyList<PrintJob>> FetchJobs(CancellationToken token)
+    public async Task<IReadOnlyList<PrintJob>> FetchJobs(bool duplexAvailable, CancellationToken token)
     {
-        var result = await SendJson<JobListResponse>(HttpMethod.Get, "api/agent/jobs/", null, token);
+        // duplex=1/0 tells the server whether this shop can print double-side
+        // right now, so the customer page only offers it when it can work.
+        var result = await SendJson<JobListResponse>(HttpMethod.Get, $"api/agent/jobs/?duplex={(duplexAvailable ? 1 : 0)}", null, token);
         return result?.Jobs ?? [];
+    }
+
+    public async Task ReportDuplexAvailability(bool available, CancellationToken token)
+    {
+        await SendJson<System.Text.Json.JsonElement>(HttpMethod.Post, "api/agent/duplex-availability/", new { available }, token);
     }
 
     public async Task UpdateStatus(int orderId, string status, string message, CancellationToken token)
