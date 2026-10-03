@@ -49,24 +49,28 @@ export type TestPrintResult = {
 };
 
 export type PrintFileRequest = {
-  printer: string;
+  /** Print profile (printer + saved preferences) to print with. */
+  profile?: string;
+  /** Only used when no profile is given - prints with driver defaults. */
+  printer?: string;
   fileName: string;
   pdfBase64: string;
-  paperSize?: string;
-  colorMode?: string;
+  copies?: number;
 };
 
 export type PrintFileResult = {
   message?: string;
   printer?: string;
+  profile?: string;
   printedAt?: string;
-  printers?: string[];
 };
 
 export type PrinterPreset = {
   printer: string;
   paperSize: string;
   colorMode: string;
+  /** Print profile used for this paper size + color mode; its printer wins. */
+  profile?: string;
 };
 
 export type PrinterPresetsResult = {
@@ -84,8 +88,23 @@ export type DuplexSettings = {
   printers?: string[];
 };
 
+export type PrintProfile = {
+  name: string;
+  printer: string;
+  /** e.g. "4x6 · Color · High quality" - read from the saved driver settings. */
+  summary?: string;
+  updatedAt?: string;
+  /** The profile's printer is no longer installed on this PC. */
+  missing?: boolean;
+};
+
+export type PrintProfilesResult = {
+  profiles?: PrintProfile[];
+  printers?: string[];
+};
+
 export const fallbackPrinters = ["Microsoft Print to PDF", "Fax"];
-export const fallbackPaperSizes = ["A4", "A5", "A3", "A6", "B5", "Letter", "Legal", "Executive"];
+export const fallbackPaperSizes = ["A4", "A5", "A3", "A6", "B5", "Letter", "Legal", "Executive", "4x6"];
 export const fallbackColorModes = ["Color", "Grayscale"];
 
 const agentStatusEndpoints = ["http://127.0.0.1:8765/status"];
@@ -96,8 +115,16 @@ const agentPrintFileEndpoints = ["http://127.0.0.1:8765/print-file"];
 const agentPrinterPresetsEndpoints = ["http://127.0.0.1:8765/printer-presets"];
 const agentDuplexSettingsEndpoints = ["http://127.0.0.1:8765/duplex-settings"];
 const agentDeletePrinterPresetEndpoints = ["http://127.0.0.1:8765/printer-presets/delete"];
+const agentPrintProfilesEndpoints = ["http://127.0.0.1:8765/print-profiles"];
+const agentDeletePrintProfileEndpoints = ["http://127.0.0.1:8765/print-profiles/delete"];
+const agentPrintPreferencesEndpoints = ["http://127.0.0.1:8765/print-profiles/preferences"];
+// Saving a profile waits while the owner sets options in the printer's own
+// Preferences window on this PC, so it gets far longer than other calls.
+const agentProfileDialogTimeoutMs = 10 * 60 * 1000;
 const agentRequestTimeoutMs = 5000;
 const agentPrintRequestTimeoutMs = 30000;
+// Several copies of a multi-page photo sheet can take a while to spool.
+const agentPrintFileTimeoutMs = 3 * 60 * 1000;
 
 export type ServerAgentStatus = {
   connected: boolean;
@@ -162,7 +189,7 @@ export async function runAgentPrintFile(request: PrintFileRequest) {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(request),
-  }, agentPrintRequestTimeoutMs);
+  }, agentPrintFileTimeoutMs);
 }
 
 export async function fetchAgentPrinterPresets() {
@@ -194,6 +221,44 @@ export async function saveAgentDuplexSettings(settings: { printer: string; mode:
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(settings),
+  });
+}
+
+export async function fetchAgentPrintProfiles() {
+  return fetchAgentEndpoint<PrintProfilesResult>(agentPrintProfilesEndpoints);
+}
+
+export type PrintPreferencesResult = {
+  /** Opaque driver settings (base64) - sent back as-is with saveAgentPrintProfile. */
+  devMode: string;
+  summary?: string;
+};
+
+/// Opens the printer's Preferences window on the shop PC (via the agent) and
+/// returns what the owner picked there - nothing is saved yet.
+export async function openAgentPrintPreferences(request: { printer: string; originalName?: string; devMode?: string }) {
+  return fetchAgentEndpoint<PrintPreferencesResult>(agentPrintPreferencesEndpoints, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(request),
+  }, agentProfileDialogTimeoutMs);
+}
+
+/// Saves a profile. Without devMode the agent keeps the edited profile's
+/// settings (same printer) or opens the Preferences window itself.
+export async function saveAgentPrintProfile(profile: { name: string; printer: string; originalName?: string; devMode?: string }) {
+  return fetchAgentEndpoint<PrintProfilesResult>(agentPrintProfilesEndpoints, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(profile),
+  }, agentProfileDialogTimeoutMs);
+}
+
+export async function deleteAgentPrintProfile(name: string) {
+  return fetchAgentEndpoint<PrintProfilesResult>(agentDeletePrintProfileEndpoints, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
   });
 }
 
@@ -234,11 +299,15 @@ function withAgentTimeout(request: Promise<Response>, timeoutMs: number) {
 
 function getAgentFallbackMessage(init: RequestInit | undefined, endpoint: string) {
   if (init?.method !== "POST") {
+    if (endpoint.includes("print-profiles")) return "Could not load print profiles.";
     return endpoint.includes("duplex-settings") ? "Could not load duplex printer." : endpoint.includes("printer-presets") ? "Could not load printer settings." : "Agent health check failed.";
   }
   if (endpoint.includes("poster-print")) return "Could not print QR poster.";
   if (endpoint.includes("print-file")) return "Could not print via PrintPilot.";
   if (endpoint.includes("test-print")) return "Could not run test print.";
+  if (endpoint.includes("print-profiles/preferences")) return "Could not open printer preferences.";
+  if (endpoint.includes("print-profiles/delete")) return "Could not delete print profile.";
+  if (endpoint.includes("print-profiles")) return "Could not save print profile.";
   if (endpoint.includes("printer-presets/delete")) return "Could not delete printer setting.";
   if (endpoint.includes("printer-presets")) return "Could not save printer setting.";
   if (endpoint.includes("duplex-settings")) return "Could not save duplex printer.";

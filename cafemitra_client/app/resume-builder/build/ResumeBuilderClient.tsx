@@ -30,6 +30,7 @@ import {
   type SavedOrderSummary,
 } from "../resumeModel";
 import { buildPreviewPdf, buildResumePdf } from "../pdfBuilder";
+import { PrintProfileSelect, useAgentPrint } from "@/app/PrintProfileSelect";
 
 async function chargeResumeDownload(template: TemplateId) {
   const response = await apiFetch("/api/tools/resume-builder-charge/", {
@@ -72,6 +73,7 @@ export default function ResumeBuilderClient() {
   const templatePrices = useTemplatePrices<TemplateId>("resume_builder_");
   const [resume, setResume] = useState<ResumeData>(sampleResume);
   const [downloadBusy, setDownloadBusy] = useState(false);
+  const agentPrint = useAgentPrint("resume-builder");
   const [printBusy, setPrintBusy] = useState(false);
   const [previewBusy, setPreviewBusy] = useState(false);
   const busy = downloadBusy || printBusy || previewBusy;
@@ -275,7 +277,7 @@ export default function ResumeBuilderClient() {
     try {
       await chargeResumeDownload(resume.template);
       const blob = await buildResumePdf(resume);
-      printPdfBlob(blob);
+      await agentPrint.printPdf(async () => blob, { fileName: "resume.pdf", fallback: () => printPdfBlob(blob) });
       trackToolEvent("resume_builder", "print_pdf", { template: resume.template });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not prepare the resume for printing. Please try again.");
@@ -327,6 +329,7 @@ export default function ResumeBuilderClient() {
           <button type="button" className="resbuild-btn-secondary" onClick={previewPdf} disabled={busy}>
             <Eye size={16} /> {previewBusy ? "Preparing..." : "Preview PDF"}
           </button>
+          <PrintProfileSelect print={agentPrint} className="resbuild-print-profile" />
           <button type="button" className="resbuild-btn-secondary" onClick={printResume} disabled={busy || locked} title={locked ? "Customer payment is pending" : undefined}>
             <Printer size={16} /> {printBusy ? "Printing..." : "Print"}
           </button>

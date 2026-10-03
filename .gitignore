@@ -29,3 +29,6 @@ printpilot_agent_csharp/obj/
 
 # Local planning/reference docs - not part of the shipped repo
 docs/
+
+# Local dev config (local Postgres etc.) - never commit
+cafemitra_server/.env.local

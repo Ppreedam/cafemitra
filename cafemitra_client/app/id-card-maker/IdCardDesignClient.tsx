@@ -10,6 +10,7 @@ import { trackToolEvent } from "@/lib/analytics";
 import { DashboardShell } from "../DashboardShell";
 import { WalletLimitBanner } from "../WalletLimitBanner";
 import { DOC_FIELDS, DOC_LAYOUT, DOC_TYPES, ocrStorageKey, type DocLayout, type DocType, type FieldDef } from "./docTypes";
+import { PrintProfileSelect, useAgentPrint } from "@/app/PrintProfileSelect";
 
 type ColorMode = "color" | "bw";
 type Phase = "empty" | "extracting" | "ready";
@@ -20,6 +21,7 @@ export default function IdCardDesignClient({ docType }: { docType: DocType }) {
   const pathname = usePathname();
   const [phase, setPhase] = useState<Phase>("extracting");
   const [fileName, setFileName] = useState("");
+  const agentPrint = useAgentPrint("id-card-design");
   const [values, setValues] = useState<Record<string, string>>({});
   const [photoUrl, setPhotoUrl] = useState("");
   const [colorMode, setColorMode] = useState<ColorMode>("color");
@@ -101,11 +103,17 @@ export default function IdCardDesignClient({ docType }: { docType: DocType }) {
 
   function printCards() {
     if (!requireLogin()) return;
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
-    printWindow.document.open();
-    printWindow.document.write(buildIdCardSheetHtml({ layout, fields, values, photoUrl, colorMode, copies }));
-    printWindow.document.close();
+    const printHtml = buildIdCardSheetHtml({ layout, fields, values, photoUrl, colorMode, copies });
+    void agentPrint.printHtml(() => printHtml, {
+      fileName: "id-card-a4-sheet.pdf",
+      fallback: () => {
+        const printWindow = window.open("", "_blank");
+        if (!printWindow) return;
+        printWindow.document.open();
+        printWindow.document.write(printHtml);
+        printWindow.document.close();
+      },
+    });
     trackToolEvent("id_card_maker", "print_sheet", { doc_type: docType });
   }
 
@@ -225,7 +233,8 @@ export default function IdCardDesignClient({ docType }: { docType: DocType }) {
                     ))}
                   </div>
                 </div>
-                <button className="passport-preview-button" type="button" onClick={printCards}>
+                <PrintProfileSelect print={agentPrint} />
+                <button className="passport-preview-button" type="button" disabled={agentPrint.busy} onClick={printCards}>
                   <Printer size={18} /> Print A4 Sheet
                 </button>
               </div>

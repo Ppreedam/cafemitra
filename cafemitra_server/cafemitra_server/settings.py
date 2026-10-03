@@ -21,6 +21,9 @@ def load_env_file(path):
             os.environ.setdefault(key, value)
 
 
+# .env.local (gitignored, never deployed) is read first, so a dev machine can
+# point DATABASE_URL etc. at its own local Postgres without touching .env.
+load_env_file(BASE_DIR / ".env.local")
 load_env_file(BASE_DIR / ".env")
 
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-cafemitra-secret-key")
@@ -130,7 +133,9 @@ if DATABASE_URL:
             "HOST": parsed_db_url.hostname,
             "PORT": parsed_db_url.port or 5432,
             "OPTIONS": {
-                "sslmode": "require",
+                # Supabase needs SSL; a local Postgres usually has none, so
+                # .env.local sets DATABASE_SSLMODE=disable.
+                "sslmode": os.getenv("DATABASE_SSLMODE", "require"),
                 # Without these, a connection that goes dead mid-request (WiFi
                 # drop, NAT/router silently killing an "idle" TCP flow, ISP
                 # blip) sits blocked waiting on a read until the OS's own TCP

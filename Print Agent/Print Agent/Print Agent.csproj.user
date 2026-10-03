@@ -4,5 +4,11 @@
     <Compile Update="Form1.cs">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Update="Form1.SetupTabs.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Update="PrintProfilesForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
   </ItemGroup>
 </Project>

@@ -2113,6 +2113,7 @@ def public_order(order, include_media=True):
         "passportPrompt": order.passport_prompt if include_media else "",
         "duplex": order.duplex,
         "duplexEdge": order.duplex_edge or "long",
+        "profileName": order.profile_name,
     }
 
 
@@ -3505,6 +3506,16 @@ def pricing_settings(request):
         return JsonResponse({"message": "Unknown service."}, status=400)
     if not isinstance(settings, dict):
         return JsonResponse({"message": "Invalid pricing settings."}, status=400)
+    if "printProfiles" in settings:
+        # {price_item_id: Print Agent profile name}; empty names unassign.
+        raw_profiles = settings["printProfiles"]
+        if not isinstance(raw_profiles, dict):
+            return JsonResponse({"message": "Invalid print profiles."}, status=400)
+        settings["printProfiles"] = {
+            str(item_id)[:120]: str(name).strip()[:120]
+            for item_id, name in raw_profiles.items()
+            if isinstance(name, str) and name.strip()
+        }
 
     default_service = DEFAULT_SERVICE_PRICING[service_key]
     pricing, _ = ServicePricing.objects.get_or_create(

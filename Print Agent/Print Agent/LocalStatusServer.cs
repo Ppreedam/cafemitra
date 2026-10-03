@@ -18,6 +18,11 @@ internal sealed class LocalStatusServer(
     Func<LocalTestPrintRequest, LocalTestPrintResult> posterPrint,
     Func<DuplexSettingsDto> getDuplex,
     Func<DuplexSettingsDto, DuplexSettingsDto> saveDuplex,
+    Func<PrintProfilesResponse> listProfiles,
+    Func<PrintPreferencesRequest, PrintPreferencesResult> openPreferences,
+    Func<SavePrintProfileRequest, PrintProfilesResponse> saveProfile,
+    Func<string, PrintProfilesResponse> deleteProfile,
+    Func<PrintFileRequest, PrintFileResult> printFile,
     Action<string> log
 ) : IDisposable
 {
@@ -127,6 +132,44 @@ internal sealed class LocalStatusServer(
             {
                 var payload = await ReadBody<DuplexSettingsDto>(reader, contentLength, token) ?? new DuplexSettingsDto();
                 await WriteJson(stream, saveDuplex(payload), token);
+                return;
+            }
+
+            if (method == "POST" && path.StartsWith("/print-file", StringComparison.OrdinalIgnoreCase))
+            {
+                var payload = await ReadBody<PrintFileRequest>(reader, contentLength, token) ?? new PrintFileRequest();
+                await WriteJson(stream, printFile(payload), token);
+                return;
+            }
+
+            if (method == "GET" && path.StartsWith("/print-profiles", StringComparison.OrdinalIgnoreCase))
+            {
+                await WriteJson(stream, listProfiles(), token);
+                return;
+            }
+
+            if (method == "POST" && path.StartsWith("/print-profiles/delete", StringComparison.OrdinalIgnoreCase))
+            {
+                var payload = await ReadBody<DeletePrintProfileRequest>(reader, contentLength, token) ?? new DeletePrintProfileRequest();
+                await WriteJson(stream, deleteProfile(payload.Name ?? ""), token);
+                return;
+            }
+
+            // Blocks until the owner closes the printer's Preferences dialog
+            // on this PC; returns the chosen settings without saving them.
+            if (method == "POST" && path.StartsWith("/print-profiles/preferences", StringComparison.OrdinalIgnoreCase))
+            {
+                var payload = await ReadBody<PrintPreferencesRequest>(reader, contentLength, token) ?? new PrintPreferencesRequest();
+                await WriteJson(stream, openPreferences(payload), token);
+                return;
+            }
+
+            // Blocks until the owner closes the printer's Preferences dialog
+            // on this PC - the website waits with a long timeout.
+            if (method == "POST" && path.StartsWith("/print-profiles", StringComparison.OrdinalIgnoreCase))
+            {
+                var payload = await ReadBody<SavePrintProfileRequest>(reader, contentLength, token) ?? new SavePrintProfileRequest();
+                await WriteJson(stream, saveProfile(payload), token);
                 return;
             }
 
