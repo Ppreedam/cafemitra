@@ -16,6 +16,8 @@ internal sealed class LocalStatusServer(
     Func<PrinterPresetDto, PrinterPresetsResponse> deletePreset,
     Func<LocalTestPrintRequest, LocalTestPrintResult> testPrint,
     Func<LocalTestPrintRequest, LocalTestPrintResult> posterPrint,
+    Func<DuplexSettingsDto> getDuplex,
+    Func<DuplexSettingsDto, DuplexSettingsDto> saveDuplex,
     Action<string> log
 ) : IDisposable
 {
@@ -112,6 +114,19 @@ internal sealed class LocalStatusServer(
             {
                 var payload = await ReadBody<LocalTestPrintRequest>(reader, contentLength, token) ?? new LocalTestPrintRequest();
                 await WriteJson(stream, posterPrint(payload), token);
+                return;
+            }
+
+            if (method == "GET" && path.StartsWith("/duplex-settings", StringComparison.OrdinalIgnoreCase))
+            {
+                await WriteJson(stream, getDuplex(), token);
+                return;
+            }
+
+            if (method == "POST" && path.StartsWith("/duplex-settings", StringComparison.OrdinalIgnoreCase))
+            {
+                var payload = await ReadBody<DuplexSettingsDto>(reader, contentLength, token) ?? new DuplexSettingsDto();
+                await WriteJson(stream, saveDuplex(payload), token);
                 return;
             }
 

@@ -6410,6 +6410,72 @@ img.profile-photo {
   cursor: not-allowed;
 }
 
+.family-photo-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 14px 0;
+}
+
+.family-photo-slot {
+  width: 150px;
+}
+
+.family-photo-slot .customer-upload {
+  min-height: 150px;
+  padding: 10px;
+}
+
+.family-photo-slot .customer-document-preview {
+  display: grid;
+  grid-template-columns: 1fr;
+  min-height: 0;
+  padding: 8px;
+  text-align: center;
+}
+
+.family-photo-slot .document-thumb {
+  width: 100%;
+  margin: 0 auto;
+}
+
+.family-photo-slot .document-actions {
+  justify-content: center;
+}
+
+.family-photo-add-slot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  width: 150px;
+  min-height: 150px;
+  border: 1px dashed #cfd5e8;
+  border-radius: 8px;
+  color: #5740ed;
+  background: #fbfcff;
+  font-size: 0.82rem;
+  font-weight: 680;
+  text-align: center;
+  cursor: pointer;
+}
+
+.family-photo-add-slot input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.family-photo-add-slot input:disabled {
+  cursor: not-allowed;
+}
+
+.family-photo-add-slot:has(input:disabled) {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .passport-papersize-options {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -7478,6 +7544,25 @@ img.profile-photo {
   cursor: pointer;
 }
 
+.document-preview-head button.page-manager-reset {
+  display: inline-flex;
+  gap: 6px;
+  width: auto;
+  height: 36px;
+  margin-left: auto;
+  padding: 0 12px;
+  color: #4b36d6;
+  background: rgba(87, 64, 237, 0.08);
+  border-color: rgba(87, 64, 237, 0.25);
+  font-size: 0.82rem;
+  font-weight: 850;
+}
+
+.document-preview-head button.page-manager-reset:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .document-preview-body {
   display: flex;
   align-items: center;
@@ -7718,7 +7803,7 @@ img.profile-photo {
 
 .page-manager-window {
   display: grid;
-  grid-template-rows: auto auto 1fr;
+  grid-template-rows: auto auto 1fr auto;
   width: min(820px, 100%);
   max-height: min(86vh, 760px);
   overflow: hidden;
@@ -7809,6 +7894,29 @@ img.profile-photo {
   }
 }
 
+.page-manager-footer {
+  display: flex;
+  border-top: 1px solid var(--line);
+  padding: 12px 16px;
+  background: #fff;
+}
+
+.page-manager-done {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 46px;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  background: var(--brand-hero-gradient);
+  font-weight: 800;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
 .page-manager-body {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -7834,7 +7942,7 @@ img.profile-photo {
   border: 1px solid #edf0f7;
   border-radius: 8px;
   background: #fbfcff;
-  color: #5740ed;
+  color: #2563eb;
 }
 
 .pdf-page-thumb canvas {
@@ -7862,6 +7970,112 @@ img.profile-photo {
   background: rgba(233, 84, 106, 0.08);
   font-weight: 850;
   cursor: pointer;
+}
+
+.pdf-page-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.pdf-page-actions button {
+  flex: 1;
+  min-height: 30px;
+  padding: 0 6px;
+  font-size: 0.78rem;
+}
+
+.pdf-page-copy-form {
+  display: grid;
+  gap: 8px;
+}
+
+.pdf-page-copy-label {
+  color: #4b36d6;
+  font-size: 0.78rem;
+  font-weight: 850;
+}
+
+.pdf-page-copy-stepper {
+  display: grid;
+  grid-template-columns: 34px 1fr 34px;
+  height: 34px;
+  border: 1px solid rgba(87, 64, 237, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #fff;
+}
+
+.pdf-page-card .pdf-page-copy-stepper button {
+  width: 34px;
+  min-height: 0;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  color: #4b36d6;
+  background: rgba(87, 64, 237, 0.08);
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.pdf-page-card .pdf-page-copy-stepper input {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--dash-navy);
+  font-size: 0.95rem;
+  font-weight: 850;
+  text-align: center;
+  outline: none;
+}
+
+.pdf-page-card .pdf-page-actions button.page-copy-cancel {
+  color: #5a6485;
+  border-color: var(--line);
+  background: #fff;
+}
+
+.page-copy-badge.original {
+  background: #eef0f7;
+  color: #5a6485;
+}
+
+.pdf-page-card.is-copy {
+  border-color: rgba(87, 64, 237, 0.4);
+  background: #f8f7ff;
+}
+
+.pdf-page-thumb-wrap {
+  position: relative;
+}
+
+.pdf-page-thumb-wrap .page-copy-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  margin: 0;
+  box-shadow: 0 2px 6px rgba(25, 35, 82, 0.15);
+}
+
+.page-copy-badge {
+  display: inline-block;
+  margin: -2px 0 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(87, 64, 237, 0.12);
+  color: #4b36d6;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.pdf-page-card button.page-copy-btn {
+  border-color: rgba(87, 64, 237, 0.25);
+  color: #4b36d6;
+  background: rgba(87, 64, 237, 0.08);
 }
 
 .pdf-page-card button:disabled {
@@ -21545,4 +21759,81 @@ img.profile-photo {
 
 .idcard-filter-preview-pair .idcard-filter-preview-img img {
   max-width: 100%;
+}
+
+/* Double-side print option on the customer order form. */
+.duplex-control {
+  display: grid;
+  gap: 10px;
+}
+
+.duplex-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.duplex-toggle input {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.page-manager-window {
+  position: relative;
+}
+
+.page-manager-busy {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: rgba(244, 248, 255, 0.78);
+  backdrop-filter: blur(2px);
+  color: #2563eb;
+  font-weight: 850;
+}
+
+.page-manager-busy span {
+  color: #0d1748;
+}
+
+.page-manager-busy svg {
+  color: #14b8a6;
+}
+
+.page-extract-limit-note {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border: 1px solid #dbe7ff;
+  border-radius: 8px;
+  background: #eef4ff;
+  color: #1d4ed8;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.pdf-page-thumb-wrap .page-copy-badge.count {
+  right: auto;
+  left: 6px;
+  background: #2563eb;
+  color: #fff;
+}
+
+.coming-soon-tag {
+  margin-left: 4px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #eef4ff;
+  color: #2563eb;
+  font-size: 0.68rem;
+  font-weight: 800;
 }

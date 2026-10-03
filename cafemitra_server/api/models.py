@@ -128,6 +128,10 @@ class Agent(models.Model):
 class ShopProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="shop")
     shop_name = models.CharField(max_length=160, blank=True)
+    # Reported by the Print Agent on every job poll: True only while the shop
+    # has a working duplex printer, so customers aren't offered double-side
+    # printing the shop can't do.
+    duplex_available = models.BooleanField(default=False, db_default=False)
     logo = models.TextField(blank=True)
     banner = models.TextField(blank=True)
     address = models.TextField(blank=True)
@@ -278,6 +282,12 @@ class PrintOrder(models.Model):
     attire_category = models.CharField(max_length=40, blank=True, default="")
     gemini_photo = models.TextField(blank=True, default="")
 
+    # Double-side printing, picked at order time. The Print Agent reads these
+    # from the job payload; the Auto/Manual mode itself is a per-shop setting
+    # that lives in the agent.
+    duplex = models.BooleanField(default=False, db_default=False)
+    duplex_edge = models.CharField(max_length=8, blank=True, default="long", db_default="long")
+
     # Admin-side triage flag for the Order Issues queue (unsuccessful orders
     # an admin has looked into and handled/contacted the shop about) -
     # independent of `status`, which reflects the print pipeline itself.
@@ -307,6 +317,13 @@ class PrintOrder(models.Model):
     # the same PrintOrder rails so it's reusable for both the owner's
     # authenticated builder and a future B2C flow.
     biodata_data = models.JSONField(null=True, blank=True)
+
+    # family_passport_photo-specific: the raw uploaded photos (one per family
+    # member) as a JSON list of base64 data URIs. original_filename only
+    # holds a single upload, so a separate field is needed here instead of
+    # reusing it - the AI-merged result still lands in gemini_photo like
+    # every other photo tool.
+    family_photo_inputs = models.JSONField(null=True, blank=True)
 
     class Meta:
         ordering = ["-created_at"]

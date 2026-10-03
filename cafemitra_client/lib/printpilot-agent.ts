@@ -76,6 +76,14 @@ export type PrinterPresetsResult = {
   colorModes?: string[];
 };
 
+export type DuplexSettings = {
+  printer?: string;
+  mode?: "auto" | "manual";
+  capable?: boolean;
+  missing?: boolean;
+  printers?: string[];
+};
+
 export const fallbackPrinters = ["Microsoft Print to PDF", "Fax"];
 export const fallbackPaperSizes = ["A4", "A5", "A3", "A6", "B5", "Letter", "Legal", "Executive"];
 export const fallbackColorModes = ["Color", "Grayscale"];
@@ -86,6 +94,7 @@ const agentTestPrintEndpoints = ["http://127.0.0.1:8765/test-print"];
 const agentPosterPrintEndpoints = ["http://127.0.0.1:8765/poster-print"];
 const agentPrintFileEndpoints = ["http://127.0.0.1:8765/print-file"];
 const agentPrinterPresetsEndpoints = ["http://127.0.0.1:8765/printer-presets"];
+const agentDuplexSettingsEndpoints = ["http://127.0.0.1:8765/duplex-settings"];
 const agentDeletePrinterPresetEndpoints = ["http://127.0.0.1:8765/printer-presets/delete"];
 const agentRequestTimeoutMs = 5000;
 const agentPrintRequestTimeoutMs = 30000;
@@ -176,6 +185,18 @@ export async function deleteAgentPrinterPreset(preset: PrinterPreset) {
   });
 }
 
+export async function fetchAgentDuplexSettings() {
+  return fetchAgentEndpoint<DuplexSettings>(agentDuplexSettingsEndpoints);
+}
+
+export async function saveAgentDuplexSettings(settings: { printer: string; mode: "auto" | "manual" }) {
+  return fetchAgentEndpoint<DuplexSettings>(agentDuplexSettingsEndpoints, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(settings),
+  });
+}
+
 async function fetchAgentEndpoint<T>(endpoints: string[], init?: RequestInit, timeoutMs = agentRequestTimeoutMs) {
   let lastError: unknown;
 
@@ -213,13 +234,14 @@ function withAgentTimeout(request: Promise<Response>, timeoutMs: number) {
 
 function getAgentFallbackMessage(init: RequestInit | undefined, endpoint: string) {
   if (init?.method !== "POST") {
-    return endpoint.includes("printer-presets") ? "Could not load printer settings." : "Agent health check failed.";
+    return endpoint.includes("duplex-settings") ? "Could not load duplex printer." : endpoint.includes("printer-presets") ? "Could not load printer settings." : "Agent health check failed.";
   }
   if (endpoint.includes("poster-print")) return "Could not print QR poster.";
   if (endpoint.includes("print-file")) return "Could not print via PrintPilot.";
   if (endpoint.includes("test-print")) return "Could not run test print.";
   if (endpoint.includes("printer-presets/delete")) return "Could not delete printer setting.";
   if (endpoint.includes("printer-presets")) return "Could not save printer setting.";
+  if (endpoint.includes("duplex-settings")) return "Could not save duplex printer.";
   return "Could not save printer.";
 }
 

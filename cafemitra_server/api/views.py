@@ -130,6 +130,13 @@ DEFAULT_SERVICE_PRICING = {
             ],
         },
     },
+    "family_passport_photo": {
+        "serviceName": "Family Passport Photo",
+        "settings": {
+            "paymentMode": "Online Payment",
+            "priceItems": [{"id": "family_photo", "label": "Family Group Photo", "rate": 80}],
+        },
+    },
 }
 
 
@@ -1925,6 +1932,8 @@ def resolve_print_tool_key(service_key, price_item_id):
         return "print_color_page" if price_item_id == "color" else "print_bw_page"
     if service_key == "passport_photo":
         return "passport_photo"
+    if service_key == "family_passport_photo":
+        return "family_passport_photo"
     if service_key == "id_card_print":
         return "id_card_print"
     return None
@@ -1935,7 +1944,7 @@ def print_order_tool_usage(order):
     tool_key = resolve_print_tool_key(order.service_key, order.price_item_id)
     if not tool_key:
         return None, 0
-    quantity = 1 if order.service_key == "passport_photo" else max(order.pages, 1) * max(order.copies, 1)
+    quantity = 1 if order.service_key in ("passport_photo", "family_passport_photo") else max(order.pages, 1) * max(order.copies, 1)
     return tool_key, quantity
 
 
@@ -1951,6 +1960,7 @@ def public_shop(shop):
         "email": shop.email,
         "logo": shop.logo,
         "banner": shop.banner,
+        "duplexAvailable": shop.duplex_available,
     }
 
 
@@ -2004,7 +2014,7 @@ def public_pricing(pricing):
 # Every list-style queryset (as opposed to fetching one order for its own
 # detail view) should go through order_list_queryset() below instead of
 # querying PrintOrder directly.
-ORDER_LIST_DEFERRED_FIELDS = ("gemini_photo", "original_filename", "resume_data", "biodata_data", "passport_prompt")
+ORDER_LIST_DEFERRED_FIELDS = ("gemini_photo", "original_filename", "resume_data", "biodata_data", "passport_prompt", "family_photo_inputs")
 
 
 def order_list_queryset(queryset):
@@ -2022,7 +2032,9 @@ def order_list_queryset(queryset):
 
 def public_order(order, include_media=True):
     token_id = order.token_id or f"{order.shop_code}-T{order.token_number:03d}"
-    is_passport = order.service_key == "passport_photo"
+    # family_passport_photo stores its result the same way passport_photo
+    # does (base64 data URI in gemini_photo, no document) - same branch below.
+    is_passport = order.service_key in ("passport_photo", "family_passport_photo")
     has_document = bool(order.document)
 
     if include_media:
@@ -2043,7 +2055,7 @@ def public_order(order, include_media=True):
         # upload/AI result as base64 data URIs still have a real file
         # instead, so fall back to that. The full data is only ever
         # serialized (include_media=True) when a single order is opened.
-        file_name = "passport-photo.jpg"
+        file_name = "family-passport-photo.jpg" if order.service_key == "family_passport_photo" else "passport-photo.jpg"
         has_raw_photo = bool(is_data_uri or has_document)
         if is_data_uri:
             file_url = order.original_filename if include_media else ""
@@ -2099,6 +2111,8 @@ def public_order(order, include_media=True):
             else order.photo_error_message
         ),
         "passportPrompt": order.passport_prompt if include_media else "",
+        "duplex": order.duplex,
+        "duplexEdge": order.duplex_edge or "long",
     }
 
 
@@ -2409,6 +2423,53 @@ def generate_passport_photo_with_gemini(prompt, image_bytes, content_type):
     return None, "Gemini did not return an image."
 
 
+def generate_family_photo_with_gemini(prompt, images):
+    """Multi-image variant of generate_passport_photo_with_gemini: images is
+    a list of (image_bytes, content_type) tuples, one per family member, sent
+    as separate inline_data parts alongside the text prompt so Gemini can
+    compose them into a single merged photo. Same (content_type, bytes) /
+    (None, error_message) contract - never raises."""
+    if not GEMINI_API_KEY:
+        return None, "Gemini is not configured."
+
+    parts = [{"text": prompt}]
+    for image_bytes, content_type in images:
+        parts.append({"inline_data": {"mime_type": content_type, "data": base64.b64encode(image_bytes).decode("ascii")}})
+
+    body = json.dumps({
+        "contents": [{"parts": parts}],
+        "generationConfig": {"responseModalities": ["IMAGE"]},
+    }).encode("utf-8")
+
+    request = urllib.request.Request(
+        GEMINI_IMAGE_API_URL,
+        data=body,
+        headers={"Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=GEMINI_TIMEOUT) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode("utf-8", errors="replace")
+        return None, f"Gemini API error: {detail[:200]}"
+    except (urllib.error.URLError, TimeoutError):
+        return None, "Gemini API is temporarily unavailable."
+    except Exception:
+        logger.exception("generate_family_photo_with_gemini: unexpected failure calling Gemini")
+        return None, "Gemini API call failed unexpectedly."
+
+    candidates = payload.get("candidates") or []
+    result_parts = ((candidates[0].get("content") or {}) if candidates else {}).get("parts") or []
+    for part in result_parts:
+        inline = part.get("inlineData") or part.get("inline_data")
+        if inline and inline.get("data"):
+            result_type = inline.get("mimeType") or inline.get("mime_type") or "image/png"
+            return result_type, base64.b64decode(inline["data"])
+
+    return None, "Gemini did not return an image."
+
+
 OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 OPENAI_TIMEOUT = int(os.environ.get("OPENAI_TIMEOUT") or 90)
 OPENAI_IMAGE_MODEL = os.environ.get("OPENAI_IMAGE_MODEL") or "gpt-image-1"
@@ -2494,7 +2555,79 @@ def generate_passport_photo_with_openai(prompt, image_bytes, content_type):
     return None, "OpenAI did not return an image."
 
 
-def _finalize_passport_photo(order, result_type, result_bytes, is_gemini_output):
+def _encode_multipart_form_multi(fields: dict, file_field: str, files: list):
+    """Like _encode_multipart_form but for several files under the same
+    field name - OpenAI's images/edits endpoint expects image[] repeated
+    once per input image when merging more than one into a single output."""
+    boundary = uuid.uuid4().hex
+    parts = []
+    for name, value in fields.items():
+        parts.append(f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n{value}\r\n'.encode("utf-8"))
+    for filename, file_content_type, file_bytes in files:
+        parts.append(
+            f'--{boundary}\r\nContent-Disposition: form-data; name="{file_field}"; filename="{filename}"\r\n'
+            f"Content-Type: {file_content_type}\r\n\r\n".encode("utf-8")
+        )
+        parts.append(file_bytes)
+        parts.append(b"\r\n")
+    parts.append(f"--{boundary}--\r\n".encode("utf-8"))
+    return f"multipart/form-data; boundary={boundary}", b"".join(parts)
+
+
+def generate_family_photo_with_openai(prompt, images):
+    """Multi-image variant of generate_passport_photo_with_openai: images is
+    a list of (image_bytes, content_type) tuples sent as repeated image[]
+    parts so gpt-image-1 can merge them into one photo. Same contract as
+    generate_family_photo_with_gemini - never raises."""
+    if not OPENAI_API_KEY:
+        return None, "OpenAI is not configured."
+
+    files = []
+    for index, (image_bytes, content_type) in enumerate(images):
+        if content_type not in OPENAI_ALLOWED_IMAGE_TYPES:
+            content_type = "image/jpeg"
+        filename = f"photo{index}" + (mimetypes.guess_extension(content_type) or ".jpg")
+        files.append((filename, content_type, image_bytes))
+
+    content_type_header, body = _encode_multipart_form_multi(
+        {
+            "model": OPENAI_IMAGE_MODEL,
+            "prompt": prompt,
+            "size": "1024x1536",
+            "quality": "high",
+            "input_fidelity": "high",
+            "n": "1",
+        },
+        "image[]",
+        files,
+    )
+
+    request = urllib.request.Request(
+        OPENAI_IMAGE_EDIT_URL,
+        data=body,
+        headers={"Content-Type": content_type_header, "Authorization": f"Bearer {OPENAI_API_KEY}"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=OPENAI_TIMEOUT) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+    except urllib.error.HTTPError as error:
+        detail = error.read().decode("utf-8", errors="replace")
+        return None, f"OpenAI API error: {detail[:200]}"
+    except (urllib.error.URLError, TimeoutError):
+        return None, "OpenAI API is temporarily unavailable."
+    except Exception:
+        logger.exception("generate_family_photo_with_openai: unexpected failure calling OpenAI")
+        return None, "OpenAI API call failed unexpectedly."
+
+    data = payload.get("data") or []
+    if data and data[0].get("b64_json"):
+        return "image/png", base64.b64decode(data[0]["b64_json"])
+
+    return None, "OpenAI did not return an image."
+
+
+def _finalize_passport_photo(order, result_type, result_bytes, is_gemini_output, tool_key="passport_photo"):
     """Shared save path for a freshly generated passport photo, used by both
     apply_ai_fallback and the OpenAI-primary attempt in
     save_raw_passport_photo. remove_gemini_watermark blindly patches a fixed
@@ -2516,7 +2649,7 @@ def _finalize_passport_photo(order, result_type, result_bytes, is_gemini_output)
         order.status = PrintOrder.STATUS_QUEUED
         update_fields.append("status")
     order.save(update_fields=update_fields)
-    charge_wallet_for_tool(order.user, "passport_photo", quantity=1, order=order)
+    charge_wallet_for_tool(order.user, tool_key, quantity=1, order=order)
 
 
 def apply_ai_fallback(order):
@@ -3486,13 +3619,18 @@ def public_print_order(request, code):
         passport_prompt=passport_prompt,
         photo_status=PrintOrder.PHOTO_STATUS_PENDING if passport_prompt else "",
         photo_updated_at=timezone.now() if passport_prompt else None,
+        duplex=(
+            str(request.POST.get("duplex", "")).strip().lower() in ("1", "true", "yes", "on")
+            and ShopProfile.objects.filter(user=user, duplex_available=True).exists()
+        ),
+        duplex_edge="short" if str(request.POST.get("duplexEdge", "")).strip().lower() == "short" else "long",
     )
 
     # Mirrors agent_jobs()'s visibility filter - keep both in sync. Only
     # these two branches are agent-pickup-ready immediately; the online-
     # payment branch (STATUS_AWAITING_PAYMENT) isn't yet, so notifying there
     # would just be a wasted wake-up.
-    if service_key not in ("passport_photo", "resume_builder", "biodata_maker") and (
+    if service_key not in ("passport_photo", "family_passport_photo", "resume_builder", "biodata_maker") and (
         order_status == PrintOrder.STATUS_QUEUED
         or (order_status == PrintOrder.STATUS_AWAITING_APPROVAL and payment_status == PrintOrder.PAYMENT_CASH_COUNTER)
     ):
@@ -3562,7 +3700,7 @@ def public_verify_razorpay_payment(request, order_id):
         # resume_builder/biodata_maker/passport_photo never enter the
         # agent's print queue (agent_jobs() excludes them) - skip the
         # wake-up push for those so we don't fire a spurious notification.
-        if order.service_key not in ("passport_photo", "resume_builder", "biodata_maker"):
+        if order.service_key not in ("passport_photo", "family_passport_photo", "resume_builder", "biodata_maker"):
             notify_agent_new_job(order)
     return JsonResponse({"order": public_order(order)})
 
@@ -3650,7 +3788,7 @@ def public_payu_callback(request, order_id):
         order.paid_at = timezone.now()
         order.gateway_payment_id = mihpayid
         order.save(update_fields=["payment_status", "status", "paid_at", "gateway_payment_id"])
-        if order.service_key not in ("passport_photo", "resume_builder", "biodata_maker"):
+        if order.service_key not in ("passport_photo", "family_passport_photo", "resume_builder", "biodata_maker"):
             notify_agent_new_job(order)
         result = "success"
     else:
@@ -3725,7 +3863,7 @@ def public_phonepe_callback(request, order_id):
                     order.paid_at = timezone.now()
                     order.gateway_payment_id = str(status_payload.get("orderId") or order.gateway_order_id)
                     order.save(update_fields=["payment_status", "status", "paid_at", "gateway_payment_id"])
-                    if order.service_key not in ("passport_photo", "resume_builder", "biodata_maker"):
+                    if order.service_key not in ("passport_photo", "family_passport_photo", "resume_builder", "biodata_maker"):
                         notify_agent_new_job(order)
                     result = "success"
 
@@ -3768,7 +3906,7 @@ def phonepe_webhook(request):
             order.paid_at = timezone.now()
             order.gateway_payment_id = str(payload.get("orderId") or merchant_order_id)
             order.save(update_fields=["payment_status", "status", "paid_at", "gateway_payment_id"])
-            if order.service_key not in ("passport_photo", "resume_builder", "biodata_maker"):
+            if order.service_key not in ("passport_photo", "family_passport_photo", "resume_builder", "biodata_maker"):
                 notify_agent_new_job(order)
         return JsonResponse({"message": "ok"})
 
@@ -4205,7 +4343,7 @@ def public_check_upi_payment(request, order_id):
         order.status = PrintOrder.STATUS_QUEUED
         order.paid_at = timezone.now()
         order.save(update_fields=["payment_status", "status", "paid_at"])
-        if order.service_key not in ("passport_photo", "resume_builder", "biodata_maker"):
+        if order.service_key not in ("passport_photo", "family_passport_photo", "resume_builder", "biodata_maker"):
             notify_agent_new_job(order)
         return JsonResponse({"order": public_order(order), "payment": {"status": "paid"}})
 
@@ -4290,6 +4428,21 @@ def agent_ws_status(request):
 
 
 @csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def agent_duplex_availability(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    available = parse_body(request).get("available") is True
+    ShopProfile.objects.filter(user=user).exclude(duplex_available=available).update(duplex_available=available)
+    return JsonResponse({"available": available})
+
+
+@csrf_exempt
 @require_http_methods(["GET", "OPTIONS"])
 def agent_jobs(request):
     if request.method == "OPTIONS":
@@ -4301,11 +4454,17 @@ def agent_jobs(request):
 
     UserProfile.objects.filter(user=user).update(agent_last_seen_at=timezone.now())
 
+    # Newer agents say whether this shop can print double-side right now.
+    # Older ones send nothing, which leaves the stored value alone.
+    duplex_flag = request.GET.get("duplex")
+    if duplex_flag in ("0", "1"):
+        ShopProfile.objects.filter(user=user).exclude(duplex_available=(duplex_flag == "1")).update(duplex_available=(duplex_flag == "1"))
+
     # resume_builder orders never enter the physical print queue - only the
     # separate "Print via PrintPilot" flow (a direct agent call, not this
     # queue) prints a resume. Excluding it here keeps a saved-but-unpaid
     # (or even paid) resume draft from being picked up as a print job.
-    jobs = PrintOrder.objects.filter(user=user).exclude(service_key__in=["passport_photo", "resume_builder", "biodata_maker"]).filter(
+    jobs = PrintOrder.objects.filter(user=user).exclude(service_key__in=["passport_photo", "family_passport_photo", "resume_builder", "biodata_maker"]).filter(
     # jobs = PrintOrder.objects.filter(user=user).exclude(service_key="passport_photo").filter(
         Q(status=PrintOrder.STATUS_QUEUED)
         | Q(status=PrintOrder.STATUS_AWAITING_APPROVAL, payment_status=PrintOrder.PAYMENT_CASH_COUNTER)
@@ -4745,6 +4904,158 @@ def check_passport_photo(request):
     return JsonResponse({"found": False, "message": "Image is not ready yet. Please try again later."}, status=404)
 
 
+MIN_FAMILY_PHOTOS = 2
+MAX_FAMILY_PHOTOS = 6
+MAX_FAMILY_PHOTO_BYTES = 8 * 1024 * 1024
+
+# TEMPORARY TEST MODE - set back to False to restore real Gemini/OpenAI
+# generation in save_raw_family_photo below. While True, every request
+# short-circuits straight to this fixed sample image (skips both AI calls
+# entirely) so the rest of the pipeline - upload, wallet charge, order
+# status, polling, frontend preview/print - can be exercised end-to-end
+# without burning real API calls. Requested 2026-09-29; flip off once the
+# real output quality is approved.
+FAMILY_PHOTO_TEST_MODE = True
+FAMILY_PHOTO_TEST_IMAGE_PATH = os.path.join(os.path.dirname(__file__), "test_assets", "family_photo_test_output.png")
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def save_raw_family_photo(request):
+    """Family Passport Photo upload: takes one photo per family member and
+    merges them into a single AI-generated group photo. Unlike
+    save_raw_passport_photo (which can queue for the desktop PrintPilot
+    Agent), this always generates inline against Gemini, falling back to
+    OpenAI on failure - there is no per-shop agent flow for a multi-image
+    merge, so PassportAIConfig's agent-first modes don't apply here."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    photos = request.FILES.getlist("photos")
+    if len(photos) < MIN_FAMILY_PHOTOS:
+        return JsonResponse({"message": f"Upload at least {MIN_FAMILY_PHOTOS} photos to continue."}, status=400)
+    if len(photos) > MAX_FAMILY_PHOTOS:
+        return JsonResponse({"message": f"Upload at most {MAX_FAMILY_PHOTOS} photos at a time."}, status=400)
+    for photo in photos:
+        if photo.size > MAX_FAMILY_PHOTO_BYTES:
+            return JsonResponse({"message": "Each photo must be 8 MB or smaller."}, status=413)
+
+    prompt = str(request.POST.get("prompt", "")).strip()
+    if not prompt:
+        return JsonResponse({"message": "A prompt is required."}, status=400)
+
+    allowed, gate_message = wallet_usage_gate(user, "family_passport_photo")
+    if not allowed:
+        return JsonResponse({"message": gate_message}, status=402)
+
+    ensure_service_pricing(user)
+    pricing = ServicePricing.objects.filter(user=user, service_key="family_passport_photo").first()
+    service_name = pricing.service_name if pricing else "Family Passport Photo"
+    rate = money(request.POST.get("rate"))
+    token_number, token_id = next_order_token(user)
+
+    input_data_uris = [file_to_data_uri(photo) for photo in photos]
+
+    order = PrintOrder.objects.create(
+        user=user,
+        shop_code=cafe_code_for_user(user),
+        token_number=token_number,
+        token_id=token_id,
+        service_key="family_passport_photo",
+        service_name=service_name,
+        price_item_id=str(request.POST.get("priceItemId", "")).strip(),
+        price_label=str(request.POST.get("priceLabel", "")).strip(),
+        rate=rate,
+        pages=1,
+        copies=1,
+        total_amount=rate,
+        payment_mode="No Payment",
+        payment_status=PrintOrder.PAYMENT_NO_PAYMENT,
+        status=PrintOrder.STATUS_QUEUED,
+        family_photo_inputs=input_data_uris,
+        passport_prompt=prompt,
+        photo_status=PrintOrder.PHOTO_STATUS_PENDING,
+        photo_updated_at=timezone.now(),
+    )
+
+    # Wrapped in try/except (this runs inline in the upload request, same
+    # reasoning as the *_PRIMARY branch in save_raw_passport_photo above) -
+    # any crash here, including a save() on a DB connection Supabase's
+    # pooler dropped mid-call, must not turn a successful upload into a 500.
+    try:
+        if FAMILY_PHOTO_TEST_MODE:
+            with open(FAMILY_PHOTO_TEST_IMAGE_PATH, "rb") as test_image_file:
+                result_type, result = "image/png", test_image_file.read()
+            is_gemini_output = False
+            provider_label = "Test mode"
+        else:
+            images = [data_uri_to_bytes(uri) for uri in input_data_uris]
+            result_type, result = generate_family_photo_with_gemini(prompt, images)
+            is_gemini_output = True
+            provider_label = "Gemini"
+            if not result_type:
+                logger.warning("Gemini family photo generation failed for order %s: %s", order.id, result)
+                result_type, result = generate_family_photo_with_openai(prompt, images)
+                is_gemini_output = False
+                provider_label = "OpenAI"
+
+        # Force a fresh DB connection before writing the result back - the
+        # one opened for order creation above may have sat idle for the
+        # whole call (which can run up to GEMINI_TIMEOUT + OPENAI_TIMEOUT)
+        # and been dropped by the pooler.
+        connection.close()
+        if result_type:
+            _finalize_passport_photo(order, result_type, result, is_gemini_output=is_gemini_output, tool_key="family_passport_photo")
+        else:
+            logger.warning("%s family photo generation failed for order %s: %s", provider_label, order.id, result)
+            order.photo_status = PrintOrder.PHOTO_STATUS_FAILED
+            order.photo_error_message = friendly_photo_error_message(result, "Family photo generation failed. Please try again.")
+            order.status = PrintOrder.STATUS_FAILED
+            order.photo_updated_at = timezone.now()
+            order.save(update_fields=["photo_status", "photo_error_message", "status", "photo_updated_at"])
+    except Exception:
+        logger.exception("Family photo generation crashed for order %s", order.id)
+
+    return JsonResponse({"id": order.id})
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def check_family_photo(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    body = parse_body(request)
+    try:
+        order_id = int(body.get("id"))
+    except (TypeError, ValueError):
+        return JsonResponse({"message": "A valid order id is required."}, status=400)
+
+    order = PrintOrder.objects.filter(id=order_id, user=user, service_key="family_passport_photo").first()
+    if not order:
+        return JsonResponse({"message": "Photo request not found."}, status=404)
+
+    order.refresh_from_db()
+    if order.gemini_photo:
+        return JsonResponse({"found": True, "imageUrl": order.gemini_photo})
+
+    if order.photo_status == PrintOrder.PHOTO_STATUS_FAILED:
+        return JsonResponse(
+            {"found": False, "message": friendly_photo_error_message(order.photo_error_message, "Family photo generation failed. Please try again.")},
+            status=200,
+        )
+
+    return JsonResponse({"found": False, "message": "Image is not ready yet. Please try again in a moment."}, status=404)
+
+
 @csrf_exempt
 @require_http_methods(["GET", "OPTIONS"])
 def agent_passport_jobs(request):
@@ -4850,8 +5161,18 @@ def complete_passport_job(request, job_id):
 
     order.gemini_photo = f"data:{content_type};base64,{encoded}"
     order.photo_status = PrintOrder.PHOTO_STATUS_DONE
+    order.photo_error_message = ""
     order.photo_updated_at = timezone.now()
-    order.save(update_fields=["gemini_photo", "photo_status", "photo_updated_at"])
+    update_fields = ["gemini_photo", "photo_status", "photo_error_message", "photo_updated_at"]
+    if order.status == PrintOrder.STATUS_FAILED:
+        # The agent was slow: resolve_passport_photo had already timed the job
+        # out and apply_ai_fallback gave up (marking the order failed), but the
+        # agent's photo arrived after all - same recovery as
+        # _finalize_passport_photo, so the order doesn't stay "Failed" with a
+        # finished photo attached.
+        order.status = PrintOrder.STATUS_QUEUED
+        update_fields.append("status")
+    order.save(update_fields=update_fields)
     # Bill the order's own owner even when the bulk agent (a different
     # account) is the one completing the job on their behalf.
     charge_wallet_for_tool(order.user, "passport_photo", quantity=1, order=order)

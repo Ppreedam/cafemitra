@@ -434,6 +434,7 @@ const toolHrefByServiceKey: Record<string, string> = {
   passport_photo: "/passport-photo",
   resume_builder: "/resume-builder",
   biodata_maker: "/biodata-maker",
+  family_passport_photo: "/family-passport-photo",
 };
 
 const toolIconByServiceKey: Record<string, LucideIcon> = {
@@ -441,6 +442,7 @@ const toolIconByServiceKey: Record<string, LucideIcon> = {
   passport_photo: IdCard,
   resume_builder: FileText,
   biodata_maker: Users,
+  family_passport_photo: Users,
 };
 
 function getServiceIcon(serviceKey: string) {
