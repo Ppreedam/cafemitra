@@ -22,6 +22,7 @@ import { recordServiceVisit } from "@/lib/recentServices";
 import { apiUrl, getAuthToken, hasStoredSession, wsUrl } from "@/lib/api";
 import { fetchPricingServiceByKey } from "@/lib/pricing";
 import { isVirtualPrinter } from "@/lib/printpilot-agent";
+import { useToolsOpenInNewTab } from "@/lib/uiPrefs";
 import { useRouter } from "next/navigation";
 
 type NavItem = {
@@ -214,6 +215,8 @@ function AppSidebar({
   isCollapsed: boolean;
   disabledTools: Set<string>;
 }) {
+  const toolsInNewTab = useToolsOpenInNewTab();
+
   return (
     <aside className="sidebar">
       <Link className="brand" href="/">
@@ -231,10 +234,13 @@ function AppSidebar({
               .map((item) => {
                 const Icon = item.icon;
                 const isActive = item.match?.includes(activePath);
+                const opensInNewTab = toolsInNewTab && Boolean(group.label);
                 return (
                   <Link
                     className={`side-link ${isActive ? "active" : ""}`}
                     href={item.href}
+                    target={opensInNewTab ? "_blank" : undefined}
+                    rel={opensInNewTab ? "noopener noreferrer" : undefined}
                     key={item.name}
                     title={isCollapsed ? item.name : undefined}
                     onClick={item.serviceKey ? () => recordServiceVisit(item.serviceKey!) : undefined}

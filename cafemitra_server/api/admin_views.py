@@ -1,13 +1,19 @@
 import csv
 import json
+import logging
+import os
 import re
 import secrets
 import string
+import urllib.error
+import urllib.parse
+import urllib.request
 from decimal import Decimal, InvalidOperation
 from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
+from django.core.files.storage import default_storage
 from django.db import transaction
 from django.db.models import Count, Max, Q, Sum
 from django.db.models.functions import TruncDate, TruncMonth, TruncWeek
@@ -19,14 +25,18 @@ from django.http import HttpResponse, JsonResponse
 
 from .admin_activity import log_admin_activity
 from .admin_auth import get_admin_role, require_admin, require_section
-from .models import AdminActivityLog, AdminRole, Agent, ContactMessage, Coupon, CouponRedemption, CustomerNote, CustomerTag, LeadAgent, LeadTag, PassportAIConfig, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTransaction, WalletTopup, WithdrawalRequest
+from .models import AdminActivityLog, AdminRole, Agent, BlogArticle, BlogRevision, ContactMessage, Coupon, Influencer, CouponRedemption, CustomerNote, CustomerTag, LeadAgent, LeadTag, PassportAIConfig, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTransaction, WalletTopup, WithdrawalRequest
 from .views import (
     ORDER_LIST_DEFERRED_FIELDS,
     cafe_code_for_user,
     create_password_reset,
     create_wallet_transaction,
     delete_user_files,
+    ensure_referral_code,
     ensure_service_pricing,
+    influencer_report,
+    public_blog_article,
+    revalidate_blog_pages,
     issue_tokens,
     money,
     order_list_queryset,
@@ -3384,3 +3394,674 @@ def admin_wallet_earnings_summary(request):
             "thisMonth": {"amount": float(this_month), "comparisonAmount": float(last_month), "changePercent": pct_change(this_month, last_month)},
         }
     )
+
+
+
+# --- Influencers ------------------------------------------------------------
+
+def public_admin_influencer(influencer, report=None, with_coupons=False):
+    user = influencer.user
+    profile = getattr(user, "profile", None)
+    report = report or influencer_report(influencer, mask_contact=False)
+    data = {
+        "id": influencer.id,
+        "name": user.get_full_name() or user.email,
+        "email": user.email,
+        "phone": profile.phone if profile else "",
+        "referralCode": ensure_referral_code(user),
+        "isActive": influencer.is_active,
+        "note": influencer.note,
+        "createdAt": influencer.created_at.isoformat(),
+        "couponCount": influencer.coupons.count(),
+        "totals": report["totals"],
+    }
+    if with_coupons:
+        data["coupons"] = [
+            public_admin_coupon(coupon)
+            for coupon in influencer.coupons.select_related("created_by").annotate(redeemed_count=Count("redemptions")).order_by("-created_at")
+        ]
+        data["users"] = report["users"]
+    return data
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST", "OPTIONS"])
+def admin_influencers(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "influencers")
+    if err:
+        return err
+
+    if request.method == "POST":
+        body = parse_body(request)
+        email = str(body.get("email", "")).strip().lower()
+        user = User.objects.filter(username=email).first() or User.objects.filter(email__iexact=email).first()
+        if not user:
+            return JsonResponse({"message": "No customer found with that email."}, status=404)
+        if not user.is_active:
+            return JsonResponse({"message": "That customer has not verified their email yet."}, status=400)
+        if Influencer.objects.filter(user=user).exists():
+            return JsonResponse({"message": "This customer is already an influencer."}, status=409)
+        influencer = Influencer.objects.create(user=user, note=str(body.get("note", "")).strip()[:255], created_by=admin_user)
+        log_admin_activity(admin_user, "influencer.assign", "influencer", influencer.id, f"user={user.email}")
+        return JsonResponse({"influencer": public_admin_influencer(influencer)}, status=201)
+
+    influencers = Influencer.objects.select_related("user", "user__profile")
+    return JsonResponse({"influencers": [public_admin_influencer(influencer) for influencer in influencers]})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "PUT", "DELETE", "OPTIONS"])
+def admin_influencer_detail(request, influencer_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "influencers")
+    if err:
+        return err
+
+    influencer = Influencer.objects.select_related("user", "user__profile").filter(id=influencer_id).first()
+    if not influencer:
+        return JsonResponse({"message": "Influencer not found."}, status=404)
+
+    if request.method == "DELETE":
+        email = influencer.user.email
+        influencer.delete()
+        log_admin_activity(admin_user, "influencer.remove", "influencer", influencer_id, f"user={email}")
+        return JsonResponse({"message": "Influencer removed."})
+
+    if request.method == "PUT":
+        body = parse_body(request)
+        if "isActive" in body:
+            influencer.is_active = bool(body.get("isActive"))
+        if "note" in body:
+            influencer.note = str(body.get("note", "")).strip()[:255]
+        influencer.save()
+        log_admin_activity(admin_user, "influencer.update", "influencer", influencer_id, f"isActive={influencer.is_active}")
+
+    return JsonResponse({"influencer": public_admin_influencer(influencer, with_coupons=True)})
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def admin_influencer_coupons(request, influencer_id):
+    """Generate a coupon code tied to an influencer - redemptions are then
+    reported against them."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "influencers")
+    if err:
+        return err
+
+    influencer = Influencer.objects.select_related("user").filter(id=influencer_id).first()
+    if not influencer:
+        return JsonResponse({"message": "Influencer not found."}, status=404)
+
+    body = parse_body(request)
+    amount = money(body.get("amount", 0))
+    code = str(body.get("code", "")).strip().upper()
+    max_redemptions = body.get("maxRedemptions")
+    if amount <= 0:
+        return JsonResponse({"message": "Enter a coupon amount greater than 0."}, status=400)
+    if code and Coupon.objects.filter(code=code).exists():
+        return JsonResponse({"message": "That coupon code is already in use."}, status=409)
+    if max_redemptions not in (None, ""):
+        try:
+            max_redemptions = int(max_redemptions)
+            if max_redemptions <= 0:
+                raise ValueError
+        except (TypeError, ValueError):
+            return JsonResponse({"message": "Max redemptions must be a positive whole number, or left blank for unlimited."}, status=400)
+    else:
+        max_redemptions = None
+
+    name = influencer.user.get_full_name() or influencer.user.email
+    coupon = Coupon.objects.create(
+        code=code or generate_coupon_code(),
+        amount=amount,
+        message=str(body.get("message", "")).strip() or f"Welcome bonus from {name}",
+        max_redemptions=max_redemptions,
+        expires_at=parse_aware_datetime(body.get("expiresAt")),
+        created_by=admin_user,
+        influencer=influencer,
+    )
+    log_admin_activity(admin_user, "influencer.coupon_create", "coupon", coupon.id, f"code={coupon.code}, influencer={influencer.id}")
+    coupon.redeemed_count = 0
+    return JsonResponse({"coupon": public_admin_coupon(coupon)}, status=201)
+
+
+
+# --- Blog -------------------------------------------------------------------
+
+def public_admin_blog_article(article):
+    now = timezone.now()
+    is_live = article.status == BlogArticle.STATUS_PUBLISHED and (article.publish_at is None or article.publish_at <= now)
+    return {
+        **public_blog_article(article, with_content=True),
+        "id": article.id,
+        "status": article.status,
+        "publishAt": article.publish_at.isoformat() if article.publish_at else None,
+        "isLive": is_live,
+        "isScheduled": article.status == BlogArticle.STATUS_PUBLISHED and not is_live,
+        "isTrashed": article.status == BlogArticle.STATUS_TRASH,
+        "requireImageAlt": article.require_image_alt,
+        "revisionCount": article.revisions.count(),
+        "createdAt": article.created_at.isoformat(),
+    }
+
+
+BLOG_IMAGE_TYPES = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/gif": ".gif",
+}
+BLOG_IMAGE_MAX_BYTES = 5 * 1024 * 1024
+
+
+def blog_images_missing_alt(article):
+    """Returns how many images (cover + article body) have no alt text."""
+    missing = len([m for m in re.findall(r"!\[([^\]]*)\]\(", article.content or "") if not m.strip()])
+    if article.cover_image and not article.cover_image_alt.strip():
+        missing += 1
+    return missing
+
+
+def snapshot_blog_revision(article, admin_user):
+    """Stores the article text as a revision, skipping a save that changed nothing."""
+    last = article.revisions.first()
+    if last and (last.title, last.excerpt, last.content) == (article.title, article.excerpt, article.content):
+        return
+    BlogRevision.objects.create(article=article, title=article.title, excerpt=article.excerpt, content=article.content, created_by=admin_user)
+    # Keep the history bounded.
+    stale = list(article.revisions.values_list("id", flat=True)[50:])
+    if stale:
+        BlogRevision.objects.filter(id__in=stale).delete()
+
+
+def clean_blog_keywords(value, limit=20):
+    """Normalises a tags/keywords list: trimmed, de-duplicated (case-insensitive), capped."""
+    if not isinstance(value, list):
+        return []
+    cleaned, seen = [], set()
+    for item in value:
+        text = str(item).strip()[:60]
+        if text and text.lower() not in seen:
+            seen.add(text.lower())
+            cleaned.append(text)
+    return cleaned[:limit]
+
+
+def apply_blog_fields(article, body):
+    """Validates and copies the editable fields. Returns an error message or None."""
+    if "title" in body:
+        article.title = str(body.get("title", "")).strip()[:200]
+    if "slug" in body:
+        article.slug = re.sub(r"[^a-z0-9]+", "-", str(body.get("slug", "")).strip().lower()).strip("-")[:160]
+    if "category" in body:
+        article.category = str(body.get("category", "")).strip()[:60] or "Guide"
+    if "excerpt" in body:
+        article.excerpt = str(body.get("excerpt", "")).strip()[:320]
+    if "content" in body:
+        article.content = str(body.get("content", ""))
+    if "coverImage" in body:
+        article.cover_image = str(body.get("coverImage", "")).strip()[:500]
+    if "coverImageAlt" in body:
+        article.cover_image_alt = str(body.get("coverImageAlt", "")).strip()[:200]
+    if "lazyLoadImages" in body:
+        article.lazy_load_images = bool(body.get("lazyLoadImages"))
+    if "requireImageAlt" in body:
+        article.require_image_alt = bool(body.get("requireImageAlt"))
+    if "autoCaptionImages" in body:
+        article.auto_caption_images = bool(body.get("autoCaptionImages"))
+    if "template" in body:
+        template = str(body.get("template", ""))
+        if template not in dict(BlogArticle.TEMPLATE_CHOICES):
+            return "Unknown template."
+        article.template = template
+    if "metaTitle" in body:
+        article.meta_title = str(body.get("metaTitle", "")).strip()[:200]
+    if "metaDescription" in body:
+        article.meta_description = str(body.get("metaDescription", "")).strip()[:320]
+    if "tags" in body:
+        article.tags = clean_blog_keywords(body.get("tags"))
+    if "focusKeywords" in body:
+        article.focus_keywords = clean_blog_keywords(body.get("focusKeywords"))
+    if "authorName" in body:
+        article.author_name = str(body.get("authorName", "")).strip()[:80] or "RepetiGo Team"
+    if "status" in body:
+        status = str(body.get("status", ""))
+        if status not in (BlogArticle.STATUS_DRAFT, BlogArticle.STATUS_PUBLISHED, BlogArticle.STATUS_TRASH):
+            return "Status must be draft, published or trash."
+        article.status = status
+    if "publishAt" in body:
+        article.publish_at = parse_aware_datetime(body.get("publishAt"))
+
+    if not article.title:
+        return "Enter a title."
+    if not article.slug:
+        article.slug = re.sub(r"[^a-z0-9]+", "-", article.title.lower()).strip("-")[:160]
+    if not article.slug:
+        return "Enter a URL slug."
+    if BlogArticle.objects.filter(slug=article.slug).exclude(id=article.id).exists():
+        return "That URL slug is already used by another article."
+    if article.status == BlogArticle.STATUS_PUBLISHED and not article.content.strip():
+        return "Write the article content before publishing."
+    if article.status == BlogArticle.STATUS_PUBLISHED and article.require_image_alt:
+        missing = blog_images_missing_alt(article)
+        if missing:
+            return f"{missing} image(s) have no alt text. Add alt text, or turn off \"Alt Text Required\" in the Post panel."
+    if article.status == BlogArticle.STATUS_PUBLISHED and article.publish_at is None:
+        article.publish_at = timezone.now()
+    return None
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST", "OPTIONS"])
+def admin_blog_articles(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "blog")
+    if err:
+        return err
+
+    if request.method == "POST":
+        article = BlogArticle(created_by=admin_user)
+        message = apply_blog_fields(article, parse_body(request))
+        if message:
+            return JsonResponse({"message": message}, status=400)
+        article.save()
+        snapshot_blog_revision(article, admin_user)
+        log_admin_activity(admin_user, "blog.create", "blog", article.id, f"slug={article.slug}, status={article.status}")
+        revalidate_blog_pages(article.slug)
+        return JsonResponse({"article": public_admin_blog_article(article)}, status=201)
+
+    return JsonResponse({"articles": [public_admin_blog_article(article) for article in BlogArticle.objects.all()]})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "PUT", "DELETE", "OPTIONS"])
+def admin_blog_article_detail(request, article_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "blog")
+    if err:
+        return err
+
+    article = BlogArticle.objects.filter(id=article_id).first()
+    if not article:
+        return JsonResponse({"message": "Article not found."}, status=404)
+
+    if request.method == "DELETE":
+        slug = article.slug
+        article.delete()
+        log_admin_activity(admin_user, "blog.delete", "blog", article_id, f"slug={slug}")
+        revalidate_blog_pages(slug)
+        return JsonResponse({"message": "Article deleted."})
+
+    if request.method == "PUT":
+        old_slug = article.slug
+        previous_modified = article.updated_at
+        body = parse_body(request)
+        message = apply_blog_fields(article, body)
+        if message:
+            return JsonResponse({"message": message}, status=400)
+        article.save()
+        if body.get("keepModifiedDate"):
+            # "Don't update the modified date": undo the auto_now bump.
+            BlogArticle.objects.filter(id=article.id).update(updated_at=previous_modified)
+            article.updated_at = previous_modified
+        snapshot_blog_revision(article, admin_user)
+        log_admin_activity(admin_user, "blog.update", "blog", article.id, f"slug={article.slug}, status={article.status}")
+        revalidate_blog_pages(article.slug)
+        if old_slug != article.slug:
+            revalidate_blog_pages(old_slug)
+
+    return JsonResponse({"article": public_admin_blog_article(article)})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def admin_blog_article_revisions(request, article_id):
+    """GET the saved revisions (newest first) of one article, with their text so one can be restored."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "blog")
+    if err:
+        return err
+
+    article = BlogArticle.objects.filter(id=article_id).first()
+    if not article:
+        return JsonResponse({"message": "Article not found."}, status=404)
+
+    revisions = article.revisions.select_related("created_by")[:50]
+    return JsonResponse(
+        {
+            "revisions": [
+                {
+                    "id": revision.id,
+                    "title": revision.title,
+                    "excerpt": revision.excerpt,
+                    "content": revision.content,
+                    "createdAt": revision.created_at.isoformat(),
+                    "createdBy": (revision.created_by.get_username() if revision.created_by else ""),
+                }
+                for revision in revisions
+            ]
+        }
+    )
+
+
+class MediaApiError(Exception):
+    """The external media API refused the upload or answered in an unexpected way."""
+
+
+def media_api_settings():
+    """(base_url, api_key) of the external media API, or None when it is not configured."""
+    base_url = os.environ.get("MEDIA_API_URL", "").strip().rstrip("/")
+    api_key = os.environ.get("MEDIA_API_KEY", "").strip()
+    return (base_url, api_key) if base_url and api_key else None
+
+
+def find_media_url(data, base_url):
+    """Finds the uploaded file's URL in the media API's JSON answer (any nesting)."""
+    preferred = ("url", "file_url", "fileUrl", "public_url", "publicUrl", "link", "location", "src")
+    if isinstance(data, dict):
+        for key in preferred:
+            found = find_media_url(data.get(key), base_url)
+            if found:
+                return found
+        for value in data.values():
+            found = find_media_url(value, base_url)
+            if found:
+                return found
+    elif isinstance(data, list):
+        for value in data:
+            found = find_media_url(value, base_url)
+            if found:
+                return found
+    elif isinstance(data, str):
+        value = data.strip()
+        if re.match(r"^https?://", value, re.I):
+            return value
+        if value.startswith("/"):
+            parsed = urllib.parse.urlparse(base_url)
+            return f"{parsed.scheme}://{parsed.netloc}{value}"
+    return ""
+
+
+def find_media_id(data):
+    """The media record id (needed to delete it later) from an upload/list answer."""
+    if isinstance(data, dict):
+        value = data.get("id")
+        if isinstance(value, (int, str)) and str(value).isdigit():
+            return int(value)
+        for key in ("data", "file", "item", "record", "result"):
+            found = find_media_id(data.get(key))
+            if found is not None:
+                return found
+    return None
+
+
+def media_api_call(path, payload=None):
+    """GET (payload None) or JSON-POST to the media API and return the parsed JSON answer."""
+    base_url, api_key = media_api_settings()
+    headers = {"X-API-Key": api_key, "Accept": "application/json"}
+    data = None
+    if payload is not None:
+        data = json.dumps(payload).encode("utf-8")
+        headers["Content-Type"] = "application/json"
+    media_request = urllib.request.Request(f"{base_url}/{path}", data=data, headers=headers, method="POST" if payload is not None else "GET")
+    try:
+        with urllib.request.urlopen(media_request, timeout=30) as response:
+            raw = response.read().decode("utf-8", errors="replace")
+    except urllib.error.HTTPError as exc:
+        detail = ""
+        try:
+            body = json.loads(exc.read().decode("utf-8", errors="replace"))
+            detail = str(body.get("error") or body.get("message") or "") if isinstance(body, dict) else ""
+        except ValueError:
+            pass
+        raise MediaApiError(f"The media server rejected the request ({exc.code}){': ' + detail if detail else ''}.")
+    except (urllib.error.URLError, TimeoutError, OSError):
+        raise MediaApiError("Could not reach the media server. Try again in a moment.")
+    try:
+        body = json.loads(raw)
+    except ValueError:
+        raise MediaApiError("The media server answered in an unexpected format.")
+    if isinstance(body, dict) and body.get("success") is False:
+        raise MediaApiError(str(body.get("error") or body.get("message") or "The media server reported an error."))
+    return body
+
+
+def first_list_of_dicts(data):
+    if isinstance(data, list):
+        return data if all(isinstance(item, dict) for item in data) else None
+    if isinstance(data, dict):
+        for key in ("data", "items", "files", "results", "records", "list", "rows"):
+            found = first_list_of_dicts(data.get(key))
+            if found is not None:
+                return found
+    return None
+
+
+def public_media_item(item, base_url):
+    name = ""
+    for key in ("original_name", "originalName", "file_name", "filename", "name", "title"):
+        if item.get(key):
+            name = str(item[key])
+            break
+    created = ""
+    for key in ("created_at", "createdAt", "uploaded_at", "uploadedAt", "date"):
+        if item.get(key):
+            created = str(item[key])
+            break
+    size = item.get("size_bytes") or item.get("size") or item.get("file_size") or item.get("fileSize")
+    return {
+        "id": find_media_id(item),
+        "url": find_media_url(item, base_url),
+        "name": name,
+        "size": size if isinstance(size, (int, float)) else None,
+        "createdAt": created,
+    }
+
+
+def upload_to_media_api(upload, extension):
+    """Sends the image to the media API (POST {MEDIA_API_URL}/upload.php, header X-API-Key,
+    multipart field "file") and returns the public URL it answers with."""
+    base_url, api_key = media_api_settings()
+    boundary = "----cafemitra" + secrets.token_hex(12)
+    filename = f"{secrets.token_hex(8)}{extension}"
+    content_type = upload.content_type or "application/octet-stream"
+    upload.seek(0)
+    body = b"".join(
+        [
+            f"--{boundary}\r\n".encode(),
+            f'Content-Disposition: form-data; name="file"; filename="{filename}"\r\n'.encode(),
+            f"Content-Type: {content_type}\r\n\r\n".encode(),
+            upload.read(),
+            f"\r\n--{boundary}--\r\n".encode(),
+        ]
+    )
+    media_request = urllib.request.Request(
+        f"{base_url}/upload.php",
+        data=body,
+        headers={"X-API-Key": api_key, "Content-Type": f"multipart/form-data; boundary={boundary}", "Accept": "application/json"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(media_request, timeout=60) as response:
+            raw = response.read().decode("utf-8", errors="replace")
+    except urllib.error.HTTPError as exc:
+        detail = ""
+        try:
+            payload = json.loads(exc.read().decode("utf-8", errors="replace"))
+            detail = str(payload.get("message") or payload.get("error") or "") if isinstance(payload, dict) else ""
+        except ValueError:
+            pass
+        logging.getLogger(__name__).warning("Media API upload failed: HTTP %s %s", exc.code, detail)
+        raise MediaApiError(f"The media server rejected the upload ({exc.code}){': ' + detail if detail else ''}.")
+    except (urllib.error.URLError, TimeoutError, OSError):
+        logging.getLogger(__name__).warning("Media API unreachable", exc_info=True)
+        raise MediaApiError("Could not reach the media server. Try again in a moment.")
+
+    file_id = None
+    try:
+        payload = json.loads(raw)
+        url = find_media_url(payload, base_url)
+        file_id = find_media_id(payload)
+    except ValueError:
+        url = find_media_url(raw.strip(), base_url)
+    if not url:
+        logging.getLogger(__name__).warning("Media API answer had no URL: %s", raw[:300])
+        raise MediaApiError("The media server answered, but no image URL was found in its response.")
+    return url, file_id
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def admin_blog_upload_image(request):
+    """POST a single image (multipart field "image") for the blog; returns its public URL."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "blog")
+    if err:
+        return err
+
+    upload = request.FILES.get("image")
+    if not upload:
+        return JsonResponse({"message": "Choose an image to upload."}, status=400)
+    extension = BLOG_IMAGE_TYPES.get((upload.content_type or "").lower())
+    if not extension:
+        return JsonResponse({"message": "Only JPG, PNG, WebP or GIF images are allowed."}, status=400)
+    if upload.size > BLOG_IMAGE_MAX_BYTES:
+        return JsonResponse({"message": "Image is too large (max 5 MB)."}, status=400)
+
+    header = upload.read(12)
+    upload.seek(0)
+    signatures = {
+        ".jpg": header.startswith(b"\xff\xd8\xff"),
+        ".png": header.startswith(b"\x89PNG\r\n\x1a\n"),
+        ".gif": header[:4] == b"GIF8",
+        ".webp": header[:4] == b"RIFF" and header[8:12] == b"WEBP",
+    }
+    if not signatures[extension]:
+        return JsonResponse({"message": "That file is not a valid image."}, status=400)
+
+    # Images are never stored on this server - they go to the external media API
+    # and only the returned URL is kept (in the article / editor content).
+    if not media_api_settings():
+        return JsonResponse(
+            {"message": "Image uploads are not configured. Set MEDIA_API_URL and MEDIA_API_KEY in the server .env."},
+            status=503,
+        )
+    try:
+        url, file_id = upload_to_media_api(upload, extension)
+    except MediaApiError as exc:
+        return JsonResponse({"message": str(exc)}, status=502)
+    log_admin_activity(admin_user, "blog.upload_image", "blog", "", f"media-api url={url}")
+    return JsonResponse({"url": url, "id": file_id}, status=201)
+
+
+
+# --- Media library (external media API) -------------------------------------
+
+def validate_image_upload(upload):
+    """Shared image checks; returns (extension, error_message)."""
+    extension = BLOG_IMAGE_TYPES.get((upload.content_type or "").lower())
+    if not extension:
+        return None, "Only JPG, PNG, WebP or GIF images are allowed."
+    if upload.size > BLOG_IMAGE_MAX_BYTES:
+        return None, "Image is too large (max 5 MB)."
+    header = upload.read(12)
+    upload.seek(0)
+    signatures = {
+        ".jpg": header.startswith(b"\xff\xd8\xff"),
+        ".png": header.startswith(b"\x89PNG\r\n\x1a\n"),
+        ".gif": header[:4] == b"GIF8",
+        ".webp": header[:4] == b"RIFF" and header[8:12] == b"WEBP",
+    }
+    if not signatures[extension]:
+        return None, "That file is not a valid image."
+    return extension, None
+
+
+MEDIA_NOT_CONFIGURED = {"message": "The media API is not configured. Set MEDIA_API_URL and MEDIA_API_KEY in the server .env."}
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST", "OPTIONS"])
+def admin_media(request):
+    """GET: paginated list of every uploaded image. POST: upload one image (field "image")."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "media")
+    if err:
+        return err
+    settings_pair = media_api_settings()
+    if not settings_pair:
+        return JsonResponse(MEDIA_NOT_CONFIGURED, status=503)
+    base_url = settings_pair[0]
+
+    if request.method == "POST":
+        upload = request.FILES.get("image")
+        if not upload:
+            return JsonResponse({"message": "Choose an image to upload."}, status=400)
+        extension, message = validate_image_upload(upload)
+        if message:
+            return JsonResponse({"message": message}, status=400)
+        try:
+            url, file_id = upload_to_media_api(upload, extension)
+        except MediaApiError as exc:
+            return JsonResponse({"message": str(exc)}, status=502)
+        log_admin_activity(admin_user, "media.upload", "media", file_id or "", f"url={url}")
+        return JsonResponse({"item": {"id": file_id, "url": url, "name": upload.name, "size": upload.size, "createdAt": timezone.now().isoformat()}}, status=201)
+
+    try:
+        page = max(1, int(request.GET.get("page", 1)))
+        limit = min(60, max(1, int(request.GET.get("limit", 24))))
+    except ValueError:
+        page, limit = 1, 24
+    try:
+        body = media_api_call(f"list.php?page={page}&limit={limit}")
+    except MediaApiError as exc:
+        return JsonResponse({"message": str(exc)}, status=502)
+
+    rows = first_list_of_dicts(body) or []
+    items = [item for item in (public_media_item(row, base_url) for row in rows) if item["url"]]
+    total = None
+    if isinstance(body, dict):
+        for source in (body, body.get("pagination"), body.get("meta"), body.get("data") if isinstance(body.get("data"), dict) else None):
+            if isinstance(source, dict) and isinstance(source.get("total"), int):
+                total = source["total"]
+                break
+    has_more = (page * limit < total) if total is not None else len(rows) >= limit
+    return JsonResponse({"items": items, "page": page, "limit": limit, "total": total, "hasMore": has_more})
+
+
+@csrf_exempt
+@require_http_methods(["DELETE", "OPTIONS"])
+def admin_media_detail(request, media_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "media")
+    if err:
+        return err
+    if not media_api_settings():
+        return JsonResponse(MEDIA_NOT_CONFIGURED, status=503)
+
+    try:
+        media_api_call("delete.php", {"id": int(media_id)})
+    except MediaApiError as exc:
+        return JsonResponse({"message": str(exc)}, status=502)
+    log_admin_activity(admin_user, "media.delete", "media", media_id, "")
+    return JsonResponse({"message": "Image deleted."})

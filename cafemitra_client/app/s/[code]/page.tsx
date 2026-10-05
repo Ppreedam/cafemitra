@@ -1597,7 +1597,7 @@ export default function CustomerScanPage() {
               </span>
               <em>{isUploadBusy ? "Please wait…" : "Tap to choose a file"}</em>
               <input
-                accept={isPassportPhoto ? ".jpg,.jpeg,.png" : ".pdf,.jpg,.jpeg,.png"}
+                accept={isPassportPhoto ? "image/jpeg,image/png,.jpg,.jpeg,.png" : "application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png"}
                 type="file"
                 multiple={!isPassportPhoto}
                 disabled={isUploadBusy}

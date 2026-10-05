@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import AdminActivityLog, AdminRole, Agent, PassportAIConfig, ToolPricing, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
+from .models import AdminActivityLog, AdminRole, Agent, BlogArticle, Influencer, PassportAIConfig, Referral, ToolPricing, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 
 
 @admin.register(AdminActivityLog)
@@ -73,3 +73,22 @@ class WalletTransactionAdmin(admin.ModelAdmin):
     list_display = ("id", "user", "kind", "tool_key", "direction", "amount", "balance_after", "created_at")
     list_filter = ("kind", "direction")
     search_fields = ("user__email", "user__username", "tool_key", "note")
+
+
+@admin.register(Referral)
+class ReferralAdmin(admin.ModelAdmin):
+    list_display = ("referrer", "referred_user", "created_at", "bonus_amount", "bonus_paid_at")
+    search_fields = ("referrer__email", "referred_user__email")
+
+
+@admin.register(Influencer)
+class InfluencerAdmin(admin.ModelAdmin):
+    list_display = ("user", "is_active", "created_at")
+    search_fields = ("user__email",)
+
+
+@admin.register(BlogArticle)
+class BlogArticleAdmin(admin.ModelAdmin):
+    list_display = ("title", "slug", "status", "publish_at", "updated_at")
+    list_filter = ("status",)
+    search_fields = ("title", "slug")

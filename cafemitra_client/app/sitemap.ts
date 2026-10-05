@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { MetadataRoute } from "next";
+import { fetchBlogArticles } from "@/lib/blog";
 
 const siteUrl = "https://repetigo.com";
 
@@ -53,10 +54,21 @@ function collectPageRoutes(directory: string, segments: string[] = []): string[]
 
 const publicRoutes = collectPageRoutes(path.join(process.cwd(), "app")).sort();
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  return publicRoutes.map((route) => ({
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const staticEntries: MetadataRoute.Sitemap = publicRoutes.map((route) => ({
     url: `${siteUrl}${route}`,
     changeFrequency: route === "/" ? "weekly" : "monthly",
     priority: route === "/" ? 1 : route.startsWith("/pdf-tools/") ? 0.8 : 0.7,
   }));
+
+  // Articles written in the admin panel - listed as soon as they are live.
+  const articles = await fetchBlogArticles();
+  const articleEntries: MetadataRoute.Sitemap = articles.map((article) => ({
+    url: `${siteUrl}/blog/${article.slug}`,
+    lastModified: article.updatedAt,
+    changeFrequency: "monthly",
+    priority: 0.7,
+  }));
+
+  return [...staticEntries, ...articleEntries];
 }

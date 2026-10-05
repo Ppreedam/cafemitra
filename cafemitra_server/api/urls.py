@@ -32,6 +32,15 @@ urlpatterns = [
     re_path(r"^admin/withdrawals/?$", admin_views.admin_withdrawals),  # GET withdrawal request queue (status)
     re_path(r"^admin/withdrawals/(?P<withdrawal_id>[0-9]+)/approve/?$", admin_views.admin_withdrawal_approve),  # POST mark a pending withdrawal as paid
     re_path(r"^admin/withdrawals/(?P<withdrawal_id>[0-9]+)/reject/?$", admin_views.admin_withdrawal_reject),  # POST reject a pending withdrawal and reverse its debit
+    re_path(r"^admin/blog/?$", admin_views.admin_blog_articles),  # GET all articles (incl. drafts/scheduled) / POST create
+    re_path(r"^admin/blog/(?P<article_id>[0-9]+)/?$", admin_views.admin_blog_article_detail),  # GET / PUT / DELETE one article
+    re_path(r"^admin/blog/(?P<article_id>[0-9]+)/revisions/?$", admin_views.admin_blog_article_revisions),  # GET saved revisions of one article
+    re_path(r"^admin/media/?$", admin_views.admin_media),  # GET paginated list of uploaded images / POST upload one (stored on the external media API)
+    re_path(r"^admin/media/(?P<media_id>[0-9]+)/?$", admin_views.admin_media_detail),  # DELETE an uploaded image
+    re_path(r"^admin/blog/upload-image/?$", admin_views.admin_blog_upload_image),  # POST an image for an article, returns its URL
+    re_path(r"^admin/influencers/?$", admin_views.admin_influencers),  # GET list with stats / POST assign a customer (by email) as influencer
+    re_path(r"^admin/influencers/(?P<influencer_id>[0-9]+)/?$", admin_views.admin_influencer_detail),  # GET code+coupons+attributed users / PUT active / DELETE remove influencer status
+    re_path(r"^admin/influencers/(?P<influencer_id>[0-9]+)/coupons/?$", admin_views.admin_influencer_coupons),  # POST generate a coupon code for this influencer
     re_path(r"^admin/wallet-settings/?$", admin_views.admin_wallet_settings),  # GET global wallet config rows
     re_path(r"^admin/wallet-settings/(?P<key>[a-z_]+)/?$", admin_views.admin_wallet_setting_detail),  # PUT edit one wallet setting's value/isActive
     re_path(r"^admin/tool-pricing/?$", admin_views.admin_tool_pricing),  # GET RepetiGo's own per-tool usage fees
@@ -122,6 +131,11 @@ urlpatterns = [
     re_path(r"^profile/?$", views.profile),  # GET/PUT fetch or update the owner's user + shop profile
 
     # --- Wallet -----------------------------------------------------------
+    re_path(r"^blog/?$", views.blog_articles),  # GET public: published blog articles (no body)
+    re_path(r"^blog/(?P<slug>[-a-z0-9]+)/?$", views.blog_article_detail),  # GET public: one published article with Markdown body
+    re_path(r"^influencer/?$", views.influencer_dashboard),  # GET the signed-in influencer's referral code, coupons and attributed users with status
+    re_path(r"^referrals/lookup/?$", views.referral_lookup),  # GET public: owner's short name for a referral code (signup page check)
+    re_path(r"^referrals/?$", views.referrals),  # GET the shop's referral code + history of referred shops (registered / email verified / first top-up / bonus)
     re_path(r"^wallet/config/?$", views.wallet_config),  # GET public signup/referral bonus, grace limits, and billable tool prices
     re_path(r"^tools/visibility/?$", views.tool_visibility),  # GET public map of {toolKey: isEnabled} for the Automation Tools nav (navbar + dashboard sidebar)
     re_path(r"^wallet/?$", views.wallet),  # GET balance, collection summary, limits, and paginated transaction ledger

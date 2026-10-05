@@ -77,6 +77,9 @@ class UserProfile(models.Model):
     # outdated agent build) - the print pipeline these two checks describe is
     # what actually matters, not whether the browser can reach localhost.
     agent_ws_connected = models.BooleanField(default=False)
+    # This shop's own shareable referral code (see Referral). Generated lazily
+    # the first time the owner opens the Referral page.
+    referral_code = models.CharField(max_length=16, unique=True, null=True, blank=True)
 
     def __str__(self) -> str:
         return self.user.get_full_name() or self.user.email
@@ -148,6 +151,47 @@ class ShopProfile(models.Model):
 
     def __str__(self) -> str:
         return self.shop_name or f"Shop for {self.user_id}"
+
+
+class Referral(models.Model):
+    """One shop owner referring another. Created at signup when the new
+    account used a shop's UserProfile.referral_code. The referrer's bonus is
+    credited once the referred account verifies its email (see
+    credit_referral_bonus in views.py); "first top-up" is shown for
+    information only and is derived live from the referred user's wallet
+    ledger, so there is nothing to keep in sync here."""
+
+    referrer = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="referrals_made")
+    referred_user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="referral_source")
+    created_at = models.DateTimeField(auto_now_add=True)
+    bonus_amount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    bonus_paid_at = models.DateTimeField(null=True, blank=True)
+    wallet_transaction = models.ForeignKey("WalletTransaction", null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"Referral {self.referrer_id} -> {self.referred_user_id}"
+
+
+class Influencer(models.Model):
+    """A customer the admin has marked as an influencer. Everyone who signs up
+    with the influencer's own referral code (see Referral) or redeems a coupon
+    issued to them (Coupon.influencer) is attributed to them, and both the
+    admin panel and the influencer's own dashboard report on those users."""
+
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="influencer_profile")
+    is_active = models.BooleanField(default=True)
+    note = models.CharField(max_length=255, blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"Influencer {self.user_id}"
 
 
 class UpiPayee(models.Model):
@@ -388,6 +432,9 @@ class Coupon(models.Model):
     max_redemptions = models.PositiveIntegerField(null=True, blank=True)
     expires_at = models.DateTimeField(null=True, blank=True)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="created_coupons")
+    # Set when the coupon was generated for an influencer - redemptions are
+    # then reported against that influencer.
+    influencer = models.ForeignKey("Influencer", null=True, blank=True, on_delete=models.SET_NULL, related_name="coupons")
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -730,3 +777,64 @@ class CustomerNote(models.Model):
         return f"Note on {self.customer_id} at {self.created_at}"
 
 
+
+
+class BlogArticle(models.Model):
+    """A blog article written in the admin panel (Markdown). Published
+    articles are rendered server-side by the website (ISR), so search engines
+    see the full HTML. An article is live when status is "published" AND
+    publish_at is in the past - set publish_at in the future to schedule it."""
+
+    STATUS_DRAFT = "draft"
+    STATUS_PUBLISHED = "published"
+    STATUS_TRASH = "trash"
+    STATUS_CHOICES = [(STATUS_DRAFT, "Draft"), (STATUS_PUBLISHED, "Published"), (STATUS_TRASH, "Trash")]
+
+    TEMPLATE_DEFAULT = "default"
+    TEMPLATE_WIDE = "wide"
+    TEMPLATE_CHOICES = [(TEMPLATE_DEFAULT, "Default template"), (TEMPLATE_WIDE, "Wide template")]
+
+    slug = models.SlugField(max_length=160, unique=True)
+    title = models.CharField(max_length=200)
+    category = models.CharField(max_length=60, default="Guide")
+    excerpt = models.CharField(max_length=320, blank=True)
+    content = models.TextField(blank=True, help_text="Markdown")
+    cover_image = models.CharField(max_length=500, blank=True, help_text="Image URL")
+    cover_image_alt = models.CharField(max_length=200, blank=True)
+    lazy_load_images = models.BooleanField(default=False, help_text="Add loading=lazy to images in the article body")
+    require_image_alt = models.BooleanField(default=True, help_text="Admin: block publishing while an image has no alt text")
+    auto_caption_images = models.BooleanField(default=False, help_text="Show each image's alt text as a caption")
+    template = models.CharField(max_length=12, choices=TEMPLATE_CHOICES, default=TEMPLATE_DEFAULT)
+    meta_title = models.CharField(max_length=200, blank=True)
+    meta_description = models.CharField(max_length=320, blank=True)
+    tags = models.JSONField(default=list, blank=True, help_text="List of tag strings")
+    focus_keywords = models.JSONField(default=list, blank=True, help_text="List of SEO focus keyword strings")
+    author_name = models.CharField(max_length=80, default="RepetiGo Team")
+    status = models.CharField(max_length=12, choices=STATUS_CHOICES, default=STATUS_DRAFT)
+    publish_at = models.DateTimeField(null=True, blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-publish_at", "-created_at"]
+
+    def __str__(self) -> str:
+        return self.title
+
+
+class BlogRevision(models.Model):
+    """A snapshot of a BlogArticle's text, taken every time it is saved from the admin panel."""
+
+    article = models.ForeignKey(BlogArticle, on_delete=models.CASCADE, related_name="revisions")
+    title = models.CharField(max_length=200)
+    excerpt = models.CharField(max_length=320, blank=True)
+    content = models.TextField(blank=True)
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self) -> str:
+        return f"{self.article_id} @ {self.created_at:%Y-%m-%d %H:%M}"
