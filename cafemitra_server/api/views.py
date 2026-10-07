@@ -21,6 +21,7 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 from django.contrib.auth import authenticate, get_user_model
 from django.conf import settings
+from django.core import signing
 from django.core.mail import send_mail
 from django.db import connection, transaction
 from django.db.models import Count, F, Max, Q, Sum
@@ -36,6 +37,7 @@ from .background_remover.remove_background import BackgroundRemovalError, remove
 from .background_remover.passport_photo_processor import ProcessingError, enhance_transparent_bytes
 from .background_remover.watermark_remover import remove_gemini_watermark
 from .models import Agent, AuthToken, BlogArticle, ContactMessage, Coupon, CouponRedemption, EmailVerificationToken, Influencer, PassportAIConfig, PasswordResetToken, PoolerNode, PrintOrder, Referral, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UpiPayee, UpiQrRecord, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
+from .models import Agent, AuthToken, BlogArticle, ContactMessage, Coupon, CouponRedemption, EmailVerificationToken, Influencer, PassportAIConfig, PasswordResetToken, PhoneOtp, PrintOrder, Referral, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UpiPayee, UpiQrRecord, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from cafemitra_server.product_setting import PAYMENT_GATEWAYS, active_payment_gateway
 
 User = get_user_model()
@@ -45,6 +47,12 @@ logger = logging.getLogger("django")
 ACCESS_TOKEN_TTL = timedelta(hours=1)
 REFRESH_TOKEN_TTL = timedelta(days=30)
 EMAIL_TOKEN_TTL = timedelta(hours=24)
+PHONE_OTP_TTL = timedelta(minutes=10)
+PHONE_OTP_RESEND_SECONDS = 60
+PHONE_OTP_MAX_SENDS_PER_HOUR = 5
+PHONE_OTP_MAX_ATTEMPTS = 5
+PHONE_VERIFIED_MAX_AGE_SECONDS = 24 * 60 * 60
+PHONE_VERIFIED_SALT = "repetigo.phone-verified"
 PASSWORD_RESET_TOKEN_TTL = timedelta(minutes=30)
 # WalletSetting keys read via get_wallet_setting() - values (and the numbers
 # shown on the public pricing page) live in the DB / Django admin, not here,
@@ -3283,6 +3291,108 @@ def referrals(request):
     )
 
 
+def normalize_signup_phone(country_code, number):
+    """Returns (stored_phone, dial_digits) or (None, None) if invalid.
+
+    India (91) numbers stay as the bare 10 digits the rest of the app expects;
+    other countries are stored as country code + number so the country is never lost.
+    """
+    code = re.sub(r"\D", "", str(country_code or "91")) or "91"
+    number = str(number or "").strip()
+    if not re.match(r"^[1-9]\d{0,3}$", code) or not number.isdigit():
+        return None, None
+    if code == "91":
+        return (number, f"91{number}") if re.match(r"^\d{10}$", number) else (None, None)
+    if not 6 <= len(number) <= 12:
+        return None, None
+    return f"{code}{number}", f"{code}{number}"
+
+
+def hash_phone_otp(phone, code):
+    return hmac.new(settings.SECRET_KEY.encode(), f"{phone}:{code}".encode(), hashlib.sha256).hexdigest()
+
+
+def is_phone_verified(token, phone):
+    try:
+        data = signing.loads(token, salt=PHONE_VERIFIED_SALT, max_age=PHONE_VERIFIED_MAX_AGE_SECONDS)
+    except signing.BadSignature:
+        return False
+    return isinstance(data, dict) and data.get("phone") == phone
+
+
+def send_whatsapp_message(dial_number, message):
+    if not settings.WHATSAPP_OTP_URL or not settings.WHATSAPP_OTP_KEY:
+        raise RuntimeError("WhatsApp OTP sender is not configured.")
+    request = urllib.request.Request(
+        settings.WHATSAPP_OTP_URL,
+        data=json.dumps({"phone": dial_number, "message": message}).encode("utf-8"),
+        headers={"Content-Type": "application/json", "X-Send-Key": settings.WHATSAPP_OTP_KEY, "User-Agent": "RepetiGo/1.0"},
+        method="POST",
+    )
+    with urllib.request.urlopen(request, timeout=15) as response:
+        result = json.loads(response.read().decode("utf-8") or "{}")
+    if not result.get("success"):
+        raise RuntimeError("WhatsApp sender rejected the message.")
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def send_phone_otp(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    body = parse_body(request)
+    phone, dial_number = normalize_signup_phone(body.get("countryCode"), body.get("phone"))
+    if not phone:
+        return JsonResponse({"message": "Enter a valid WhatsApp number (10 digits for India)."}, status=400)
+
+    now = timezone.now()
+    recent = PhoneOtp.objects.filter(phone=phone, created_at__gte=now - timedelta(hours=1))
+    latest = recent.first()
+    if latest and (now - latest.created_at).total_seconds() < PHONE_OTP_RESEND_SECONDS:
+        wait = PHONE_OTP_RESEND_SECONDS - int((now - latest.created_at).total_seconds())
+        return JsonResponse({"message": f"Please wait {wait} seconds before requesting another OTP."}, status=429)
+    if recent.count() >= PHONE_OTP_MAX_SENDS_PER_HOUR:
+        return JsonResponse({"message": "Too many OTP requests for this number. Try again after an hour."}, status=429)
+
+    code = f"{secrets.randbelow(1000000):06d}"
+    try:
+        send_whatsapp_message(dial_number, f"Your RepetiGo verification code is {code}. It is valid for 10 minutes. Do not share it with anyone.")
+    except Exception:
+        logger.exception("WhatsApp OTP send failed")
+        return JsonResponse({"message": "Could not send the OTP on WhatsApp. Check the number and try again."}, status=502)
+    PhoneOtp.objects.filter(phone=phone, used_at__isnull=True).update(used_at=now)
+    PhoneOtp.objects.create(phone=phone, code_hash=hash_phone_otp(phone, code), expires_at=now + PHONE_OTP_TTL)
+    return JsonResponse({"message": "OTP sent on WhatsApp.", "resendAfter": PHONE_OTP_RESEND_SECONDS})
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def verify_phone_otp(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    body = parse_body(request)
+    phone, _ = normalize_signup_phone(body.get("countryCode"), body.get("phone"))
+    code = str(body.get("otp", "")).strip()
+    if not phone or not re.match(r"^\d{6}$", code):
+        return JsonResponse({"message": "Enter the 6 digit OTP."}, status=400)
+
+    otp = PhoneOtp.objects.filter(phone=phone, used_at__isnull=True).first()
+    if not otp or otp.expires_at <= timezone.now():
+        return JsonResponse({"message": "OTP expired. Request a new one."}, status=400)
+    if otp.attempts >= PHONE_OTP_MAX_ATTEMPTS:
+        return JsonResponse({"message": "Too many wrong attempts. Request a new OTP."}, status=429)
+    if not hmac.compare_digest(otp.code_hash, hash_phone_otp(phone, code)):
+        otp.attempts += 1
+        otp.save(update_fields=["attempts"])
+        return JsonResponse({"message": "Incorrect OTP."}, status=400)
+
+    otp.used_at = timezone.now()
+    otp.save(update_fields=["used_at"])
+    return JsonResponse({"verified": True, "phoneVerificationToken": signing.dumps({"phone": phone}, salt=PHONE_VERIFIED_SALT)})
+
+
 @csrf_exempt
 @require_http_methods(["POST", "OPTIONS"])
 def register_user(request):
@@ -3292,7 +3402,7 @@ def register_user(request):
     body = parse_body(request)
     email = str(body.get("email", "")).strip().lower()
     full_name = str(body.get("fullName", "")).strip()
-    phone = str(body.get("phone", "")).strip()
+    phone, _ = normalize_signup_phone(body.get("countryCode"), body.get("phone"))
     password = str(body.get("password", ""))
     referral_code = str(body.get("referralCode", "")).strip()
 
@@ -3302,12 +3412,14 @@ def register_user(request):
         return JsonResponse({"message": "Temporary or disposable email addresses are not allowed. Please use a permanent email address."}, status=400)
     if len(full_name) < 2:
         return JsonResponse({"message": "Enter your full name."}, status=400)
-    if not re.match(r"^\d{10}$", phone):
-        return JsonResponse({"message": "Mobile number must be exactly 10 digits."}, status=400)
+    if not phone:
+        return JsonResponse({"message": "Enter a valid WhatsApp number (10 digits for India)."}, status=400)
     if len(password) < 8:
         return JsonResponse({"message": "Password must be at least 8 characters."}, status=400)
     if User.objects.filter(username=email).exists():
         return JsonResponse({"message": "Account already exists. Please login."}, status=409)
+    if not is_phone_verified(str(body.get("phoneVerificationToken", "")), phone):
+        return JsonResponse({"message": "Verify your WhatsApp number with the OTP before creating the account."}, status=400)
 
     # An unknown/inactive code is silently ignored rather than rejected - a
     # typo'd referral code shouldn't block someone from signing up at all.

@@ -4160,6 +4160,35 @@ img.profile-photo {
   background: #fbfcff;
 }
 
+.agent-tutorial {
+  display: grid;
+  gap: 12px;
+}
+
+.agent-tutorial h3 {
+  margin: 0;
+  color: #111a44;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.agent-tutorial-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  overflow: hidden;
+  border-radius: 8px;
+  background: #000;
+}
+
+.agent-tutorial-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
 .agent-download-card svg {
   flex: 0 0 auto;
   color: #2563eb;
@@ -22300,82 +22329,224 @@ img.profile-photo {
 .blog-article-body th[align="center"], .blog-article-body td[align="center"], .blog-preview th[align="center"], .blog-preview td[align="center"] { text-align: center; }
 .blog-article-body th[align="right"], .blog-article-body td[align="right"], .blog-preview th[align="right"], .blog-preview td[align="right"] { text-align: right; }
 
-/* Print profile dropdown shown before every tool's Print button. */
-.print-profile-select {
+.hero-video-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
   display: grid;
-  gap: 4px;
-  min-width: 0;
+  place-items: center;
+  padding: 16px;
+  background: rgba(10, 16, 40, 0.72);
 }
 
-.print-profile-select label {
+.hero-video-modal {
   display: grid;
-  gap: 4px;
-}
-
-.print-profile-select label span {
-  color: #5b6488;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.print-profile-select select {
-  width: 100%;
-  min-height: 40px;
-  border: 1px solid #dfe3f3;
-  border-radius: 8px;
-  padding: 0 10px;
-  color: #17204b;
+  gap: 14px;
+  width: min(880px, 100%);
+  max-height: 100%;
+  overflow: auto;
+  border-radius: 12px;
+  padding: 18px;
   background: #fff;
+}
+
+.hero-video-modal h3 {
+  margin: 0;
+  color: #111a44;
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.hero-video-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.hero-video-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hero-video-tabs button {
+  border: 1px solid #d9e1f2;
+  border-radius: 999px;
+  padding: 8px 16px;
+  background: #fff;
+  color: #111a44;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.hero-video-tabs button.active {
+  border-color: transparent;
+  background: linear-gradient(90deg, #2563eb, #14b8c4);
+  color: #fff;
+}
+
+.hero-video-close {
+  border: 0;
+  border-radius: 8px;
+  padding: 6px;
+  background: transparent;
+  color: #111a44;
+  cursor: pointer;
+}
+
+.auth-otp {
+  display: grid;
+  gap: 10px;
+}
+
+.auth-otp input {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font: inherit;
+  letter-spacing: 0.2em;
+}
+
+.phone-input-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 46px;
+  border: 1px solid var(--auth-border);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.phone-input-row:focus-within {
+  border-color: var(--auth-brand);
+  box-shadow: 0 0 0 4px oklch(0.55 0.22 262 / 0.1);
+}
+
+.phone-input-row.has-error {
+  border-color: rgba(239, 63, 95, 0.78);
+  background: #fffafb;
+}
+
+.phone-country-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  border: 0;
+  border-right: 1px solid var(--auth-border);
+  padding: 0 12px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+}
+
+.phone-country-btn img,
+.phone-country-menu img {
+  width: 28px;
+  height: 20px;
+  border-radius: 3px;
+  object-fit: cover;
+}
+
+.phone-dial {
+  padding-left: 12px;
+  color: var(--auth-navy);
+  font-size: 0.94rem;
   font-weight: 700;
 }
 
-.print-profile-select small {
-  color: #5b6488;
-  font-size: 12px;
+.phone-field .phone-input-row > input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  border-radius: 0 10px 10px 0;
+  padding: 0 44px 0 8px;
+  box-shadow: none;
+  background: transparent;
+}
+
+.phone-field .phone-input-row > input:focus {
+  box-shadow: none;
+}
+
+.phone-check {
+  position: absolute;
+  right: 14px;
+}
+
+.phone-country-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 30;
+  width: min(360px, 100%);
+  border: 1px solid var(--auth-border);
+  border-radius: 14px;
+  padding: 10px;
+  background: #fff;
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+}
+
+.phone-country-search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--auth-border);
+  border-radius: 10px;
+  padding: 0 12px;
+  color: #94a3b8;
+}
+
+.phone-field .phone-country-search input {
+  height: 42px;
+  border: 0;
+  padding: 0;
+  box-shadow: none;
+}
+
+.phone-country-menu ul {
+  max-height: 260px;
+  margin: 8px 0 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.phone-country-menu li button {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  border: 0;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.phone-country-menu li button:hover,
+.phone-country-menu li button.active {
+  background: #eef1f6;
+}
+
+.phone-country-menu strong {
+  display: block;
+  color: var(--auth-navy);
+  font-size: 0.94rem;
   font-weight: 600;
 }
 
-.print-profile-select .print-profile-ok {
-  color: #0f8a5f;
+.phone-country-menu small {
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 
-.print-profile-select .print-profile-error {
-  color: #d1344b;
-}
-.pps-print-profile {
-  margin-top: 16px;
-}
-
-/* Inline (toolbar) variant - resume / biodata builder header. */
-.resbuild-print-profile {
-  min-width: 190px;
-}
-
-.resbuild-print-profile label span {
-  display: none;
-}
-
-/* Step 5 QR poster preview - the same SVG the PDF/test print uses. */
-.qr-poster-image {
-  display: block;
-  width: min(100%, 440px);
-  height: auto;
-  aspect-ratio: 720 / 1120;
-  margin: 0 auto;
-  border-radius: 14px;
-  background: #fff;
-  box-shadow: 0 18px 40px rgba(25, 35, 82, 0.14);
-}
-
-.qr-poster-image-loading {
-  display: grid;
-  place-items: center;
-  color: #5b6488;
-  font-weight: 700;
-}
-
-.qr-poster-shell {
-  width: min(100%, 440px);
+.phone-country-empty {
+  padding: 12px;
+  color: #64748b;
+  text-align: center;
 }

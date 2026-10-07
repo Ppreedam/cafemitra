@@ -119,6 +119,8 @@ urlpatterns = [
     re_path(r"^tools/upi-qr/history/(?P<record_id>[0-9]+)/delete/?$", views.upi_qr_record_delete),  # POST delete a saved UPI QR
 
     # --- Auth -----------------------------------------------------------
+    re_path(r"^auth/phone-otp/send/?$", views.send_phone_otp),  # POST send a signup OTP to a WhatsApp number
+    re_path(r"^auth/phone-otp/verify/?$", views.verify_phone_otp),  # POST check the OTP, returns a short-lived phoneVerificationToken
     re_path(r"^auth/register/?$", views.register_user),  # POST create account, sends email verification link
     re_path(r"^auth/login/?$", views.login_user),  # POST authenticate, issues a fresh access/refresh token pair
     re_path(r"^auth/refresh/?$", views.refresh_token),  # POST exchange a refresh token for a new access token

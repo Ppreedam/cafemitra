@@ -46,7 +46,7 @@ class PasswordResetToken(models.Model):
 
 class UserProfile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile")
-    phone = models.CharField(max_length=10)
+    phone = models.CharField(max_length=16)
     balance = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     profile_photo = models.TextField(blank=True)
     # Per-cafe override for how negative the wallet is allowed to go before
@@ -141,8 +141,8 @@ class ShopProfile(models.Model):
     city = models.CharField(max_length=80, blank=True)
     state = models.CharField(max_length=80, blank=True)
     pin_code = models.CharField(max_length=6, blank=True)
-    mobile = models.CharField(max_length=10, blank=True)
-    whatsapp = models.CharField(max_length=10, blank=True)
+    mobile = models.CharField(max_length=16, blank=True)
+    whatsapp = models.CharField(max_length=16, blank=True)
     email = models.EmailField(blank=True)
     # Set at signup if the shop used a referral code (or by admin later) -
     # dormant until the Referral Agent Program phase wires up commission
@@ -905,3 +905,20 @@ class BlogRevision(models.Model):
 
     def __str__(self) -> str:
         return f"{self.article_id} @ {self.created_at:%Y-%m-%d %H:%M}"
+
+
+class PhoneOtp(models.Model):
+    """One WhatsApp OTP sent to a phone number during signup."""
+
+    phone = models.CharField(max_length=16, db_index=True)
+    code_hash = models.CharField(max_length=64)
+    expires_at = models.DateTimeField()
+    attempts = models.PositiveSmallIntegerField(default=0)
+    used_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self) -> str:
+        return f"Phone OTP for {self.phone}"

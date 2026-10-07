@@ -2,14 +2,17 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
 import {
   Check,
   Eye,
   EyeOff,
+  ChevronDown,
+  Search,
   UserRound,
 } from "lucide-react";
+import { getCountries, getCountryCallingCode, type CountryCode } from "libphonenumber-js";
 import { apiUrl, storeSession } from "@/lib/api";
 import { getPasswordStrengthError, passwordRequirementHint } from "@/lib/password";
 import { LandingNavbar } from "../LandingNavbar";
@@ -41,7 +44,13 @@ const initialValues: AuthValues = {
 };
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const phonePattern = /^\d{10}$/;
+const VERIFIED_PHONE_KEY = "repetigo.verifiedPhone";
+
+// India: exactly 10 digits. Other countries: 6-12 digits (country code is separate).
+function isValidPhone(countryCode: string, number: string) {
+  const digits = number.trim();
+  return countryCode === "91" ? /^\d{10}$/.test(digits) : /^\d{6,12}$/.test(digits);
+}
 
 export function AuthPanel({ mode }: AuthPanelProps) {
   const isRegister = mode === "register";
@@ -62,6 +71,51 @@ export function AuthPanel({ mode }: AuthPanelProps) {
   const [apiNotice, setApiNotice] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
+  // WhatsApp OTP verification (register only). phoneToken is the server's
+  // proof that `verifiedPhone` was confirmed; it is sent along with register.
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpCode, setOtpCode] = useState("");
+  const [otpBusy, setOtpBusy] = useState(false);
+  const [otpError, setOtpError] = useState("");
+  const [otpCooldown, setOtpCooldown] = useState(0);
+  const [country, setCountry] = useState<CountryCode>("IN");
+  const countryCode = getCountryCallingCode(country);
+  const [phoneToken, setPhoneToken] = useState("");
+  const [verifiedPhone, setVerifiedPhone] = useState("");
+  const fullPhone = `${countryCode}:${values.phone.trim()}`;
+  // Remember a verified number across refreshes so the OTP isn't asked twice.
+  useEffect(() => {
+    if (!isRegister) return;
+    try {
+      const saved = JSON.parse(window.localStorage.getItem(VERIFIED_PHONE_KEY) || "null");
+      if (saved?.token && saved.phone && saved.country) {
+        setCountry(saved.country as CountryCode);
+        setValues((current) => ({ ...current, phone: saved.phone }));
+        setPhoneToken(saved.token);
+        setVerifiedPhone(`${getCountryCallingCode(saved.country as CountryCode)}:${saved.phone}`);
+      }
+    } catch {
+      // storage unavailable or corrupt - user just verifies again
+    }
+  }, [isRegister]);
+
+  function clearVerifiedPhone() {
+    setPhoneToken("");
+    setVerifiedPhone("");
+    try {
+      window.localStorage.removeItem(VERIFIED_PHONE_KEY);
+    } catch {
+      // ignore
+    }
+  }
+
+  const phoneVerified = Boolean(phoneToken) && verifiedPhone === fullPhone;
+
+  useEffect(() => {
+    if (otpCooldown <= 0) return;
+    const timer = window.setTimeout(() => setOtpCooldown((current) => current - 1), 1000);
+    return () => window.clearTimeout(timer);
+  }, [otpCooldown]);
 
   useEffect(() => {
     const code = values.referralCode.trim();
@@ -103,12 +157,16 @@ export function AuthPanel({ mode }: AuthPanelProps) {
         nextErrors.fullName = "Enter your full name.";
       }
 
-      if (!phonePattern.test(values.phone.trim())) {
-        nextErrors.phone = "WhatsApp number must be exactly 10 digits.";
+      if (!isValidPhone(countryCode, values.phone)) {
+        nextErrors.phone = countryCode === "91" ? "WhatsApp number must be exactly 10 digits." : "Enter a valid WhatsApp number (6-12 digits).";
       }
 
       if (values.confirmPassword !== values.password || values.confirmPassword.length === 0) {
         nextErrors.confirmPassword = "Passwords must match.";
+      }
+
+      if (!phoneVerified) {
+        nextErrors.phone = nextErrors.phone ?? "Verify your WhatsApp number with the OTP.";
       }
 
       if (!values.terms) {
@@ -119,7 +177,7 @@ export function AuthPanel({ mode }: AuthPanelProps) {
     }
 
     return nextErrors;
-  }, [isRegister, values]);
+  }, [isRegister, values, phoneVerified, countryCode]);
 
   const isFormValid = Object.keys(errors).length === 0;
   const hasAnyInput = isRegister
@@ -132,12 +190,65 @@ export function AuthPanel({ mode }: AuthPanelProps) {
 
   function updateValue(field: keyof AuthValues, value: string | boolean) {
     setValues((current) => ({ ...current, [field]: value }));
+    if (field === "phone") {
+      setOtpSent(false);
+      setOtpCode("");
+      setOtpError("");
+      setOtpCooldown(0);
+    }
     if (apiError) setApiError("");
     if (apiNotice) setApiNotice("");
   }
 
   function markTouched(field: keyof AuthValues) {
     setTouched((current) => ({ ...current, [field]: true }));
+  }
+
+  async function sendPhoneOtp() {
+    setOtpError("");
+    setOtpBusy(true);
+    try {
+      const response = await fetch(apiUrl("/api/auth/phone-otp/send/"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: values.phone.trim(), countryCode }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok) throw new Error(data?.message ?? "Could not send OTP. Please try again.");
+      setOtpSent(true);
+      setOtpCode("");
+      setOtpCooldown(data?.resendAfter ?? 60);
+    } catch (error) {
+      setOtpError(error instanceof Error ? error.message : "Could not send OTP.");
+    } finally {
+      setOtpBusy(false);
+    }
+  }
+
+  async function verifyPhoneOtp() {
+    setOtpError("");
+    setOtpBusy(true);
+    try {
+      const response = await fetch(apiUrl("/api/auth/phone-otp/verify/"), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: values.phone.trim(), countryCode, otp: otpCode.trim() }),
+      });
+      const data = await response.json().catch(() => null);
+      if (!response.ok || !data?.phoneVerificationToken) throw new Error(data?.message ?? "Could not verify OTP.");
+      setPhoneToken(data.phoneVerificationToken);
+      setVerifiedPhone(fullPhone);
+      try {
+        window.localStorage.setItem(VERIFIED_PHONE_KEY, JSON.stringify({ country, phone: values.phone.trim(), token: data.phoneVerificationToken }));
+      } catch {
+        // ignore - verification still works for this page load
+      }
+      setOtpSent(false);
+    } catch (error) {
+      setOtpError(error instanceof Error ? error.message : "Could not verify OTP.");
+    } finally {
+      setOtpBusy(false);
+    }
   }
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
@@ -167,12 +278,14 @@ export function AuthPanel({ mode }: AuthPanelProps) {
           fullName: values.fullName.trim(),
           phone: values.phone.trim(),
           password: values.password,
+          ...(isRegister ? { phoneVerificationToken: phoneToken, countryCode } : {}),
           ...(isRegister && values.referralCode.trim() ? { referralCode: values.referralCode.trim() } : {}),
         }),
       });
 
       const data = await response.json().catch(() => null);
       if (!response.ok) {
+        if (isRegister && /verify your whatsapp/i.test(data?.message ?? "")) clearVerifiedPhone();
         throw new Error(data?.message ?? "Server error. Please try again in a moment.");
       }
       if (!data) {
@@ -187,6 +300,8 @@ export function AuthPanel({ mode }: AuthPanelProps) {
         if (isRegister) {
           setValues(initialValues);
           setTouched({});
+          setCountry("IN");
+          clearVerifiedPhone();
         }
       }
     } catch (error) {
@@ -285,21 +400,54 @@ export function AuthPanel({ mode }: AuthPanelProps) {
                   onBlur={() => markTouched("fullName")}
                   onChange={(value) => updateValue("fullName", value)}
                 />
-                <Field
+                <PhoneField
                   label="WhatsApp Number"
-                  name="phone-number"
-                  type="tel"
-                  placeholder="Enter 10 digit WhatsApp number"
-                  hint="Enter a correct WhatsApp number to get a bonus - an incorrect number will not qualify."
+                  country={country}
                   value={values.phone}
+                  hint="Enter a correct WhatsApp number to get a bonus - an incorrect number will not qualify."
                   error={touched.phone ? errors.phone : undefined}
-                  verified={Boolean(values.phone.trim()) && !errors.phone}
-                  inputMode="numeric"
-                  maxLength={10}
-                  autoComplete="off"
+                  verified={phoneVerified}
                   onBlur={() => markTouched("phone")}
-                  onChange={(value) => updateValue("phone", value.replace(/\D/g, "").slice(0, 10))}
+                  onCountryChange={(next) => {
+                    setCountry(next);
+                    setValues((current) => ({ ...current, phone: "" }));
+                    setOtpSent(false);
+                    setOtpCode("");
+                    setOtpError("");
+                    setOtpCooldown(0);
+                  }}
+                  onChange={(value) => updateValue("phone", value)}
                 />
+                {isValidPhone(countryCode, values.phone) && !phoneVerified ? (
+                  <div className="auth-otp">
+                    {otpSent ? (
+                      <>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={6}
+                          placeholder="Enter 6 digit OTP"
+                          aria-label="WhatsApp OTP"
+                          autoComplete="one-time-code"
+                          value={otpCode}
+                          onChange={(event) => setOtpCode(event.target.value.replace(/\D/g, "").slice(0, 6))}
+                        />
+                        <button className="btn btn-primary" type="button" onClick={verifyPhoneOtp} disabled={otpBusy || otpCode.length !== 6}>
+                          {otpBusy ? "Checking..." : "Verify OTP"}
+                        </button>
+                        <button className="auth-resend" type="button" onClick={sendPhoneOtp} disabled={otpBusy || otpCooldown > 0}>
+                          {otpCooldown > 0 ? `Resend OTP in ${otpCooldown}s` : "Resend OTP"}
+                        </button>
+                      </>
+                    ) : (
+                      <button className="btn btn-primary" type="button" onClick={sendPhoneOtp} disabled={otpBusy || otpCooldown > 0}>
+                        {otpBusy ? "Sending..." : otpCooldown > 0 ? `Resend OTP in ${otpCooldown}s` : "Send OTP on WhatsApp"}
+                      </button>
+                    )}
+                    {otpError ? <p className="auth-error">{otpError}</p> : null}
+                  </div>
+                ) : null}
+                {phoneVerified ? <p className="auth-success">WhatsApp number verified.</p> : null}
                 <Field
                   label="Password"
                   name="new-password"
@@ -416,6 +564,113 @@ export function AuthPanel({ mode }: AuthPanelProps) {
         </div>
       </section>
       </main>
+    </div>
+  );
+}
+
+const regionNames = typeof Intl !== "undefined" && "DisplayNames" in Intl ? new Intl.DisplayNames(["en"], { type: "region" }) : null;
+const countryOptions = getCountries()
+  .map((iso) => ({ iso, name: regionNames?.of(iso) ?? iso, dial: getCountryCallingCode(iso) }))
+  .sort((a, b) => a.name.localeCompare(b.name));
+
+function flagUrl(iso: string) {
+  return `https://flagcdn.com/w40/${iso.toLowerCase()}.png`;
+}
+
+function PhoneField({
+  label,
+  country,
+  value,
+  hint,
+  error,
+  verified,
+  onBlur,
+  onCountryChange,
+  onChange,
+}: {
+  label: string;
+  country: CountryCode;
+  value: string;
+  hint?: string;
+  error?: string;
+  verified?: boolean;
+  onBlur: () => void;
+  onCountryChange: (country: CountryCode) => void;
+  onChange: (value: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const rootRef = useRef<HTMLDivElement>(null);
+  const isIndia = country === "IN";
+  const maxDigits = isIndia ? 10 : 12;
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [open]);
+
+  const q = query.trim().toLowerCase().replace(/^\+/, "");
+  const filtered = q
+    ? countryOptions.filter((item) => item.name.toLowerCase().includes(q) || item.iso.toLowerCase() === q || item.dial.startsWith(q))
+    : countryOptions;
+
+  return (
+    <div className="auth-field phone-field" ref={rootRef}>
+      <span>{label}</span>
+      <div className={`phone-input-row${error ? " has-error" : ""}`}>
+        <button className="phone-country-btn" type="button" aria-label="Select country" aria-expanded={open} onClick={() => setOpen((current) => !current)}>
+          <img src={flagUrl(country)} alt="" width={28} height={20} />
+          <ChevronDown size={16} />
+        </button>
+        <span className="phone-dial">+{getCountryCallingCode(country)}</span>
+        <input
+          type="tel"
+          inputMode="numeric"
+          placeholder={isIndia ? "Enter 10 digit WhatsApp number" : "Enter WhatsApp number"}
+          maxLength={maxDigits}
+          autoComplete="off"
+          aria-invalid={Boolean(error)}
+          value={value}
+          onBlur={onBlur}
+          onChange={(event) => onChange(event.target.value.replace(/\D/g, "").slice(0, maxDigits))}
+        />
+        {verified ? <Check className="field-check phone-check" size={20} /> : null}
+        {open ? (
+          <div className="phone-country-menu">
+            <div className="phone-country-search">
+              <Search size={18} />
+              <input autoFocus type="text" placeholder="Search..." value={query} onChange={(event) => setQuery(event.target.value)} />
+            </div>
+            <ul>
+              {filtered.map((item) => (
+                <li key={item.iso}>
+                  <button
+                    className={item.iso === country ? "active" : ""}
+                    type="button"
+                    onClick={() => {
+                      if (item.iso !== country) onCountryChange(item.iso);
+                      setOpen(false);
+                      setQuery("");
+                    }}
+                  >
+                    <img src={flagUrl(item.iso)} alt="" width={28} height={20} loading="lazy" />
+                    <span>
+                      <strong>{item.name}</strong>
+                      <small>{item.iso} (+{item.dial})</small>
+                    </span>
+                  </button>
+                </li>
+              ))}
+              {!filtered.length ? <li className="phone-country-empty">No country found</li> : null}
+            </ul>
+          </div>
+        ) : null}
+      </div>
+      {error ? <span className="auth-error">{error}</span> : hint ? <span className="auth-hint">{hint}</span> : null}
     </div>
   );
 }

@@ -24,6 +24,7 @@
     "html2canvas": "^1.4.1",
     "imagetracerjs": "^1.2.6",
     "jszip": "^3.10.1",
+    "libphonenumber-js": "^1.13.14",
     "lucide-react": "0.468.0",
     "mammoth": "^1.12.0",
     "marked": "^18.0.14",

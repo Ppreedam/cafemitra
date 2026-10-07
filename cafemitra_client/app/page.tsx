@@ -1,4 +1,5 @@
 import Link from "next/link";
+import HeroVideoModal from "./HeroVideoModal";
 import type { ElementType, ReactNode } from "react";
 import {
   ArrowRight,
@@ -18,7 +19,6 @@ import {
   Layers,
   Lock,
   MessageCircle,
-  Play,
   Printer,
   QrCode,
   Rocket,
@@ -307,14 +307,7 @@ function Hero() {
             <Link className="ai-btn ai-btn-gradient" href="/register">
               Start Free Trial - No Credit Card <ArrowRight size={17} />
             </Link>
-            <a
-              className="ai-btn ai-btn-light"
-              href="https://youtu.be/hUspj2vx-wA?si=GJiBTUMsuvfCKEyS"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              <Play size={17} /> Watch Demo (2 min)
-            </a>
+            <HeroVideoModal />
           </div>
           <ul className="ai-trust-grid">
             {trust.map((item) => {

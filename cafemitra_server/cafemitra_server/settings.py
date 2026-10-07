@@ -256,3 +256,6 @@ LOGGING = {
         "django.request": {"handlers": ["console", "file"], "level": "ERROR", "propagate": False},
     },
 }
+
+WHATSAPP_OTP_URL = os.getenv("WHATSAPP_OTP_URL", "").strip()
+WHATSAPP_OTP_KEY = os.getenv("WHATSAPP_OTP_KEY", "").strip()
