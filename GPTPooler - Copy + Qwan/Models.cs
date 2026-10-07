@@ -2,7 +2,9 @@ namespace GeminiPool;
 
 // ── Passport Photo Maker (dashboard tool) DTOs ──────────────────────────
 // Image + prompt jobs polled from the owner's "/passport-photo" dashboard
-// page - each one is a single image-in / image-out Gemini job.
+// page - a single passport photo is one image in / one image out; a
+// family passport photo sends 2-6 member photos in and gets one group
+// photo out.
 
 internal sealed class PassportJobListResponse
 {
@@ -30,6 +32,16 @@ internal sealed class PassportJob
     public string ErrorMessage { get; set; } = "";
     public string CreatedAt { get; set; } = "";
     public string OriginalImageUrl { get; set; } = "";
+
+    /// "passport_photo" or "family_passport_photo".
+    public string ServiceKey { get; set; } = "";
+
+    /// family_passport_photo only: one download URL per family member
+    /// photo. All of them go into the same chat so ChatGPT can merge them
+    /// into one group photo.
+    public List<string> InputImageUrls { get; set; } = [];
+
+    public bool IsFamily => ServiceKey == "family_passport_photo";
 }
 
 // ── Login ────────────────────────────────────────────────────────────

@@ -82,8 +82,7 @@
               "RelativeToolTip": "GeminiWorker.cs",
               "ViewState": "AgIAAF0CAAAAAAAAAAAqwH4CAAAAAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
-              "WhenOpened": "2026-08-09T13:41:27.312Z",
-              "EditorCaption": ""
+              "WhenOpened": "2026-08-09T13:41:27.312Z"
             },
             {
               "$type": "Document",
@@ -116,9 +115,9 @@
               "Title": "AgentConfig.cs",
               "DocumentMoniker": "C:\\Users\\Administrator\\Music\\print\\cafemitra\\GPTPooler - Copy \u002B Qwan\\AgentConfig.cs",
               "RelativeDocumentMoniker": "AgentConfig.cs",
-              "ToolTip": "C:\\Users\\Administrator\\Music\\print\\cafemitra\\GPTPooler - Copy \u002B Qwan\\AgentConfig.cs*",
-              "RelativeToolTip": "AgentConfig.cs*",
-              "ViewState": "AgIAAA0AAAAAAAAAAAAgwBUAAABJAAAAAAAAAA==",
+              "ToolTip": "C:\\Users\\Administrator\\Music\\print\\cafemitra\\GPTPooler - Copy \u002B Qwan\\AgentConfig.cs",
+              "RelativeToolTip": "AgentConfig.cs",
+              "ViewState": "AgIAAA0AAAAAAAAAAAAgwBUAAABEAAAAAAAAAA==",
               "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
               "WhenOpened": "2026-08-09T12:59:20.547Z",
               "EditorCaption": ""
