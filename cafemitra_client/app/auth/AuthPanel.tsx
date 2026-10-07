@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type React from "react";
 import {
   Check,
@@ -24,6 +24,7 @@ type AuthValues = {
   phone: string;
   password: string;
   confirmPassword: string;
+  referralCode: string;
   terms: boolean;
 };
 
@@ -35,6 +36,7 @@ const initialValues: AuthValues = {
   phone: "",
   password: "",
   confirmPassword: "",
+  referralCode: "",
   terms: false,
 };
 
@@ -45,11 +47,44 @@ export function AuthPanel({ mode }: AuthPanelProps) {
   const isRegister = mode === "register";
   const router = useRouter();
   const [values, setValues] = useState<AuthValues>(initialValues);
+
+  // Pre-fill from a shared invite link (/register?ref=CODE) - done after mount
+  // so the server-rendered markup and first client render stay identical.
+  useEffect(() => {
+    if (!isRegister) return;
+    const ref = (new URLSearchParams(window.location.search).get("ref") || "").trim().slice(0, 16);
+    if (ref) setValues((current) => ({ ...current, referralCode: ref }));
+  }, [isRegister]);
+  // Result of checking the typed referral code: null = nothing to show.
+  const [referralCheck, setReferralCheck] = useState<{ status: "checking" | "valid" | "invalid"; name?: string } | null>(null);
   const [touched, setTouched] = useState<TouchedValues>({});
   const [apiError, setApiError] = useState("");
   const [apiNotice, setApiNotice] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
+
+  useEffect(() => {
+    const code = values.referralCode.trim();
+    if (!isRegister || code.length < 4) {
+      setReferralCheck(null);
+      return;
+    }
+    setReferralCheck({ status: "checking" });
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch(apiUrl(`/api/referrals/lookup/?code=${encodeURIComponent(code)}`), { signal: controller.signal });
+        const data = await response.json().catch(() => null);
+        setReferralCheck(data?.valid ? { status: "valid", name: data.name } : { status: "invalid" });
+      } catch (error) {
+        if (!(error instanceof DOMException && error.name === "AbortError")) setReferralCheck(null);
+      }
+    }, 450);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [isRegister, values.referralCode]);
 
   const errors = useMemo(() => {
     const nextErrors: Partial<Record<keyof AuthValues, string>> = {};
@@ -132,6 +167,7 @@ export function AuthPanel({ mode }: AuthPanelProps) {
           fullName: values.fullName.trim(),
           phone: values.phone.trim(),
           password: values.password,
+          ...(isRegister && values.referralCode.trim() ? { referralCode: values.referralCode.trim() } : {}),
         }),
       });
 
@@ -288,6 +324,29 @@ export function AuthPanel({ mode }: AuthPanelProps) {
                   autoComplete="new-password"
                   onBlur={() => markTouched("confirmPassword")}
                   onChange={(value) => updateValue("confirmPassword", value)}
+                />
+                <Field
+                  label="Referral Code (optional)"
+                  name="referral-code"
+                  type="text"
+                  placeholder="Enter referral code"
+                  hint={
+                    referralCheck?.status === "checking"
+                      ? "Checking code..."
+                      : referralCheck?.status === "valid"
+                        ? `Valid code - referred by ${referralCheck.name}`
+                        : undefined
+                  }
+                  error={
+                    referralCheck?.status === "invalid"
+                      ? "Referral code not found. Check it again, or leave it empty to continue."
+                      : undefined
+                  }
+                  verified={referralCheck?.status === "valid"}
+                  value={values.referralCode}
+                  autoComplete="off"
+                  onBlur={() => markTouched("referralCode")}
+                  onChange={(value) => updateValue("referralCode", value.trim().slice(0, 16))}
                 />
                 <label className="auth-check">
                   <input

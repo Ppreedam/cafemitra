@@ -35,7 +35,7 @@ from django.views.decorators.http import require_http_methods
 from .background_remover.remove_background import BackgroundRemovalError, remove_background_bytes
 from .background_remover.passport_photo_processor import ProcessingError, enhance_transparent_bytes
 from .background_remover.watermark_remover import remove_gemini_watermark
-from .models import Agent, AuthToken, ContactMessage, Coupon, CouponRedemption, EmailVerificationToken, PassportAIConfig, PasswordResetToken, PoolerNode, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UpiPayee, UpiQrRecord, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
+from .models import Agent, AuthToken, BlogArticle, ContactMessage, Coupon, CouponRedemption, EmailVerificationToken, Influencer, PassportAIConfig, PasswordResetToken, PoolerNode, PrintOrder, Referral, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UpiPayee, UpiQrRecord, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from cafemitra_server.product_setting import PAYMENT_GATEWAYS, active_payment_gateway
 
 User = get_user_model()
@@ -52,7 +52,7 @@ PASSWORD_RESET_TOKEN_TTL = timedelta(minutes=30)
 # if a row is somehow missing.
 WALLET_SETTING_DEFAULTS = {
     "signup_bonus": Decimal("10.00"),
-    "referral_bonus": Decimal("0.00"),
+    "referral_bonus": Decimal("50.00"),
     "credit_limit": Decimal("-50.00"),
     "daily_grace_limit": Decimal("5.00"),
     "collection_commission_rate": Decimal("0.03"),
@@ -1526,6 +1526,7 @@ def public_user(user):
         "phone": profile.phone if profile else "",
         "balance": float(profile.balance) if profile else 0,
         "profilePhoto": profile.profile_photo if profile else "",
+        "isInfluencer": Influencer.objects.filter(user=user, is_active=True).exists(),
     }
 
 
@@ -1635,6 +1636,8 @@ def wallet_collection_summary(user):
         # owner can see how much of their wallet has gone to paid tools,
         # separate from what they've actually collected from customers.
         tool_usage=Sum("amount", filter=Q(kind=WalletTransaction.KIND_TOOL_USAGE, direction=WalletTransaction.DIRECTION_DEBIT)),
+        # Referral bonus is promotional like the signup bonus - spendable, not withdrawable.
+        referral=Sum("amount", filter=Q(kind=WalletTransaction.KIND_REFERRAL_BONUS, direction=WalletTransaction.DIRECTION_CREDIT)),
     )
     online_collected = totals["online"] or Decimal("0.00")
     cash_collected = totals["cash"] or Decimal("0.00")
@@ -1643,7 +1646,8 @@ def wallet_collection_summary(user):
     tool_usage_debited = totals["tool_usage"] or Decimal("0.00")
     total_collected = (online_collected + cash_collected).quantize(Decimal("0.01"))
     balance = wallet_balance(user)
-    net_withdrawable = max(balance - signup_bonus_credited - coupon_credit_received, Decimal("0.00")).quantize(Decimal("0.01"))
+    referral_bonus_credited = totals["referral"] or Decimal("0.00")
+    net_withdrawable = max(balance - signup_bonus_credited - coupon_credit_received - referral_bonus_credited, Decimal("0.00")).quantize(Decimal("0.01"))
     return {
         "onlineCollected": online_collected.quantize(Decimal("0.01")),
         "cashCounterCollected": cash_collected.quantize(Decimal("0.01")),
@@ -2936,6 +2940,341 @@ def is_disposable_email(email):
     return domain in DISPOSABLE_EMAIL_DOMAINS
 
 
+def ensure_referral_code(user):
+    """The shop's shareable code, generated on first use."""
+    profile, _ = UserProfile.objects.get_or_create(user=user, defaults={"phone": ""})
+    if profile.referral_code:
+        return profile.referral_code
+    for _ in range(10):
+        code = "RG" + "".join(secrets.choice("ABCDEFGHJKLMNPQRSTUVWXYZ23456789") for _ in range(6))
+        if not UserProfile.objects.filter(referral_code=code).exists():
+            profile.referral_code = code
+            profile.save(update_fields=["referral_code"])
+            return code
+    raise RuntimeError("Could not generate a unique referral code.")
+
+
+REFERRAL_TRIGGER_KEY = "referral_trigger"
+
+
+def referral_trigger_config():
+    """When the referrer is paid. WalletSetting "referral_trigger" row:
+    is_active=False (default) -> as soon as the referred email is verified;
+    is_active=True -> only once the referred shop makes a single wallet
+    top-up of at least `value` rupees. Edited from the admin panel."""
+    row = WalletSetting.objects.filter(key=REFERRAL_TRIGGER_KEY).first()
+    if row and row.is_active:
+        return "first_topup", row.value
+    return "email_verified", row.value if row else Decimal("0.00")
+
+
+def referral_trigger_met(referred_user):
+    if not referred_user.is_active:
+        return False
+    trigger, min_topup = referral_trigger_config()
+    if trigger == "email_verified":
+        return True
+    return WalletTransaction.objects.filter(
+        user=referred_user,
+        kind=WalletTransaction.KIND_TOPUP,
+        direction=WalletTransaction.DIRECTION_CREDIT,
+        amount__gte=min_topup,
+    ).exists()
+
+
+def credit_referral_bonus(referred_user):
+    """Pay the referrer once the referred account's email is verified.
+    Idempotent (bonus_paid_at + row lock), so it is safe to call from both
+    verify_email and the login self-heal."""
+    with transaction.atomic():
+        referral = Referral.objects.select_for_update().select_related("referrer", "referred_user").filter(referred_user=referred_user).first()
+        if not referral or referral.bonus_paid_at or not referral.referrer.is_active:
+            return None
+        if not referral_trigger_met(referral.referred_user):
+            return None
+        amount = get_wallet_setting("referral_bonus")
+        if amount <= 0:
+            return None
+        name = referred_user.get_full_name() or referred_user.email
+        txn = create_wallet_transaction(
+            referral.referrer,
+            WalletTransaction.KIND_REFERRAL_BONUS,
+            amount,
+            WalletTransaction.DIRECTION_CREDIT,
+            True,
+            note=f"Referral bonus - {name} joined RepetiGo.",
+        )
+        if not txn:
+            return None
+        referral.bonus_amount = txn.amount
+        referral.bonus_paid_at = timezone.now()
+        referral.wallet_transaction = txn
+        referral.save(update_fields=["bonus_amount", "bonus_paid_at", "wallet_transaction"])
+        return txn
+
+
+def mask_email(email):
+    local, _, domain = (email or "").partition("@")
+    return f"{local[:2]}{'*' * max(len(local) - 2, 2)}@{domain}" if domain else ""
+
+
+def short_display_name(user):
+    """"Ankit Kumar" -> "Ankit K." - enough for the person being referred to
+    recognise who invited them, without exposing a full name publicly."""
+    parts = (user.get_full_name() or "").split()
+    if not parts:
+        return "a RepetiGo shop"
+    return parts[0] if len(parts) == 1 else f"{parts[0]} {parts[-1][0]}."
+
+
+def influencer_report(influencer, mask_contact=True):
+    """Everyone attributed to this influencer (their referral code or one of
+    their coupons) with each user's status. Shared by the admin panel
+    (mask_contact=False) and the influencer's own dashboard (masked)."""
+    user_ids = {}
+    for row in Referral.objects.filter(referrer=influencer.user):
+        user_ids.setdefault(row.referred_user_id, {"sources": [], "joinedVia": row.created_at})["sources"].append("Referral code")
+    redemptions = CouponRedemption.objects.filter(coupon__influencer=influencer).select_related("coupon")
+    for row in redemptions:
+        entry = user_ids.setdefault(row.user_id, {"sources": [], "joinedVia": row.redeemed_at})
+        entry["sources"].append(f"Coupon {row.coupon.code}")
+
+    users = {u.id: u for u in User.objects.filter(id__in=user_ids).select_related("profile")}
+    topups = {
+        row["user_id"]: row["total"]
+        for row in WalletTransaction.objects.filter(
+            user_id__in=user_ids, kind=WalletTransaction.KIND_TOPUP, direction=WalletTransaction.DIRECTION_CREDIT
+        ).values("user_id").annotate(total=Sum("amount"))
+    }
+    items = []
+    for user_id, entry in user_ids.items():
+        user = users.get(user_id)
+        if not user:
+            continue
+        profile = getattr(user, "profile", None)
+        topup_total = topups.get(user_id) or Decimal("0.00")
+        item = {
+            "id": user.id,
+            "name": user.get_full_name() or "New user",
+            "email": mask_email(user.email) if mask_contact else user.email,
+            "source": ", ".join(dict.fromkeys(entry["sources"])),
+            "joinedAt": user.date_joined.isoformat(),
+            "emailVerified": user.is_active,
+            "firstTopupDone": topup_total > 0,
+            "topupTotal": float(topup_total),
+        }
+        if not mask_contact:
+            item["phone"] = profile.phone if profile else ""
+        items.append(item)
+    items.sort(key=lambda item: item["joinedAt"], reverse=True)
+    return {
+        "totals": {
+            "users": len(items),
+            "emailVerified": sum(1 for item in items if item["emailVerified"]),
+            "firstTopup": sum(1 for item in items if item["firstTopupDone"]),
+            "topupAmount": float(sum(Decimal(str(item["topupTotal"])) for item in items)),
+        },
+        "users": items,
+    }
+
+
+def public_influencer_coupon(coupon):
+    return {
+        "id": coupon.id,
+        "code": coupon.code,
+        "amount": float(coupon.amount),
+        "isActive": coupon.is_active,
+        "redeemedCount": coupon.redemptions.count(),
+        "maxRedemptions": coupon.max_redemptions,
+        "expiresAt": coupon.expires_at.isoformat() if coupon.expires_at else None,
+    }
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def influencer_dashboard(request):
+    """The signed-in influencer's own report: their referral code, coupon
+    codes, and every user that came through either with that user's status."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+    influencer = Influencer.objects.filter(user=user, is_active=True).first()
+    if not influencer:
+        return JsonResponse({"message": "This account is not an influencer."}, status=404)
+
+    report = influencer_report(influencer, mask_contact=True)
+    return JsonResponse(
+        {
+            "referralCode": ensure_referral_code(user),
+            "coupons": [public_influencer_coupon(coupon) for coupon in influencer.coupons.all().order_by("-created_at")],
+            **report,
+        }
+    )
+
+
+def revalidate_blog_pages(slug=""):
+    """Best-effort ping to the Next.js site so a published/edited article shows
+    up immediately instead of waiting for the periodic ISR refresh. Never
+    raises - the site refreshes itself within a few minutes anyway."""
+    secret = os.environ.get("REVALIDATE_SECRET", "")
+    if not secret:
+        return
+    try:
+        ping = urllib.request.Request(
+            f"{settings.FRONTEND_URL}/api/revalidate",
+            data=json.dumps({"secret": secret, "slug": slug}).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        urllib.request.urlopen(ping, timeout=5).close()
+    except Exception:
+        logger.warning("Blog revalidation ping failed", exc_info=True)
+
+
+def live_blog_articles():
+    now = timezone.now()
+    return BlogArticle.objects.filter(status=BlogArticle.STATUS_PUBLISHED).filter(Q(publish_at__isnull=True) | Q(publish_at__lte=now))
+
+
+def blog_read_minutes(content):
+    return max(1, round(len((content or "").split()) / 200))
+
+
+def blog_excerpt_fallback(article):
+    """Card text for articles saved without a summary: the opening of the body,
+    with Markdown syntax stripped."""
+    if article.excerpt:
+        return article.excerpt
+    text = re.sub(r"!\[[^\]]*\]\([^)]*\)", " ", article.content or "")
+    text = re.sub(r"\[([^\]]*)\]\([^)]*\)", r"\1", text)
+    text = re.sub(r"[#>*_`|-]+", " ", text)
+    text = " ".join(text.split())
+    return text if len(text) <= 160 else text[:157].rsplit(" ", 1)[0] + "..."
+
+
+def public_blog_article(article, with_content=False):
+    data = {
+        "slug": article.slug,
+        "title": article.title,
+        "category": article.category,
+        "excerpt": blog_excerpt_fallback(article),
+        "coverImage": article.cover_image,
+        "coverImageAlt": article.cover_image_alt,
+        "lazyLoadImages": article.lazy_load_images,
+        "autoCaptionImages": article.auto_caption_images,
+        "template": article.template,
+        "metaTitle": article.meta_title,
+        "metaDescription": article.meta_description,
+        "tags": article.tags or [],
+        "focusKeywords": article.focus_keywords or [],
+        "authorName": article.author_name,
+        "readMinutes": blog_read_minutes(article.content),
+        "publishedAt": (article.publish_at or article.created_at).isoformat(),
+        "updatedAt": article.updated_at.isoformat(),
+    }
+    if with_content:
+        data["content"] = article.content
+    return data
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def blog_articles(request):
+    """Public - published articles, newest first (no body)."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+    articles = live_blog_articles().order_by("-publish_at", "-created_at")
+    return JsonResponse({"articles": [public_blog_article(article) for article in articles]})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def blog_article_detail(request, slug):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+    article = live_blog_articles().filter(slug=slug).first()
+    if not article:
+        return JsonResponse({"message": "Article not found."}, status=404)
+    return JsonResponse({"article": public_blog_article(article, with_content=True)})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def referral_lookup(request):
+    """Public (signup page): who does this referral code belong to? Returns
+    only a shortened owner name so a new user can confirm they typed the right
+    code. Matches the same two code kinds register_user accepts."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    code = str(request.GET.get("code", "")).strip()
+    if not code or len(code) > 32:
+        return JsonResponse({"valid": False})
+
+    agent = Agent.objects.select_related("user").filter(referral_code=code, status=Agent.STATUS_ACTIVE).first()
+    if agent:
+        return JsonResponse({"valid": True, "name": short_display_name(agent.user)})
+    profile = UserProfile.objects.select_related("user").filter(referral_code=code.upper(), user__is_active=True).first()
+    if profile:
+        return JsonResponse({"valid": True, "name": short_display_name(profile.user)})
+    return JsonResponse({"valid": False})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def referrals(request):
+    """The signed-in shop's referral code and the history of everyone it referred."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    user = auth_user(request)
+    if not user:
+        return JsonResponse({"message": "Unauthorized."}, status=401)
+
+    code = ensure_referral_code(user)
+    trigger, min_topup = referral_trigger_config()
+    rows = list(Referral.objects.filter(referrer=user).select_related("referred_user"))
+    topped_up = set(
+        WalletTransaction.objects.filter(
+            user_id__in=[row.referred_user_id for row in rows], kind=WalletTransaction.KIND_TOPUP
+        ).values_list("user_id", flat=True)
+    )
+    items = []
+    for row in rows:
+        referred = row.referred_user
+        items.append(
+            {
+                "id": row.id,
+                "name": referred.get_full_name() or "New user",
+                "email": mask_email(referred.email),
+                "registeredAt": row.created_at.isoformat(),
+                "emailVerified": referred.is_active,
+                "firstTopupDone": referred.id in topped_up,
+                "bonusPaid": bool(row.bonus_paid_at),
+                "bonusAmount": float(row.bonus_amount) if row.bonus_amount is not None else None,
+                "bonusPaidAt": row.bonus_paid_at.isoformat() if row.bonus_paid_at else None,
+            }
+        )
+    return JsonResponse(
+        {
+            "referralCode": code,
+            "bonusAmount": float(get_wallet_setting("referral_bonus")),
+            "trigger": trigger,
+            "minTopupAmount": float(min_topup),
+            "totals": {
+                "registered": len(items),
+                "emailVerified": sum(1 for item in items if item["emailVerified"]),
+                "firstTopup": sum(1 for item in items if item["firstTopupDone"]),
+                "bonusEarned": float(sum((row.bonus_amount or Decimal("0")) for row in rows)),
+            },
+            "referrals": items,
+        }
+    )
+
+
 @csrf_exempt
 @require_http_methods(["POST", "OPTIONS"])
 def register_user(request):
@@ -2965,6 +3304,14 @@ def register_user(request):
     # An unknown/inactive code is silently ignored rather than rejected - a
     # typo'd referral code shouldn't block someone from signing up at all.
     referring_agent = Agent.objects.filter(referral_code=referral_code, status=Agent.STATUS_ACTIVE).first() if referral_code else None
+    # Otherwise the code may belong to an existing shop (shop-to-shop referral).
+    referring_profile = (
+        UserProfile.objects.select_related("user").filter(referral_code=referral_code.upper(), user__is_active=True).first()
+        if referral_code and not referring_agent
+        else None
+    )
+    if referring_profile and referring_profile.phone == phone:
+        referring_profile = None  # same mobile number - treat as a self-referral
 
     user = User.objects.create_user(username=email, email=email, password=password)
     user.first_name = full_name
@@ -2972,6 +3319,8 @@ def register_user(request):
     user.save(update_fields=["first_name", "is_active"])
     UserProfile.objects.create(user=user, phone=phone)
     ShopProfile.objects.create(user=user, shop_name="Cyber Cafe Repetigo", mobile=phone, whatsapp=phone, email=email, referred_by_agent=referring_agent)
+    if referring_profile:
+        Referral.objects.create(referrer=referring_profile.user, referred_user=user)
     try:
         create_email_verification(user)
     except Exception:
@@ -3002,6 +3351,7 @@ def login_user(request):
     # the two separate, non-atomic writes in verify_email. ensure_signup_wallet_bonus
     # is a no-op if the bonus was already credited, so this is safe on every login.
     ensure_signup_wallet_bonus(user)
+    credit_referral_bonus(user)
 
     return token_response(user)
 
@@ -3028,6 +3378,7 @@ def verify_email(request):
         token.user.save(update_fields=["is_active"])
         token.save(update_fields=["used_at"])
         ensure_signup_wallet_bonus(token.user)
+        credit_referral_bonus(token.user)
     return token_response(token.user)
 
 
@@ -3940,6 +4291,8 @@ def credit_wallet_topup(topup, gateway_payment_id):
             True,
             note=f"Wallet top-up #{locked.id} via {locked.payment_gateway}.",
         )
+        # A referral configured to pay on first top-up may now be satisfied.
+        credit_referral_bonus(locked.user)
 
 
 @csrf_exempt

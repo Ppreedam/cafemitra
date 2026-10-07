@@ -822,6 +822,189 @@ export function deleteCoupon(id: number) {
   return request<{ message: string }>(`/admin/coupons/${id}/`, { method: "DELETE" });
 }
 
+// --- Blog -------------------------------------------------------------------
+
+export type BlogStatus = "draft" | "published" | "trash";
+export type BlogTemplate = "default" | "wide";
+
+export type AdminBlogArticle = {
+  id: number;
+  slug: string;
+  title: string;
+  category: string;
+  excerpt: string;
+  content: string;
+  coverImage: string;
+  coverImageAlt: string;
+  lazyLoadImages: boolean;
+  requireImageAlt: boolean;
+  autoCaptionImages: boolean;
+  template: BlogTemplate;
+  metaTitle: string;
+  metaDescription: string;
+  tags: string[];
+  focusKeywords: string[];
+  authorName: string;
+  status: BlogStatus;
+  publishAt: string | null;
+  isLive: boolean;
+  isScheduled: boolean;
+  isTrashed: boolean;
+  revisionCount: number;
+  readMinutes: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type AdminBlogArticleInput = {
+  title: string;
+  slug: string;
+  category: string;
+  excerpt: string;
+  content: string;
+  coverImage: string;
+  coverImageAlt: string;
+  lazyLoadImages: boolean;
+  requireImageAlt: boolean;
+  autoCaptionImages: boolean;
+  template: BlogTemplate;
+  metaTitle: string;
+  metaDescription: string;
+  tags: string[];
+  focusKeywords: string[];
+  authorName: string;
+  status: BlogStatus;
+  publishAt: string | null;
+  /** Save without bumping the article's "last edited" time. */
+  keepModifiedDate?: boolean;
+};
+
+export type AdminBlogRevision = {
+  id: number;
+  title: string;
+  excerpt: string;
+  content: string;
+  createdAt: string;
+  createdBy: string;
+};
+
+export function fetchBlogRevisions(id: number) {
+  return request<{ revisions: AdminBlogRevision[] }>(`/admin/blog/${id}/revisions/`);
+}
+
+// --- Media library -----------------------------------------------------------
+
+export type MediaItem = { id: number | null; url: string; name: string; size: number | null; createdAt: string };
+
+export function fetchMediaItems(page: number) {
+  return request<{ items: MediaItem[]; page: number; hasMore: boolean; total: number | null }>(`/admin/media/?page=${page}&limit=24`);
+}
+
+export async function uploadMediaItem(file: File) {
+  const form = new FormData();
+  form.append("image", file);
+  const token = getToken();
+  const res = await fetch(`${API_BASE_URL}/admin/media/`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || `Upload failed (${res.status})`);
+  return data as { item: MediaItem };
+}
+
+export function deleteMediaItem(id: number) {
+  return request<{ message: string }>(`/admin/media/${id}/`, { method: "DELETE" });
+}
+
+export async function uploadBlogImage(file: File) {
+  const form = new FormData();
+  form.append("image", file);
+  const token = getToken();
+  const res = await fetch(`${API_BASE_URL}/admin/blog/upload-image/`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(data.message || `Upload failed (${res.status})`);
+  }
+  return data as { url: string };
+}
+
+export function fetchBlogArticlesAdmin() {
+  return request<{ articles: AdminBlogArticle[] }>("/admin/blog/");
+}
+
+export function createBlogArticle(data: AdminBlogArticleInput) {
+  return request<{ article: AdminBlogArticle }>("/admin/blog/", { method: "POST", body: JSON.stringify(data) });
+}
+
+export function updateBlogArticle(id: number, data: Partial<AdminBlogArticleInput>) {
+  return request<{ article: AdminBlogArticle }>(`/admin/blog/${id}/`, { method: "PUT", body: JSON.stringify(data) });
+}
+
+export function deleteBlogArticle(id: number) {
+  return request<{ message: string }>(`/admin/blog/${id}/`, { method: "DELETE" });
+}
+
+// --- Influencers ------------------------------------------------------------
+
+export type InfluencerUser = {
+  id: number;
+  name: string;
+  email: string;
+  phone?: string;
+  source: string;
+  joinedAt: string;
+  emailVerified: boolean;
+  firstTopupDone: boolean;
+  topupTotal: number;
+};
+
+export type InfluencerTotals = { users: number; emailVerified: number; firstTopup: number; topupAmount: number };
+
+export type AdminInfluencer = {
+  id: number;
+  name: string;
+  email: string;
+  phone: string;
+  referralCode: string;
+  isActive: boolean;
+  note: string;
+  createdAt: string;
+  couponCount: number;
+  totals: InfluencerTotals;
+  coupons?: AdminCoupon[];
+  users?: InfluencerUser[];
+};
+
+export function fetchInfluencers() {
+  return request<{ influencers: AdminInfluencer[] }>("/admin/influencers/");
+}
+
+export function assignInfluencer(data: { email: string; note?: string }) {
+  return request<{ influencer: AdminInfluencer }>("/admin/influencers/", { method: "POST", body: JSON.stringify(data) });
+}
+
+export function fetchInfluencerDetail(id: number) {
+  return request<{ influencer: AdminInfluencer }>(`/admin/influencers/${id}/`);
+}
+
+export function updateInfluencer(id: number, data: { isActive?: boolean; note?: string }) {
+  return request<{ influencer: AdminInfluencer }>(`/admin/influencers/${id}/`, { method: "PUT", body: JSON.stringify(data) });
+}
+
+export function removeInfluencer(id: number) {
+  return request<{ message: string }>(`/admin/influencers/${id}/`, { method: "DELETE" });
+}
+
+export function createInfluencerCoupon(id: number, data: { code?: string; amount: number; message?: string; maxRedemptions?: number | null }) {
+  return request<{ coupon: AdminCoupon }>(`/admin/influencers/${id}/coupons/`, { method: "POST", body: JSON.stringify(data) });
+}
+
 // --- Support Inbox (Phase 7) ----------------------------------------------
 
 export type ContactMessage = {

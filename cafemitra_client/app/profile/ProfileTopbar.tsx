@@ -24,6 +24,7 @@ type ProfileSummary = {
     fullName: string;
     balance: number;
     profilePhoto?: string;
+    isInfluencer?: boolean;
   };
   shop: {
     shopName: string;
