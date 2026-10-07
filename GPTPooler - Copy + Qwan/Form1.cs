@@ -554,11 +554,33 @@ public sealed class Form1 : Form
             }
 
             worker.MarkBusy($"Job #{job.Id}: downloading source");
-            var sourcePath = Path.Combine(AgentPaths.JobsDir, $"passport-{job.Id}-source.jpg");
-            await api.DownloadFile(job.OriginalImageUrl, sourcePath, CancellationToken.None);
+            var sourcePaths = new List<string>();
+            if (job.IsFamily)
+            {
+                // Family passport photo: every member's photo goes into the
+                // same chat so ChatGPT can merge them into one group photo.
+                if (job.InputImageUrls.Count == 0)
+                {
+                    throw new InvalidOperationException("Family photo job has no input images.");
+                }
 
-            LogStatus($"Worker {worker.Index}: job #{job.Id} started (prompt: {job.Prompt}).");
-            var generatedPath = await worker.RunJobAsync(sourcePath, job.Prompt, CancellationToken.None);
+                for (var i = 0; i < job.InputImageUrls.Count; i++)
+                {
+                    var memberPath = Path.Combine(AgentPaths.JobsDir, $"family-{job.Id}-source-{i + 1}.jpg");
+                    await api.DownloadFile(job.InputImageUrls[i], memberPath, CancellationToken.None);
+                    sourcePaths.Add(memberPath);
+                }
+            }
+            else
+            {
+                var sourcePath = Path.Combine(AgentPaths.JobsDir, $"passport-{job.Id}-source.jpg");
+                await api.DownloadFile(job.OriginalImageUrl, sourcePath, CancellationToken.None);
+                sourcePaths.Add(sourcePath);
+            }
+
+            var kind = job.IsFamily ? $"family photo, {sourcePaths.Count} images" : "passport photo";
+            LogStatus($"Worker {worker.Index}: job #{job.Id} started ({kind}, prompt: {job.Prompt}).");
+            var generatedPath = await worker.RunJobAsync(sourcePaths, job.Prompt, CancellationToken.None);
 
             if (generatedPath is null)
             {
