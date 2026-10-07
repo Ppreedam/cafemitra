@@ -305,6 +305,7 @@ namespace Print_Agent
             Theme.StyleIconButton(btnGear);
             Theme.StyleBackButton(btnBackFromSettings);
             MoveSignOutNextToSettings();
+            AddPrintProfilesButton();
 
             Theme.StyleTextBox(txtEmail);
             Theme.StyleTextBox(txtPassword);
@@ -478,6 +479,24 @@ namespace Print_Agent
         }
 
         private void btnGear_Click(object sender, EventArgs e) => ShowSettingsOverlay(true);
+
+        // "Profiles" pill left of the ⋮ menu - opens PrintProfilesForm, where
+        // a named profile is tied to one printer + its own driver
+        // preferences (see PrintProfiles.cs).
+        private void AddPrintProfilesButton()
+        {
+            var button = new Button { Text = "Profiles", Anchor = AnchorStyles.Top | AnchorStyles.Right };
+            Theme.StyleSecondaryButton(button);
+            button.Size = new Size(80, 32);
+            button.Location = new Point(btnLogout.Left - button.Width - 6, btnGear.Top + 2);
+            button.Click += (s, e) =>
+            {
+                using var form = new PrintProfilesForm();
+                form.ShowDialog(this);
+            };
+            pnlTopBar.Controls.Add(button);
+            button.BringToFront();
+        }
 
         private void btnBackFromSettings_Click(object sender, EventArgs e) => ShowSettingsOverlay(false);
 
@@ -761,10 +780,12 @@ namespace Print_Agent
 
             foreach (string line in File.ReadAllLines(SettingsFilePath))
             {
+                // Printer|PageSize|ColorType[|Profile] - the optional 4th part
+                // is a print profile name (see PrintProfiles.cs).
                 string[] parts = line.Split('|');
-                if (parts.Length != 3) continue;
+                if (parts.Length != 3 && parts.Length != 4) continue;
 
-                int rowIdx = dataGridPrinterSetting.Rows.Add(parts[0], parts[1], parts[2]);
+                int rowIdx = dataGridPrinterSetting.Rows.Add(parts[0], parts[1], parts[2], parts.Length == 4 ? parts[3] : "");
                 dataGridPrinterSetting.Rows[rowIdx].Cells["colDelete"].Value = "Delete";
             }
         }
@@ -788,7 +809,7 @@ namespace Print_Agent
             File.AppendAllText(SettingsFilePath, $"{printer}|{pageSize}|{colorType}{Environment.NewLine}");
 
             // Add row to grid
-            int rowIdx = dataGridPrinterSetting.Rows.Add(printer, pageSize, colorType);
+            int rowIdx = dataGridPrinterSetting.Rows.Add(printer, pageSize, colorType, "");
             dataGridPrinterSetting.Rows[rowIdx].Cells["colDelete"].Value = "Delete";
 
             LogStatus("Settings saved successfully.");
@@ -848,9 +869,10 @@ namespace Print_Agent
                 string printer = row.Cells["colPrinter"].Value?.ToString() ?? "";
                 string pageSize = row.Cells["colPageSize"].Value?.ToString() ?? "";
                 string colorType = row.Cells["colColorType"].Value?.ToString() ?? "";
+                string profile = row.Cells["colProfile"].Value?.ToString() ?? "";
 
                 if (!string.IsNullOrEmpty(printer))
-                    lines.Add($"{printer}|{pageSize}|{colorType}");
+                    lines.Add(profile.Length > 0 ? $"{printer}|{pageSize}|{colorType}|{profile}" : $"{printer}|{pageSize}|{colorType}");
             }
 
             File.WriteAllLines(SettingsFilePath, lines);
@@ -992,9 +1014,21 @@ namespace Print_Agent
             pd.DefaultPageSettings.Color = !isGrayscale;
         }
 
+        // Set only while ProcessJobCoreAsync prints a job that uses a print
+        // profile - PrintPdf/PrintImage then take printer + driver settings
+        // from the profile instead of the paper/color comboboxes.
+        private PrintProfile _activeProfile;
+
         // Manual print (btnPrint_Click) ke liye — combobox se values leta hai
         private void ApplyPrinterSettingsFromUI(PrintDocument pd)
         {
+            if (_activeProfile != null)
+            {
+                PrinterDevMode.Apply(pd, _activeProfile);
+                pd.DefaultPageSettings.Margins = new Margins(0, 0, 0, 0);
+                return;
+            }
+
             string printerName = cmbPrinters.SelectedItem.ToString();
             string paperSize = cmbPageSize.SelectedItem?.ToString() ?? "A4";
             string colorType = cmbColorType.SelectedItem?.ToString() ?? "Color";
@@ -1002,6 +1036,22 @@ namespace Print_Agent
         }
 
         // ── Match Printer from Settings Grid ─────────────────────────
+        // Profile name saved on the preset row for this paper size + color
+        // mode ("" when the row has none, or there is no row).
+        private string FindMatchingPresetProfile(string paperSize, string colorType)
+        {
+            foreach (DataGridViewRow row in dataGridPrinterSetting.Rows)
+            {
+                if (row.IsNewRow) continue;
+                if ((row.Cells["colPageSize"].Value?.ToString() ?? "").Equals(paperSize, StringComparison.OrdinalIgnoreCase) &&
+                    (row.Cells["colColorType"].Value?.ToString() ?? "").Equals(colorType, StringComparison.OrdinalIgnoreCase))
+                {
+                    return row.Cells["colProfile"].Value?.ToString() ?? "";
+                }
+            }
+            return "";
+        }
+
         private string FindMatchingPrinter(string paperSize, string colorType)
         {
             foreach (DataGridViewRow row in dataGridPrinterSetting.Rows)
@@ -1248,6 +1298,14 @@ namespace Print_Agent
                 ReadOnly = true
             });
 
+            dataGridPrinterSetting.Columns.Add(new DataGridViewTextBoxColumn
+            {
+                Name = "colProfile",
+                HeaderText = "Profile",
+                FillWeight = 25,
+                ReadOnly = true
+            });
+
             dataGridPrinterSetting.Columns.Add(new DataGridViewButtonColumn
             {
                 Name = "colDelete",
@@ -1296,6 +1354,11 @@ namespace Print_Agent
                 request => RunQrPrintFromLocalApi(request, isPoster: true),
                 GetDuplexSettingsFromLocalApi,
                 SaveDuplexSettingsFromLocalApi,
+                ListPrintProfilesFromLocalApi,
+                OpenPrintPreferencesFromLocalApi,
+                SavePrintProfileFromLocalApi,
+                DeletePrintProfileFromLocalApi,
+                PrintFileFromLocalApi,
                 LogStatus
             );
             _localServer.Start();
@@ -1543,13 +1606,42 @@ namespace Print_Agent
                 // Duplex is opt-in per job. A 1-page job has nothing to
                 // flip, so it prints through the normal single-side path.
                 var useDuplex = job.Duplex && job.Pages > 1;
+
                 var requestedPaper = job.ResolvedPaperSize;
                 // A3 / 4x6 orders use the same preset grid as A4: the
                 // printer saved for that paper size + color mode. A duplex
                 // job keeps the duplex printer (it may still be A3).
                 var jobPaper = (requestedPaper == "A3" || (requestedPaper == "4x6" && !useDuplex)) ? requestedPaper : DefaultPaperSize;
+
+                // Print profile = a printer + its saved driver preferences
+                // (paper, type, quality...). Taken from the job itself when
+                // the server names one, otherwise from the Printer Settings
+                // row for this paper size + color mode. Duplex jobs keep the
+                // dedicated duplex printer path.
+                var profileName = !string.IsNullOrWhiteSpace(job.ProfileName)
+                    ? job.ProfileName
+                    : useDuplex ? "" : FindMatchingPresetProfile(jobPaper, colorType);
+                PrintProfile profile = null;
+                if (!string.IsNullOrWhiteSpace(profileName))
+                {
+                    profile = PrintProfileStore.Find(profileName);
+                    if (profile is null)
+                    {
+                        LogStatus($"{tokenId}: print profile '{profileName}' is not set up on this PC - holding job until it is added.");
+                        _printedIds.Remove(job.Id); // retry next poll once the profile is saved
+                        ShowMissingProfileAlert(profileName);
+                        return; // job stays pending on the server - not failed, not printed
+                    }
+                    LogStatus($"{tokenId}: using print profile '{profile.Name}'.");
+                    useDuplex = false; // two-side, if wanted, is part of the profile's driver settings
+                }
+
                 string matchedPrinter;
-                if (useDuplex)
+                if (profile != null)
+                {
+                    matchedPrinter = profile.Printer;
+                }
+                else if (useDuplex)
                 {
                     // Dedicated duplex printer only - never silently
                     // falls back to a preset/default printer, since that
@@ -1658,7 +1750,10 @@ namespace Print_Agent
                 txtFilePath.Text = destination;
                 cmbPageSize.SelectedItem = jobPaper;
                 cmbPrinters.SelectedItem = matchedPrinter;
-                cmbColorType.SelectedItem = colorType;
+                // A profile's color comes from its driver settings - don't
+                // also grayscale the image ourselves.
+                cmbColorType.SelectedItem = profile != null ? "Color" : colorType;
+                _activeProfile = profile;
 
                 var copies = Math.Max(job.Copies, 1);
                 var printedCopies = 0;
@@ -1734,8 +1829,9 @@ namespace Print_Agent
                 // printed and reconcile its status instead of reprinting it.
                 PersistPrintedJobId(job.Id);
 
+                var printMode = profile != null ? $"profile {profile.Name}" : job.PrintColorModeLabel;
                 var printResult = printedCopies == copies
-                    ? $"Printed via {matchedPrinter} ({job.PrintColorModeLabel}), {copies} cop{(copies == 1 ? "y" : "ies")}."
+                    ? $"Printed via {matchedPrinter} ({printMode}), {copies} cop{(copies == 1 ? "y" : "ies")}."
                     : $"Printed {printedCopies} of {copies} cop{(copies == 1 ? "y" : "ies")} via {matchedPrinter} - remaining copies failed: {lastPrintError?.Message}";
                 await api.UpdateStatus(job.Id, "printed", printResult + duplexNote, CancellationToken.None);
                 LogStatus($"{tokenId}: printed.");
@@ -1745,6 +1841,11 @@ namespace Print_Agent
                 _printedIds.Remove(job.Id); // retry next poll
                 LogStatus($"{tokenId}: failed - {ex.Message}");
                 try { await api.UpdateStatus(job.Id, "failed", ex.Message, CancellationToken.None); } catch { /* best effort */ }
+            }
+            finally
+            {
+                // Never let a profile leak into the next job or a manual print.
+                _activeProfile = null;
             }
         }
 
@@ -1940,6 +2041,28 @@ namespace Print_Agent
             }
         }
 
+        private volatile bool _missingProfileAlertShown;
+
+        // Same one-at-a-time treatment as ShowMissingPresetAlert - the job
+        // asked for a print profile this PC has never saved.
+        private void ShowMissingProfileAlert(string profileName)
+        {
+            if (_missingProfileAlertShown) return;
+            _missingProfileAlertShown = true;
+            try
+            {
+                PrintAlertForm.Show(
+                    "Print Profile Not Set Up",
+                    $"A print job needs the profile \"{profileName}\", but it is not saved on this PC.\n\n" +
+                    "Click \"Profiles\" at the top of this app, create a profile with exactly this name, pick the printer, set its preferences and Save. " +
+                    "The customer's print job is on hold and will print automatically once the profile is saved - it does not need to be resent.");
+            }
+            finally
+            {
+                _missingProfileAlertShown = false;
+            }
+        }
+
         private static string SafeFileName(string value)
         {
             var invalid = Path.GetInvalidFileNameChars();
@@ -2074,6 +2197,184 @@ namespace Print_Agent
             LogStatus($"Duplex printer saved from local dashboard: {(_config.DuplexPrinter.Length > 0 ? _config.DuplexPrinter : "(none)")} ({_config.DuplexMode}).");
             ReportDuplexAvailabilityIfChanged();
             return GetDuplexSettingsFromLocalApi();
+        }
+
+        // ── Print profiles (website Printer Setup, via the local bridge) ──
+        private PrintProfilesResponse ListPrintProfilesFromLocalApi()
+        {
+            var installed = PrinterSettings.InstalledPrinters.Cast<string>().ToArray();
+            return new PrintProfilesResponse
+            {
+                Profiles = PrintProfileStore.Load().Select(p => new PrintProfileDto
+                {
+                    Name = p.Name,
+                    Printer = p.Printer,
+                    Summary = PrinterDevMode.Describe(p),
+                    UpdatedAt = p.UpdatedAt,
+                    Missing = !installed.Contains(p.Printer, StringComparer.OrdinalIgnoreCase),
+                }).ToArray(),
+                Printers = installed,
+            };
+        }
+
+        private static void EnsurePrinterInstalled(string printer)
+        {
+            if (!PrinterSettings.InstalledPrinters.Cast<string>().Contains(printer, StringComparer.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException($"Printer \"{printer}\" is not installed on this PC.");
+            }
+        }
+
+        private static byte[] DecodeDevMode(string? base64)
+        {
+            try { return string.IsNullOrWhiteSpace(base64) ? [] : Convert.FromBase64String(base64); }
+            catch { throw new InvalidOperationException("Printer preferences data is invalid - set the preferences again."); }
+        }
+
+        // Saved settings of the profile being edited, if it is on this printer.
+        private static byte[] SavedDevModeFor(string profileName, string printer)
+        {
+            var existing = PrintProfileStore.Find(profileName);
+            return existing != null && existing.Printer.Equals(printer, StringComparison.OrdinalIgnoreCase) ? existing.DevModeBytes() : [];
+        }
+
+        // Opens the printer's own Preferences dialog on this PC (the owner is
+        // sitting at it, using the website in a browser here). Returns null
+        // on Cancel. Must run on the UI thread.
+        private static byte[] ShowPreferencesOnTop(string printer, byte[] current)
+        {
+            // The agent usually sits in the tray, so the driver dialog gets a
+            // topmost invisible owner - otherwise it opens behind the browser.
+            using var owner = new Form
+            {
+                TopMost = true,
+                ShowInTaskbar = false,
+                FormBorderStyle = FormBorderStyle.None,
+                StartPosition = FormStartPosition.CenterScreen,
+                Size = new Size(1, 1),
+                Opacity = 0,
+            };
+            owner.Show();
+            owner.Activate();
+            return PrinterDevMode.ShowPreferences(owner, printer, current.Length > 0 ? current : null);
+        }
+
+        // Website "Set Preferences": dialog only, nothing saved - the
+        // website sends the returned settings back with "Save Profile".
+        private PrintPreferencesResult OpenPrintPreferencesFromLocalApi(PrintPreferencesRequest request)
+        {
+            if (InvokeRequired)
+            {
+                return (PrintPreferencesResult)Invoke(new Func<PrintPreferencesRequest, PrintPreferencesResult>(OpenPrintPreferencesFromLocalApi), request);
+            }
+
+            var printer = request.Printer?.Trim() ?? "";
+            EnsurePrinterInstalled(printer);
+
+            var current = DecodeDevMode(request.DevMode);
+            if (current.Length == 0 && !string.IsNullOrWhiteSpace(request.OriginalName)) current = SavedDevModeFor(request.OriginalName, printer);
+
+            var chosen = ShowPreferencesOnTop(printer, current)
+                ?? throw new InvalidOperationException("Printer preferences were cancelled.");
+            var devMode = Convert.ToBase64String(chosen);
+            return new PrintPreferencesResult
+            {
+                DevMode = devMode,
+                Summary = PrinterDevMode.Describe(new PrintProfile { Printer = printer, DevMode = devMode }),
+            };
+        }
+
+        private PrintProfilesResponse SavePrintProfileFromLocalApi(SavePrintProfileRequest request)
+        {
+            if (InvokeRequired)
+            {
+                return (PrintProfilesResponse)Invoke(new Func<SavePrintProfileRequest, PrintProfilesResponse>(SavePrintProfileFromLocalApi), request);
+            }
+
+            var name = request.Name?.Trim() ?? "";
+            var printer = request.Printer?.Trim() ?? "";
+            if (name.Length == 0) throw new InvalidOperationException("Enter a profile name.");
+            EnsurePrinterInstalled(printer);
+
+            // Settings from "Set Preferences"; else the edited profile's own
+            // (same printer); else ask for them now.
+            var devMode = DecodeDevMode(request.DevMode);
+            if (devMode.Length == 0) devMode = SavedDevModeFor(string.IsNullOrWhiteSpace(request.OriginalName) ? name : request.OriginalName, printer);
+            if (devMode.Length == 0)
+            {
+                devMode = ShowPreferencesOnTop(printer, [])
+                    ?? throw new InvalidOperationException("Printer preferences were cancelled - profile not saved.");
+            }
+
+            PrintProfileStore.Upsert(name, printer, devMode, request.OriginalName);
+            RenamePresetProfile(request.OriginalName, name);
+            LogStatus($"Print profile '{name}' saved from website ({printer}).");
+            return ListPrintProfilesFromLocalApi();
+        }
+
+        // Keeps Printer Settings rows pointing at a profile that was renamed
+        // (and at its possibly new printer).
+        private void RenamePresetProfile(string? originalName, string newName)
+        {
+            var from = string.IsNullOrWhiteSpace(originalName) ? newName : originalName.Trim();
+            var profile = PrintProfileStore.Find(newName);
+            if (profile == null) return;
+            var changed = false;
+            foreach (DataGridViewRow row in dataGridPrinterSetting.Rows)
+            {
+                if (row.IsNewRow) continue;
+                if (!(row.Cells["colProfile"].Value?.ToString() ?? "").Equals(from, StringComparison.OrdinalIgnoreCase)) continue;
+                row.Cells["colProfile"].Value = profile.Name;
+                row.Cells["colPrinter"].Value = profile.Printer;
+                changed = true;
+            }
+            if (changed) SaveAllSettingsToFile();
+        }
+
+        // Website tools' "Print" button: a PDF they built, printed with the
+        // chosen profile. Runs on the bridge's worker thread - printing does
+        // not need the UI thread, so the agent window stays responsive.
+        private PrintFileResult PrintFileFromLocalApi(PrintFileRequest request)
+        {
+            var profileName = request.Profile?.Trim() ?? "";
+            PrintProfile profile;
+            if (profileName.Length > 0)
+            {
+                profile = PrintProfileStore.Find(profileName)
+                    ?? throw new InvalidOperationException($"Print profile \"{profileName}\" is not saved on this PC. Create it in PrintPilot Setup (Step 3).");
+            }
+            else if (!string.IsNullOrWhiteSpace(request.Printer))
+            {
+                profile = new PrintProfile { Name = "", Printer = request.Printer.Trim() };
+            }
+            else
+            {
+                throw new InvalidOperationException("Select a print profile first.");
+            }
+
+            EnsurePrinterInstalled(profile.Printer);
+            byte[] pdf;
+            try { pdf = Convert.FromBase64String(request.PdfBase64 ?? ""); }
+            catch { throw new InvalidOperationException("The file to print is invalid."); }
+            if (pdf.Length == 0) throw new InvalidOperationException("Nothing to print.");
+
+            var copies = Math.Max(request.Copies, 1);
+            var pages = ProfilePrintService.Print(pdf, profile, copies);
+            var label = profile.Name.Length > 0 ? $"profile '{profile.Name}'" : profile.Printer;
+            LogStatus($"Website print: {request.FileName ?? "file"} ({pages} page(s) x {copies}) via {label}.");
+            return new PrintFileResult
+            {
+                Message = $"Sent to {profile.Printer}{(profile.Name.Length > 0 ? $" ({profile.Name})" : "")}.",
+                Printer = profile.Printer,
+                Profile = profile.Name,
+                PrintedAt = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss"),
+            };
+        }
+
+        private PrintProfilesResponse DeletePrintProfileFromLocalApi(string name)
+        {
+            if (PrintProfileStore.Delete(name)) LogStatus($"Print profile '{name}' deleted from website.");
+            return ListPrintProfilesFromLocalApi();
         }
 
         private bool ConfirmCashPrint(PrintJob job)
@@ -2217,9 +2518,19 @@ namespace Print_Agent
                 return (PrinterPresetsResponse)Invoke(new Func<SavePrinterPresetRequest, PrinterPresetsResponse>(SavePresetFromLocalApi), request);
             }
 
+            // With a profile, the printer always comes from that profile.
+            var profileName = request.Profile?.Trim() ?? "";
+            if (profileName.Length > 0)
+            {
+                var profile = PrintProfileStore.Find(profileName)
+                    ?? throw new InvalidOperationException($"Print profile \"{profileName}\" is not saved on this PC.");
+                profileName = profile.Name;
+                request.Printer = profile.Printer;
+            }
+
             if (string.IsNullOrWhiteSpace(request.Printer) || string.IsNullOrWhiteSpace(request.PaperSize) || string.IsNullOrWhiteSpace(request.ColorMode))
             {
-                throw new InvalidOperationException("Printer, paper size and color mode are required.");
+                throw new InvalidOperationException("Profile (or printer), paper size and color mode are required.");
             }
 
             if (request.Original is { } original && !string.IsNullOrWhiteSpace(original.Printer))
@@ -2237,7 +2548,7 @@ namespace Print_Agent
             // before adding the new one is what makes "pick a different
             // printer for A4/Color" actually take effect.
             RemovePresetRowsForCombo(request.PaperSize, request.ColorMode);
-            int rowIdx = dataGridPrinterSetting.Rows.Add(request.Printer, request.PaperSize, request.ColorMode);
+            int rowIdx = dataGridPrinterSetting.Rows.Add(request.Printer, request.PaperSize, request.ColorMode, profileName);
             dataGridPrinterSetting.Rows[rowIdx].Cells["colDelete"].Value = "Delete";
             SaveAllSettingsToFile();
 
@@ -2305,6 +2616,7 @@ namespace Print_Agent
                     Printer = row.Cells["colPrinter"].Value?.ToString() ?? "",
                     PaperSize = row.Cells["colPageSize"].Value?.ToString() ?? "",
                     ColorMode = row.Cells["colColorType"].Value?.ToString() ?? "",
+                    Profile = row.Cells["colProfile"].Value?.ToString() ?? "",
                 });
             }
 

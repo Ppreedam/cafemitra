@@ -15,6 +15,7 @@ import { BUSINESS } from "@/lib/businessInfo";
 import IdCardPrintSeoContent from "./IdCardPrintSeoContent";
 import { onScannerEngineLoading, scanCard, type ScanMode } from "./cardScan";
 import { bakeTone, isNeutralTone, NEUTRAL_TONE, TonedImage, ToneControl, type Tone } from "./ToneControl";
+import { PrintProfileSelect, useAgentPrint } from "@/app/PrintProfileSelect";
 
 async function chargeIdCardPrint(cardCount: number) {
   const response = await apiFetch("/api/tools/id-card-print-charge/", {
@@ -93,6 +94,7 @@ export default function IdCardPrintClient() {
   const [applyFilterToBothSides, setApplyFilterToBothSides] = useState(false);
   const [colorMode, setColorMode] = useState<ColorMode>("color");
   const [printBusy, setPrintBusy] = useState(false);
+  const agentPrint = useAgentPrint("id-card-print");
   const [error, setError] = useState("");
   const [loginPrompt, setLoginPrompt] = useState(false);
   const [chargeConfirm, setChargeConfirm] = useState<{ resolve: (ok: boolean) => void } | null>(null);
@@ -340,8 +342,6 @@ export default function IdCardPrintClient() {
     setError("");
     try {
       await chargeIdCardPrint(withFront.length);
-      const printWindow = window.open("", "_blank");
-      if (!printWindow) return;
       const baked: string[] = [];
       const printUrl = async (state: SideState) => {
         if (!state.url || isNeutralTone(state.tone)) return state.url;
@@ -350,11 +350,19 @@ export default function IdCardPrintClient() {
         return url;
       };
       const printable = await Promise.all(withFront.map(async (card) => ({ frontUrl: await printUrl(card.front), backUrl: await printUrl(card.back) })));
-      // The print window has loaded them by then.
+      // The print window / agent render has loaded them by then.
       if (baked.length) window.setTimeout(() => baked.forEach((url) => URL.revokeObjectURL(url)), 120000);
-      printWindow.document.open();
-      printWindow.document.write(buildCardPrintSheetHtml(printable, colorMode));
-      printWindow.document.close();
+      const printHtml = buildCardPrintSheetHtml(printable, colorMode);
+      await agentPrint.printHtml(() => printHtml, {
+        fileName: "id-card-a4-sheet.pdf",
+        fallback: () => {
+          const printWindow = window.open("", "_blank");
+          if (!printWindow) return;
+          printWindow.document.open();
+          printWindow.document.write(printHtml);
+          printWindow.document.close();
+        },
+      });
       trackToolEvent("id_card_print", "print_sheet", { card_count: printable.length });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not prepare the print job. Please try again.");
@@ -389,7 +397,7 @@ export default function IdCardPrintClient() {
             <p>Upload one or more ID cards - each photo fills its slot at true print size, so what you see here is what comes out of the printer.</p>
           </div>
           <div className="auto-print-hero-actions">
-            <span className="status-pill">Print via Browser</span>
+            <span className="status-pill">Print via PrintPilot</span>
           </div>
         </div>
 
@@ -461,6 +469,7 @@ export default function IdCardPrintClient() {
                 </button>
               </div>
               <div className="idcard-toolbar-divider" />
+              <PrintProfileSelect print={agentPrint} />
               <button className="idcard-print-cta" type="button" disabled={!readyCount || printBusy || scanning} onClick={() => void printSheet()}>
                 <Printer size={16} /> {printBusy ? "Preparing…" : "Print A4 Sheet"}
               </button>

@@ -37,6 +37,11 @@ internal sealed class PrintJob
     public bool Duplex { get; set; }
     public string DuplexEdge { get; set; } = "long";
 
+    /// Name of a print profile saved in this agent's "Profiles" window (e.g.
+    /// "4x6-photo-print-best-glossy"). When set, the job prints on that
+    /// profile's printer with its saved driver preferences.
+    public string? ProfileName { get; set; }
+
     /// Explicit paper size from the server, if it ever sends one.
     public string? PaperSize { get; set; }
 
@@ -183,6 +188,8 @@ internal sealed class PrinterPresetDto
     public string? Printer { get; set; }
     public string? PaperSize { get; set; }
     public string? ColorMode { get; set; }
+    /// Print profile used for this paper size + color mode ("" = none).
+    public string? Profile { get; set; }
 }
 
 internal sealed class SavePrinterPresetRequest
@@ -190,6 +197,8 @@ internal sealed class SavePrinterPresetRequest
     public string? Printer { get; set; }
     public string? PaperSize { get; set; }
     public string? ColorMode { get; set; }
+    /// When set, the preset prints with this profile (and its printer).
+    public string? Profile { get; set; }
     public PrinterPresetDto? Original { get; set; }
 }
 
@@ -199,6 +208,78 @@ internal sealed class PrinterPresetsResponse
     public IReadOnlyList<string> Printers { get; set; } = [];
     public IReadOnlyList<string> PaperSizes { get; set; } = [];
     public IReadOnlyList<string> ColorModes { get; set; } = [];
+}
+
+/// One print profile as seen over the local bridge (website Printer Setup).
+/// The driver settings themselves never leave this PC - only a summary.
+internal sealed class PrintProfileDto
+{
+    public string Name { get; set; } = "";
+    public string Printer { get; set; } = "";
+    public string Summary { get; set; } = "";
+    public string UpdatedAt { get; set; } = "";
+    public bool Missing { get; set; }
+}
+
+internal sealed class PrintProfilesResponse
+{
+    public IReadOnlyList<PrintProfileDto> Profiles { get; set; } = [];
+    public IReadOnlyList<string> Printers { get; set; } = [];
+}
+
+/// Create/edit a profile from the website: the agent opens the printer's
+/// own Preferences dialog on this PC, then saves what the owner picked.
+internal sealed class SavePrintProfileRequest
+{
+    public string? Name { get; set; }
+    public string? Printer { get; set; }
+    /// Name before editing, for a rename; empty for a new profile.
+    public string? OriginalName { get; set; }
+    /// Base64 DEVMODE from /print-profiles/preferences. When empty, the
+    /// agent opens the Preferences dialog itself (or keeps the saved
+    /// settings when only the name changed on the same printer).
+    public string? DevMode { get; set; }
+}
+
+/// Opens a printer's Preferences dialog without saving anything yet.
+internal sealed class PrintPreferencesRequest
+{
+    public string? Printer { get; set; }
+    /// Profile being edited - its saved settings pre-fill the dialog.
+    public string? OriginalName { get; set; }
+    /// Settings picked earlier in this session - pre-fill the dialog.
+    public string? DevMode { get; set; }
+}
+
+internal sealed class PrintPreferencesResult
+{
+    public string DevMode { get; set; } = "";
+    public string Summary { get; set; } = "";
+}
+
+internal sealed class DeletePrintProfileRequest
+{
+    public string? Name { get; set; }
+}
+
+/// A ready-made PDF from a website tool (photo sheet, ID card, resume...)
+/// sent straight to the printer through a print profile.
+internal sealed class PrintFileRequest
+{
+    public string? Profile { get; set; }
+    /// Used only when no profile is given (prints with driver defaults).
+    public string? Printer { get; set; }
+    public string? FileName { get; set; }
+    public string? PdfBase64 { get; set; }
+    public int Copies { get; set; } = 1;
+}
+
+internal sealed class PrintFileResult
+{
+    public string Message { get; set; } = "";
+    public string Printer { get; set; } = "";
+    public string Profile { get; set; } = "";
+    public string PrintedAt { get; set; } = "";
 }
 
 /// Duplex printer slot as seen over the local bridge (website Setup page).

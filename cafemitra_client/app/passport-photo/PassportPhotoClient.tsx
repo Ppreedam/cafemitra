@@ -12,6 +12,7 @@ import { fetchPricingServiceByKey, type PriceItem } from "@/lib/pricing";
 import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
 import { stashPhotoForPrintSheet } from "@/lib/printSheetHandoff";
 import { CropEditor, cropImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, warpPerspectiveCrop, type CropQuad, type CropRect } from "../CropEditor";
+import { PrintProfileSelect, useAgentPrint } from "../PrintProfileSelect";
 import { buildPrintSheetHtml, maxTilesForPaper, openPrintSheet as openManualPrintSheet, parsePhotoCount, type PaperSize } from "./printSheet";
 
 type JobState = "idle" | "submitting" | "processing" | "done" | "not_found" | "failed";
@@ -149,6 +150,7 @@ export default function PassportPhotoClient() {
   const [manualInitialOrder, setManualInitialOrder] = useState<ExistingPassportOrder | null>(null);
   const [isLoadingOrder, setIsLoadingOrder] = useState(false);
   const [paperSize, setPaperSize] = useState<PaperSize | null>(null);
+  const agentPrint = useAgentPrint("passport-photo");
   const [manualPaperSize, setManualPaperSize] = useState<PaperSize | null>(null);
   const [useCustomTiles, setUseCustomTiles] = useState(false);
   const [customTileWidth, setCustomTileWidth] = useState(1.2);
@@ -288,26 +290,37 @@ export default function PassportPhotoClient() {
     }
 
     setError("");
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
     const count = parsePhotoCount(viewOrder?.priceLabel || selectedPackage?.label);
     const html = buildPrintSheetHtml(size, apiUrl(finalImageUrl), count);
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
+    void agentPrint.printHtml(() => html, {
+      fileName: `passport-photo-${size}.pdf`,
+      fallback: () => {
+        const printWindow = window.open("", "_blank");
+        if (!printWindow) return;
+        printWindow.document.open();
+        printWindow.document.write(html);
+        printWindow.document.close();
+      },
+    });
   }
 
   function printManualSheet(size: PaperSize) {
     if (!manualInitialOrder?.geminiPhoto) return;
     setManualPaperSize(size);
+    const photoUrl = apiUrl(manualInitialOrder.geminiPhoto);
+    let count: number;
+    let tileSize: [number, number] | [] = [];
     if (useCustomTiles) {
       const maxFit = maxTilesForPaper(size, customTileWidth, customTileHeight).max;
-      const count = Math.min(customTileCount ?? maxFit, maxFit);
-      openManualPrintSheet(size, apiUrl(manualInitialOrder.geminiPhoto), count, customTileWidth, customTileHeight);
+      count = Math.min(customTileCount ?? maxFit, maxFit);
+      tileSize = [customTileWidth, customTileHeight];
     } else {
-      const count = parsePhotoCount(manualInitialOrder.priceLabel);
-      openManualPrintSheet(size, apiUrl(manualInitialOrder.geminiPhoto), count);
+      count = parsePhotoCount(manualInitialOrder.priceLabel);
     }
+    void agentPrint.printHtml(() => buildPrintSheetHtml(size, photoUrl, count, ...tileSize), {
+      fileName: `passport-photo-${size}.pdf`,
+      fallback: () => openManualPrintSheet(size, photoUrl, count, ...tileSize),
+    });
   }
 
   useEffect(() => {
@@ -565,6 +578,7 @@ export default function PassportPhotoClient() {
                       </span>
                     </div>
                   </div>
+                  <PrintProfileSelect print={agentPrint} />
                   <div className="passport-attire-picker">
                     <span>Paper Size</span>
                     <div className="passport-papersize-options">
@@ -749,6 +763,7 @@ export default function PassportPhotoClient() {
                 ) : null}
                 {jobState === "done" && finalImageUrl ? (
                   <div className="passport-attire-picker">
+                    <PrintProfileSelect print={agentPrint} />
                     <span>Paper Size</span>
                     <div className="passport-papersize-options">
                       <label className={`passport-papersize-radio${paperSize === "4x6" ? " active" : ""}`}>

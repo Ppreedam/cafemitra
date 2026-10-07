@@ -32,6 +32,7 @@ import {
   type CardTemplate,
   type CardTypeInfo,
 } from "@/lib/cardPrint";
+import { PrintProfileSelect, useAgentPrint } from "@/app/PrintProfileSelect";
 
 type SourcePage = { index: number; image: string; width: number; height: number; text: string };
 type Face = "front" | "back";
@@ -42,6 +43,7 @@ export default function CardPrintPage() {
 
   const [file, setFile] = useState<File | null>(null);
   const [password, setPassword] = useState("");
+  const agentPrint = useAgentPrint("card-print");
   const [showPassword, setShowPassword] = useState(false);
   const [needsPassword, setNeedsPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -166,11 +168,17 @@ export default function CardPrintPage() {
 
   function printCard() {
     if (!frontImage || !backImage) return;
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
-    printWindow.document.open();
-    printWindow.document.write(buildCardPrintHtml(frontImage, backImage));
-    printWindow.document.close();
+    const printHtml = buildCardPrintHtml(frontImage, backImage);
+    void agentPrint.printHtml(() => printHtml, {
+      fileName: "card.pdf",
+      fallback: () => {
+        const printWindow = window.open("", "_blank");
+        if (!printWindow) return;
+        printWindow.document.open();
+        printWindow.document.write(printHtml);
+        printWindow.document.close();
+      },
+    });
   }
 
   async function downloadCard() {
@@ -271,8 +279,9 @@ export default function CardPrintPage() {
                 <CardFaceView label="Front" image={frontImage} loading={isRendering} />
                 <CardFaceView label="Back" image={backImage} loading={isRendering} />
               </div>
+              <PrintProfileSelect print={agentPrint} />
               <div className="card-print-actions">
-                <button className="btn btn-primary" type="button" disabled={!frontImage || !backImage} onClick={printCard}>
+                <button className="btn btn-primary" type="button" disabled={!frontImage || !backImage || agentPrint.busy} onClick={printCard}>
                   <Printer size={16} /> Print Card
                 </button>
                 <button className="btn" type="button" disabled={!frontImage || !backImage} onClick={() => void downloadCard()}>

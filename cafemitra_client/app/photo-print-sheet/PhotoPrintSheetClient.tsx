@@ -6,6 +6,8 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, Download, Eye, ImagePlus, Loader2, LogIn, Minus, Plus, Printer, RefreshCw, RotateCw, Trash2, Upload, Wallet, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
+import { PrintProfileSelect, useAgentPrint } from "../PrintProfileSelect";
+import { canvasesToPdfBytes } from "@/lib/agent-print";
 import { apiFetch, apiUrl, dataUriToBlob, hasStoredSession } from "@/lib/api";
 import { useToolPrice } from "@/lib/useToolPrice";
 import PhotoPrintSheetSeoContent from "./PhotoPrintSheetSeoContent";
@@ -81,6 +83,7 @@ export default function PhotoPrintSheetClient() {
   const [activePage, setActivePage] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
   const [printBusy, setPrintBusy] = useState(false);
+  const agentPrint = useAgentPrint("photo-print-sheet");
   const [error, setError] = useState("");
   const [rotatingIds, setRotatingIds] = useState<Set<string>>(new Set());
   const photosRef = useRef(photos);
@@ -285,7 +288,21 @@ export default function PhotoPrintSheetClient() {
     setError("");
     try {
       await chargePhotoPrintSheet();
-      openPrintWindow(paperMeta, pages);
+      // Sent to the PrintPilot agent with the chosen print profile, using
+      // the same 300 DPI render as Download HD (browser print only when
+      // that is picked or the agent is not running).
+      await agentPrint.printPdf(
+        async () => {
+          const imageCache = new Map<string, HTMLImageElement>();
+          const rendered = [];
+          for (const tiles of pages) {
+            if (!tiles.length) continue;
+            rendered.push({ canvas: await renderPageCanvas(paperMeta, tiles, imageCache), widthMm: paperMeta.widthMm, heightMm: paperMeta.heightMm });
+          }
+          return canvasesToPdfBytes(rendered);
+        },
+        { fileName: `print-sheet-${paperMeta.badge.toLowerCase()}.pdf`, fallback: () => openPrintWindow(paperMeta, pages) },
+      );
       trackToolEvent("photo_print_sheet", "print_sheet", { total_tiles: totalTiles });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not prepare the print job. Please try again.");
@@ -540,9 +557,10 @@ export default function PhotoPrintSheetClient() {
                 </button>
               ) : null}
 
+              <PrintProfileSelect print={agentPrint} className="pps-print-profile" />
               <div className="pps-final-actions">
                 <button type="button" className="pps-print-btn" disabled={!totalTiles || printBusy} onClick={() => void printSheet()}>
-                  <Printer size={18} /> {printBusy ? "Preparing…" : "Print"}
+                  <Printer size={18} /> {printBusy ? (agentPrint.busy ? "Printing…" : "Preparing…") : "Print"}
                 </button>
                 <button type="button" className="passport-preview-button pps-download-hd" disabled={isExporting || !totalTiles} onClick={() => void downloadHD()}>
                   {isExporting ? <Loader2 size={18} className="passport-step-spin" /> : <Download size={18} />}

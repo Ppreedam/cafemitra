@@ -27,6 +27,7 @@ import { DashboardShell } from "../../DashboardShell";
 import { PdfToolUpload } from "../../pdf-tools/PdfToolUpload";
 import { getCardTemplate, getDefaultCardTemplate, type CardTemplate } from "@/lib/cardPrint";
 import { DOC_TYPES } from "../docTypes";
+import { PrintProfileSelect, useAgentPrint } from "@/app/PrintProfileSelect";
 
 // Position/size in PDF points, page coordinate space (origin bottom-left,
 // matching page.getViewport({ scale: 1 })) - same convention pdf-lib expects.
@@ -49,6 +50,7 @@ export default function PanCardMakerClient({ children }: { children?: React.Reac
   const [phase, setPhase] = useState<Phase>("upload");
   const [file, setFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState("");
+  const agentPrint = useAgentPrint("pan-card");
   const [loadError, setLoadError] = useState("");
   const [needsPassword, setNeedsPassword] = useState(false);
   const [password, setPassword] = useState("");
@@ -305,21 +307,33 @@ async function handleFiles(files: FileList) {
 
   function printA4() {
     if (!outFront || !outBack || !requireLogin()) return;
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
-    printWindow.document.open();
-    printWindow.document.write(buildA4PrintHtml(outFront, outBack, copies));
-    printWindow.document.close();
+    const printHtml = buildA4PrintHtml(outFront, outBack, copies);
+    void agentPrint.printHtml(() => printHtml, {
+      fileName: "pan-card-a4-sheet.pdf",
+      fallback: () => {
+        const printWindow = window.open("", "_blank");
+        if (!printWindow) return;
+        printWindow.document.open();
+        printWindow.document.write(printHtml);
+        printWindow.document.close();
+      },
+    });
     trackToolEvent("id_card_maker", "pan_print_a4");
   }
 
   function print4x6() {
     if (!outFront || !outBack || !requireLogin()) return;
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
-    printWindow.document.open();
-    printWindow.document.write(build4x6PrintHtml(outFront, outBack));
-    printWindow.document.close();
+    const printHtml = build4x6PrintHtml(outFront, outBack);
+    void agentPrint.printHtml(() => printHtml, {
+      fileName: "pan-card-4x6.pdf",
+      fallback: () => {
+        const printWindow = window.open("", "_blank");
+        if (!printWindow) return;
+        printWindow.document.open();
+        printWindow.document.write(printHtml);
+        printWindow.document.close();
+      },
+    });
     trackToolEvent("id_card_maker", "pan_print_4x6");
   }
 
@@ -517,11 +531,12 @@ async function handleFiles(files: FileList) {
                     ))}
                   </div>
                 </div>
-                <button className="passport-preview-button" type="button" disabled={!outFront || !outBack} onClick={printA4}>
+                <PrintProfileSelect print={agentPrint} />
+                <button className="passport-preview-button" type="button" disabled={!outFront || !outBack || agentPrint.busy} onClick={printA4}>
                   <Layers size={18} /> Print A4 Sheet
                 </button>
 
-                <button className="passport-preview-button" type="button" disabled={!outFront || !outBack} onClick={print4x6}>
+                <button className="passport-preview-button" type="button" disabled={!outFront || !outBack || agentPrint.busy} onClick={print4x6}>
                   <ImageIcon size={18} /> Print on 4x6 Photo Paper
                 </button>
               </div>

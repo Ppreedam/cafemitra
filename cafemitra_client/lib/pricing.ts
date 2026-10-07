@@ -14,7 +14,8 @@ export type PriceRange = {
   rate: number;
 };
 
-export type PricingValue = string | number | boolean | PriceItem[];
+// Record<string, string> = settings.printProfiles ({ priceItemId: Print Agent profile name }).
+export type PricingValue = string | number | boolean | PriceItem[] | Record<string, string>;
 
 export type PricingService = {
   serviceKey: string;

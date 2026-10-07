@@ -4,7 +4,9 @@ import Link from "next/link";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import DuplexPrinterCard from "./DuplexPrinterCard";
+import PrinterProfileSetup from "./PrinterProfileSetup";
+import { BROWSER_PRINT, PrintProfileSelect, useAgentPrint } from "../PrintProfileSelect";
+import { sendPdfToAgent } from "@/lib/agent-print";
 import {
   BarChart3,
   Bell,
@@ -41,19 +43,13 @@ import {
 } from "lucide-react";
 import { clearSession, hasStoredSession } from "@/lib/api";
 import { fetchCashCounterStatus, fetchPricingServices, formatPriceItem, normalizePaymentMode, savePricingService, saveServicePrinter, type PriceItem, type PriceRange } from "@/lib/pricing";
-import {
-  deleteAgentPrinterPreset,
-  fallbackColorModes,
-  fallbackPaperSizes,
+import {
   fallbackPrinters,
   fetchAgentHealth,
   fetchAgentPrinterPresets,
   fetchServerAgentStatus,
-  runAgentTestPrint,
-  saveAgentPrinter,
-  saveAgentPrinterPreset,
-  type AgentHealth,
-  type PrinterPreset,
+  saveAgentPrinter,
+  type AgentHealth,
 } from "@/lib/printpilot-agent";
 import { DashboardShell } from "../DashboardShell";
 import { WalletLimitBanner } from "../WalletLimitBanner";
@@ -109,7 +105,7 @@ const navGroups: NavGroup[] = [
 const setupSteps: SetupStep[] = [
   { key: "download", title: "Download Agent", helper: "Install the PrintPilot desktop app", icon: Download },
   { key: "verify", title: "Verify Agent", helper: "Check agent connection", icon: ShieldCheck },
-  { key: "printer", title: "Select Printer", helper: "Choose default PrintPilot printer", icon: Printer },
+  { key: "printer", title: "Printer Profiles", helper: "Create profiles, map paper & color", icon: Printer },
   { key: "pricing", title: "Pricing", helper: "Set BW, color, and minimum order", icon: Wallet },
   { key: "qr", title: "QR Setup", helper: "Generate PrintPilot customer QR", icon: QrCode },
   { key: "test", title: "Test Print", helper: "Send a demo page to printer", icon: Play },
@@ -137,13 +133,13 @@ const setupStepGuides: Record<SetupStep["key"], { title: string; videoUrl?: stri
     ],
   },
   printer: {
-    title: "Choose the default printer",
+    title: "Set up print profiles",
     videoUrl: "https://newsbuilder.in/wp-content/uploads/2026/09/Agent-Guide-3.mp4",
     youtubeId: "GhFBF4ZY-Bc",
     bullets: [
-      "Select the printer that should receive customer print jobs.",
-      "Use Microsoft Print to PDF only for testing.",
-      "Save the printer after selection.",
+      "Create a profile: enter a name, pick the printer and click Set Preferences.",
+      "In the printer's Preferences window choose paper size, paper type and quality, press OK, then Save Profile.",
+      "Under Printer Settings, pick the profile for each paper size + color/grayscale and Save.",
     ],
   },
   pricing: {
@@ -221,19 +217,7 @@ export default function AutoPrintClient() {
   const verifyInFlightRef = useRef(false);
   const [availablePrinters, setAvailablePrinters] = useState<string[]>(fallbackPrinters);
   const [selectedPrinter, setSelectedPrinter] = useState(fallbackPrinters[0]);
-  const [printerMessage, setPrinterMessage] = useState("");
-  const [printerError, setPrinterError] = useState("");
-  const [isSavingPrinter, setIsSavingPrinter] = useState(false);
   const [printerSaved, setPrinterSaved] = useState(false);
-  const [printerPresets, setPrinterPresets] = useState<PrinterPreset[]>([]);
-  const [paperSizeOptions, setPaperSizeOptions] = useState<string[]>(fallbackPaperSizes);
-  const [colorModeOptions, setColorModeOptions] = useState<string[]>(fallbackColorModes);
-  const [presetPaperSize, setPresetPaperSize] = useState(fallbackPaperSizes[0]);
-  const [presetColorMode, setPresetColorMode] = useState(fallbackColorModes[0]);
-  const [editingPreset, setEditingPreset] = useState<PrinterPreset | null>(null);
-  const [presetMessage, setPresetMessage] = useState("");
-  const [presetError, setPresetError] = useState("");
-  const [isSavingPreset, setIsSavingPreset] = useState(false);
   const [priceItems, setPriceItems] = useState<PriceItem[]>([
     { id: "black_white", label: "Black & White", rate: 2 },
     { id: "color", label: "Color", rate: 10 },
@@ -252,8 +236,10 @@ export default function AutoPrintClient() {
   const [shopName, setShopName] = useState("RepetiGo Shop");
   const [qrUrl, setQrUrl] = useState("");
   const [qrImage, setQrImage] = useState("");
+  const [posterPreviewUrl, setPosterPreviewUrl] = useState("");
   const [testStatus, setTestStatus] = useState<"idle" | "printing" | "success">("idle");
   const [testPrintDone, setTestPrintDone] = useState(false);
+  const testPrint = useAgentPrint("auto-print-test");
   const [testPrintMessage, setTestPrintMessage] = useState("");
   const [testPrintError, setTestPrintError] = useState("");
   const [qrDownloadError, setQrDownloadError] = useState("");
@@ -358,6 +344,21 @@ export default function AutoPrintClient() {
   }, [printerReady]);
 
   useEffect(() => {
+    if (currentStep.key !== "qr" || !qrImage) return;
+    let cancelled = false;
+    loadLogoDataUrl()
+      .then((logoImage) => {
+        if (cancelled) return;
+        const svg = buildQrPosterSvg(shopName, shopCode, qrUrl, qrImage, logoImage);
+        setPosterPreviewUrl(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [currentStep.key, qrImage, qrUrl, shopCode, shopName]);
+
+  useEffect(() => {
     if (currentStep.key !== "qr" || !qrUrl || qrImage) return;
     generateQr({ copyToClipboard: false }).catch(() => undefined);
   }, [currentStep.key, qrImage, qrUrl]);
@@ -453,9 +454,6 @@ export default function AutoPrintClient() {
           : "Agent found, but not running. Start it from the desktop app.",
       );
 
-      if (connected && !viaServer) {
-        await loadPrinterPresets();
-      }
     } catch {
       setAgentConnected(false);
       setAgentHealth(null);
@@ -466,18 +464,8 @@ export default function AutoPrintClient() {
     }
   }
 
-  async function loadPrinterPresets() {
-    try {
-      const result = await fetchAgentPrinterPresets();
-      setPrinterPresets(Array.isArray(result.presets) ? result.presets : []);
-      if (Array.isArray(result.paperSizes) && result.paperSizes.length) setPaperSizeOptions(result.paperSizes);
-      if (Array.isArray(result.colorModes) && result.colorModes.length) setColorModeOptions(result.colorModes);
-    } catch {
-      // Presets are a nice-to-have alongside single-printer selection - a
-      // fetch failure here shouldn't block the rest of the setup wizard.
-    }
-  }
-
+  // Prints the same A4 QR poster PDF as Step 5's Download, through the
+  // agent: with the chosen print profile, or on the saved printer.
   async function runTestPrint() {
     setTestPrintMessage("");
     setTestPrintError("");
@@ -488,15 +476,16 @@ export default function AutoPrintClient() {
         setQrImage(image);
         setQrReady(true);
       }
-      const result = await runAgentTestPrint({
-        printer: selectedPrinter,
-        shopName,
-        shopCode,
-        qrUrl,
-        qrImage: image,
+      const logoImage = await loadLogoDataUrl();
+      const pdfBytes = await buildQrPosterPdf(buildQrPosterSvg(shopName, shopCode, qrUrl, image, logoImage));
+      const useProfile = testPrint.profile && testPrint.profile !== BROWSER_PRINT;
+      const result = await sendPdfToAgent(pdfBytes, {
+        profile: useProfile ? testPrint.profile : undefined,
+        printer: useProfile ? undefined : selectedPrinter,
+        fileName: `${shopCode}-qr-poster.pdf`,
       });
       setTestStatus("success");
-      setTestPrintMessage(result.message || `QR test page sent to ${result.printer || selectedPrinter}.`);
+      setTestPrintMessage(result.message || `QR poster sent to ${result.printer || selectedPrinter}.`);
       setTestPrintDone(true);
       savePricingService("auto_document_print", { testPrintDone: true }).catch(() => undefined);
     } catch (error) {
@@ -505,71 +494,20 @@ export default function AutoPrintClient() {
     }
   }
 
-  async function savePrinter() {
-    setPrinterMessage("");
-    setPrinterError("");
-    setIsSavingPrinter(true);
+  // Step 3 is done once a Printer Settings row is saved. Its printer also
+  // becomes the shop's default printer (test print, server selectedPrinter)
+  // if none was saved yet.
+  async function handlePresetSaved(printer: string) {
+    if (printerSaved && selectedPrinter) return;
     try {
-      const result = await saveAgentPrinter(selectedPrinter);
-      const scannedPrinters = Array.isArray(result.printers) && result.printers.length ? result.printers : availablePrinters;
-      const savedPrinter = result.printer || selectedPrinter;
+      const result = await saveAgentPrinter(printer);
+      const savedPrinter = result.printer || printer;
       await saveServicePrinter("auto_document_print", savedPrinter);
-      setAvailablePrinters(scannedPrinters);
       setSelectedPrinter(savedPrinter);
       setPrinterSaved(true);
-      setPrinterMessage(`Printer saved: ${savedPrinter}${result.mockMode ? " (Mock Test Mode)" : ""}`);
-      await verifyAgent({ silent: true });
       window.dispatchEvent(new Event("cafemitra:printers-updated"));
-    } catch (error) {
-      setPrinterError(error instanceof Error ? error.message : "Could not save printer. Is the PrintPilot Agent running?");
-    } finally {
-      setIsSavingPrinter(false);
-    }
-  }
-
-  async function savePrinterPreset() {
-    setPresetMessage("");
-    setPresetError("");
-    if (!selectedPrinter) {
-      setPresetError("Select a printer first.");
-      return;
-    }
-
-    setIsSavingPreset(true);
-    try {
-      const preset: PrinterPreset = { printer: selectedPrinter, paperSize: presetPaperSize, colorMode: presetColorMode };
-      const result = await saveAgentPrinterPreset(preset, editingPreset ?? undefined);
-      setPrinterPresets(Array.isArray(result.presets) ? result.presets : []);
-      setPresetMessage(`Saved: ${preset.printer} – ${preset.paperSize} – ${preset.colorMode}`);
-      setEditingPreset(null);
-    } catch (error) {
-      setPresetError(error instanceof Error ? error.message : "Could not save printer setting. Is the PrintPilot Agent running?");
-    } finally {
-      setIsSavingPreset(false);
-    }
-  }
-
-  function editPrinterPreset(preset: PrinterPreset) {
-    setEditingPreset(preset);
-    setSelectedPrinter(preset.printer);
-    setPresetPaperSize(preset.paperSize);
-    setPresetColorMode(preset.colorMode);
-    setPresetMessage("");
-    setPresetError("");
-  }
-
-  async function deletePrinterPresetRow(preset: PrinterPreset) {
-    setPresetMessage("");
-    setPresetError("");
-    try {
-      const result = await deleteAgentPrinterPreset(preset);
-      setPrinterPresets(Array.isArray(result.presets) ? result.presets : []);
-      setPresetMessage("Printer setting deleted.");
-      if (editingPreset && editingPreset.printer === preset.printer && editingPreset.paperSize === preset.paperSize && editingPreset.colorMode === preset.colorMode) {
-        setEditingPreset(null);
-      }
-    } catch (error) {
-      setPresetError(error instanceof Error ? error.message : "Could not delete printer setting.");
+    } catch {
+      // The printer setting itself is saved; the default printer is retried on the next save.
     }
   }
 
@@ -814,86 +752,7 @@ export default function AutoPrintClient() {
 
               {currentStep.key === "printer" ? (
                 <div className="wizard-action-content">
-                  <div className="printer-radio-list">
-                    {availablePrinters.map((printer) => (
-                      <label className="printer-radio" key={printer}>
-                        <input
-                          checked={selectedPrinter === printer}
-                          name="printer"
-                          type="radio"
-                          onChange={() => {
-                            setSelectedPrinter(printer);
-                            setPrinterSaved(false);
-                          }}
-                        />
-                        <span>{printer}</span>
-                      </label>
-                    ))}
-                    {!availablePrinters.length ? (
-                      <div className="profile-alert error">No printer found. Install or connect a Windows printer, then verify the agent again.</div>
-                    ) : null}
-                  </div>
-                  {printerMessage ? <div className="profile-alert success">{printerMessage}</div> : null}
-                  {printerError ? <div className="profile-alert error">{printerError}</div> : null}
-                  <button className="btn btn-primary" type="button" onClick={savePrinter} disabled={!agentConnected || !selectedPrinter || isSavingPrinter}>
-                    <Printer size={16} /> {isSavingPrinter ? "Saving..." : "Save Printer"}
-                  </button>
-
-                  <div className="panel-title-row compact printer-preset-title">
-                    <div>
-                      <h2>Printer Settings</h2>
-                      <p>Save a paper size + color/grayscale combination per printer. Orders are routed to the printer matching what the customer requested.</p>
-                    </div>
-                  </div>
-                  <div className="printer-preset-form">
-                    <label className="auto-field">
-                      <span>Paper Size</span>
-                      <select value={presetPaperSize} onChange={(event) => setPresetPaperSize(event.target.value)}>
-                        {paperSizeOptions.map((size) => (
-                          <option key={size} value={size}>
-                            {size}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="auto-field">
-                      <span>Color / Grayscale</span>
-                      <select value={presetColorMode} onChange={(event) => setPresetColorMode(event.target.value)}>
-                        {colorModeOptions.map((mode) => (
-                          <option key={mode} value={mode}>
-                            {mode}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <button className="btn btn-primary" type="button" onClick={savePrinterPreset} disabled={!agentConnected || !selectedPrinter || isSavingPreset}>
-                      {isSavingPreset ? "Saving..." : editingPreset ? "Update Setting" : "Save Setting"}
-                    </button>
-                  </div>
-                  {presetMessage ? <div className="profile-alert success">{presetMessage}</div> : null}
-                  {presetError ? <div className="profile-alert error">{presetError}</div> : null}
-
-                  <div className="printer-preset-list">
-                    {printerPresets.map((preset) => (
-                      <div className="printer-preset-row" key={`${preset.printer}-${preset.paperSize}-${preset.colorMode}`}>
-                        <div>
-                          <strong>{preset.printer}</strong>
-                          <small>
-                            {preset.paperSize} · {preset.colorMode}
-                          </small>
-                        </div>
-                        <button className="printer-preset-edit" type="button" onClick={() => editPrinterPreset(preset)}>
-                          Edit
-                        </button>
-                        <button className="icon-action-btn danger" type="button" onClick={() => deletePrinterPresetRow(preset)} aria-label="Delete printer setting">
-                          <Trash2 size={17} />
-                        </button>
-                      </div>
-                    ))}
-                    {!printerPresets.length ? <p className="printer-preset-empty">No saved printer settings yet.</p> : null}
-                  </div>
-
-                  <DuplexPrinterCard agentConnected={agentConnected} />
+                  <PrinterProfileSetup agentConnected={agentConnected} onPresetSaved={handlePresetSaved} />
                 </div>
               ) : null}
 
@@ -1005,107 +864,13 @@ export default function AutoPrintClient() {
                       </button>
                     </div>
                     {qrDownloadError ? <div className="profile-alert error">{qrDownloadError}</div> : null}
-                    <div className="qr-poster-card">
-                      <div className="qr-poster-top">
-                        <img className="qr-poster-logo-img" src="/logo.png" alt="RepetiGo" />
-                        <div className="qr-poster-divider">
-                          <span className="qr-poster-divider-line" />
-                          <span className="qr-poster-divider-icon">
-                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M12 2L4 5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V5l-8-3z" stroke="white" strokeWidth={1.6} strokeLinejoin="round" />
-                              <rect x="9.3" y="10.5" width="5.4" height="4.4" rx="1" stroke="white" strokeWidth={1.4} />
-                              <path d="M10.2 10.5V9a1.8 1.8 0 0 1 3.6 0v1.5" stroke="white" strokeWidth={1.4} />
-                            </svg>
-                          </span>
-                          <span className="qr-poster-divider-line qr-poster-divider-line-right" />
-                        </div>
-                        <h3 className="qr-poster-title">Scan to Print</h3>
-                        <p className="qr-poster-subtitle">Secure. Private. AI-Powered.</p>
-
-                        <div className="poster-qr-frame" aria-label="Generated shop QR preview">
-                          <span className="poster-qr-corner poster-qr-corner-tl" />
-                          <span className="poster-qr-corner poster-qr-corner-tr" />
-                          <span className="poster-qr-corner poster-qr-corner-bl" />
-                          <span className="poster-qr-corner poster-qr-corner-br" />
-                          {qrImage ? <img src={qrImage} alt="Shop QR code" /> : <QrCode size={150} />}
-                        </div>
-
-                        <div className="poster-steps-row">
-                          <div className="poster-step">
-                            <span className="poster-step-icon poster-step-blue">
-                              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M4 8V5a1 1 0 0 1 1-1h3M20 8V5a1 1 0 0 0-1-1h-3M4 16v3a1 1 0 0 0 1 1h3M20 16v3a1 1 0 0 1-1 1h-3" stroke="white" strokeWidth={1.8} strokeLinecap="round" />
-                                <rect x="8" y="9" width="3" height="3" fill="white" />
-                                <rect x="13" y="9" width="3" height="3" fill="white" />
-                                <rect x="8" y="13" width="3" height="3" fill="white" />
-                              </svg>
-                            </span>
-                            <strong>Scan</strong>
-                          </div>
-                          <span className="poster-step-dots">...</span>
-                          <div className="poster-step">
-                            <span className="poster-step-icon poster-step-blue">
-                              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M7 18a4.5 4.5 0 0 1-.6-8.96A5.5 5.5 0 0 1 17.4 9.5 4 4 0 0 1 17 18H7z" stroke="white" strokeWidth={1.7} strokeLinejoin="round" />
-                                <path d="M12 17v-6m0 0-2.4 2.4M12 11l2.4 2.4" stroke="white" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
-                              </svg>
-                            </span>
-                            <strong>Upload</strong>
-                          </div>
-                          <span className="poster-step-dots">...</span>
-                          <div className="poster-step">
-                            <span className="poster-step-icon poster-step-teal">
-                              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M6 9V4h12v5" stroke="white" strokeWidth={1.7} strokeLinejoin="round" />
-                                <rect x="4" y="9" width="16" height="7" rx="1.4" stroke="white" strokeWidth={1.7} />
-                                <rect x="7" y="14" width="10" height="6" stroke="white" strokeWidth={1.7} />
-                              </svg>
-                            </span>
-                            <strong>Print</strong>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="qr-poster-shop-band">{shopName}</div>
-
-                      <div className="qr-poster-footer-dark">
-                        <div className="poster-footer-col">
-                          <span className="poster-footer-icon">
-                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M12 2L4 5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V5l-8-3z" strokeWidth={1.6} strokeLinejoin="round" />
-                              <path d="M9 12l2 2 4-4" strokeWidth={1.7} strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                          </span>
-                          <strong>Secure</strong>
-                          <p>End-to-end<br />Encryption</p>
-                        </div>
-                        <div className="poster-footer-col">
-                          <span className="poster-footer-icon">
-                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <circle cx="12" cy="8" r="3.2" strokeWidth={1.6} />
-                              <path d="M6 20c0-3.3 2.7-6 6-6" strokeWidth={1.6} strokeLinecap="round" />
-                              <rect x="12.4" y="14.5" width="6.5" height="5.5" rx="1" strokeWidth={1.6} />
-                              <path d="M14 14.5v-1.3a1.6 1.6 0 0 1 3.2 0v1.3" strokeWidth={1.6} />
-                            </svg>
-                          </span>
-                          <strong>Private</strong>
-                          <p>Your Data<br />is Safe</p>
-                        </div>
-                        <div className="poster-footer-col">
-                          <span className="poster-footer-icon">
-                            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m-8 0 1 12.5A1.5 1.5 0 0 0 8.5 21h7a1.5 1.5 0 0 0 1.5-1.5L18 7" strokeWidth={1.6} strokeLinecap="round" strokeLinejoin="round" />
-                              <path d="M10 11v6M14 11v6" strokeWidth={1.6} strokeLinecap="round" />
-                            </svg>
-                          </span>
-                          <strong>Auto-delete</strong>
-                          <p>Files removed<br />after printing</p>
-                        </div>
-                      </div>
-
-                      <div className="poster-wave" />
-                      <div className="qr-poster-url-bar">{formatDisplayUrl(qrUrl)}</div>
-                    </div>
+                    {/* The exact poster that Download and Test Print use, so the
+                        preview always matches the PDF (shape, icons, text). */}
+                    {posterPreviewUrl ? (
+                      <img className="qr-poster-image" src={posterPreviewUrl} alt={`QR poster for ${shopName}`} />
+                    ) : (
+                      <div className="qr-poster-image qr-poster-image-loading">Preparing poster...</div>
+                    )}
                   </div>
                 </div>
               ) : null}
@@ -1114,10 +879,11 @@ export default function AutoPrintClient() {
                 <div className="wizard-action-content">
                   <div className={`connection-result ${testPrintReady ? "success" : "info"}`}>
                     <span />
-                    <strong>{testStatus === "printing" ? "Sending QR Test Page..." : testStatus === "success" ? "QR Test Print Sent" : testPrintReady ? "Test Print Ready" : "Ready for test print"}</strong>
-                    <p>{testStatus === "success" ? testPrintMessage : testPrintReady ? `The generated shop QR will print on ${selectedPrinter}.` : `The generated shop QR will be sent to the selected printer: ${selectedPrinter}.`}</p>
+                    <strong>{testStatus === "printing" ? "Sending QR Poster..." : testStatus === "success" ? "QR Poster Printed" : testPrintReady ? "Test Print Ready" : "Ready for test print"}</strong>
+                    <p>{testStatus === "success" ? testPrintMessage : testPrintReady ? "Your A4 QR poster (same as the Step 5 download) will print through the PrintPilot Agent." : "Your A4 QR poster (same as the Step 5 download) will be sent to the printer through the PrintPilot Agent."}</p>
                   </div>
                   {testPrintError ? <div className="profile-alert error">{testPrintError}</div> : null}
+                  <PrintProfileSelect print={testPrint} noProfileLabel={selectedPrinter ? `Saved printer: ${selectedPrinter}` : "Saved printer"} />
                   <button className="btn btn-primary" type="button" onClick={runTestPrint} disabled={!agentConnected || !printerReady || testStatus === "printing"}>
                     <Play size={16} /> {testStatus === "printing" ? "Sending..." : "Run Test Print"}
                   </button>
@@ -1253,6 +1019,18 @@ function buildQrPosterSvg(shopName: string, shopCode: string, qrUrl: string, qrI
 
   const displayUrl = escapeSvg(formatDisplayUrl(qrUrl) || "repetigo.com");
 
+  // 24x24 icons - the same paths as the on-screen preview - centred at
+  // (cx, cy), so the PDF icons look exactly like the preview.
+  const icon = (cx: number, cy: number, size: number, body: string) =>
+    `<g transform="translate(${cx - size / 2} ${cy - size / 2}) scale(${size / 24})" fill="none" stroke="#ffffff" stroke-linecap="round" stroke-linejoin="round">${body}</g>`;
+  const shieldLockIcon = `<path d="M12 2L4 5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V5l-8-3z" stroke-width="1.6"/><rect x="9.3" y="10.5" width="5.4" height="4.4" rx="1" stroke-width="1.4"/><path d="M10.2 10.5V9a1.8 1.8 0 0 1 3.6 0v1.5" stroke-width="1.4"/>`;
+  const scanIcon = `<path d="M4 8V5a1 1 0 0 1 1-1h3M20 8V5a1 1 0 0 0-1-1h-3M4 16v3a1 1 0 0 0 1 1h3M20 16v3a1 1 0 0 1-1 1h-3" stroke-width="1.8"/><rect x="8" y="9" width="3" height="3" fill="#ffffff" stroke="none"/><rect x="13" y="9" width="3" height="3" fill="#ffffff" stroke="none"/><rect x="8" y="13" width="3" height="3" fill="#ffffff" stroke="none"/>`;
+  const uploadIcon = `<path d="M7 18a4.5 4.5 0 0 1-.6-8.96A5.5 5.5 0 0 1 17.4 9.5 4 4 0 0 1 17 18H7z" stroke-width="1.7"/><path d="M12 17v-6m0 0-2.4 2.4M12 11l2.4 2.4" stroke-width="1.7"/>`;
+  const printIcon = `<path d="M6 9V4h12v5" stroke-width="1.7"/><rect x="4" y="9" width="16" height="7" rx="1.4" stroke-width="1.7"/><rect x="7" y="14" width="10" height="6" stroke-width="1.7"/>`;
+  const secureIcon = `<path d="M12 2L4 5v6c0 5 3.4 8.6 8 10 4.6-1.4 8-5 8-10V5l-8-3z" stroke-width="1.6"/><path d="M9 12l2 2 4-4" stroke-width="1.7"/>`;
+  const privateIcon = `<circle cx="12" cy="8" r="3.2" stroke-width="1.6"/><path d="M6 20c0-3.3 2.7-6 6-6" stroke-width="1.6"/><rect x="12.4" y="14.5" width="6.5" height="5.5" rx="1" stroke-width="1.6"/><path d="M14 14.5v-1.3a1.6 1.6 0 0 1 3.2 0v1.3" stroke-width="1.6"/>`;
+  const deleteIcon = `<path d="M5 7h14M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2m-8 0 1 12.5A1.5 1.5 0 0 0 8.5 21h7a1.5 1.5 0 0 0 1.5-1.5L18 7" stroke-width="1.6"/><path d="M10 11v6M14 11v6" stroke-width="1.6"/>`;
+
   return `
 <svg xmlns="http://www.w3.org/2000/svg" width="720" height="1120" viewBox="0 0 720 1120" font-family="'Baloo 2', Arial, sans-serif">
   <defs>
@@ -1267,8 +1045,7 @@ function buildQrPosterSvg(shopName: string, shopCode: string, qrUrl: string, qrI
 
   <line x1="150" y1="148" x2="298" y2="148" stroke="#c8cee3" stroke-width="2"/>
   <circle cx="360" cy="148" r="24" fill="url(#goGrad)"/>
-  <path d="M360 133l9 4v7c0 6-4 9.6-9 11.3-5-1.7-9-5.3-9-11.3v-7z" fill="none" stroke="#ffffff" stroke-width="2"/>
-  <rect x="354" y="146" width="12" height="9.5" rx="2" fill="none" stroke="#ffffff" stroke-width="1.8"/>
+  ${icon(360, 148, 30, shieldLockIcon)}
   <line x1="422" y1="148" x2="570" y2="148" stroke="#c8cee3" stroke-width="2"/>
 
   <text x="360" y="220" text-anchor="middle" font-size="58" font-weight="800" fill="#1a2456">Scan to Print</text>
@@ -1284,21 +1061,15 @@ function buildQrPosterSvg(shopName: string, shopCode: string, qrUrl: string, qrI
   <text x="436" y="744" text-anchor="middle" font-size="26" font-weight="800" fill="#1a2456">...</text>
 
   <circle cx="222" cy="728" r="36" fill="#3b6fd1"/>
-  <path d="M206 716v-8a5 5 0 015-5h6M238 716v-8a5 5 0 00-5-5h-6M206 740v8a5 5 0 005 5h6M238 740v8a5 5 0 01-5 5h-6" fill="none" stroke="#ffffff" stroke-width="3"/>
-  <rect x="212" y="722" width="6" height="6" fill="#ffffff"/>
-  <rect x="223" y="722" width="6" height="6" fill="#ffffff"/>
-  <rect x="212" y="733" width="6" height="6" fill="#ffffff"/>
+  ${icon(222, 728, 40, scanIcon)}
   <text x="222" y="792" text-anchor="middle" font-size="24" font-weight="700" fill="#1a2456">Scan</text>
 
   <circle cx="360" cy="728" r="36" fill="#3b6fd1"/>
-  <path d="M344 736a11 11 0 01-1.5-21.9A13 13 0 01382 720a9.5 9.5 0 01-1 18.9H344z" fill="none" stroke="#ffffff" stroke-width="2.6"/>
-  <path d="M360 738v-14m0 0-5.5 5.5M360 724l5.5 5.5" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  ${icon(360, 728, 40, uploadIcon)}
   <text x="360" y="792" text-anchor="middle" font-size="24" font-weight="700" fill="#1a2456">Upload</text>
 
   <circle cx="498" cy="728" r="36" fill="#22c0a2"/>
-  <path d="M488 718v-11h20v11" fill="none" stroke="#ffffff" stroke-width="2.6"/>
-  <rect x="481" y="718" width="34" height="16.5" rx="3" fill="none" stroke="#ffffff" stroke-width="2.6"/>
-  <rect x="488" y="731" width="20" height="13" fill="none" stroke="#ffffff" stroke-width="2.6"/>
+  ${icon(498, 728, 40, printIcon)}
   <text x="498" y="792" text-anchor="middle" font-size="24" font-weight="700" fill="#1a2456">Print</text>
 
   <rect x="0" y="826" width="720" height="68" fill="#22c0a2"/>
@@ -1308,23 +1079,17 @@ function buildQrPosterSvg(shopName: string, shopCode: string, qrUrl: string, qrI
   <line x1="248" y1="924" x2="248" y2="1058" stroke="rgba(255,255,255,0.25)" stroke-width="2"/>
   <line x1="472" y1="924" x2="472" y2="1058" stroke="rgba(255,255,255,0.25)" stroke-width="2"/>
 
-  <circle cx="124" cy="946" r="24" fill="none"/>
-  <path d="M124 932l14 6v10c0 10-8 16-14 19-6-3-14-9-14-19v-10z" fill="none" stroke="#ffffff" stroke-width="2.6"/>
-  <path d="M118 947l4 4 8-8" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  ${icon(124, 948, 44, secureIcon)}
   <text x="124" y="1004" text-anchor="middle" font-size="24" font-weight="700" fill="#ffffff">Secure</text>
   <text x="124" y="1030" text-anchor="middle" font-size="16" fill="#c7cbe0">End-to-end</text>
   <text x="124" y="1050" text-anchor="middle" font-size="16" fill="#c7cbe0">Encryption</text>
 
-  <circle cx="360" cy="936" r="9" fill="none" stroke="#ffffff" stroke-width="2.6"/>
-  <path d="M347 960c0-9 6.5-16 13-16s13 7 13 16" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"/>
-  <rect x="373" y="947" width="17.5" height="14.5" rx="2.6" fill="none" stroke="#ffffff" stroke-width="2.6"/>
-  <path d="M377 947v-3.4a4.2 4.2 0 018.4 0v3.4" fill="none" stroke="#ffffff" stroke-width="2.6"/>
+  ${icon(360, 948, 44, privateIcon)}
   <text x="360" y="1004" text-anchor="middle" font-size="24" font-weight="700" fill="#ffffff">Private</text>
   <text x="360" y="1030" text-anchor="middle" font-size="16" fill="#c7cbe0">Your Data</text>
   <text x="360" y="1050" text-anchor="middle" font-size="16" fill="#c7cbe0">is Safe</text>
 
-  <path d="M583 926h28M591 926v-4a2.6 2.6 0 012.6-2.6h4.8a2.6 2.6 0 012.6 2.6v4m-16 0 2.6 26.5a3.9 3.9 0 003.9 3.5h9.8a3.9 3.9 0 003.9-3.5L603 926" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
-  <path d="M593 934v13M601 934v13" fill="none" stroke="#ffffff" stroke-width="2.6" stroke-linecap="round"/>
+  ${icon(596, 948, 44, deleteIcon)}
   <text x="596" y="1004" text-anchor="middle" font-size="24" font-weight="700" fill="#ffffff">Auto-delete</text>
   <text x="596" y="1030" text-anchor="middle" font-size="16" fill="#c7cbe0">Files removed</text>
   <text x="596" y="1050" text-anchor="middle" font-size="16" fill="#c7cbe0">after printing</text>

@@ -52,6 +52,7 @@ import {
   type OutputKind,
   type PhotoParams,
 } from "@/lib/idCardStudio";
+import { PrintProfileSelect, useAgentPrint } from "@/app/PrintProfileSelect";
 
 const TEXT_SIZES = [
   { label: "Small", value: 90 },
@@ -296,6 +297,7 @@ export default function IdCardStudioClient() {
   const [modal, setModal] = useState<Modal>("");
   const [outputKind, setOutputKind] = useState<OutputKind>("card");
   const [busyOutput, setBusyOutput] = useState(false);
+  const agentPrint = useAgentPrint("id-card-studio");
   const [settingsNote, setSettingsNote] = useState("");
 
   // A new card (or clearing back to none) is a fresh billable generation.
@@ -606,8 +608,21 @@ export default function IdCardStudioClient() {
       const baseName = card.fileName.replace(/\.pdf$/i, "") || "id-card";
       const suffix = kind === "card" ? "card" : kind === "a4" ? "A4-sheet" : "4x6-sheet";
       if (action === "print") {
-        const printWindow = window.open("", "_blank");
-        if (printWindow) printWindow.location.href = url;
+        // Straight to the printer through the PrintPilot agent and the chosen
+        // profile; a new tab only for "Browser print" / no agent running.
+        const outcome = await agentPrint.printPdf(async () => bytes, {
+          fileName: `${baseName}-${suffix}.pdf`,
+          fallback: () => {
+            const printWindow = window.open("", "_blank");
+            if (printWindow) printWindow.location.href = url;
+          },
+        });
+        if (outcome.via === "agent") {
+          setTimeout(() => URL.revokeObjectURL(url), 60_000);
+          setStatus({ text: outcome.message, error: !outcome.ok });
+          if (outcome.ok) trackToolEvent("id_card_maker", `${action}_${kind}_${card.type.key}`);
+          return;
+        }
       } else {
         const link = document.createElement("a");
         link.href = url;
@@ -1223,6 +1238,7 @@ export default function IdCardStudioClient() {
               </select>
             </label>
           ) : null}
+          <PrintProfileSelect print={agentPrint} />
           <p className="idstudio-muted">Print at 100% / Actual size, not &ldquo;Fit to page&rdquo;, so the card comes out at the real size.</p>
           <div className="idstudio-dialog-actions">
             <button type="button" className="idstudio-btn" disabled={busyOutput} onClick={() => void makeOutput(outputKind, "download")}>

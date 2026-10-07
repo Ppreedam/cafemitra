@@ -16,6 +16,7 @@ import { BiodataPreviewPage } from "../BiodataPreview";
 import BiodataFormFields from "../BiodataFormFields";
 import { buildBiodataPdf, buildPreviewBiodataPdf } from "../pdfBuilder";
 import { blankBiodata, biodataHasContent, sampleBiodata, STORAGE_KEY, type BiodataCustomField, type BiodataCustomSection, type BiodataData, type SavedBiodataOrderSummary } from "../biodataModel";
+import { PrintProfileSelect, useAgentPrint } from "@/app/PrintProfileSelect";
 
 async function chargeBiodataDownload(template: BiodataTemplateId) {
   const response = await apiFetch("/api/tools/biodata-maker-charge/", {
@@ -58,6 +59,7 @@ export default function BiodataBuilderClient() {
   const templatePrices = useTemplatePrices<BiodataTemplateId>("biodata_maker_");
   const [data, setData] = useState<BiodataData>(sampleBiodata);
   const [downloadBusy, setDownloadBusy] = useState(false);
+  const agentPrint = useAgentPrint("biodata-maker");
   const [printBusy, setPrintBusy] = useState(false);
   const [previewBusy, setPreviewBusy] = useState(false);
   const busy = downloadBusy || printBusy || previewBusy;
@@ -255,7 +257,7 @@ export default function BiodataBuilderClient() {
     try {
       await chargeBiodataDownload(data.template);
       const blob = await buildBiodataPdf(data);
-      printPdfBlob(blob);
+      await agentPrint.printPdf(async () => blob, { fileName: "biodata.pdf", fallback: () => printPdfBlob(blob) });
       trackToolEvent("biodata_maker", "print_pdf", { template: data.template });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not prepare the biodata for printing. Please try again.");
@@ -305,6 +307,7 @@ export default function BiodataBuilderClient() {
           <button type="button" className="resbuild-btn-secondary" onClick={previewPdf} disabled={busy}>
             <Eye size={16} /> {previewBusy ? "Preparing..." : "Preview PDF"}
           </button>
+          <PrintProfileSelect print={agentPrint} className="resbuild-print-profile" />
           <button type="button" className="resbuild-btn-secondary" onClick={printBiodata} disabled={busy || locked} title={locked ? "Customer payment is pending" : undefined}>
             <Printer size={16} /> {printBusy ? "Printing..." : "Print"}
           </button>

@@ -7,6 +7,7 @@ import { Bookmark, Check, Download, LogIn, Plus, Printer, QrCode, Share2, Trash2
 import { DashboardShell } from "../DashboardShell";
 import { apiFetch, hasStoredSession } from "@/lib/api";
 import { trackToolEvent } from "@/lib/analytics";
+import { PrintProfileSelect, useAgentPrint } from "@/app/PrintProfileSelect";
 
 type UpiPayee = { id: number; label: string; vpa: string; isDefault: boolean };
 type UpiQrRecord = { id: number; label: string; vpa: string; amount: number | null; note: string; orderRef: string; createdAt: string };
@@ -176,6 +177,7 @@ export default function UpiQrGeneratorClient() {
   const [payees, setPayees] = useState<UpiPayee[]>([]);
   const [activePayeeId, setActivePayeeId] = useState<number | null>(null);
   const [adHocLabel, setAdHocLabel] = useState("");
+  const agentPrint = useAgentPrint("upi-qr");
   const [adHocVpa, setAdHocVpa] = useState("");
   const [showAddForm, setShowAddForm] = useState(false);
   const [newLabel, setNewLabel] = useState("");
@@ -392,11 +394,17 @@ export default function UpiQrGeneratorClient() {
 
   function printQr() {
     if (!cardDataUrl) return;
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
-    printWindow.document.open();
-    printWindow.document.write(buildQrStandeeHtml(cardDataUrl));
-    printWindow.document.close();
+    const printHtml = buildQrStandeeHtml(cardDataUrl);
+    void agentPrint.printHtml(() => printHtml, {
+      fileName: "upi-qr-standee.pdf",
+      fallback: () => {
+        const printWindow = window.open("", "_blank");
+        if (!printWindow) return;
+        printWindow.document.open();
+        printWindow.document.write(printHtml);
+        printWindow.document.close();
+      },
+    });
     trackToolEvent("upi_qr_generator", "print");
   }
 
@@ -554,7 +562,8 @@ export default function UpiQrGeneratorClient() {
               <button type="button" className="resbuild-btn-secondary" disabled={!cardDataUrl} onClick={() => void shareQr()}>
                 {copied ? <Check size={16} /> : <Share2 size={16} />} {copied ? "Copied" : "Share"}
               </button>
-              <button type="button" className="resbuild-btn-secondary" disabled={!cardDataUrl} onClick={printQr}>
+              <PrintProfileSelect print={agentPrint} />
+              <button type="button" className="resbuild-btn-secondary" disabled={!cardDataUrl || agentPrint.busy} onClick={printQr}>
                 <Printer size={16} /> Print
               </button>
               <button type="button" className="resbuild-btn-secondary" disabled={!cardDataUrl || recordSaveBusy} onClick={() => void saveQrRecord()}>

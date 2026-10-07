@@ -332,6 +332,12 @@ class PrintOrder(models.Model):
     duplex = models.BooleanField(default=False, db_default=False)
     duplex_edge = models.CharField(max_length=8, blank=True, default="long", db_default="long")
 
+    # Print Agent profile (a printer + its saved driver preferences, e.g.
+    # "4x6-photo-print-best-glossy"). Copied at creation from the shop's
+    # ServicePricing.settings["printProfiles"][price_item_id]; null = the
+    # agent's normal paper-size/color preset routing.
+    profile_name = models.CharField(max_length=120, null=True, blank=True, default=None)
+
     # Admin-side triage flag for the Order Issues queue (unsuccessful orders
     # an admin has looked into and handled/contacted the shop about) -
     # independent of `status`, which reflects the print pipeline itself.
@@ -380,6 +386,25 @@ class PrintOrder(models.Model):
 
     def __str__(self) -> str:
         return f"Order #{self.id} - {self.service_name}"
+
+    def save(self, *args, **kwargs):
+        # Resolved here rather than at each of the many order-creation views,
+        # so every new order picks up the profile its print type is mapped to.
+        if self._state.adding and self.profile_name is None:
+            self.profile_name = resolve_print_profile(self.user_id, self.service_key, self.price_item_id)
+        super().save(*args, **kwargs)
+
+
+def resolve_print_profile(user_id, service_key, price_item_id):
+    """Profile name the shop assigned to this print type in Printer Setup
+    (ServicePricing.settings["printProfiles"] = {price_item_id: name}), or
+    None when no profile is assigned."""
+    if not user_id or not service_key or not price_item_id:
+        return None
+    settings = ServicePricing.objects.filter(user_id=user_id, service_key=service_key).values_list("settings", flat=True).first()
+    profiles = settings.get("printProfiles") if isinstance(settings, dict) else None
+    name = str((profiles or {}).get(str(price_item_id), "") or "").strip() if isinstance(profiles, dict) else ""
+    return name or None
 
 
 class WalletTransaction(models.Model):
