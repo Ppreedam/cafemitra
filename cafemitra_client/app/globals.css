@@ -22550,3 +22550,56 @@ img.profile-photo {
   color: #64748b;
   text-align: center;
 }
+
+/* Queue item extras: compact edit shortcuts + cm/inch segmented toggle */
+.pps-edit-actions {
+  flex: 1 0 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pps-edit-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border: 1px solid var(--soft-line);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 0.76rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.pps-edit-actions button svg {
+  color: #2563eb;
+}
+.pps-edit-actions button:hover {
+  border-color: #2563eb;
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.06);
+}
+
+.pps-size-presets.pps-unit-toggle {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  gap: 0;
+  align-self: flex-start;
+  padding: 2px;
+  border: 1px solid var(--soft-line);
+  border-radius: 999px;
+  background: #fff;
+}
+.pps-unit-toggle button {
+  min-width: 52px;
+  padding: 4px 14px;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+}
+.pps-unit-toggle button.active {
+  background: #2563eb;
+  color: #fff;
+}

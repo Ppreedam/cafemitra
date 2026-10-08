@@ -3,15 +3,15 @@
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
-import { ChevronLeft, ChevronRight, Download, Eye, ImagePlus, Loader2, LogIn, Minus, Plus, Printer, RefreshCw, RotateCw, Trash2, Upload, Wallet, X } from "lucide-react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { CaseSensitive, ChevronLeft, ChevronRight, Download, Eye, ImagePlus, Loader2, LogIn, Minus, Paintbrush, Plus, Printer, RefreshCw, RotateCw, Trash2, Upload, Wallet, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
 import { PrintProfileSelect, useAgentPrint } from "../PrintProfileSelect";
 import { canvasesToPdfBytes } from "@/lib/agent-print";
 import { apiFetch, apiUrl, dataUriToBlob, hasStoredSession } from "@/lib/api";
 import { useToolPrice } from "@/lib/useToolPrice";
 import PhotoPrintSheetSeoContent from "./PhotoPrintSheetSeoContent";
-import { takePendingPrintSheetPhoto } from "@/lib/printSheetHandoff";
+import { stashPhotoForEditor, takePendingPrintSheetPhoto, type EditorHandoffTool } from "@/lib/printSheetHandoff";
 import { trackToolEvent } from "@/lib/analytics";
 
 async function chargePhotoPrintSheet() {
@@ -38,11 +38,14 @@ import {
 } from "./printLayout";
 
 const MAX_COUNT = 200;
+const DEFAULT_COUNT = 6;
+const CM_PER_INCH = 2.54;
 
 const PAPER_SIZE_ORDER: PaperSize[] = ["a4", "4x6", "5x7", "a5", "letter", "custom"];
 
 export default function PhotoPrintSheetClient() {
   const pathname = usePathname();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const price = useToolPrice("photo_print_sheet");
   const [loginPrompt, setLoginPrompt] = useState(false);
@@ -79,6 +82,14 @@ export default function PhotoPrintSheetClient() {
   const [pendingGaps, setPendingGaps] = useState<MarginGapMm>(gaps);
   const [liveView, setLiveView] = useState(true);
   const [sizeEditorId, setSizeEditorId] = useState<string | null>(null);
+  // Sizes are always stored in cm; the unit only changes how they are shown and typed.
+  const [sizeUnit, setSizeUnit] = useState<"cm" | "in">("cm");
+  const fromCm = (cm: number) => (sizeUnit === "in" ? Number((cm / CM_PER_INCH).toFixed(2)) : cm);
+  const toCm = (value: number) => (sizeUnit === "in" ? value * CM_PER_INCH : value);
+  const sizeLabel = (photo: QueuePhoto) =>
+    sizeUnit === "in"
+      ? `${(photo.widthCm / CM_PER_INCH).toFixed(2)} × ${(photo.heightCm / CM_PER_INCH).toFixed(2)} in`
+      : `${photo.widthCm.toFixed(1)} × ${photo.heightCm.toFixed(1)} cm`;
   const [previewPhotoId, setPreviewPhotoId] = useState<string | null>(null);
   const [activePage, setActivePage] = useState(0);
   const [isExporting, setIsExporting] = useState(false);
@@ -143,21 +154,22 @@ export default function PhotoPrintSheetClient() {
   function addFiles(fileList: FileList | File[]) {
     const files = Array.from(fileList).filter((file) => file.type.startsWith("image/"));
     if (!files.length) return;
-    const preset = PHOTO_SIZE_PRESETS[0];
-    setPhotos((prev) => [
-      ...prev,
-      ...files.map(
-        (file): QueuePhoto => ({
-          id: crypto.randomUUID(),
-          file,
-          url: URL.createObjectURL(file),
-          widthCm: preset.widthCm,
-          heightCm: preset.heightCm,
-          count: 1,
-          sizeKey: preset.key,
-        }),
-      ),
-    ]);
+    // New photos default to the Custom size with 6 copies, and the size
+    // editor opens so all the config is visible straight away.
+    const preset = PHOTO_SIZE_PRESETS.find((item) => item.key === "custom") || PHOTO_SIZE_PRESETS[0];
+    const added = files.map(
+      (file): QueuePhoto => ({
+        id: crypto.randomUUID(),
+        file,
+        url: URL.createObjectURL(file),
+        widthCm: preset.widthCm,
+        heightCm: preset.heightCm,
+        count: DEFAULT_COUNT,
+        sizeKey: preset.key,
+      }),
+    );
+    setPhotos((prev) => [...prev, ...added]);
+    setSizeEditorId(added[0].id);
     setError("");
   }
 
@@ -217,6 +229,23 @@ export default function PhotoPrintSheetClient() {
       downloadCanvas(canvas, `${photo.file.name.replace(/\.[^.]+$/, "")}-${photo.widthCm}x${photo.heightCm}cm.png`);
     } catch {
       setError("Could not download this photo. Please try again.");
+    }
+  }
+
+  // Hands this queue photo to the Photo Editor with the chosen tool open
+  // (background colour, or name & DOB caption).
+  async function editInPhotoEditor(photo: QueuePhoto, tool: EditorHandoffTool) {
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(photo.file);
+      });
+      if (!stashPhotoForEditor(dataUrl, photo.file.name, tool)) throw new Error("storage");
+      router.push("/image-tools/photo-editor");
+    } catch {
+      setError("Could not open this photo in the editor. Please try again.");
     }
   }
 
@@ -346,7 +375,7 @@ export default function PhotoPrintSheetClient() {
                     </div>
                     <div className="pps-queue-info">
                       <button type="button" className="pps-size-chip" onClick={() => setSizeEditorId((current) => (current === photo.id ? null : photo.id))}>
-                        {photo.widthCm.toFixed(1)} &times; {photo.heightCm.toFixed(1)} cm
+                        {sizeLabel(photo)}
                       </button>
                       <div className="pps-count-stepper">
                         <button type="button" onClick={() => updateCount(photo.id, photo.count - 1)} disabled={photo.count <= 1} aria-label="Decrease quantity">
@@ -369,6 +398,15 @@ export default function PhotoPrintSheetClient() {
                         </button>
                       </div>
 
+                      <div className="pps-edit-actions">
+                        <button type="button" onClick={() => void editInPhotoEditor(photo, "background")}>
+                          <Paintbrush size={14} /> Background Color
+                        </button>
+                        <button type="button" onClick={() => void editInPhotoEditor(photo, "caption")}>
+                          <CaseSensitive size={14} /> Name &amp; DOB
+                        </button>
+                      </div>
+
                       {sizeEditorId === photo.id ? (
                         <div className="pps-size-editor">
                           <div className="pps-size-presets">
@@ -383,27 +421,35 @@ export default function PhotoPrintSheetClient() {
                               </button>
                             ))}
                           </div>
+                          <div className="pps-size-presets pps-unit-toggle" role="group" aria-label="Size unit">
+                            <button type="button" className={sizeUnit === "cm" ? "active" : ""} onClick={() => setSizeUnit("cm")}>
+                              cm
+                            </button>
+                            <button type="button" className={sizeUnit === "in" ? "active" : ""} onClick={() => setSizeUnit("in")}>
+                              inch
+                            </button>
+                          </div>
                           <div className="pps-size-custom">
                             <label>
-                              <span>Width (cm)</span>
+                              <span>Width ({sizeUnit === "in" ? "inch" : "cm"})</span>
                               <input
                                 type="number"
-                                min="0.5"
-                                max="30"
-                                step="0.1"
-                                value={photo.widthCm}
-                                onChange={(event) => updateCustomSize(photo.id, "widthCm", Number(event.target.value))}
+                                min={sizeUnit === "in" ? 0.2 : 0.5}
+                                max={sizeUnit === "in" ? 11.8 : 30}
+                                step={sizeUnit === "in" ? 0.01 : 0.1}
+                                value={fromCm(photo.widthCm)}
+                                onChange={(event) => updateCustomSize(photo.id, "widthCm", toCm(Number(event.target.value)))}
                               />
                             </label>
                             <label>
-                              <span>Height (cm)</span>
+                              <span>Height ({sizeUnit === "in" ? "inch" : "cm"})</span>
                               <input
                                 type="number"
-                                min="0.5"
-                                max="30"
-                                step="0.1"
-                                value={photo.heightCm}
-                                onChange={(event) => updateCustomSize(photo.id, "heightCm", Number(event.target.value))}
+                                min={sizeUnit === "in" ? 0.2 : 0.5}
+                                max={sizeUnit === "in" ? 11.8 : 30}
+                                step={sizeUnit === "in" ? 0.01 : 0.1}
+                                value={fromCm(photo.heightCm)}
+                                onChange={(event) => updateCustomSize(photo.id, "heightCm", toCm(Number(event.target.value)))}
                               />
                             </label>
                           </div>
@@ -581,7 +627,7 @@ export default function PhotoPrintSheetClient() {
             <div className="document-preview-head">
               <div>
                 <strong>{previewPhoto.file.name}</strong>
-                <span>{previewPhoto.widthCm.toFixed(1)} &times; {previewPhoto.heightCm.toFixed(1)} cm</span>
+                <span>{sizeLabel(previewPhoto)}</span>
               </div>
               <button type="button" onClick={() => setPreviewPhotoId(null)} aria-label="Close preview">
                 <X size={18} />

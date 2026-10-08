@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("GeminiPool")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+b9e6645efee8511999de622c5d4fc2f1cc05c493")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ec44ca84ef7a6228252c3a5c73a722fe2b2290b1")]
 [assembly: System.Reflection.AssemblyProductAttribute("GeminiPool")]
 [assembly: System.Reflection.AssemblyTitleAttribute("GeminiPool")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
