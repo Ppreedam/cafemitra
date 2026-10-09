@@ -1,4 +1,4 @@
-using System.Net;
+﻿using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using System.Text;
@@ -40,12 +40,12 @@ internal sealed class CafeMitraApi(HttpClient http, AgentConfig config, string c
         return response;
     }
 
-    public async Task<IReadOnlyList<PrintJob>> FetchJobs(bool duplexAvailable, CancellationToken token)
+    public async Task<JobListResponse> FetchJobs(bool duplexAvailable, CancellationToken token)
     {
         // duplex=1/0 tells the server whether this shop can print double-side
         // right now, so the customer page only offers it when it can work.
         var result = await SendJson<JobListResponse>(HttpMethod.Get, $"api/agent/jobs/?duplex={(duplexAvailable ? 1 : 0)}", null, token);
-        return result?.Jobs ?? [];
+        return result ?? new JobListResponse();
     }
 
     public async Task ReportDuplexAvailability(bool available, CancellationToken token)

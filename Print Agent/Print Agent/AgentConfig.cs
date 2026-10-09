@@ -21,7 +21,7 @@ internal static class AgentPaths
 
 internal sealed class AgentConfig
 {
-    public string ApiBaseUrl { get; set; } = "https://api.repetigo.com/";
+    public string ApiBaseUrl { get; set; } = "http://127.0.0.1:8000/";
     public string AccessToken { get; set; } = "";
     public string RefreshToken { get; set; } = "";
     public string OwnerName { get; set; } = "";

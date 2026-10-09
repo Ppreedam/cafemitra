@@ -493,6 +493,7 @@ namespace Print_Agent
             {
                 using var form = new PrintProfilesForm();
                 form.ShowDialog(this);
+                ReportDuplexAvailabilityIfChanged(); // profiles decide whether double-side is offered
             };
             pnlTopBar.Controls.Add(button);
             button.BringToFront();
@@ -1036,24 +1037,13 @@ namespace Print_Agent
         }
 
         // ── Match Printer from Settings Grid ─────────────────────────
-        // Profile name saved on the preset row for this paper size + color
-        // mode ("" when the row has none, or there is no row).
-        private string FindMatchingPresetProfile(string paperSize, string colorType)
-        {
-            foreach (DataGridViewRow row in dataGridPrinterSetting.Rows)
-            {
-                if (row.IsNewRow) continue;
-                if ((row.Cells["colPageSize"].Value?.ToString() ?? "").Equals(paperSize, StringComparison.OrdinalIgnoreCase) &&
-                    (row.Cells["colColorType"].Value?.ToString() ?? "").Equals(colorType, StringComparison.OrdinalIgnoreCase))
-                {
-                    return row.Cells["colProfile"].Value?.ToString() ?? "";
-                }
-            }
-            return "";
-        }
+        private sealed record PresetMatch(string Printer, string Profile);
 
-        private string FindMatchingPrinter(string paperSize, string colorType)
+        // Every Printer Settings row for this paper size + color mode, in
+        // grid order. More than one = the shop is asked which to print on.
+        private System.Collections.Generic.List<PresetMatch> FindMatchingPresets(string paperSize, string colorType)
         {
+            var matches = new System.Collections.Generic.List<PresetMatch>();
             foreach (DataGridViewRow row in dataGridPrinterSetting.Rows)
             {
                 if (row.IsNewRow) continue;
@@ -1061,15 +1051,77 @@ namespace Print_Agent
                 string rowPaper = row.Cells["colPageSize"].Value?.ToString() ?? "";
                 string rowColor = row.Cells["colColorType"].Value?.ToString() ?? "";
                 string rowPrinter = row.Cells["colPrinter"].Value?.ToString() ?? "";
+                string rowProfile = row.Cells["colProfile"].Value?.ToString() ?? "";
 
                 if (rowPaper.Equals(paperSize, StringComparison.OrdinalIgnoreCase) &&
                     rowColor.Equals(colorType, StringComparison.OrdinalIgnoreCase) &&
                     !string.IsNullOrEmpty(rowPrinter))
                 {
-                    return rowPrinter;
+                    var match = new PresetMatch(rowPrinter, rowProfile);
+                    if (!matches.Contains(match)) matches.Add(match);
                 }
             }
-            return null; // no match
+            return matches;
+        }
+
+        // Double-side orders print with the profile of this name.
+        private const string DuplexProfileName = "duplex";
+
+        // "Hold Job" in a printer/profile picker holds that job for a while
+        // instead of asking again on every poll.
+        private readonly System.Collections.Generic.Dictionary<int, DateTime> _choiceHeldUntil = new();
+        private static readonly TimeSpan ChoiceHoldDuration = TimeSpan.FromMinutes(2);
+
+        private void HoldChoice(int jobId)
+        {
+            _choiceHeldUntil[jobId] = DateTime.Now + ChoiceHoldDuration;
+            _printedIds.Remove(jobId); // retried once the hold is over
+        }
+
+        private bool IsChoiceOnHold(int jobId)
+        {
+            if (!_choiceHeldUntil.TryGetValue(jobId, out var until)) return false;
+            if (DateTime.Now < until) return true;
+            _choiceHeldUntil.Remove(jobId);
+            return false;
+        }
+
+        private PresetMatch? AskPresetChoice(System.Collections.Generic.List<PresetMatch> presets, PrintJob job, string paperSize, string colorType, string tokenId)
+        {
+            if (InvokeRequired)
+            {
+                return (PresetMatch?)Invoke(new Func<PresetMatch?>(() => AskPresetChoice(presets, job, paperSize, colorType, tokenId)));
+            }
+
+            LogStatus($"{tokenId}: {presets.Count} printers saved for {paperSize} / {colorType} - asking which one to use.");
+            var options = presets.Select(p => string.IsNullOrWhiteSpace(p.Profile) ? p.Printer : $"{p.Printer}  ({p.Profile})").ToList();
+            var index = ChoicePromptForm.Ask(
+                "Choose Printer",
+                $"Token {tokenId}: {job.PrintColorModeLabel}, {paperSize}, {job.Pages} page(s) × {Math.Max(job.Copies, 1)}.\n" +
+                "More than one printer is saved for this paper size + color. Which one should print it?",
+                options);
+            return index >= 0 ? presets[index] : null;
+        }
+
+        // Double-side order but no "duplex" profile on this PC: the shop picks
+        // one of its saved profiles for this job. Null = hold the job.
+        private string? AskDuplexProfile(PrintJob job, string tokenId)
+        {
+            if (InvokeRequired)
+            {
+                return (string?)Invoke(new Func<string?>(() => AskDuplexProfile(job, tokenId)));
+            }
+
+            var profiles = PrintProfileStore.Load();
+            if (profiles.Count == 0) return null;
+
+            LogStatus($"{tokenId}: double-side job but no \"{DuplexProfileName}\" profile - asking which profile to use.");
+            var index = ChoicePromptForm.Ask(
+                "Choose Double-Side Profile",
+                $"Token {tokenId}: double-side, {job.PrintColorModeLabel}, {job.Pages} page(s) × {Math.Max(job.Copies, 1)}.\n" +
+                $"No profile named \"{DuplexProfileName}\" is set up. Pick a profile with two-sided printing turned on.",
+                profiles.Select(p => $"{p.Name}  ({p.Printer})").ToList());
+            return index >= 0 ? profiles[index].Name : null;
         }
         // ── PDF Printing ──────────────────────────────────────────────
 
@@ -1477,7 +1529,10 @@ namespace Print_Agent
             try
             {
                 var api = NewApi();
-                var jobs = await api.FetchJobs(IsDuplexAvailable(), CancellationToken.None);
+                var jobList = await api.FetchJobs(IsDuplexAvailable(), CancellationToken.None);
+                QueueCashApprovalPrompts(api, jobList.CashApprovals);
+
+                var jobs = jobList.Jobs;
                 if (jobs.Count == 0) return;
 
                 LogStatus($"Found {jobs.Count} job(s).");
@@ -1518,6 +1573,70 @@ namespace Print_Agent
             catch (Exception ex)
             {
                 LogStatus($"Poll error: {ex.Message}");
+            }
+        }
+
+        // ── Passport photo cash approvals ─────────────────────────────
+        // Orders whose popup is open or queued, so a poll/push that lands
+        // meanwhile doesn't ask about the same order twice.
+        private readonly System.Collections.Generic.HashSet<int> _cashApprovalIds = new();
+        private readonly SemaphoreSlim _cashApprovalGate = new(1, 1);
+
+        private void QueueCashApprovalPrompts(CafeMitraApi api, System.Collections.Generic.IReadOnlyList<PrintJob> orders)
+        {
+            foreach (var order in orders)
+            {
+                if (order.Id <= 0 || !_cashApprovalIds.Add(order.Id)) continue;
+                // BeginInvoke so the modal popup never holds up this poll's
+                // print jobs.
+                BeginInvoke(new Action(() => _ = PromptCashApprovalAsync(api, order)));
+            }
+        }
+
+        private async System.Threading.Tasks.Task PromptCashApprovalAsync(CafeMitraApi api, PrintJob order)
+        {
+            var tokenId = string.IsNullOrWhiteSpace(order.TokenId) ? $"Order {order.Id}" : order.TokenId;
+            var decided = false;
+            await _cashApprovalGate.WaitAsync(); // one popup at a time
+            try
+            {
+                LogStatus($"{tokenId}: waiting for cash confirmation ({order.ServiceName}).");
+                var approved = CashConfirmForm.ShowConfirm(
+                    order.TotalAmount,
+                    "Cash Counter Photo Request",
+                    $"{order.ServiceName}  •  {Math.Max(order.Copies, 1)} copy/copies",
+                    tokenId);
+                if (approved)
+                {
+                    await api.ApproveCashOrder(order.Id, CancellationToken.None);
+                    LogStatus($"{tokenId}: cash collected - {order.ServiceName} approved.");
+                }
+                else
+                {
+                    await api.RejectCashOrder(order.Id, CancellationToken.None);
+                    LogStatus($"{tokenId}: {order.ServiceName} cash request rejected.");
+                }
+                decided = true;
+            }
+            catch (Exception ex)
+            {
+                // Also lands here when it was already approved/rejected from
+                // the website dashboard - it then drops off the server list.
+                LogStatus($"{tokenId}: could not update cash approval - {ex.Message}");
+            }
+            finally
+            {
+                _cashApprovalGate.Release();
+                // Kept while decided so the stale poll result in flight can't
+                // ask again; dropped after a minute in case it's still pending.
+                if (decided)
+                    _ = System.Threading.Tasks.Task.Delay(60_000).ContinueWith(_ =>
+                    {
+                        try { BeginInvoke(new Action(() => _cashApprovalIds.Remove(order.Id))); }
+                        catch { /* app closing */ }
+                    });
+                else
+                    _cashApprovalIds.Remove(order.Id);
             }
         }
 
@@ -1614,13 +1733,55 @@ namespace Print_Agent
                 var jobPaper = (requestedPaper == "A3" || (requestedPaper == "4x6" && !useDuplex)) ? requestedPaper : DefaultPaperSize;
 
                 // Print profile = a printer + its saved driver preferences
-                // (paper, type, quality...). Taken from the job itself when
-                // the server names one, otherwise from the Printer Settings
-                // row for this paper size + color mode. Duplex jobs keep the
-                // dedicated duplex printer path.
-                var profileName = !string.IsNullOrWhiteSpace(job.ProfileName)
-                    ? job.ProfileName
-                    : useDuplex ? "" : FindMatchingPresetProfile(jobPaper, colorType);
+                // (paper, type, quality...). Double-side orders print with the
+                // "duplex" profile (two-sided is part of its driver settings),
+                // or one the shop picks when there is none. Otherwise taken
+                // from the job itself when the server names one, else from the
+                // Printer Settings row for this paper size + color mode - the
+                // shop picks which when several printers are saved for it.
+                var profileName = "";
+                string matchedPrinter = null;
+                if (IsChoiceOnHold(job.Id))
+                {
+                    _printedIds.Remove(job.Id);
+                    return; // shop chose "Hold Job" a moment ago - don't re-ask on every poll
+                }
+                if (useDuplex)
+                {
+                    var duplexProfile = PrintProfileStore.Find(DuplexProfileName);
+                    if (duplexProfile != null)
+                    {
+                        profileName = duplexProfile.Name;
+                    }
+                    else if (PrintProfileStore.Load().Count > 0)
+                    {
+                        profileName = AskDuplexProfile(job, tokenId);
+                        if (profileName is null)
+                        {
+                            HoldChoice(job.Id);
+                            LogStatus($"{tokenId}: no \"{DuplexProfileName}\" profile and none picked - holding double-side job.");
+                            return;
+                        }
+                    }
+                    // No profiles at all: the dedicated duplex printer below.
+                }
+                else if (!string.IsNullOrWhiteSpace(job.ProfileName))
+                {
+                    profileName = job.ProfileName;
+                }
+                else
+                {
+                    var presets = FindMatchingPresets(jobPaper, colorType);
+                    var preset = presets.Count > 1 ? AskPresetChoice(presets, job, jobPaper, colorType, tokenId) : presets.FirstOrDefault();
+                    if (preset is null && presets.Count > 1)
+                    {
+                        HoldChoice(job.Id);
+                        LogStatus($"{tokenId}: {presets.Count} printers saved for {jobPaper} / {colorType} and none picked - holding job.");
+                        return;
+                    }
+                    profileName = preset?.Profile ?? "";
+                    matchedPrinter = preset?.Printer;
+                }
                 PrintProfile profile = null;
                 if (!string.IsNullOrWhiteSpace(profileName))
                 {
@@ -1636,7 +1797,6 @@ namespace Print_Agent
                     useDuplex = false; // two-side, if wanted, is part of the profile's driver settings
                 }
 
-                string matchedPrinter;
                 if (profile != null)
                 {
                     matchedPrinter = profile.Printer;
@@ -1648,10 +1808,7 @@ namespace Print_Agent
                     // would print a double-side order single-sided.
                     matchedPrinter = string.IsNullOrWhiteSpace(_config.DuplexPrinter) ? null : _config.DuplexPrinter;
                 }
-                else
-                {
-                    matchedPrinter = FindMatchingPrinter(jobPaper, colorType);
-                }
+                // else: the matched Printer Settings row's printer (null = none saved)
                 if (matchedPrinter is null && useDuplex)
                 {
                     LogStatus($"{tokenId}: no duplex printer set - holding job until one is added.");
@@ -2102,13 +2259,17 @@ namespace Print_Agent
             }
         }
 
-        // Reported to the server on every poll. True only when a duplex
-        // printer is set, still installed, and can actually print the
-        // chosen mode (Auto needs hardware duplex, Manual works anywhere).
+        // Reported to the server on every poll. True when a print profile is
+        // saved (the "duplex" one, or one the shop picks per job - see
+        // AskDuplexProfile), or a legacy duplex printer is set, still
+        // installed, and can actually print the chosen mode (Auto needs
+        // hardware duplex, Manual works anywhere).
         private bool IsDuplexAvailable()
         {
             try
             {
+                if (PrintProfileStore.Load().Count > 0) return true;
+
                 var printer = _config.DuplexPrinter;
                 if (string.IsNullOrWhiteSpace(printer)) return false;
                 if (!PrinterSettings.InstalledPrinters.Cast<string>().Contains(printer, StringComparer.OrdinalIgnoreCase)) return false;
@@ -2309,6 +2470,7 @@ namespace Print_Agent
             PrintProfileStore.Upsert(name, printer, devMode, request.OriginalName);
             RenamePresetProfile(request.OriginalName, name);
             LogStatus($"Print profile '{name}' saved from website ({printer}).");
+            ReportDuplexAvailabilityIfChanged();
             return ListPrintProfilesFromLocalApi();
         }
 
@@ -2374,6 +2536,7 @@ namespace Print_Agent
         private PrintProfilesResponse DeletePrintProfileFromLocalApi(string name)
         {
             if (PrintProfileStore.Delete(name)) LogStatus($"Print profile '{name}' deleted from website.");
+            ReportDuplexAvailabilityIfChanged();
             return ListPrintProfilesFromLocalApi();
         }
 
@@ -2535,19 +2698,13 @@ namespace Print_Agent
 
             if (request.Original is { } original && !string.IsNullOrWhiteSpace(original.Printer))
             {
-                RemovePresetRow(original.Printer, original.PaperSize, original.ColorMode);
+                RemovePresetRow(original.Printer, original.PaperSize, original.ColorMode, original.Profile);
             }
 
-            // A (paper size, color mode) combo must map to exactly one
-            // printer - FindMatchingPrinter() returns the first row it finds
-            // for a combo, so leaving an older row for the same combo but a
-            // different printer in place would mean this new preset is
-            // silently never used for print jobs, even though it shows at
-            // the top of the list as "saved". Clearing every existing row
-            // for this combo (not just an exact printer+size+color match)
-            // before adding the new one is what makes "pick a different
-            // printer for A4/Color" actually take effect.
-            RemovePresetRowsForCombo(request.PaperSize, request.ColorMode);
+            // A (paper size, color mode) combo may have several printers -
+            // a job for it then asks the shop which one to use (see
+            // AskPresetChoice). Only an exact duplicate row is replaced.
+            RemovePresetRow(request.Printer, request.PaperSize, request.ColorMode, profileName);
             int rowIdx = dataGridPrinterSetting.Rows.Add(request.Printer, request.PaperSize, request.ColorMode, profileName);
             dataGridPrinterSetting.Rows[rowIdx].Cells["colDelete"].Value = "Delete";
             SaveAllSettingsToFile();
@@ -2562,12 +2719,13 @@ namespace Print_Agent
                 return (PrinterPresetsResponse)Invoke(new Func<PrinterPresetDto, PrinterPresetsResponse>(DeletePresetFromLocalApi), dto);
             }
 
-            RemovePresetRow(dto.Printer, dto.PaperSize, dto.ColorMode);
+            RemovePresetRow(dto.Printer, dto.PaperSize, dto.ColorMode, dto.Profile);
             SaveAllSettingsToFile();
             return BuildPresetsResponse();
         }
 
-        private void RemovePresetRow(string printer, string paperSize, string colorMode)
+        // profile null = any profile (an older website that doesn't send it).
+        private void RemovePresetRow(string printer, string paperSize, string colorMode, string? profile = null)
         {
             for (var i = dataGridPrinterSetting.Rows.Count - 1; i >= 0; i--)
             {
@@ -2577,28 +2735,10 @@ namespace Print_Agent
                 var rowPrinter = row.Cells["colPrinter"].Value?.ToString() ?? "";
                 var rowPaper = row.Cells["colPageSize"].Value?.ToString() ?? "";
                 var rowColor = row.Cells["colColorType"].Value?.ToString() ?? "";
+                var rowProfile = row.Cells["colProfile"].Value?.ToString() ?? "";
 
-                if (rowPrinter == (printer ?? "") && rowPaper == (paperSize ?? "") && rowColor == (colorMode ?? ""))
-                {
-                    dataGridPrinterSetting.Rows.RemoveAt(i);
-                }
-            }
-        }
-
-        // Same idea as RemovePresetRow, but matches on (paperSize, colorMode)
-        // alone, regardless of which printer a row currently points at - see
-        // the call site in SavePresetFromLocalApi for why this matters.
-        private void RemovePresetRowsForCombo(string paperSize, string colorMode)
-        {
-            for (var i = dataGridPrinterSetting.Rows.Count - 1; i >= 0; i--)
-            {
-                var row = dataGridPrinterSetting.Rows[i];
-                if (row.IsNewRow) continue;
-
-                var rowPaper = row.Cells["colPageSize"].Value?.ToString() ?? "";
-                var rowColor = row.Cells["colColorType"].Value?.ToString() ?? "";
-
-                if (rowPaper == (paperSize ?? "") && rowColor == (colorMode ?? ""))
+                if (rowPrinter == (printer ?? "") && rowPaper == (paperSize ?? "") && rowColor == (colorMode ?? "")
+                    && (profile is null || rowProfile == profile))
                 {
                     dataGridPrinterSetting.Rows.RemoveAt(i);
                 }
@@ -2866,6 +3006,11 @@ namespace Print_Agent
         public bool Confirmed { get; private set; }
 
         public CashConfirmForm(decimal amount, string colorLabel, int pages, int copies, string tokenId)
+            : this(amount, "Cash Counter Print Request", $"{colorLabel}  •  {pages} page(s)  ×  {copies} copy/copies", tokenId)
+        {
+        }
+
+        public CashConfirmForm(decimal amount, string title, string details, string tokenId)
         {
             // ── Form chrome ──────────────────────────────────────────
             FormBorderStyle = FormBorderStyle.None;
@@ -2895,7 +3040,7 @@ namespace Print_Agent
             };
             lblTitle = new Label
             {
-                Text = "Cash Counter Print Request",
+                Text = title,
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 AutoSize = false,
@@ -2951,7 +3096,7 @@ namespace Print_Agent
             // ── Details line ─────────────────────────────────────────
             lblDetails = new Label
             {
-                Text = $"{colorLabel}  •  {pages} page(s)  ×  {copies} copy/copies",
+                Text = details,
                 Font = new Font("Segoe UI", 10F),
                 ForeColor = Color.Gray,
                 AutoSize = false,
@@ -3030,6 +3175,15 @@ namespace Print_Agent
         public static bool ShowConfirm(decimal amount, string colorLabel, int pages, int copies, string tokenId)
         {
             using var form = new CashConfirmForm(amount, colorLabel, pages, copies, tokenId);
+            form.ShowDialog();
+            return form.Confirmed;
+        }
+
+        /// Same, with a custom title and details line (e.g. a passport photo
+        /// order, which has no pages/color).
+        public static bool ShowConfirm(decimal amount, string title, string details, string tokenId)
+        {
+            using var form = new CashConfirmForm(amount, title, details, tokenId);
             form.ShowDialog();
             return form.Confirmed;
         }

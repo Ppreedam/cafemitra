@@ -243,7 +243,7 @@ export default function CustomerScanPage() {
   const amount = hasUploadedFile ? Math.max(0, selectedRate * totalUnits) : 0;
   const hasPdfFile = isPdfFile(fileType, fileName);
   const hasImageFile = isImageFile(fileType, fileName);
-  // Double-side printing only makes sense for a multi-page PDF; offered only when the shop's agent reports a working duplex printer.
+  // Double-side printing only makes sense for a multi-page PDF; offered only when the shop's agent reports it can print double-side (a "duplex" profile, or any profile to pick from).
   const canDuplex = Boolean(data?.shop.duplexAvailable) && hasPdfFile && pages > 1 && !isPassportPhoto && !isIdCardPrint;
   const canCropImage = (selectedService === "auto_document_print" || isPassportPhoto) && hasImageFile;
   // Document photos are scanned automatically; passport photos and ID cards have their own flows.
@@ -1717,21 +1717,6 @@ export default function CustomerScanPage() {
                 />
                 <span>Print on both sides (double side)</span>
               </label>
-              {duplex ? (
-                <label>
-                  <span>Flip on</span>
-                  <select
-                    value={duplexEdge}
-                    onChange={(event) => {
-                      setDuplexEdge(event.target.value === "short" ? "short" : "long");
-                      resetOrderDraft();
-                    }}
-                  >
-                    <option value="long">Long edge (portrait pages)</option>
-                    <option value="short">Short edge (landscape pages)</option>
-                  </select>
-                </label>
-              ) : null}
             </div>
           ) : null}
           <label>

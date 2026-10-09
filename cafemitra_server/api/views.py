@@ -4116,6 +4116,9 @@ def public_print_order(request, code):
         or (order_status == PrintOrder.STATUS_AWAITING_APPROVAL and payment_status == PrintOrder.PAYMENT_CASH_COUNTER)
     ):
         notify_agent_new_job(order)
+    elif service_key in POOLER_SERVICE_KEYS and payment_status == PrintOrder.PAYMENT_CASH_COUNTER:
+        # Shows the agent's cash approval popup (agent_jobs "cashApprovals").
+        notify_agent_new_job(order)
 
     return JsonResponse({"order": public_order(order)}, status=201)
 
@@ -4952,7 +4955,22 @@ def agent_jobs(request):
         Q(status=PrintOrder.STATUS_QUEUED)
         | Q(status=PrintOrder.STATUS_AWAITING_APPROVAL, payment_status=PrintOrder.PAYMENT_CASH_COUNTER)
     ).order_by("created_at")[:20]
-    return JsonResponse({"jobs": [agent_order(job, request) for job in jobs]})
+
+    # Passport / family photo orders never enter the print queue above, so a
+    # cash-counter one is listed separately: the agent only asks the owner
+    # to approve it (approve_cash_order/reject_cash_order), nothing prints.
+    cash_approvals = PrintOrder.objects.filter(
+        user=user,
+        service_key__in=POOLER_SERVICE_KEYS,
+        status=PrintOrder.STATUS_AWAITING_APPROVAL,
+        payment_status=PrintOrder.PAYMENT_CASH_COUNTER,
+    ).order_by("created_at")[:20]
+    return JsonResponse(
+        {
+            "jobs": [agent_order(job, request) for job in jobs],
+            "cashApprovals": [public_order(order, include_media=False) for order in cash_approvals],
+        }
+    )
 
 
 @csrf_exempt

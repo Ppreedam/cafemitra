@@ -237,7 +237,8 @@ export default function PrinterProfileSetup({ agentConnected, onPresetSaved }: P
           <h2>Print Profiles</h2>
           <p>
             Name a profile, pick its printer and click Set Preferences - the printer&apos;s own Preferences window opens on this PC (paper size, glossy/plain paper,
-            print quality...). Press OK there, then Save Profile.
+            print quality...). Press OK there, then Save Profile. For double-side orders, save a profile named <strong>duplex</strong> with two-sided printing
+            turned on in its Preferences.
           </p>
         </div>
       </div>
@@ -306,7 +307,7 @@ export default function PrinterProfileSetup({ agentConnected, onPresetSaved }: P
       <div className="panel-title-row compact printer-preset-title">
         <div>
           <h2>Printer Settings</h2>
-          <p>Pick which profile prints each paper size + color/grayscale order. The order prints on that profile&apos;s printer with its saved preferences.</p>
+          <p>Pick which profile prints each paper size + color/grayscale order. The order prints on that profile&apos;s printer with its saved preferences. Save more than one for the same paper size + color and the PrintPilot app asks which one to use for each order.</p>
         </div>
       </div>
       <div className="printer-preset-form printer-preset-form-wide">
@@ -350,7 +351,7 @@ export default function PrinterProfileSetup({ agentConnected, onPresetSaved }: P
 
       <div className="printer-preset-list">
         {presets.map((preset) => (
-          <div className="printer-preset-row" key={`${preset.paperSize}-${preset.colorMode}-${preset.printer}`}>
+          <div className="printer-preset-row" key={`${preset.paperSize}-${preset.colorMode}-${preset.printer}-${preset.profile ?? ""}`}>
             <div>
               <strong>
                 {preset.paperSize} · {preset.colorMode}

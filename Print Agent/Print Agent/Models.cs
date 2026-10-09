@@ -1,8 +1,13 @@
-namespace Print_Agent;
+﻿namespace Print_Agent;
 
 internal sealed class JobListResponse
 {
     public List<PrintJob> Jobs { get; set; } = [];
+
+    /// Passport / family photo cash-counter orders waiting for the owner to
+    /// confirm the cash was collected - approve/reject only, never printed
+    /// here. Older servers don't send it.
+    public List<PrintJob> CashApprovals { get; set; } = [];
 }
 
 internal sealed class PrintJob
