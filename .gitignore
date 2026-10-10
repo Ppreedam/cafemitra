@@ -32,3 +32,6 @@ docs/
 
 # Local dev config (local Postgres etc.) - never commit
 cafemitra_server/.env.local
+
+# Demo tunnel overrides
+cafemitra_client/.env.development.local

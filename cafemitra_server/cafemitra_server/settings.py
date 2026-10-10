@@ -217,6 +217,12 @@ CORS_ALLOWED_ORIGINS = [
 
 CORS_ALLOW_CREDENTIALS = True
 
+# DEMO_TUNNEL=1 (set in .env.local only) lets a Cloudflare quick tunnel
+# (https://<random>.trycloudflare.com) reach the API for client demos.
+if os.getenv("DEMO_TUNNEL", "0") == "1":
+    CORS_ALLOWED_ORIGIN_REGEXES = [r"^https://[a-z0-9-]+\.trycloudflare\.com$"]
+    CSRF_TRUSTED_ORIGINS = ["https://*.trycloudflare.com"]
+
 FRONTEND_URL = os.getenv("FRONTEND_URL", "https://repetigo.com").rstrip("/")
 AI_UPSCALE_API_URL = os.getenv("AI_UPSCALE_API_URL", "").strip()
 AI_UPSCALE_API_KEY = os.getenv("AI_UPSCALE_API_KEY", "").strip()

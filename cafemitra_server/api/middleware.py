@@ -1,3 +1,5 @@
+import re
+
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 from urllib.parse import urlparse
@@ -13,6 +15,14 @@ def is_debug_lan_origin(origin):
     if hostname.startswith(("192.168.", "10.", "172.16.", "172.17.", "172.18.", "172.19.", "172.2", "172.30.", "172.31.")):
         return True
     return False
+
+
+def matches_origin_regex(origin):
+    # Honors CORS_ALLOWED_ORIGIN_REGEXES (e.g. the DEMO_TUNNEL trycloudflare
+    # pattern) the same way django-cors-headers would.
+    if not origin:
+        return False
+    return any(re.match(pattern, origin) for pattern in getattr(settings, "CORS_ALLOWED_ORIGIN_REGEXES", []))
 
 
 GATEWAY_CALLBACK_PATH_SUFFIXES = ("/payu/callback", "/webhooks/phonepe")
@@ -34,7 +44,7 @@ class SimpleCorsMiddleware:
     def __call__(self, request):
         origin = request.headers.get("Origin")
         allowed_origins = getattr(settings, "CORS_ALLOWED_ORIGINS", set())
-        origin_allowed = origin in allowed_origins or is_debug_lan_origin(origin)
+        origin_allowed = origin in allowed_origins or is_debug_lan_origin(origin) or matches_origin_regex(origin)
         unsafe_method = request.method not in {"GET", "HEAD", "OPTIONS", "TRACE"}
         if origin and not origin_allowed and unsafe_method and not is_gateway_callback_path(request.path):
             return JsonResponse({"message": "Origin is not allowed."}, status=403)

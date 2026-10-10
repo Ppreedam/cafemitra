@@ -9,6 +9,8 @@ const nextConfig = {
   turbopack: {
     root: path.dirname(fileURLToPath(import.meta.url)),
   },
+  // Lets `next dev` serve a Cloudflare quick tunnel for client demos.
+  allowedDevOrigins: ["*.trycloudflare.com"],
   async headers() {
     return [
       {
