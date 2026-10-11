@@ -5,13 +5,13 @@ import { marked } from "marked";
 import { ArrowLeft } from "lucide-react";
 import { LandingNavbar } from "../../LandingNavbar";
 import { PublicFooter } from "../../PublicFooter";
-import { BLOG_REVALIDATE_SECONDS, applyImageSettings, fetchBlogArticle } from "@/lib/blog";
+import { applyImageSettings, fetchBlogArticle } from "@/lib/blog";
 
 const siteUrl = "https://repetigo.com";
 
 // Statically cached and refreshed on demand (see /api/revalidate) - crawlers
 // always get the full article HTML.
-export const revalidate = BLOG_REVALIDATE_SECONDS;
+export const revalidate = 300;
 
 type PageProps = { params: Promise<{ slug: string }> };
 

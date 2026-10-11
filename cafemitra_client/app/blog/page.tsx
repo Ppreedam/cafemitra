@@ -5,7 +5,7 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import { LandingNavbar } from "../LandingNavbar";
 import { PublicFooter } from "../PublicFooter";
 import { blogPosts } from "../blog-data";
-import { BLOG_REVALIDATE_SECONDS, fetchBlogArticles } from "@/lib/blog";
+import { fetchBlogArticles } from "@/lib/blog";
 
 const siteUrl = "https://repetigo.com";
 
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   },
 };
 
-export const revalidate = BLOG_REVALIDATE_SECONDS;
+export const revalidate = 300;
 
 export default async function BlogIndexPage() {
   const articles = await fetchBlogArticles();
