@@ -24,7 +24,7 @@ export const metadata: Metadata = {
   },
 };
 
-export const revalidate = 300;
+export const revalidate = 300; // must be a literal; keep in sync with BLOG_REVALIDATE_SECONDS
 
 export default async function BlogIndexPage() {
   const articles = await fetchBlogArticles();

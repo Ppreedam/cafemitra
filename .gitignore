@@ -35,3 +35,5 @@ cafemitra_server/.env.local
 
 # GPTPooler local tool - not part of repo
 GPTPooler - Copy + Qwan/
+.prod_env
+**/.prod_env
