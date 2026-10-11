@@ -4,12 +4,15 @@
 // limits, so it travels via sessionStorage instead of a query string.
 const STORAGE_KEY = "cafemitra:pending-print-sheet-photo";
 
-export type PendingPrintSheetPhoto = { url: string; name: string };
+export type PendingPrintSheetPhoto = { url: string; name: string; rotateOnPrint?: boolean };
 
-export function stashPhotoForPrintSheet(url: string, name: string): boolean {
+// rotateOnPrint: the sheet turns this photo 90 degrees clockwise when it is
+// printed/downloaded (family group photos are landscape, the tile is portrait);
+// the queue preview keeps showing the photo as it is.
+export function stashPhotoForPrintSheet(url: string, name: string, rotateOnPrint = false): boolean {
   if (typeof window === "undefined" || !url) return false;
   try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ url, name }));
+    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ url, name, rotateOnPrint }));
     return true;
   } catch {
     // Storage can be unavailable (private browsing, quota) - the print
@@ -26,7 +29,7 @@ export function takePendingPrintSheetPhoto(): PendingPrintSheetPhoto | null {
     sessionStorage.removeItem(STORAGE_KEY);
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed.url !== "string") return null;
-    return { url: parsed.url, name: typeof parsed.name === "string" ? parsed.name : "passport-photo.jpg" };
+    return { url: parsed.url, name: typeof parsed.name === "string" ? parsed.name : "passport-photo.jpg", rotateOnPrint: parsed.rotateOnPrint === true };
   } catch {
     return null;
   }

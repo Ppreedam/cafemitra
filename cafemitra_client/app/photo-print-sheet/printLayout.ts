@@ -46,6 +46,8 @@ export type QueuePhoto = {
   heightCm: number;
   count: number;
   sizeKey: string;
+  /** Turned 90deg clockwise in the printed/downloaded sheet only - the queue preview is untouched. */
+  rotateOnPrint?: boolean;
 };
 
 export type PackedTile = {

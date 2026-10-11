@@ -244,7 +244,7 @@ export default function OrdersClient() {
       const result = await response.json().catch(() => ({}));
       const fullOrder = response.ok && result.order ? result.order : order;
       if (fullOrder.geminiPhoto) {
-        stashPhotoForPrintSheet(fullOrder.geminiPhoto, fullOrder.fileName || "passport-photo.jpg");
+        stashPhotoForPrintSheet(fullOrder.geminiPhoto, fullOrder.fileName || "passport-photo.jpg", order.serviceKey === "family_passport_photo");
         markOrderPrinted(order.id);
         router.push("/photo-print-sheet");
         return;
@@ -575,7 +575,7 @@ export default function OrdersClient() {
                   className="btn btn-primary"
                   onClick={() => {
                     if (!compareOrder.geminiPhoto) return;
-                    stashPhotoForPrintSheet(compareOrder.geminiPhoto, compareOrder.fileName || "passport-photo.jpg");
+                    stashPhotoForPrintSheet(compareOrder.geminiPhoto, compareOrder.fileName || "passport-photo.jpg", compareOrder.serviceKey === "family_passport_photo");
                     markOrderPrinted(compareOrder.id);
                     router.push("/photo-print-sheet");
                   }}

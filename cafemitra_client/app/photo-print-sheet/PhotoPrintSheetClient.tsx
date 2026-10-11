@@ -35,6 +35,7 @@ import {
   rotateImageFile,
   type MarginGapMm,
   type PaperSize,
+  type PackedTile,
   type QueuePhoto,
 } from "./printLayout";
 
@@ -132,7 +133,7 @@ export default function PhotoPrintSheetClient() {
       if (!pending) return;
       try {
         const blob = pending.url.startsWith("data:") ? dataUriToBlob(pending.url) : await fetch(apiUrl(pending.url)).then((res) => res.blob());
-        addFiles([new File([blob], pending.name, { type: blob.type || "image/jpeg" })]);
+        addFiles([new File([blob], pending.name, { type: blob.type || "image/jpeg" })], { rotateOnPrint: pending.rotateOnPrint });
       } catch {
         setError("Could not load the generated photo into the queue. Please upload it manually.");
       }
@@ -181,7 +182,7 @@ export default function PhotoPrintSheetClient() {
     setActivePage((current) => Math.min(current, Math.max(0, pages.length - 1)));
   }, [pages.length]);
 
-  function addFiles(fileList: FileList | File[]) {
+  function addFiles(fileList: FileList | File[], options?: { rotateOnPrint?: boolean }) {
     const files = Array.from(fileList).filter((file) => file.type.startsWith("image/"));
     if (!files.length) return;
     // New photos default to the Custom size with 6 copies, and the size
@@ -196,6 +197,7 @@ export default function PhotoPrintSheetClient() {
         heightCm: preset.heightCm,
         count: DEFAULT_COUNT,
         sizeKey: preset.key,
+        rotateOnPrint: options?.rotateOnPrint,
       }),
     );
     setPhotos((prev) => [...prev, ...added]);
@@ -348,6 +350,21 @@ export default function PhotoPrintSheetClient() {
     });
   }
 
+  // Photos flagged rotateOnPrint (family group photos) go onto the sheet turned
+  // 90deg clockwise; the queue and live preview keep the original orientation.
+  // Returns the pages to render plus the temporary rotated image urls.
+  async function pagesForOutput(): Promise<{ outputPages: PackedTile[][]; temporaryUrls: string[] }> {
+    const flagged = photos.filter((photo) => photo.rotateOnPrint);
+    if (!flagged.length) return { outputPages: pages, temporaryUrls: [] };
+    const rotatedUrlById = new Map<string, string>();
+    for (const photo of flagged) {
+      const rotated = await rotateImageFile(photo.url, photo.file);
+      rotatedUrlById.set(photo.id, rotated.url);
+    }
+    const outputPages = pages.map((tiles) => tiles.map((tile) => ({ ...tile, url: rotatedUrlById.get(tile.photoId) ?? tile.url })));
+    return { outputPages, temporaryUrls: Array.from(rotatedUrlById.values()) };
+  }
+
   async function downloadHD() {
     if (!totalTiles) {
       setError("Add at least one photo to the queue first.");
@@ -357,19 +374,23 @@ export default function PhotoPrintSheetClient() {
     if (!(await requestChargeConfirm())) return;
     setIsExporting(true);
     setError("");
+    let temporaryUrls: string[] = [];
     try {
       await chargePhotoPrintSheet();
+      const output = await pagesForOutput();
+      temporaryUrls = output.temporaryUrls;
       const imageCache = new Map<string, HTMLImageElement>();
-      for (let pageIndex = 0; pageIndex < pages.length; pageIndex += 1) {
-        if (!pages[pageIndex].length) continue;
-        const canvas = await renderPageCanvas(paperMeta, pages[pageIndex], imageCache);
+      for (let pageIndex = 0; pageIndex < output.outputPages.length; pageIndex += 1) {
+        if (!output.outputPages[pageIndex].length) continue;
+        const canvas = await renderPageCanvas(paperMeta, output.outputPages[pageIndex], imageCache);
         downloadCanvas(canvas, `print-sheet-${paperMeta.badge.toLowerCase()}-page-${pageIndex + 1}.png`);
-        if (pageIndex < pages.length - 1) await new Promise((resolve) => setTimeout(resolve, 350));
+        if (pageIndex < output.outputPages.length - 1) await new Promise((resolve) => setTimeout(resolve, 350));
       }
       trackToolEvent("photo_print_sheet", "download_hd", { total_tiles: totalTiles });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not generate the print sheet. Please try again.");
     } finally {
+      temporaryUrls.forEach((url) => URL.revokeObjectURL(url));
       setIsExporting(false);
     }
   }
@@ -384,8 +405,11 @@ export default function PhotoPrintSheetClient() {
     if (!(await requestChargeConfirm())) return;
     setPrintBusy(true);
     setError("");
+    let temporaryUrls: string[] = [];
     try {
       await chargePhotoPrintSheet();
+      const output = await pagesForOutput();
+      temporaryUrls = output.temporaryUrls;
       // Sent to the PrintPilot agent with the chosen print profile, using
       // the same 300 DPI render as Download HD (browser print only when
       // that is picked or the agent is not running).
@@ -393,18 +417,20 @@ export default function PhotoPrintSheetClient() {
         async () => {
           const imageCache = new Map<string, HTMLImageElement>();
           const rendered = [];
-          for (const tiles of pages) {
+          for (const tiles of output.outputPages) {
             if (!tiles.length) continue;
             rendered.push({ canvas: await renderPageCanvas(paperMeta, tiles, imageCache), widthMm: paperMeta.widthMm, heightMm: paperMeta.heightMm });
           }
           return canvasesToPdfBytes(rendered);
         },
-        { fileName: `print-sheet-${paperMeta.badge.toLowerCase()}.pdf`, fallback: () => openPrintWindow(paperMeta, pages) },
+        { fileName: `print-sheet-${paperMeta.badge.toLowerCase()}.pdf`, fallback: () => openPrintWindow(paperMeta, output.outputPages) },
       );
       trackToolEvent("photo_print_sheet", "print_sheet", { total_tiles: totalTiles });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not prepare the print job. Please try again.");
     } finally {
+      // The browser-print fallback window loads these images after this returns.
+      if (temporaryUrls.length) window.setTimeout(() => temporaryUrls.forEach((url) => URL.revokeObjectURL(url)), 120000);
       setPrintBusy(false);
     }
   }
