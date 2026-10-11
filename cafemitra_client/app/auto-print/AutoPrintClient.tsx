@@ -244,6 +244,8 @@ export default function AutoPrintClient() {
   const [paymentMode, setPaymentMode] = useState("Online Payment");
   // Price when the customer ticks Duplex (print both sides), B/W and Color, with page ranges; 0 = normal rate.
   const [duplexPriceItems, setDuplexPriceItems] = useState<PriceItem[]>(() => getDuplexPriceItems(undefined));
+  // Pricing step shows one category at a time, picked from a dropdown: "category:<id>" or "duplex:<id>".
+  const [selectedPriceKey, setSelectedPriceKey] = useState("");
   // ID Card Print (customer QR flow): per-card Color / B/W price + its own payment mode.
   const [idCardPriceItems, setIdCardPriceItems] = useState<PriceItem[]>([
     { id: "color", label: "Color", rate: 20 },
@@ -877,48 +879,74 @@ export default function AutoPrintClient() {
                       <p>Set the price for each category and add page ranges inside it. New categories come from Step 3: Printer Profiles (&quot;Show to customers&quot;).</p>
                     </div>
                   </div>
-                  <div className="price-item-list">
-                    {priceItems.map((item, itemIndex) => (
-                      <div className="price-item-row" key={item.id}>
-                        <div className="price-item-header">
-                          <span>Category {itemIndex + 1}</span>
-                          {item.profile ? <span className="price-item-profile-badge">Profile: {item.profile}</span> : null}
-                          <strong>{item.label || "New print category"}</strong>
-                        </div>
-                        <div className="price-item-main">
-                          <label className="auto-field">
-                            <span>Category Name</span>
-                            <input value={item.label} onChange={(event) => updatePriceItem(item.id, "label", event.target.value)} />
-                          </label>
-                          <label className="auto-field">
-                            <span>Default Per Page</span>
-                            <input min="0" type="number" value={item.rate} onChange={(event) => updatePriceItem(item.id, "rate", event.target.value)} />
-                          </label>
-                          <button className="icon-action-btn danger" type="button" onClick={() => removePriceItem(item.id)} aria-label="Remove price item">
-                            <Trash2 size={17} />
-                          </button>
-                        </div>
-                        {renderPriceRanges(item, setPriceItems)}
-                      </div>
-                    ))}
-                  </div>
-                  {/* Duplex: its own B/W and Color price (default + page ranges), used instead of the normal rate when the customer ticks Duplex. */}
-                  {duplexPriceItems.map((item) => (
-                    <div className="price-item-row" key={`duplex-${item.id}`}>
-                      <div className="price-item-header">
-                        <span>Duplex</span>
-                        <strong>{item.label}</strong>
-                      </div>
-                      <div className="idcard-pricing-grid">
+                  {(() => {
+                    // One dropdown instead of a long list: only the picked category's editor is shown.
+                    const selectedCategory = priceItems.find((item) => `category:${item.id}` === selectedPriceKey);
+                    const selectedDuplex = duplexPriceItems.find((item) => `duplex:${item.id}` === selectedPriceKey);
+                    const activeCategory = !selectedCategory && !selectedDuplex ? priceItems[0] : selectedCategory;
+                    const activeKey = activeCategory ? `category:${activeCategory.id}` : selectedPriceKey;
+                    const activeIndex = activeCategory ? priceItems.indexOf(activeCategory) : -1;
+
+                    return (
+                      <>
                         <label className="auto-field">
-                          <span>Default Per Page (both sides)</span>
-                          <input min="0" type="number" value={item.rate} onChange={(event) => updatePriceItem(item.id, "rate", event.target.value, setDuplexPriceItems)} />
+                          <span>Select Category</span>
+                          <select value={activeKey} onChange={(event) => setSelectedPriceKey(event.target.value)}>
+                            {priceItems.map((item) => (
+                              <option key={item.id} value={`category:${item.id}`}>
+                                {(item.label || "New print category") + (item.profile ? ` (Profile: ${item.profile})` : "")} - Rs. {item.rate}/page
+                              </option>
+                            ))}
+                            {duplexPriceItems.map((item) => (
+                              <option key={`duplex-${item.id}`} value={`duplex:${item.id}`}>
+                                Duplex: {item.label} - {item.rate ? `Rs. ${item.rate}/page` : "normal rate"}
+                              </option>
+                            ))}
+                          </select>
                         </label>
-                        <p className="payment-mode-note">0 with no ranges = same as the normal {item.id === "color" ? "Color" : "B&W"} rate.</p>
-                      </div>
-                      {renderPriceRanges(item, setDuplexPriceItems)}
-                    </div>
-                  ))}
+                        {activeCategory ? (
+                          <div className="price-item-row" key={activeCategory.id}>
+                            <div className="price-item-header">
+                              <span>Category {activeIndex + 1}</span>
+                              {activeCategory.profile ? <span className="price-item-profile-badge">Profile: {activeCategory.profile}</span> : null}
+                              <strong>{activeCategory.label || "New print category"}</strong>
+                            </div>
+                            <div className="price-item-main">
+                              <label className="auto-field">
+                                <span>Category Name</span>
+                                <input value={activeCategory.label} onChange={(event) => updatePriceItem(activeCategory.id, "label", event.target.value)} />
+                              </label>
+                              <label className="auto-field">
+                                <span>Default Per Page</span>
+                                <input min="0" type="number" value={activeCategory.rate} onChange={(event) => updatePriceItem(activeCategory.id, "rate", event.target.value)} />
+                              </label>
+                              <button className="icon-action-btn danger" type="button" onClick={() => removePriceItem(activeCategory.id)} aria-label="Remove price item">
+                                <Trash2 size={17} />
+                              </button>
+                            </div>
+                            {renderPriceRanges(activeCategory, setPriceItems)}
+                          </div>
+                        ) : null}
+                        {/* Duplex: its own B/W and Color price (default + page ranges), used instead of the normal rate when the customer ticks Duplex. */}
+                        {selectedDuplex ? (
+                          <div className="price-item-row" key={`duplex-${selectedDuplex.id}`}>
+                            <div className="price-item-header">
+                              <span>Duplex</span>
+                              <strong>{selectedDuplex.label}</strong>
+                            </div>
+                            <div className="idcard-pricing-grid">
+                              <label className="auto-field">
+                                <span>Default Per Page (both sides)</span>
+                                <input min="0" type="number" value={selectedDuplex.rate} onChange={(event) => updatePriceItem(selectedDuplex.id, "rate", event.target.value, setDuplexPriceItems)} />
+                              </label>
+                              <p className="payment-mode-note">0 with no ranges = same as the normal {selectedDuplex.id === "color" ? "Color" : "B&W"} rate.</p>
+                            </div>
+                            {renderPriceRanges(selectedDuplex, setDuplexPriceItems)}
+                          </div>
+                        ) : null}
+                      </>
+                    );
+                  })()}
                   {renderPaymentModes(paymentMode, setPaymentMode)}
                   <p className="payment-mode-note">Online Payment is available to customers by default. Turn on "Online Payment + Cash Counter" to also let customers pay at your counter, or pick "Only Cash Counter" to accept counter payment only.</p>
                   {!cashCounterAvailable ? <p className="payment-mode-note payment-mode-locked">{cashCounterReason}</p> : null}
