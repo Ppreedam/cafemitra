@@ -8937,6 +8937,11 @@ img.profile-photo {
   background: var(--line);
 }
 
+/* Family orders only have the generated photo - one full-width pane. */
+.passport-compare-body:has(.passport-compare-pane:only-child) {
+  grid-template-columns: 1fr;
+}
+
 .passport-compare-pane {
   display: flex;
   flex-direction: column;
@@ -19734,7 +19739,7 @@ img.profile-photo {
 
 .idcard-toolbar {
   display: flex;
-  flex: 1;
+  flex: 1 1 100%;
   min-width: 0;
   align-items: stretch;
   overflow-x: auto;
@@ -19743,6 +19748,7 @@ img.profile-photo {
 .idcard-toolbar button,
 .idcard-toolbar-report {
   display: flex;
+  flex: 1 1 0;
   min-width: 78px;
   align-items: center;
   justify-content: center;
@@ -19784,14 +19790,16 @@ img.profile-photo {
   background: var(--brand-hero-gradient);
 }
 
+/* Tools get a full-width row of their own; the settings (scan mode, colour,
+   layout, print profile, Print) sit on a second row so neither is squeezed. */
 .idcard-toolbar-actions {
   display: flex;
-  flex-shrink: 0;
+  flex: 1 1 100%;
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
   padding: 8px 14px;
-  border-left: 1px solid var(--soft-line);
+  border-top: 1px solid var(--soft-line);
 }
 
 .idcard-toolbar-divider {
@@ -19802,6 +19810,69 @@ img.profile-photo {
 
 .idcard-toolbar-actions .idcard-toggle-group button {
   min-height: 32px;
+}
+
+/* Desktop: compact two-line toolbar - tools as icon + label chips in one slim
+   row, settings in one tidy row with Print pushed to the right. */
+@media (min-width: 641px) {
+  .idcard-toolbar-bar {
+    min-height: 0;
+  }
+
+  /* Row 1: the tools. Row 2: every setting plus Print, kept on one line. */
+  .idcard-toolbar button,
+  .idcard-toolbar-report {
+    flex: 1 1 auto;
+    flex-direction: row;
+    gap: 7px;
+    min-height: 42px;
+    padding: 0 12px;
+    font-size: 0.76rem;
+    white-space: nowrap;
+  }
+
+  .idcard-toolbar-actions .idcard-toolbar-divider {
+    display: none;
+  }
+
+  .idcard-toolbar-actions .idcard-scan-mode select {
+    max-width: 200px;
+  }
+
+  .idcard-toolbar-actions {
+    gap: 8px 12px;
+    padding: 7px 12px;
+  }
+
+  .idcard-toolbar-actions .idcard-scan-mode select {
+    height: 34px;
+  }
+
+  .idcard-toolbar-actions .idcard-toggle-group button {
+    min-height: 34px;
+  }
+
+  .idcard-toolbar-actions .print-profile-select label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .idcard-toolbar-actions .print-profile-select label span {
+    display: none;
+  }
+
+  .idcard-toolbar-actions .print-profile-select select {
+    width: auto;
+    min-width: 170px;
+    min-height: 34px;
+    font-size: 0.8rem;
+  }
+
+  .idcard-toolbar-actions .idcard-print-cta {
+    min-height: 34px;
+    margin-left: auto;
+  }
 }
 
 /* Phones: the tool buttons get their own full-width row (5 equal buttons,
@@ -20031,6 +20102,12 @@ img.profile-photo {
   background: #fff;
   color: var(--muted);
   cursor: pointer;
+}
+
+.pps-queue-actions button.saved {
+  color: #1d4ed8;
+  background: #eaf1ff;
+  border-color: #bcd0ff;
 }
 
 .pps-queue-actions button.danger {
@@ -22836,4 +22913,17 @@ img.profile-photo {
 
 .qr-poster-shell {
   width: min(100%, 440px);
+}
+
+/* Page count is read-only for customers: no typing cursor, no up/down spinner. */
+.customer-portal input.pages-readonly {
+  cursor: default;
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.customer-portal input.pages-readonly::-webkit-outer-spin-button,
+.customer-portal input.pages-readonly::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
 }

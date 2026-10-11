@@ -38,6 +38,7 @@ from .background_remover.passport_photo_processor import ProcessingError, enhanc
 from .background_remover.watermark_remover import remove_gemini_watermark
 from .models import Agent, AuthToken, BlogArticle, ContactMessage, Coupon, CouponRedemption, EmailVerificationToken, Influencer, PassportAIConfig, PasswordResetToken, PoolerNode, PrintOrder, Referral, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UpiPayee, UpiQrRecord, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from .models import Agent, AuthToken, BlogArticle, ContactMessage, Coupon, CouponRedemption, EmailVerificationToken, Influencer, PassportAIConfig, PasswordResetToken, PhoneOtp, PrintOrder, Referral, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UpiPayee, UpiQrRecord, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
+from .models import WaitingJoke
 from cafemitra_server.product_setting import PAYMENT_GATEWAYS, active_payment_gateway
 
 User = get_user_model()
@@ -72,7 +73,7 @@ UPI_PAYMENT_STATUS_URL = "https://otp.instadl.in/upi_payment/check_status"
 
 DEFAULT_SERVICE_PRICING = {
     "auto_document_print": {
-        "serviceName": "RepetiGo PrintPilot",
+        "serviceName": "RepetiGo PrintPilot (Xerox)",
         "settings": {
             "paymentMode": "Online Payment",
             "selectedPrinter": "",
@@ -3061,6 +3062,24 @@ def credit_referral_bonus(referred_user):
         return txn
 
 
+def credit_pending_referral_bonuses(referrer=None):
+    """Catch-up for referrals whose bonus was never paid because the trigger
+    was met while the bonus was switched off (or before the trigger setting
+    changed) - credit_referral_bonus only runs on email verify / login /
+    top-up, so those referrals would otherwise stay unpaid forever. Safe to
+    repeat: credit_referral_bonus is idempotent per referral. Returns how
+    many were paid.
+    """
+    pending = Referral.objects.filter(bonus_paid_at__isnull=True, referred_user__is_active=True)
+    if referrer is not None:
+        pending = pending.filter(referrer=referrer)
+    paid = 0
+    for referred_user in [row.referred_user for row in pending.select_related("referred_user")]:
+        if credit_referral_bonus(referred_user):
+            paid += 1
+    return paid
+
+
 def mask_email(email):
     local, _, domain = (email or "").partition("@")
     return f"{local[:2]}{'*' * max(len(local) - 2, 2)}@{domain}" if domain else ""
@@ -3283,6 +3302,7 @@ def referrals(request):
         return JsonResponse({"message": "Unauthorized."}, status=401)
 
     code = ensure_referral_code(user)
+    credit_pending_referral_bonuses(user)
     trigger, min_topup = referral_trigger_config()
     rows = list(Referral.objects.filter(referrer=user).select_related("referred_user"))
     topped_up = set(
@@ -3340,6 +3360,13 @@ def normalize_signup_phone(country_code, number):
     return f"{code}{number}", f"{code}{number}"
 
 
+PHONE_ALREADY_REGISTERED_MESSAGE = "This WhatsApp number is already registered with another account. Please login or use a different number."
+
+
+def phone_already_registered(phone):
+    return UserProfile.objects.filter(phone=phone).exists()
+
+
 def hash_phone_otp(phone, code):
     return hmac.new(settings.SECRET_KEY.encode(), f"{phone}:{code}".encode(), hashlib.sha256).hexdigest()
 
@@ -3377,6 +3404,9 @@ def send_phone_otp(request):
     phone, dial_number = normalize_signup_phone(body.get("countryCode"), body.get("phone"))
     if not phone:
         return JsonResponse({"message": "Enter a valid WhatsApp number (10 digits for India)."}, status=400)
+    # Checked before any OTP is generated or sent, so a taken number costs no WhatsApp message.
+    if phone_already_registered(phone):
+        return JsonResponse({"message": PHONE_ALREADY_REGISTERED_MESSAGE}, status=409)
 
     now = timezone.now()
     recent = PhoneOtp.objects.filter(phone=phone, created_at__gte=now - timedelta(hours=1))
@@ -3450,6 +3480,8 @@ def register_user(request):
         return JsonResponse({"message": "Password must be at least 8 characters."}, status=400)
     if User.objects.filter(username=email).exists():
         return JsonResponse({"message": "Account already exists. Please login."}, status=409)
+    if phone_already_registered(phone):
+        return JsonResponse({"message": PHONE_ALREADY_REGISTERED_MESSAGE}, status=409)
     if not is_phone_verified(str(body.get("phoneVerificationToken", "")), phone):
         return JsonResponse({"message": "Verify your WhatsApp number with the OTP before creating the account."}, status=400)
 
@@ -3692,6 +3724,18 @@ def tool_visibility(request):
     if request.method == "OPTIONS":
         return JsonResponse({})
     return JsonResponse({item.tool_key: item.is_enabled for item in ToolVisibility.objects.all()})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def waiting_jokes(request):
+    """Public, unauthenticated - the active "have a joke while you wait"
+    lines the photo makers show during AI generation. The admin panel
+    manages them; an empty list tells the client to use its built-in set.
+    """
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+    return JsonResponse({"jokes": list(WaitingJoke.objects.filter(is_active=True).values_list("text", flat=True))})
 
 
 @csrf_exempt
@@ -5186,7 +5230,7 @@ def public_shop_by_code(request, code):
 PASSPORT_PHOTO_CHECK_MAX_RETRIES = 5
 PASSPORT_PHOTO_CHECK_RETRY_DELAY_SECONDS = 5
 PASSPORT_PHOTO_STALE_JOB_SECONDS = 80
-# A family photo uploads 2-6 images into one ChatGPT chat and asks it to
+# A family photo uploads 2-10 images into one ChatGPT chat and asks it to
 # compose a group shot, which takes noticeably longer than a single photo.
 FAMILY_PHOTO_STALE_JOB_SECONDS = 180
 PASSPORT_PHOTO_FALLBACK_RETRY_SECONDS = 20
@@ -5400,7 +5444,7 @@ POOLER_ONLINE_WINDOW_SECONDS = 20
 # regardless of priority, in case the top pooler is heartbeating but stuck.
 POOLER_OVERFLOW_SECONDS = 25
 # Order types the GPT Pooler generates: a single passport photo (one input
-# image in original_filename) and a family passport photo (2-6 input
+# image in original_filename) and a family passport photo (2-10 input
 # images in family_photo_inputs, merged into one group photo).
 POOLER_SERVICE_KEYS = ("passport_photo", "family_passport_photo")
 
@@ -5601,7 +5645,7 @@ def check_passport_photo(request):
 
 
 MIN_FAMILY_PHOTOS = 2
-MAX_FAMILY_PHOTOS = 6
+MAX_FAMILY_PHOTOS = 10
 MAX_FAMILY_PHOTO_BYTES = 8 * 1024 * 1024
 
 # TEMPORARY TEST MODE - set back to False to restore real Gemini/OpenAI

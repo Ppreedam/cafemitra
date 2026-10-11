@@ -13,6 +13,7 @@ import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attir
 import { stashPhotoForPrintSheet } from "@/lib/printSheetHandoff";
 import { CropEditor, cropImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, warpPerspectiveCrop, type CropQuad, type CropRect } from "../CropEditor";
 import { PrintProfileSelect, useAgentPrint } from "../PrintProfileSelect";
+import { useWaitingJokes } from "../ProcessingSteps";
 import { buildPrintSheetHtml, maxTilesForPaper, openPrintSheet as openManualPrintSheet, parsePhotoCount, type PaperSize } from "./printSheet";
 
 type JobState = "idle" | "submitting" | "processing" | "done" | "not_found" | "failed";
@@ -30,28 +31,6 @@ const avoidPhotoExamples = [
   { src: "/Good_bad_image/avoid2.jpg", caption: "Blurry or low-resolution photo" },
   { src: "/Good_bad_image/avoid3.jpg", caption: "Shadows across the face" },
   { src: "/Good_bad_image/avoid4.jpg", caption: "Angled or side pose" },
-];
-
-// Shown once the fake progress animation reaches "Analyzing" and the real
-// server response is still taking a while - gives the customer something to
-// read at the counter instead of staring at a spinner.
-const WAITING_JOKES = [
-  "Teacher: Tumhara homework kahan hai? Student: Sir, wo bhi AI processing me hai, thoda wait kariye.",
-  "Ek printer doosre printer se bola - bhai, kaam se break chahiye. Doosra bola - tu to already jam pe hai.",
-  "Pappu interview me bola: Sir mujhe multitasking aati hai. Interviewer: Example do. Pappu: Main khana khate waqt sochta hun ki kal kya khaunga.",
-  "Wife: Aap mujhe kitna pyaar karte ho? Husband: Utna jitna ye passport photo load hone me time le raha hai. Wife: Ye kya jawab hua? Husband: Bas thoda aur wait karo, samajh jaogi.",
-  "Ek aadmi bank me bola: Mera balance check karo. Cashier: Sir aapka balance to aapki personality jaisa hai - kam hai. Aadmi: Matlab? Cashier: Zero ke aas paas.",
-  "Boss: Kaam kahan tak pahucha? Employee: Sir, AI process kar raha hai. Boss: Aur tum? Employee: Main uska result wait kar raha hun, jaise aap abhi kar rahe ho.",
-  "Ek chai wala apne dost se bola: Aaj kal sabko instant chahiye. Dost: Kyun? Chai wala: Chai bhi, aur passport photo bhi.",
-  "Student ne teacher se pucha: Sir AI kitna smart hai? Teacher: Itna ki tumhari copy check karne se pehle soch leta hai ki galtiyan kitni honi chahiye.",
-  "Pati: Tumhe pata hai patience kya hoti hai? Patni: Haan, jaise main tumhara jawab sunne se pehle ye photo process hone ka wait kar rahi hun.",
-  "Ek naya customer shop pe aaya aur bola: Jaldi karo bhai, time nahi hai. Dukaandaar: Bhaisahab, AI bhi insaan jaisa hai - jaldi karoge to result kharab aayega.",
-  "Do dost baat kar rahe the: Yaar tumhara passport photo kab tak banega? Dusra: Bas thoda sabr rakh, main bhi tere jaise AI ka wait kar raha hun.",
-  "Interviewer: Apni sabse badi khoobi batao. Candidate: Sir, main wait karna jaanta hun - jaise abhi is photo ka process hone ka kar raha hoon.",
-  "Ek aadmi doctor ke paas gaya: Doctor sahab, mujhe patience kam hai. Doctor: Thoda ruko, report aane do, phir dawai bataunga.",
-  "Beta: Papa, AI kaise kaam karta hai? Papa: Beta, jaise tum result ka wait karte ho na exam ke baad, waise hi ye bhi wait karwata hai.",
-  "Teacher ne class me pucha: Fast kaam karne ka raaz kya hai? Student: Sir, jaldi karne se kabhi kabhi photo kharab ban jaati hai, isliye AI thoda time leta hai.",
-  "Ek grahak ne dukaandaar se pucha: Photo itna time kyun le raha hai? Dukaandaar: Bhaisahab, achhi cheez me thoda time to lagta hi hai - jaise achhi chai banane me.",
 ];
 
 type ProcessingStepItem = {
@@ -157,6 +136,7 @@ export default function PassportPhotoClient() {
   const [customTileHeight, setCustomTileHeight] = useState(1.6);
   const [customTileCount, setCustomTileCount] = useState<number | null>(null);
   const [stepCursor, setStepCursor] = useState(0);
+  const waitingJokes = useWaitingJokes();
   const [showJokes, setShowJokes] = useState(false);
   const [jokeIndex, setJokeIndex] = useState(0);
   const dropRef = useRef<HTMLLabelElement | null>(null);
@@ -206,7 +186,7 @@ export default function PassportPhotoClient() {
     if (reachedStepTwo && !jokeTriggeredRef.current) {
       jokeTriggeredRef.current = true;
       jokeTimeoutRef.current = setTimeout(() => {
-        setJokeIndex(Math.floor(Math.random() * WAITING_JOKES.length));
+        setJokeIndex(Math.floor(Math.random() * waitingJokes.length));
         setShowJokes(true);
       }, 2000);
     }
@@ -1009,14 +989,14 @@ export default function PassportPhotoClient() {
           </div>
           <p className="passport-joke-text">
             <span className="passport-joke-quote" aria-hidden>&ldquo;</span>
-            {WAITING_JOKES[jokeIndex]}
+            {waitingJokes[jokeIndex % waitingJokes.length]}
           </p>
           <div className="passport-joke-nav">
-            <button type="button" onClick={() => setJokeIndex((i) => (i - 1 + WAITING_JOKES.length) % WAITING_JOKES.length)}>
+            <button type="button" onClick={() => setJokeIndex((i) => (i - 1 + waitingJokes.length) % waitingJokes.length)}>
               <ChevronLeft size={14} /> Prev
             </button>
-            <span className="passport-joke-count">{jokeIndex + 1}/{WAITING_JOKES.length}</span>
-            <button type="button" onClick={() => setJokeIndex((i) => (i + 1) % WAITING_JOKES.length)}>
+            <span className="passport-joke-count">{(jokeIndex % waitingJokes.length) + 1}/{waitingJokes.length}</span>
+            <button type="button" onClick={() => setJokeIndex((i) => (i + 1) % waitingJokes.length)}>
               Next <ChevronRight size={14} />
             </button>
           </div>

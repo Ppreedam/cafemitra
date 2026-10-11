@@ -25,8 +25,9 @@ from django.http import HttpResponse, JsonResponse
 
 from .admin_activity import log_admin_activity
 from .admin_auth import get_admin_role, require_admin, require_section
-from .models import AdminActivityLog, AdminRole, Agent, BlogArticle, BlogRevision, ContactMessage, Coupon, CouponRedemption, CustomerNote, CustomerTag, Influencer, LeadAgent, LeadTag, PassportAIConfig, PoolerNode, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
+from .models import WaitingJoke, AdminActivityLog, AdminRole, Agent, BlogArticle, BlogRevision, ContactMessage, Coupon, CouponRedemption, CustomerNote, CustomerTag, Influencer, LeadAgent, LeadTag, PassportAIConfig, PoolerNode, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from .views import (
+    credit_pending_referral_bonuses,
     ORDER_LIST_DEFERRED_FIELDS,
     cafe_code_for_user,
     create_password_reset,
@@ -1462,7 +1463,13 @@ def admin_wallet_setting_detail(request, key):
     if "isActive" in body:
         setting.is_active = bool(body.get("isActive"))
     setting.save()
-    log_admin_activity(admin_user, "wallet_setting.update", "wallet_setting", key, f"value={setting.value}, isActive={setting.is_active}")
+    detail = f"value={setting.value}, isActive={setting.is_active}"
+    if key in ("referral_bonus", "referral_trigger"):
+        # Referrals that already met the (now active) rule but were never paid.
+        paid_now = credit_pending_referral_bonuses()
+        if paid_now:
+            detail += f", paid {paid_now} pending referral bonus(es)"
+    log_admin_activity(admin_user, "wallet_setting.update", "wallet_setting", key, detail)
 
     return JsonResponse(
         {
@@ -4143,3 +4150,68 @@ def admin_media_detail(request, media_id):
         return JsonResponse({"message": str(exc)}, status=502)
     log_admin_activity(admin_user, "media.delete", "media", media_id, "")
     return JsonResponse({"message": "Image deleted."})
+
+
+MAX_JOKE_LENGTH = 400
+
+
+def public_waiting_joke(joke):
+    return {"id": joke.id, "text": joke.text, "isActive": joke.is_active, "createdAt": joke.created_at.isoformat()}
+
+
+@csrf_exempt
+@require_http_methods(["GET", "POST", "OPTIONS"])
+def admin_waiting_jokes(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "tools_config")
+    if err:
+        return err
+
+    if request.method == "POST":
+        text = str(parse_body(request).get("text", "")).strip()
+        if not text:
+            return JsonResponse({"message": "Joke text is required."}, status=400)
+        if len(text) > MAX_JOKE_LENGTH:
+            return JsonResponse({"message": f"Keep the joke under {MAX_JOKE_LENGTH} characters."}, status=400)
+        joke = WaitingJoke.objects.create(text=text)
+        log_admin_activity(admin_user, "jokes.create", "waiting_joke", joke.id, text[:80])
+        return JsonResponse({"joke": public_waiting_joke(joke)}, status=201)
+
+    return JsonResponse({"jokes": [public_waiting_joke(joke) for joke in WaitingJoke.objects.all()]})
+
+
+@csrf_exempt
+@require_http_methods(["PUT", "DELETE", "OPTIONS"])
+def admin_waiting_joke_detail(request, joke_id):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "tools_config")
+    if err:
+        return err
+
+    joke = WaitingJoke.objects.filter(id=joke_id).first()
+    if not joke:
+        return JsonResponse({"message": "Joke not found."}, status=404)
+
+    if request.method == "DELETE":
+        label = joke.text[:80]
+        joke.delete()
+        log_admin_activity(admin_user, "jokes.delete", "waiting_joke", joke_id, label)
+        return JsonResponse({"message": "Joke deleted."})
+
+    body = parse_body(request)
+    if "text" in body:
+        text = str(body.get("text", "")).strip()
+        if not text:
+            return JsonResponse({"message": "Joke text is required."}, status=400)
+        if len(text) > MAX_JOKE_LENGTH:
+            return JsonResponse({"message": f"Keep the joke under {MAX_JOKE_LENGTH} characters."}, status=400)
+        joke.text = text
+    if "isActive" in body:
+        joke.is_active = bool(body.get("isActive"))
+    joke.save()
+    log_admin_activity(admin_user, "jokes.update", "waiting_joke", joke.id, joke.text[:80])
+    return JsonResponse({"joke": public_waiting_joke(joke)})

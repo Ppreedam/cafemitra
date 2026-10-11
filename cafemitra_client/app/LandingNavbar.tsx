@@ -38,6 +38,7 @@ import {
   Search,
   Shield,
   Users,
+  UsersRound,
   X,
 } from "lucide-react";
 import { HomeHeaderActions } from "./HomeHeaderActions";
@@ -98,6 +99,16 @@ const serviceMenu = [
     description: "Create consistent photo sheets for common ID requirements without opening separate tools.",
     metric: "Photo sheet",
     toolKey: "passport_photo",
+  },
+  {
+    name: "Family Passport Photo",
+    href: "/family-passport-photo",
+    icon: UsersRound,
+    color: "#7c3aed",
+    summary: "Family and group photos in government-size passport format.",
+    description: "Upload one family photo and get a print-ready photo sheet with the whole family in a single frame.",
+    metric: "Family photo",
+    toolKey: "family_passport_photo",
   },
   {
     name: "Photo Print Sheet",

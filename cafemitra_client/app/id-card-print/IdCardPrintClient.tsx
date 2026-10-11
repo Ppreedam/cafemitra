@@ -30,6 +30,10 @@ async function chargeIdCardPrint(cardCount: number) {
 
 type Side = "front" | "back";
 type ColorMode = "color" | "bw";
+type SheetLayout = "side" | "stack";
+// Cropped / auto-straightened cards start with this contrast so the print is
+// crisp; a tone the user already set (even back to neutral) is never overridden.
+const CROPPED_CARD_TONE: Tone = { ...NEUTRAL_TONE, contrast: 55 };
 
 type ScanStatus = "idle" | "scanning" | "done" | "notfound" | "error";
 
@@ -93,6 +97,7 @@ export default function IdCardPrintClient() {
   const [filterTone, setFilterTone] = useState<Tone>(NEUTRAL_TONE);
   const [applyFilterToBothSides, setApplyFilterToBothSides] = useState(false);
   const [colorMode, setColorMode] = useState<ColorMode>("color");
+  const [sheetLayout, setSheetLayout] = useState<SheetLayout>("side");
   const [printBusy, setPrintBusy] = useState(false);
   const agentPrint = useAgentPrint("id-card-print");
   const [error, setError] = useState("");
@@ -182,7 +187,7 @@ export default function IdCardPrintClient() {
       const file = new File([result.blob], original.file.name.replace(/(\.[^.]+)?$/, "-card.jpg"), { type: "image/jpeg" });
       updateIfSame(cardId, side, original.url, (state) => {
         if (state.url && state.url !== original.url) URL.revokeObjectURL(state.url);
-        return { ...state, file, url: URL.createObjectURL(file), cropQuad: result.quad, cropRect: DEFAULT_CROP_RECT, scan: "done" };
+        return { ...state, file, url: URL.createObjectURL(file), cropQuad: result.quad, cropRect: DEFAULT_CROP_RECT, scan: "done", tone: state.tone ?? CROPPED_CARD_TONE };
       });
       trackToolEvent("id_card_print", quad ? "manual_perspective_scan" : "auto_scan", { mode });
     } catch (reason) {
@@ -278,7 +283,7 @@ export default function IdCardPrintClient() {
       const croppedBlob = cropMode === "perspective" ? await warpPerspectiveCrop(current.url, current.cropQuad, CARD_ASPECT_RATIO_NUMBER) : await cropImage(current.url, current.cropRect);
       const croppedFile = new File([croppedBlob], (current.file?.name || "photo").replace(/(\.[^.]+)?$/, "-cropped.png"), { type: "image/png" });
       URL.revokeObjectURL(current.url);
-      setSide(cropTarget.cardId, cropTarget.side, { file: croppedFile, url: URL.createObjectURL(croppedFile), cropRect: DEFAULT_CROP_RECT, cropQuad: DEFAULT_CROP_QUAD, tone: current.tone });
+      setSide(cropTarget.cardId, cropTarget.side, { file: croppedFile, url: URL.createObjectURL(croppedFile), cropRect: DEFAULT_CROP_RECT, cropQuad: DEFAULT_CROP_QUAD, tone: current.tone ?? CROPPED_CARD_TONE });
       setCropTarget(null);
     } catch {
       // Crop dialog stays open so the user can retry.
@@ -352,7 +357,7 @@ export default function IdCardPrintClient() {
       const printable = await Promise.all(withFront.map(async (card) => ({ frontUrl: await printUrl(card.front), backUrl: await printUrl(card.back) })));
       // The print window / agent render has loaded them by then.
       if (baked.length) window.setTimeout(() => baked.forEach((url) => URL.revokeObjectURL(url)), 120000);
-      const printHtml = buildCardPrintSheetHtml(printable, colorMode);
+      const printHtml = buildCardPrintSheetHtml(printable, colorMode, sheetLayout);
       await agentPrint.printHtml(() => printHtml, {
         fileName: "id-card-a4-sheet.pdf",
         fallback: () => {
@@ -466,6 +471,15 @@ export default function IdCardPrintClient() {
                 </button>
                 <button type="button" className={colorMode === "bw" ? "active" : ""} onClick={() => setColorMode("bw")}>
                   <Contrast size={14} /> B/W
+                </button>
+              </div>
+              <div className="idcard-toolbar-divider" />
+              <div className="idcard-toggle-group" title="How front and back are placed on the sheet">
+                <button type="button" className={sheetLayout === "side" ? "active" : ""} onClick={() => setSheetLayout("side")}>
+                  Left / Right
+                </button>
+                <button type="button" className={sheetLayout === "stack" ? "active" : ""} onClick={() => setSheetLayout("stack")}>
+                  Top / Bottom
                 </button>
               </div>
               <div className="idcard-toolbar-divider" />
@@ -740,7 +754,7 @@ async function applyFilterAdjustments(url: string, values: FilterValues): Promis
   return new Promise((resolve, reject) => canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Filter apply failed"))), "image/png", 0.95));
 }
 
-function buildCardPrintSheetHtml(entries: { frontUrl: string; backUrl: string }[], colorMode: ColorMode) {
+function buildCardPrintSheetHtml(entries: { frontUrl: string; backUrl: string }[], colorMode: ColorMode, layout: SheetLayout) {
   const cardHtml = (url: string) => `<div class="card"><img src="${url}" /></div>`;
   const rowsHtml = entries.map((entry) => `<div class="pair">${cardHtml(entry.frontUrl)}${entry.backUrl ? cardHtml(entry.backUrl) : ""}</div>`).join("");
 
@@ -752,8 +766,8 @@ function buildCardPrintSheetHtml(entries: { frontUrl: string; backUrl: string }[
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:#f2f2f2;font-family:Arial, Helvetica, sans-serif;${colorMode === "bw" ? "filter:grayscale(1);" : ""}}
-.page{width:210mm;min-height:297mm;background:#fff;margin:20px auto;padding:10mm;}
-.pair{display:flex;gap:6mm;margin-bottom:6mm;}
+.page{width:210mm;min-height:297mm;background:#fff;margin:20px auto;padding:10mm;display:flex;flex-wrap:wrap;align-content:flex-start;gap:6mm;}
+${layout === "stack" ? ".pair{display:flex;flex-direction:column;gap:6mm;}" : ".pair{display:flex;gap:6mm;width:100%;}"}
 .card{width:85.6mm;height:53.98mm;border:1px solid #999;border-radius:3mm;overflow:hidden;background:#fff;}
 .card img{width:100%;height:100%;object-fit:cover;}
 @media print{

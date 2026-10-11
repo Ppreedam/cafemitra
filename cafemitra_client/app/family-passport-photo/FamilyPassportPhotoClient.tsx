@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Eye, IdCard, Loader2, Plus, RefreshCw, Settings, Trash2, Upload, Users, X } from "lucide-react";
+import { Check, Eye, IdCard, Plus, RefreshCw, Settings, Trash2, Upload, Users, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
 import { WalletLimitBanner } from "../WalletLimitBanner";
 import Link from "next/link";
@@ -10,6 +10,7 @@ import { apiFetch, apiUrl } from "@/lib/api";
 import { fetchPricingServiceByKey, type PriceItem } from "@/lib/pricing";
 import { buildFamilyPhotoPrompt } from "@/lib/family-photo-prompt";
 import { stashPhotoForPrintSheet } from "@/lib/printSheetHandoff";
+import { ProcessingTimeline, useStepAnimation, WaitingJokeWidget, type ProcessingGroup } from "../ProcessingSteps";
 
 type JobState = "idle" | "submitting" | "processing" | "done" | "not_found" | "failed";
 
@@ -28,11 +29,54 @@ const avoidPhotoExamples = [
 ];
 
 const MIN_PHOTOS = 2;
-const MAX_PHOTOS = 6;
+const MAX_PHOTOS = 10;
 const CHECK_INTERVAL_MS = 5_000;
 // ~4 min: covers the GPT Pooler's group-photo generation plus the server's
 // AI fallback if the pooler goes silent (FAMILY_PHOTO_STALE_JOB_SECONDS).
 const MAX_CHECK_ATTEMPTS = 48;
+
+// The step-by-step animation shown while the family portrait is generated
+// (cosmetic - the real merge runs on the server; the last step stays active
+// until the result arrives).
+function buildFamilyProcessingGroups(count: number): ProcessingGroup[] {
+  return [
+    {
+      id: "preparing",
+      title: "Preparing",
+      items: [
+        { title: "Reading photos...", desc: `Checking all ${count} uploaded photos`, duration: 1500 },
+        { title: "Optimizing for AI processing...", desc: "Creating an efficient working copy of each photo", duration: 2200 },
+      ],
+    },
+    {
+      id: "faces",
+      title: "Faces",
+      items: [
+        { title: "Face detection", desc: "Locating every family member's face", duration: 2600 },
+        { title: "Head-size matching", desc: "Bringing all faces to the same size and eye line", duration: 3200 },
+        { title: "Tilt correction", desc: "Straightening each person's head angle", duration: 2600 },
+      ],
+    },
+    {
+      id: "background",
+      title: "Background removing",
+      items: [{ title: "Backgrounds processed", desc: "Removing each person's original backdrop", duration: 3600 }],
+    },
+    {
+      id: "arranging",
+      title: "Arranging the family",
+      items: [
+        { title: "Group arrangement", desc: `Placing ${count} people side by side in one frame`, duration: 4200 },
+        { title: "Blending", desc: "Matching light, skin tone and background across everyone", duration: 4800 },
+      ],
+    },
+    {
+      id: "finishing",
+      title: "Finishing",
+      items: [{ title: "Final quality check", desc: "Making sure the family photo is sharp and print-ready", duration: 6000 }],
+    },
+  ];
+}
 
 type FamilySlot = { id: string; file: File | null; previewUrl: string };
 
@@ -137,6 +181,8 @@ export default function FamilyPassportPhotoClient() {
   const filledSlots = slots.filter((slot) => slot.file);
   const canGenerate = filledSlots.length >= MIN_PHOTOS;
   const isBusy = jobState === "submitting" || jobState === "processing";
+  const processingGroups = useMemo(() => buildFamilyProcessingGroups(filledSlots.length), [filledSlots.length]);
+  const { stepCursor, overallProgress, ranges: processingRanges } = useStepAnimation(processingGroups, isBusy);
   const selectedPackage = priceItems.find((item) => item.id === selectedPriceItemId) || priceItems[0];
   const previewSlot = slots.find((slot) => slot.id === previewSlotId && slot.file) || null;
 
@@ -348,10 +394,12 @@ export default function FamilyPassportPhotoClient() {
             </div>
 
             {isBusy ? (
-              <div className="passport-processing-state">
-                <Loader2 size={28} className="passport-step-spin" />
-                <p>Merging {filledSlots.length} photos into one family portrait - this can take up to a minute.</p>
-              </div>
+              <ProcessingTimeline
+                intro={`Merging ${filledSlots.length} photos into one family portrait - this can take up to a minute.`}
+                ranges={processingRanges}
+                stepCursor={stepCursor}
+                overallProgress={overallProgress}
+              />
             ) : null}
 
             {jobState === "done" && finalImageUrl ? (
@@ -417,6 +465,8 @@ export default function FamilyPassportPhotoClient() {
           </article>
         </section>
       </div>
+
+      <WaitingJokeWidget active={isBusy} stepCursor={stepCursor} afterStep={processingRanges[1].start} />
 
       {previewSlot ? (
         <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Photo preview">

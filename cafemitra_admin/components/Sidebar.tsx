@@ -53,6 +53,7 @@ const links: NavLink[] = [
   { href: "/order-issues", label: "Order Issues", section: "leads" },
   { href: "/print-agent", label: "Print Agent", section: "print_agent" },
   { href: "/tools-config", label: "Tools Config", section: "tools_config" },
+  { href: "/jokes", label: "Waiting Jokes", section: "tools_config" },
   { href: "/security", label: "Security Alerts", section: "security" },
   { href: "/activity-log", label: "Activity Log", section: "activity_log" },
   { href: "/staff", label: "Staff & Roles", section: "staff" },

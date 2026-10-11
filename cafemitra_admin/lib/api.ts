@@ -822,6 +822,26 @@ export function deleteCoupon(id: number) {
   return request<{ message: string }>(`/admin/coupons/${id}/`, { method: "DELETE" });
 }
 
+// --- Waiting jokes (shown to customers while an AI photo is generated) ------
+
+export type WaitingJoke = { id: number; text: string; isActive: boolean; createdAt: string };
+
+export function fetchWaitingJokes() {
+  return request<{ jokes: WaitingJoke[] }>("/admin/jokes/");
+}
+
+export function createWaitingJoke(text: string) {
+  return request<{ joke: WaitingJoke }>("/admin/jokes/", { method: "POST", body: JSON.stringify({ text }) });
+}
+
+export function updateWaitingJoke(id: number, data: { text?: string; isActive?: boolean }) {
+  return request<{ joke: WaitingJoke }>(`/admin/jokes/${id}/`, { method: "PUT", body: JSON.stringify(data) });
+}
+
+export function deleteWaitingJoke(id: number) {
+  return request<{ message: string }>(`/admin/jokes/${id}/`, { method: "DELETE" });
+}
+
 // --- Blog -------------------------------------------------------------------
 
 export type BlogStatus = "draft" | "published" | "trash";

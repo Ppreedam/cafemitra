@@ -1782,12 +1782,18 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
             <label>
               <span>Pages</span>
               <input
+                // Customers can't type or step the page count - it comes from the uploaded
+                // file (use Manage Pages to drop pages), so the price can't be edited down.
+                // The shop owner's own dashboard copy of this tool stays editable.
+                className={ownerMode ? undefined : "pages-readonly"}
+                readOnly={!ownerMode}
                 disabled={!hasUploadedFile}
                 min="1"
                 placeholder="Upload document first"
                 type="number"
                 value={hasUploadedFile ? pages : ""}
                 onChange={(event) => {
+                  if (!ownerMode) return;
                   setPages(Number(event.target.value || 1));
                   setOptionsTouched(true);
                   resetOrderDraft();

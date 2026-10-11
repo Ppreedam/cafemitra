@@ -951,34 +951,6 @@ export default function AutoPrintClient() {
                   <p className="payment-mode-note">Online Payment is available to customers by default. Turn on "Online Payment + Cash Counter" to also let customers pay at your counter, or pick "Only Cash Counter" to accept counter payment only.</p>
                   {!cashCounterAvailable ? <p className="payment-mode-note payment-mode-locked">{cashCounterReason}</p> : null}
 
-                  <div className="panel-title-row compact idcard-pricing-title">
-                    <div>
-                      <h2>ID Card Print</h2>
-                      <p>Price per ID card (front + back) for the customer&apos;s Color or B/W choice, and how they pay for it.</p>
-                    </div>
-                  </div>
-                  <div className="price-item-row">
-                    <div className="idcard-pricing-grid">
-                      {idCardPriceItems.map((item) => (
-                        <label className="auto-field" key={item.id}>
-                          <span>{item.label} (per card)</span>
-                          <input
-                            min="0"
-                            type="number"
-                            value={item.rate}
-                            onChange={(event) => {
-                              setPricingSaved(false);
-                              setIdCardPriceItems((current) =>
-                                current.map((entry) => (entry.id === item.id ? { ...entry, rate: Number(event.target.value || 0) } : entry)),
-                              );
-                            }}
-                          />
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-                  {renderPaymentModes(idCardPaymentMode, setIdCardPaymentMode)}
-
                   {pricingMessage ? <div className="profile-alert success">{pricingMessage}</div> : null}
                   {pricingError ? <div className="profile-alert error">{pricingError}</div> : null}
                   <button className="btn btn-primary" type="button" onClick={saveAutoPrintPricing} disabled={isSavingPricing}>

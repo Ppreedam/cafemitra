@@ -181,7 +181,9 @@ export default function ReferralClient() {
                                   ? item.emailVerified
                                     ? `Awaiting top-up of Rs. ${data.minTopupAmount}+`
                                     : "Awaiting email verification"
-                                  : "Awaiting email verification"}
+                                  : item.emailVerified
+                                    ? "Bonus pending"
+                                    : "Awaiting email verification"}
                               </span>
                             )}
                           </td>

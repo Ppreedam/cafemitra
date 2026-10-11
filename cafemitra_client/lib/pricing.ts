@@ -46,7 +46,7 @@ export type PricingService = {
 export const defaultPricingServices: PricingService[] = [
   {
     serviceKey: "auto_document_print",
-    serviceName: "RepetiGo PrintPilot",
+    serviceName: "RepetiGo PrintPilot (Xerox)",
     settings: {
       paymentMode: "Online Payment",
       selectedPrinter: "",

@@ -817,6 +817,23 @@ class LeadAgent(models.Model):
         return f"{self.agent_name} ({self.pincode})"
 
 
+class WaitingJoke(models.Model):
+    """A line shown to a customer while an AI photo is being generated (the
+    "have a joke while you wait" card). Admins add/edit/disable these from
+    the admin panel; the public list only ever contains the active ones.
+    """
+
+    text = models.TextField()
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["id"]
+
+    def __str__(self) -> str:
+        return self.text[:60]
+
+
 class CustomerTag(models.Model):
     """Free-form label admins create ad hoc and attach to customer (shop
     owner) accounts to track outreach/status - same idea as LeadTag, kept

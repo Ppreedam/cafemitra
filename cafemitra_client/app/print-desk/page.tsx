@@ -1,15 +1,7 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { DashboardShell } from "../DashboardShell";
-import PrintPilotScan from "../s/[code]/PrintPilotScan";
-
-// The customer PrintPilot upload tool for the cafe owner: same upload,
-// straighten/scan, crop and page tools, printed straight on this PC's
-// printer through the PrintPilot agent - no order, no payment, no wallet.
+// The owner upload tool now lives at the SEO-friendly /photo-copy route; the
+// old address keeps working for existing bookmarks.
 export default function PrintDeskPage() {
-  return (
-    <DashboardShell activePath="/print-desk">
-      <PrintPilotScan code="" ownerMode />
-    </DashboardShell>
-  );
+  redirect("/photo-copy");
 }

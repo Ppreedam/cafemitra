@@ -45,6 +45,8 @@ urlpatterns = [
     re_path(r"^admin/wallet-settings/(?P<key>[a-z_]+)/?$", admin_views.admin_wallet_setting_detail),  # PUT edit one wallet setting's value/isActive
     re_path(r"^admin/tool-pricing/?$", admin_views.admin_tool_pricing),  # GET RepetiGo's own per-tool usage fees
     re_path(r"^admin/tool-pricing/(?P<tool_key>[\w-]+)/?$", admin_views.admin_tool_pricing_detail),  # PUT edit one tool's price/price_b2b/price_b2c/is_billable
+    re_path(r"^admin/jokes/?$", admin_views.admin_waiting_jokes),  # GET all waiting jokes (incl. disabled) / POST {text} add one
+    re_path(r"^admin/jokes/(?P<joke_id>[0-9]+)/?$", admin_views.admin_waiting_joke_detail),  # PUT {text?, isActive?} edit one / DELETE it
     re_path(r"^admin/tool-visibility/?$", admin_views.admin_tool_visibility),  # GET which Automation Tools nav entries are on/off
     re_path(r"^admin/tool-visibility/(?P<tool_key>[\w-]+)/?$", admin_views.admin_tool_visibility_detail),  # PUT toggle one tool's isEnabled
     re_path(r"^admin/agents/?$", admin_views.admin_agents),  # GET list (status filter) / POST onboard an existing account as a referral agent
@@ -141,6 +143,7 @@ urlpatterns = [
     re_path(r"^referrals/lookup/?$", views.referral_lookup),  # GET public: owner's short name for a referral code (signup page check)
     re_path(r"^referrals/?$", views.referrals),  # GET the shop's referral code + history of referred shops (registered / email verified / first top-up / bonus)
     re_path(r"^wallet/config/?$", views.wallet_config),  # GET public signup/referral bonus, grace limits, and billable tool prices
+    re_path(r"^waiting-jokes/?$", views.waiting_jokes),  # GET public list of active "while you wait" jokes for the photo makers ([] = use the built-in set)
     re_path(r"^tools/visibility/?$", views.tool_visibility),  # GET public map of {toolKey: isEnabled} for the Automation Tools nav (navbar + dashboard sidebar)
     re_path(r"^wallet/?$", views.wallet),  # GET balance, collection summary, limits, and paginated transaction ledger
     re_path(r"^wallet/withdraw/?$", views.request_withdrawal),  # POST request a withdrawal against the withdrawable balance

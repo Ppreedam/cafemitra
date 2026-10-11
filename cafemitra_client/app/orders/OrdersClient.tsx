@@ -442,6 +442,13 @@ export default function OrdersClient() {
                                 {order.fileName || "Document"}
                               </button>
                             ) : null
+                          ) : order.serviceKey === "family_passport_photo" ? (
+                            // Family orders have no single raw upload - the file is just the generated group photo.
+                            order.hasGeminiPhoto ? (
+                              <button type="button" className="orders-file-link" onClick={() => openCompare(order)}>
+                                {order.fileName || "Family photo"}
+                              </button>
+                            ) : null
                           ) : order.serviceKey === "resume_builder" ? (
                             <Link href={`/resume-builder/build?savedId=${order.id}`} className="orders-print-link">
                               <FileText size={14} /> Open
@@ -522,11 +529,11 @@ export default function OrdersClient() {
       </div>
 
       {compareOrder ? (
-        <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Compare passport photos" onClick={() => setCompareOrder(null)}>
+        <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label={compareOrder.serviceKey === "family_passport_photo" ? "Family photo preview" : "Compare passport photos"} onClick={() => setCompareOrder(null)}>
           <div className="document-preview-window passport-compare-window" onClick={(event) => event.stopPropagation()}>
             <div className="document-preview-head">
               <div>
-                <strong>{compareOrder.fileName || "Passport Photo"}</strong>
+                <strong>{compareOrder.fileName || (compareOrder.serviceKey === "family_passport_photo" ? "Family Passport Photo" : "Passport Photo")}</strong>
                 <span>{compareOrder.tokenId}</span>
               </div>
               <button type="button" onClick={() => setCompareOrder(null)} aria-label="Close preview">
@@ -534,6 +541,7 @@ export default function OrdersClient() {
               </button>
             </div>
             <div className="passport-compare-body">
+              {compareOrder.serviceKey !== "family_passport_photo" ? (
               <div className="passport-compare-pane">
                 <span>Raw Photo</span>
                 {compareLoading ? (
@@ -544,18 +552,19 @@ export default function OrdersClient() {
                   <p>Not available</p>
                 )}
               </div>
+              ) : null}
               <div className="passport-compare-pane">
-                <span>Your Passport Photo</span>
+                <span>{compareOrder.serviceKey === "family_passport_photo" ? "Family Photo (output)" : "Your Passport Photo"}</span>
                 {compareLoading ? (
                   <div className="passport-compare-spinner"><span className="passport-compare-spinner-ring" /></div>
                 ) : compareOrder.geminiPhoto ? (
-                  <img src={apiUrl(compareOrder.geminiPhoto)} alt="AI generated passport photo" />
+                  <img src={apiUrl(compareOrder.geminiPhoto)} alt={compareOrder.serviceKey === "family_passport_photo" ? "AI generated family photo" : "AI generated passport photo"} />
                 ) : compareOrder.photoStatus === "failed" ? (
                   <div className="passport-compare-empty">
                     <span className="order-status failed">{friendlyPhotoErrorMessage(compareOrder)}</span>
                   </div>
                 ) : (
-                  <p>Passport photo processing...</p>
+                  <p>{compareOrder.serviceKey === "family_passport_photo" ? "Family photo processing..." : "Passport photo processing..."}</p>
                 )}
               </div>
             </div>

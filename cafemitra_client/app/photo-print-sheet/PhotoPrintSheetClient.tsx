@@ -4,7 +4,7 @@ import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { CaseSensitive, ChevronLeft, ChevronRight, Download, Eye, ImagePlus, Loader2, LogIn, Minus, Paintbrush, Plus, Printer, RefreshCw, RotateCw, Trash2, Upload, Wallet, X } from "lucide-react";
+import { Bookmark, BookmarkCheck, CaseSensitive, ChevronLeft, ChevronRight, Download, Eye, ImagePlus, Loader2, LogIn, Minus, Paintbrush, Plus, Printer, RefreshCw, RotateCw, Trash2, Upload, Wallet, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
 import { PrintProfileSelect, useAgentPrint } from "../PrintProfileSelect";
 import { canvasesToPdfBytes } from "@/lib/agent-print";
@@ -13,6 +13,7 @@ import { useToolPrice } from "@/lib/useToolPrice";
 import PhotoPrintSheetSeoContent from "./PhotoPrintSheetSeoContent";
 import { stashPhotoForEditor, takePendingPrintSheetPhoto, type EditorHandoffTool } from "@/lib/printSheetHandoff";
 import { trackToolEvent } from "@/lib/analytics";
+import { clearSavedPhotos, deleteSavedPhoto, loadSavedPhotos, putSavedPhoto } from "@/lib/savedPrintSheetPhotos";
 
 async function chargePhotoPrintSheet() {
   const response = await apiFetch("/api/tools/photo-print-sheet-charge/", { method: "POST" });
@@ -97,6 +98,9 @@ export default function PhotoPrintSheetClient() {
   const agentPrint = useAgentPrint("photo-print-sheet");
   const [error, setError] = useState("");
   const [rotatingIds, setRotatingIds] = useState<Set<string>>(new Set());
+  // Photos the user pressed Save on - kept in this browser (IndexedDB) and
+  // put back in the queue on every visit, before any newly arrived photo.
+  const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const photosRef = useRef(photos);
   photosRef.current = photos;
 
@@ -107,9 +111,25 @@ export default function PhotoPrintSheetClient() {
   }, []);
 
   useEffect(() => {
-    const pending = takePendingPrintSheetPhoto();
-    if (!pending) return;
     (async () => {
+      const saved = await loadSavedPhotos();
+      if (saved.length) {
+        const restored = saved.map(
+          (item): QueuePhoto => ({
+            id: item.id,
+            file: new File([item.file], item.name, { type: item.type || "image/jpeg" }),
+            url: URL.createObjectURL(item.file),
+            widthCm: item.widthCm,
+            heightCm: item.heightCm,
+            count: item.count,
+            sizeKey: item.sizeKey,
+          }),
+        );
+        setPhotos((prev) => [...restored, ...prev]);
+        setSavedIds(new Set(restored.map((photo) => photo.id)));
+      }
+      const pending = takePendingPrintSheetPhoto();
+      if (!pending) return;
       try {
         const blob = pending.url.startsWith("data:") ? dataUriToBlob(pending.url) : await fetch(apiUrl(pending.url)).then((res) => res.blob());
         addFiles([new File([blob], pending.name, { type: blob.type || "image/jpeg" })]);
@@ -119,6 +139,16 @@ export default function PhotoPrintSheetClient() {
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Keeps each saved photo's stored copy in step with its size, quantity and
+  // rotation (debounced - the quantity buttons fire quickly).
+  useEffect(() => {
+    if (!savedIds.size) return;
+    const timer = window.setTimeout(() => {
+      photos.filter((photo) => savedIds.has(photo.id)).forEach((photo) => void putSavedPhoto(toSavedRecord(photo)));
+    }, 400);
+    return () => window.clearTimeout(timer);
+  }, [photos, savedIds]);
 
   useEffect(() => {
     function handlePaste(event: ClipboardEvent) {
@@ -178,7 +208,44 @@ export default function PhotoPrintSheetClient() {
     if (event.dataTransfer.files?.length) addFiles(event.dataTransfer.files);
   }
 
+  function toSavedRecord(photo: QueuePhoto) {
+    return {
+      id: photo.id,
+      file: photo.file as Blob,
+      name: photo.file.name,
+      type: photo.file.type,
+      widthCm: photo.widthCm,
+      heightCm: photo.heightCm,
+      count: photo.count,
+      sizeKey: photo.sizeKey,
+      savedAt: Date.now(),
+    };
+  }
+
+  async function toggleSaved(photo: QueuePhoto) {
+    if (savedIds.has(photo.id)) {
+      await deleteSavedPhoto(photo.id);
+      setSavedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(photo.id);
+        return next;
+      });
+      return;
+    }
+    if (!(await putSavedPhoto(toSavedRecord(photo)))) {
+      setError("Could not save this photo in your browser. Please check that storage is allowed.");
+      return;
+    }
+    setSavedIds((prev) => new Set(prev).add(photo.id));
+  }
+
   function removePhoto(id: string) {
+    void deleteSavedPhoto(id);
+    setSavedIds((prev) => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
     setPhotos((prev) => {
       const target = prev.find((photo) => photo.id === id);
       if (target) URL.revokeObjectURL(target.url);
@@ -250,6 +317,8 @@ export default function PhotoPrintSheetClient() {
   }
 
   function clearQueue() {
+    void clearSavedPhotos();
+    setSavedIds(new Set());
     photos.forEach((photo) => URL.revokeObjectURL(photo.url));
     setPhotos([]);
     setSizeEditorId(null);
@@ -389,6 +458,15 @@ export default function PhotoPrintSheetClient() {
                       <div className="pps-queue-actions">
                         <button type="button" onClick={() => rotatePhoto(photo.id)} disabled={rotatingIds.has(photo.id)} aria-label="Rotate photo" title="Rotate">
                           {rotatingIds.has(photo.id) ? <Loader2 size={15} className="passport-step-spin" /> : <RotateCw size={15} />}
+                        </button>
+                        <button
+                          type="button"
+                          className={savedIds.has(photo.id) ? "saved" : ""}
+                          onClick={() => void toggleSaved(photo)}
+                          aria-label={savedIds.has(photo.id) ? "Remove from saved photos" : "Save this photo"}
+                          title={savedIds.has(photo.id) ? "Saved - shows up again next time (click to unsave)" : "Save - keep this photo for next time"}
+                        >
+                          {savedIds.has(photo.id) ? <BookmarkCheck size={15} /> : <Bookmark size={15} />}
                         </button>
                         <button type="button" onClick={() => downloadSingleTile(photo)} aria-label="Download this photo" title="Download">
                           <Download size={15} />

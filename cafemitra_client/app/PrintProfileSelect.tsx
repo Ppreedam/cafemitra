@@ -132,7 +132,7 @@ export function PrintProfileSelect({ print, className = "", noProfileLabel }: { 
     <div className={`print-profile-select ${className}`.trim()}>
       <label>
         <span>Print Profile</span>
-        <select value={print.profile} onChange={(event) => print.setProfile(event.target.value)} disabled={print.busy || print.agentReady === null}>
+        <select title="Print profile" value={print.profile} onChange={(event) => print.setProfile(event.target.value)} disabled={print.busy || print.agentReady === null}>
           {print.agentReady === null ? <option value="">Checking PrintPilot Agent...</option> : null}
           {print.profiles.map((item) => (
             <option key={item.name} value={item.name}>
