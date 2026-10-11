@@ -11,7 +11,7 @@ const siteUrl = "https://repetigo.com";
 
 // Statically cached and refreshed on demand (see /api/revalidate) - crawlers
 // always get the full article HTML.
-export const revalidate = 300;
+export const revalidate = 300; // must be a literal; keep in sync with BLOG_REVALIDATE_SECONDS
 
 type PageProps = { params: Promise<{ slug: string }> };
 

@@ -32,3 +32,6 @@ docs/
 
 # Local dev config (local Postgres etc.) - never commit
 cafemitra_server/.env.local
+
+.prod_env
+**/.prod_env
