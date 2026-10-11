@@ -5,7 +5,6 @@ import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import PrinterProfileSetup from "./PrinterProfileSetup";
-import DuplexPrinterCard from "./DuplexPrinterCard";
 import { BROWSER_PRINT, PrintProfileSelect, useAgentPrint } from "../PrintProfileSelect";
 import { sendPdfToAgent } from "@/lib/agent-print";
 import {
@@ -43,7 +42,9 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { clearSession, hasStoredSession } from "@/lib/api";
-import { fetchCashCounterStatus, fetchPricingServices, formatPriceItem, normalizePaymentMode, savePricingService, saveServicePrinter, type PriceItem, type PriceRange } from "@/lib/pricing";
+import { fetchCashCounterStatus, fetchPricingServices, formatPriceItem, getDuplexPriceItems, normalizePaymentMode, savePricingService, saveServicePrinter, type PriceItem, type PriceRange } from "@/lib/pricing";
+
+type PriceItemsSetter = React.Dispatch<React.SetStateAction<PriceItem[]>>;
 import {
   fallbackPrinters,
   fetchAgentHealth,
@@ -234,13 +235,21 @@ export default function AutoPrintClient() {
   // longer than that once it falls through all three layers.
   const verifyInFlightRef = useRef(false);
   const [availablePrinters, setAvailablePrinters] = useState<string[]>(fallbackPrinters);
-  const [selectedPrinter, setSelectedPrinter] = useState(fallbackPrinters[0]);
+  const [selectedPrinter, setSelectedPrinter] = useState(fallbackPrinters[0] ?? "");
   const [printerSaved, setPrinterSaved] = useState(false);
   const [priceItems, setPriceItems] = useState<PriceItem[]>([
     { id: "black_white", label: "Black & White", rate: 2 },
     { id: "color", label: "Color", rate: 10 },
   ]);
   const [paymentMode, setPaymentMode] = useState("Online Payment");
+  // Price when the customer ticks Duplex (print both sides), B/W and Color, with page ranges; 0 = normal rate.
+  const [duplexPriceItems, setDuplexPriceItems] = useState<PriceItem[]>(() => getDuplexPriceItems(undefined));
+  // ID Card Print (customer QR flow): per-card Color / B/W price + its own payment mode.
+  const [idCardPriceItems, setIdCardPriceItems] = useState<PriceItem[]>([
+    { id: "color", label: "Color", rate: 20 },
+    { id: "black_white", label: "Black & White", rate: 20 },
+  ]);
+  const [idCardPaymentMode, setIdCardPaymentMode] = useState("Online Payment");
   const [cashCounterAvailable, setCashCounterAvailable] = useState(true);
   const [cashCounterReason, setCashCounterReason] = useState("");
   const [pricingMessage, setPricingMessage] = useState("");
@@ -384,10 +393,16 @@ export default function AutoPrintClient() {
   async function loadPricingSettings() {
     try {
       const services = await fetchPricingServices();
+      const idCard = services.find((service) => service.serviceKey === "id_card_print");
+      if (idCard) {
+        if (Array.isArray(idCard.settings.priceItems)) setIdCardPriceItems(idCard.settings.priceItems);
+        setIdCardPaymentMode(normalizePaymentMode(String(idCard.settings.paymentMode ?? "Online Payment")));
+      }
       const autoPrint = services.find((service) => service.serviceKey === "auto_document_print");
       if (!autoPrint) return;
       setPriceItems((current) => (Array.isArray(autoPrint.settings.priceItems) ? autoPrint.settings.priceItems : current));
       setPaymentMode(normalizePaymentMode(String(autoPrint.settings.paymentMode ?? "Online Payment")));
+      setDuplexPriceItems(getDuplexPriceItems(autoPrint.settings));
       setPricingSaved(Boolean(autoPrint.settings.pricingSaved));
       setTestPrintDone(Boolean(autoPrint.settings.testPrintDone));
       setIsShopOpen(autoPrint.settings.isOpen !== false);
@@ -537,7 +552,12 @@ export default function AutoPrintClient() {
       await savePricingService("auto_document_print", {
         paymentMode,
         priceItems,
+        duplexPriceItems,
         pricingSaved: true,
+      });
+      await savePricingService("id_card_print", {
+        paymentMode: idCardPaymentMode,
+        priceItems: idCardPriceItems,
       });
       setPricingSaved(true);
       setPricingMessage("PrintPilot pricing saved.");
@@ -546,6 +566,42 @@ export default function AutoPrintClient() {
     } finally {
       setIsSavingPricing(false);
     }
+  }
+
+  // Payment mode buttons - PrintPilot and ID Card Print each keep their own.
+  function renderPaymentModes(value: string, onChange: (mode: string) => void) {
+    return (
+      <div className="payment-mode-list">
+        {paymentModeOptions.map((option) => {
+          const needsCashCounter = option.value === "Both" || option.value === "Cash Counter";
+          const isLocked = needsCashCounter && !cashCounterAvailable;
+          return (
+            <button
+              className={value === option.value ? "active" : ""}
+              key={option.value}
+              type="button"
+              disabled={isLocked}
+              title={isLocked ? cashCounterReason : undefined}
+              onClick={() => {
+                onChange(option.value);
+                setPricingSaved(false);
+              }}
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Printer Setup's "Show to customers" on a profile: adds/updates/removes the
+  // pricing category linked to it and saves the categories straight away.
+  async function updateProfilePriceItems(transform: (items: PriceItem[]) => PriceItem[]) {
+    const next = transform(priceItems);
+    if (next === priceItems) return;
+    setPriceItems(next);
+    await savePricingService("auto_document_print", { priceItems: next });
   }
 
   async function toggleShopOpenStatus() {
@@ -561,22 +617,16 @@ export default function AutoPrintClient() {
     }
   }
 
-  function addPriceItem() {
+  function updatePriceItem(itemId: string, field: keyof PriceItem, value: string, setItems: PriceItemsSetter = setPriceItems) {
     setPricingSaved(false);
-    const nextIndex = priceItems.length + 1;
-    setPriceItems((current) => [...current, { id: `${Date.now()}-${nextIndex}`, label: `Charge ${nextIndex}`, rate: 0 }]);
-  }
-
-  function updatePriceItem(itemId: string, field: keyof PriceItem, value: string) {
-    setPricingSaved(false);
-    setPriceItems((current) =>
+    setItems((current) =>
       current.map((item) => (item.id === itemId ? { ...item, [field]: field === "rate" ? Number(value || 0) : value } : item)),
     );
   }
 
-  function addPriceRange(itemId: string) {
+  function addPriceRange(itemId: string, setItems: PriceItemsSetter = setPriceItems) {
     setPricingSaved(false);
-    setPriceItems((current) =>
+    setItems((current) =>
       current.map((item) => {
         if (item.id !== itemId) return item;
         const ranges = item.ranges || [];
@@ -589,9 +639,9 @@ export default function AutoPrintClient() {
     );
   }
 
-  function updatePriceRange(itemId: string, rangeId: string, field: keyof PriceRange, value: string) {
+  function updatePriceRange(itemId: string, rangeId: string, field: keyof PriceRange, value: string, setItems: PriceItemsSetter = setPriceItems) {
     setPricingSaved(false);
-    setPriceItems((current) =>
+    setItems((current) =>
       current.map((item) =>
         item.id === itemId
           ? {
@@ -610,10 +660,48 @@ export default function AutoPrintClient() {
     );
   }
 
-  function removePriceRange(itemId: string, rangeId: string) {
+  function removePriceRange(itemId: string, rangeId: string, setItems: PriceItemsSetter = setPriceItems) {
     setPricingSaved(false);
-    setPriceItems((current) =>
+    setItems((current) =>
       current.map((item) => (item.id === itemId ? { ...item, ranges: (item.ranges || []).filter((range) => range.id !== rangeId) } : item)),
+    );
+  }
+
+  // Page Range Rules panel for a category or a Duplex price.
+  function renderPriceRanges(item: PriceItem, setItems: PriceItemsSetter) {
+    const ranges = item.ranges || [];
+    return (
+      <details className="price-range-panel" open={ranges.length > 0}>
+        <summary>
+          <span>Page Range Rules</span>
+          <small>{ranges.length ? `${ranges.length} active` : "General price applies"}</small>
+        </summary>
+        {ranges.map((range) => (
+          <div className="price-range-row" key={range.id}>
+            <label className="auto-field">
+              <span>From</span>
+              <input min="1" type="number" value={range.minPages} onChange={(event) => updatePriceRange(item.id, range.id, "minPages", event.target.value, setItems)} />
+            </label>
+            <label className="auto-field">
+              <span>To</span>
+              <input min="1" placeholder="Up" type="number" value={range.maxPages ?? ""} onChange={(event) => updatePriceRange(item.id, range.id, "maxPages", event.target.value, setItems)} />
+            </label>
+            <label className="auto-field">
+              <span>Per Page</span>
+              <input min="0" type="number" value={range.rate} onChange={(event) => updatePriceRange(item.id, range.id, "rate", event.target.value, setItems)} />
+            </label>
+            <button className="icon-action-btn danger" type="button" onClick={() => removePriceRange(item.id, range.id, setItems)} aria-label="Remove page range">
+              <Trash2 size={15} />
+            </button>
+          </div>
+        ))}
+        <div className="price-range-footer">
+          <small>{formatPriceItem(item)}</small>
+          <button type="button" onClick={() => addPriceRange(item.id, setItems)}>
+            <Plus size={14} /> Add range
+          </button>
+        </div>
+      </details>
     );
   }
 
@@ -772,9 +860,12 @@ export default function AutoPrintClient() {
 
               {currentStep.key === "printer" ? (
                 <div className="wizard-action-content">
-                  <PrinterProfileSetup agentConnected={agentConnected} onPresetSaved={handlePresetSaved} />
-
-                  <DuplexPrinterCard agentConnected={agentConnected} />
+                  <PrinterProfileSetup
+                    agentConnected={agentConnected}
+                    onPresetSaved={handlePresetSaved}
+                    priceItems={priceItems}
+                    onUpdatePriceItems={updateProfilePriceItems}
+                  />
                 </div>
               ) : null}
 
@@ -783,17 +874,15 @@ export default function AutoPrintClient() {
                   <div className="panel-title-row compact">
                     <div>
                       <h2>Print Categories</h2>
-                      <p>Create a category, then add page ranges inside it.</p>
+                      <p>Set the price for each category and add page ranges inside it. New categories come from Step 3: Printer Profiles (&quot;Show to customers&quot;).</p>
                     </div>
-                    <button className="icon-action-btn" type="button" onClick={addPriceItem} aria-label="Add price item">
-                      <Plus size={18} />
-                    </button>
                   </div>
                   <div className="price-item-list">
                     {priceItems.map((item, itemIndex) => (
                       <div className="price-item-row" key={item.id}>
                         <div className="price-item-header">
                           <span>Category {itemIndex + 1}</span>
+                          {item.profile ? <span className="price-item-profile-badge">Profile: {item.profile}</span> : null}
                           <strong>{item.label || "New print category"}</strong>
                         </div>
                         <div className="price-item-main">
@@ -809,63 +898,59 @@ export default function AutoPrintClient() {
                             <Trash2 size={17} />
                           </button>
                         </div>
-                        <details className="price-range-panel" open={(item.ranges || []).length > 0}>
-                          <summary>
-                            <span>Page Range Rules</span>
-                            <small>{(item.ranges || []).length ? `${(item.ranges || []).length} active` : "General price applies"}</small>
-                          </summary>
-                          {(item.ranges || []).map((range) => (
-                            <div className="price-range-row" key={range.id}>
-                              <label className="auto-field">
-                                <span>From</span>
-                                <input min="1" type="number" value={range.minPages} onChange={(event) => updatePriceRange(item.id, range.id, "minPages", event.target.value)} />
-                              </label>
-                              <label className="auto-field">
-                                <span>To</span>
-                                <input min="1" placeholder="Up" type="number" value={range.maxPages ?? ""} onChange={(event) => updatePriceRange(item.id, range.id, "maxPages", event.target.value)} />
-                              </label>
-                              <label className="auto-field">
-                                <span>Per Page</span>
-                                <input min="0" type="number" value={range.rate} onChange={(event) => updatePriceRange(item.id, range.id, "rate", event.target.value)} />
-                              </label>
-                              <button className="icon-action-btn danger" type="button" onClick={() => removePriceRange(item.id, range.id)} aria-label="Remove page range">
-                                <Trash2 size={15} />
-                              </button>
-                            </div>
-                          ))}
-                          <div className="price-range-footer">
-                            <small>{formatPriceItem(item)}</small>
-                            <button type="button" onClick={() => addPriceRange(item.id)}>
-                              <Plus size={14} /> Add range
-                            </button>
-                          </div>
-                        </details>
+                        {renderPriceRanges(item, setPriceItems)}
                       </div>
                     ))}
                   </div>
-                  <div className="payment-mode-list">
-                    {paymentModeOptions.map((option) => {
-                      const needsCashCounter = option.value === "Both" || option.value === "Cash Counter";
-                      const isLocked = needsCashCounter && !cashCounterAvailable;
-                      return (
-                        <button
-                          className={paymentMode === option.value ? "active" : ""}
-                          key={option.value}
-                          type="button"
-                          disabled={isLocked}
-                          title={isLocked ? cashCounterReason : undefined}
-                          onClick={() => {
-                            setPaymentMode(option.value);
-                            setPricingSaved(false);
-                          }}
-                        >
-                          {option.label}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {/* Duplex: its own B/W and Color price (default + page ranges), used instead of the normal rate when the customer ticks Duplex. */}
+                  {duplexPriceItems.map((item) => (
+                    <div className="price-item-row" key={`duplex-${item.id}`}>
+                      <div className="price-item-header">
+                        <span>Duplex</span>
+                        <strong>{item.label}</strong>
+                      </div>
+                      <div className="idcard-pricing-grid">
+                        <label className="auto-field">
+                          <span>Default Per Page (both sides)</span>
+                          <input min="0" type="number" value={item.rate} onChange={(event) => updatePriceItem(item.id, "rate", event.target.value, setDuplexPriceItems)} />
+                        </label>
+                        <p className="payment-mode-note">0 with no ranges = same as the normal {item.id === "color" ? "Color" : "B&W"} rate.</p>
+                      </div>
+                      {renderPriceRanges(item, setDuplexPriceItems)}
+                    </div>
+                  ))}
+                  {renderPaymentModes(paymentMode, setPaymentMode)}
                   <p className="payment-mode-note">Online Payment is available to customers by default. Turn on "Online Payment + Cash Counter" to also let customers pay at your counter, or pick "Only Cash Counter" to accept counter payment only.</p>
                   {!cashCounterAvailable ? <p className="payment-mode-note payment-mode-locked">{cashCounterReason}</p> : null}
+
+                  <div className="panel-title-row compact idcard-pricing-title">
+                    <div>
+                      <h2>ID Card Print</h2>
+                      <p>Price per ID card (front + back) for the customer&apos;s Color or B/W choice, and how they pay for it.</p>
+                    </div>
+                  </div>
+                  <div className="price-item-row">
+                    <div className="idcard-pricing-grid">
+                      {idCardPriceItems.map((item) => (
+                        <label className="auto-field" key={item.id}>
+                          <span>{item.label} (per card)</span>
+                          <input
+                            min="0"
+                            type="number"
+                            value={item.rate}
+                            onChange={(event) => {
+                              setPricingSaved(false);
+                              setIdCardPriceItems((current) =>
+                                current.map((entry) => (entry.id === item.id ? { ...entry, rate: Number(event.target.value || 0) } : entry)),
+                              );
+                            }}
+                          />
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                  {renderPaymentModes(idCardPaymentMode, setIdCardPaymentMode)}
+
                   {pricingMessage ? <div className="profile-alert success">{pricingMessage}</div> : null}
                   {pricingError ? <div className="profile-alert error">{pricingError}</div> : null}
                   <button className="btn btn-primary" type="button" onClick={saveAutoPrintPricing} disabled={isSavingPricing}>

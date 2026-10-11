@@ -321,7 +321,6 @@ namespace Print_Agent
             Theme.StyleRoundedCard(pnlAccountCard);
             Theme.StyleRoundedCard(pnlLogsCard);
             Theme.StyleRoundedCard(pnlSettingsCard);
-            InitSetupTabs();
 
             SetupSignedInChip();
             ShowSettingsOverlay(false);
@@ -1020,6 +1019,12 @@ namespace Print_Agent
         // from the profile instead of the paper/color comboboxes.
         private PrintProfile _activeProfile;
 
+        // Set only while ProcessJobCoreAsync prints a job: the customer's
+        // "print both sides" choice, sent to the driver as its duplex
+        // setting (overrides whatever the profile has). Null = manual print,
+        // leave the driver setting alone.
+        private Duplex? _activeDuplex;
+
         // Manual print (btnPrint_Click) ke liye — combobox se values leta hai
         private void ApplyPrinterSettingsFromUI(PrintDocument pd)
         {
@@ -1027,13 +1032,16 @@ namespace Print_Agent
             {
                 PrinterDevMode.Apply(pd, _activeProfile);
                 pd.DefaultPageSettings.Margins = new Margins(0, 0, 0, 0);
-                return;
+            }
+            else
+            {
+                string printerName = cmbPrinters.SelectedItem.ToString();
+                string paperSize = cmbPageSize.SelectedItem?.ToString() ?? "A4";
+                string colorType = cmbColorType.SelectedItem?.ToString() ?? "Color";
+                ApplyPrinterSettings(pd, printerName, paperSize, colorType);
             }
 
-            string printerName = cmbPrinters.SelectedItem.ToString();
-            string paperSize = cmbPageSize.SelectedItem?.ToString() ?? "A4";
-            string colorType = cmbColorType.SelectedItem?.ToString() ?? "Color";
-            ApplyPrinterSettings(pd, printerName, paperSize, colorType);
+            if (_activeDuplex is Duplex duplex) pd.PrinterSettings.Duplex = duplex;
         }
 
         // ── Match Printer from Settings Grid ─────────────────────────
@@ -1063,9 +1071,6 @@ namespace Print_Agent
             }
             return matches;
         }
-
-        // Double-side orders print with the profile of this name.
-        private const string DuplexProfileName = "duplex";
 
         // "Hold Job" in a printer/profile picker holds that job for a while
         // instead of asking again on every poll.
@@ -1103,26 +1108,6 @@ namespace Print_Agent
             return index >= 0 ? presets[index] : null;
         }
 
-        // Double-side order but no "duplex" profile on this PC: the shop picks
-        // one of its saved profiles for this job. Null = hold the job.
-        private string? AskDuplexProfile(PrintJob job, string tokenId)
-        {
-            if (InvokeRequired)
-            {
-                return (string?)Invoke(new Func<string?>(() => AskDuplexProfile(job, tokenId)));
-            }
-
-            var profiles = PrintProfileStore.Load();
-            if (profiles.Count == 0) return null;
-
-            LogStatus($"{tokenId}: double-side job but no \"{DuplexProfileName}\" profile - asking which profile to use.");
-            var index = ChoicePromptForm.Ask(
-                "Choose Double-Side Profile",
-                $"Token {tokenId}: double-side, {job.PrintColorModeLabel}, {job.Pages} page(s) × {Math.Max(job.Copies, 1)}.\n" +
-                $"No profile named \"{DuplexProfileName}\" is set up. Pick a profile with two-sided printing turned on.",
-                profiles.Select(p => $"{p.Name}  ({p.Printer})").ToList());
-            return index >= 0 ? profiles[index].Name : null;
-        }
         // ── PDF Printing ──────────────────────────────────────────────
 
         private async Task PrintPdf(string filePath)
@@ -1722,23 +1707,22 @@ namespace Print_Agent
                 // is lost - this just delays that prompt until it's worth asking.
                 var colorType = job.PrintColorMode.ToPresetColorMode();
 
-                // Duplex is opt-in per job. A 1-page job has nothing to
-                // flip, so it prints through the normal single-side path.
+                // Duplex is opt-in per job (the customer's "print both sides"
+                // tick). It prints on the same printer as any other job for
+                // this paper size + color; the agent just turns on the
+                // driver's two-sided setting. A 1-page job has nothing to flip.
                 var useDuplex = job.Duplex && job.Pages > 1;
 
                 var requestedPaper = job.ResolvedPaperSize;
                 // A3 / 4x6 orders use the same preset grid as A4: the
-                // printer saved for that paper size + color mode. A duplex
-                // job keeps the duplex printer (it may still be A3).
-                var jobPaper = (requestedPaper == "A3" || (requestedPaper == "4x6" && !useDuplex)) ? requestedPaper : DefaultPaperSize;
+                // printer saved for that paper size + color mode.
+                var jobPaper = (requestedPaper == "A3" || requestedPaper == "4x6") ? requestedPaper : DefaultPaperSize;
 
                 // Print profile = a printer + its saved driver preferences
-                // (paper, type, quality...). Double-side orders print with the
-                // "duplex" profile (two-sided is part of its driver settings),
-                // or one the shop picks when there is none. Otherwise taken
-                // from the job itself when the server names one, else from the
-                // Printer Settings row for this paper size + color mode - the
-                // shop picks which when several printers are saved for it.
+                // (paper, type, quality...). Taken from the job itself when
+                // the server names one, else from the Printer Settings row for
+                // this paper size + color mode - the shop picks which when
+                // several printers are saved for it.
                 var profileName = "";
                 string matchedPrinter = null;
                 if (IsChoiceOnHold(job.Id))
@@ -1746,26 +1730,7 @@ namespace Print_Agent
                     _printedIds.Remove(job.Id);
                     return; // shop chose "Hold Job" a moment ago - don't re-ask on every poll
                 }
-                if (useDuplex)
-                {
-                    var duplexProfile = PrintProfileStore.Find(DuplexProfileName);
-                    if (duplexProfile != null)
-                    {
-                        profileName = duplexProfile.Name;
-                    }
-                    else if (PrintProfileStore.Load().Count > 0)
-                    {
-                        profileName = AskDuplexProfile(job, tokenId);
-                        if (profileName is null)
-                        {
-                            HoldChoice(job.Id);
-                            LogStatus($"{tokenId}: no \"{DuplexProfileName}\" profile and none picked - holding double-side job.");
-                            return;
-                        }
-                    }
-                    // No profiles at all: the dedicated duplex printer below.
-                }
-                else if (!string.IsNullOrWhiteSpace(job.ProfileName))
+                if (!string.IsNullOrWhiteSpace(job.ProfileName))
                 {
                     profileName = job.ProfileName;
                 }
@@ -1794,28 +1759,13 @@ namespace Print_Agent
                         return; // job stays pending on the server - not failed, not printed
                     }
                     LogStatus($"{tokenId}: using print profile '{profile.Name}'.");
-                    useDuplex = false; // two-side, if wanted, is part of the profile's driver settings
                 }
 
                 if (profile != null)
                 {
                     matchedPrinter = profile.Printer;
                 }
-                else if (useDuplex)
-                {
-                    // Dedicated duplex printer only - never silently
-                    // falls back to a preset/default printer, since that
-                    // would print a double-side order single-sided.
-                    matchedPrinter = string.IsNullOrWhiteSpace(_config.DuplexPrinter) ? null : _config.DuplexPrinter;
-                }
                 // else: the matched Printer Settings row's printer (null = none saved)
-                if (matchedPrinter is null && useDuplex)
-                {
-                    LogStatus($"{tokenId}: no duplex printer set - holding job until one is added.");
-                    _printedIds.Remove(job.Id);
-                    ShowDuplexNotReadyAlert("No duplex printer is set up.", "Select a duplex printer in PrintPilot Setup (Duplex Printer).");
-                    return;
-                }
                 if (matchedPrinter is null)
                 {
                     // Same silent-failure shape as an offline/virtual printer
@@ -1865,17 +1815,6 @@ namespace Print_Agent
                     return; // job stays exactly as it was on the server (pending) - not failed, not printed
                 }
 
-                var duplexMode = DuplexPrintService.NormalizeMode(_config.DuplexMode);
-                if (useDuplex && duplexMode == DuplexPrintService.ModeAuto && !DuplexPrintService.CanDuplex(matchedPrinter))
-                {
-                    LogStatus($"{tokenId}: printer '{matchedPrinter}' does not report automatic two-side printing - holding job.");
-                    _printedIds.Remove(job.Id);
-                    ShowDuplexNotReadyAlert(
-                        $"\"{matchedPrinter}\" does not report automatic two-side printing.",
-                        "Switch Print Mode to Manual (Flip Pages) in PrintPilot Setup, or pick a printer that supports duplex.");
-                    return;
-                }
-
                 if (job.IsCashApprovalPending)
                 {
                     LogStatus($"{tokenId}: waiting for cash confirmation.");
@@ -1911,24 +1850,31 @@ namespace Print_Agent
                 // also grayscale the image ourselves.
                 cmbColorType.SelectedItem = profile != null ? "Color" : colorType;
                 _activeProfile = profile;
+                // Ticked "both sides" = driver duplex on (long edge unless the
+                // customer picked short); not ticked = force single side, even
+                // if the profile's saved preferences have two-sided on.
+                var shortEdge = string.Equals(job.DuplexEdge?.Trim(), "short", StringComparison.OrdinalIgnoreCase);
+                _activeDuplex = !useDuplex ? Duplex.Simplex : shortEdge ? Duplex.Horizontal : Duplex.Vertical;
+
+                var duplexNote = "";
+                if (useDuplex)
+                {
+                    duplexNote = " Double-side.";
+                    if (!DuplexPrintService.CanDuplex(matchedPrinter))
+                    {
+                        LogStatus($"{tokenId}: printer '{matchedPrinter}' does not report two-side printing - it may print single-side.");
+                        duplexNote = " Double-side requested, but the printer does not report two-side support.";
+                    }
+                    else
+                    {
+                        LogStatus($"{tokenId}: double-side ({(shortEdge ? "short" : "long")} edge).");
+                    }
+                }
 
                 var copies = Math.Max(job.Copies, 1);
                 var printedCopies = 0;
                 Exception lastPrintError = null;
-                var duplexNote = "";
-                var duplexHandled = useDuplex && Path.GetExtension(destination).Equals(".pdf", StringComparison.OrdinalIgnoreCase);
-                if (duplexHandled)
-                {
-                    var duplexResult = DuplexPrintService.Print(
-                        destination, matchedPrinter, job.PrintColorMode, jobPaper, copies,
-                        duplexMode, job.DuplexEdge, AskFlipBackSide);
-                    printedCopies = duplexResult.CopiesPrinted;
-                    duplexNote = duplexResult.BackSkipped
-                        ? " Double-side: only the front side was printed (back side skipped)."
-                        : $" Double-side ({duplexMode}).";
-                    LogStatus($"{tokenId}: duplex print done ({duplexMode}, {printedCopies} cop{(printedCopies == 1 ? "y" : "ies")}).");
-                }
-                for (var copy = 0; copy < (duplexHandled ? 0 : copies); copy++)
+                for (var copy = 0; copy < copies; copy++)
                 {
                     if (string.IsNullOrWhiteSpace(selectedFile))
                     {
@@ -2003,6 +1949,7 @@ namespace Print_Agent
             {
                 // Never let a profile leak into the next job or a manual print.
                 _activeProfile = null;
+                _activeDuplex = null;
             }
         }
 
@@ -2029,9 +1976,10 @@ namespace Print_Agent
         private static readonly string[] VirtualPrinterMarkers =
         {
             "Print to PDF",
-            "XPS Document Writer",
+            "XPS Document",
             "OneNote",
             "Fax",
+            "AnyDesk",
         };
 
         private static bool IsVirtualPrinter(string printerName)
@@ -2227,8 +2175,6 @@ namespace Print_Agent
             return string.IsNullOrWhiteSpace(cleaned) ? "print-job.pdf" : cleaned;
         }
 
-        private volatile bool _duplexAlertShown;
-
         // Last value the server acknowledged; null = nothing sent yet this
         // run. A WebSocket-connected agent has its poll timer stopped, so
         // the poll-time report alone would never fire - this one is sent on
@@ -2283,46 +2229,6 @@ namespace Print_Agent
             {
                 return false;
             }
-        }
-
-        private void ShowDuplexNotReadyAlert(string problem, string fix, string title = "Duplex Printing Not Ready")
-        {
-            if (_duplexAlertShown) return;
-            _duplexAlertShown = true;
-            try
-            {
-                PrintAlertForm.Show(
-                    title,
-                    $"{problem}\n\n{fix}\n\n" +
-                    "The customer's print job is on hold and will print automatically once this is fixed - it does not need to be resent.",
-                    ctaLabel: "Open Setup",
-                    ctaUrl: $"{ClientAppUrl}/auto-print?step=printer");
-            }
-            finally
-            {
-                _duplexAlertShown = false;
-            }
-        }
-
-        // Manual duplex, between the front and back pass. True = print the
-        // back side now; false = the owner chose to skip it. If the dialog
-        // can't be shown the exception propagates and the job is failed,
-        // rather than printing the back pages straight onto a new sheet.
-        private bool AskFlipBackSide()
-        {
-            if (InvokeRequired)
-            {
-                return (bool)Invoke(new Func<bool>(AskFlipBackSide));
-            }
-
-            var answer = MessageBox.Show(
-                this,
-                "FRONT SIDE PRINTED\n\nPrinted pages ko wapas printer ki tray me rakho (khaali side print head ki taraf).\n\n" +
-                "Yes  =  Back side ab print karo\nNo   =  Rehne do (sirf front side)",
-                "PrintPilot - Back Side",
-                MessageBoxButtons.YesNo,
-                MessageBoxIcon.Information);
-            return answer == DialogResult.Yes;
         }
 
         // ── Duplex slot (website Setup page, via the local bridge) ────

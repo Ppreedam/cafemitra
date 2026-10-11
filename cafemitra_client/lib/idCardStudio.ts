@@ -320,7 +320,11 @@ function rotatedBox(t: number[], width: number) {
   return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
 }
 
-function readNumbers(text: string) {
+function readNumbers(rawText: string) {
+  // Some letters (e.g. Odia e-Aadhaar) draw each digit separately, so the text
+  // reads "3 0 6 4   7 7 1 0 ...". Join runs of 4+ digits split by single
+  // spaces; normal "3064 7710 9287" (4-digit groups) is left as it is.
+  const text = rawText.replace(/\d(?: \d){3,}/g, (run) => run.replace(/ /g, "")).replace(/\s+/g, " ");
   const vidMatch = text.match(/VID\s*:?\s*(\d{4}\s?\d{4}\s?\d{4}\s?\d{4})/i);
   const vid = vidMatch ? vidMatch[1].replace(/\s+/g, "").replace(/(\d{4})(?=\d)/g, "$1 ") : "";
   // Drop the VID first: its first 12 digits would also look like an Aadhaar number.

@@ -41,7 +41,7 @@ export type PrintOutcome = { via: "agent" | "browser"; ok: boolean; message: str
  * Print-profile choice + "send to the PrintPilot agent" for a tool's Print
  * button. The chosen profile is remembered per tool.
  */
-export function useAgentPrint(toolKey: string) {
+export function useAgentPrint(toolKey: string, enabled = true) {
   const [profiles, setProfiles] = useState<PrintProfile[]>([]);
   const [agentReady, setAgentReady] = useState<boolean | null>(null);
   const [profile, setProfileState] = useState("");
@@ -50,6 +50,8 @@ export function useAgentPrint(toolKey: string) {
   const [error, setError] = useState("");
 
   useEffect(() => {
+    // Off = never contact the local agent (e.g. a customer's phone on the QR page).
+    if (!enabled) return;
     let cancelled = false;
     fetchAgentPrintProfiles()
       .then((result) => {
@@ -69,7 +71,7 @@ export function useAgentPrint(toolKey: string) {
     return () => {
       cancelled = true;
     };
-  }, [toolKey]);
+  }, [toolKey, enabled]);
 
   function setProfile(value: string) {
     setProfileState(value);

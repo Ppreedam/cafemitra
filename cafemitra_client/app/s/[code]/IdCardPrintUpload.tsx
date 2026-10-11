@@ -134,7 +134,16 @@ async function composeIdCardsToPdf(cards: CardEntry[], colorMode: ColorMode): Pr
   return { file: new File([pdfBytes], "id-card-print.pdf", { type: "application/pdf" }), cardCount: printable.length };
 }
 
-export default function IdCardPrintUpload({ onComposed, busy }: { onComposed: (file: File, cardCount: number) => void; busy?: boolean }) {
+export default function IdCardPrintUpload({
+  onComposed,
+  busy,
+  prices,
+}: {
+  onComposed: (file: File, cardCount: number, colorMode: ColorMode) => void;
+  busy?: boolean;
+  /** Shop's per-card price for each mode, shown on the Color / B/W toggle. */
+  prices?: { color?: number; bw?: number };
+}) {
   const [cards, setCards] = useState<CardEntry[]>(() => [newCard()]);
   const [active, setActive] = useState<SlotRef | null>(null);
   const [cropTarget, setCropTarget] = useState<SlotRef | null>(null);
@@ -324,7 +333,7 @@ export default function IdCardPrintUpload({ onComposed, busy }: { onComposed: (f
     setError("");
     try {
       const { file, cardCount } = await composeIdCardsToPdf(cards, colorMode);
-      onComposed(file, cardCount);
+      onComposed(file, cardCount, colorMode);
     } catch {
       setError("Could not prepare your ID cards for upload. Please try again.");
     } finally {
@@ -368,10 +377,10 @@ export default function IdCardPrintUpload({ onComposed, busy }: { onComposed: (f
         <div className="idcard-toolbar-actions">
           <div className="idcard-toggle-group">
             <button type="button" className={colorMode === "color" ? "active" : ""} onClick={() => setColorMode("color")}>
-              <Palette size={14} /> Color
+              <Palette size={14} /> Color{prices?.color !== undefined ? ` · Rs. ${prices.color}` : ""}
             </button>
             <button type="button" className={colorMode === "bw" ? "active" : ""} onClick={() => setColorMode("bw")}>
-              <Contrast size={14} /> B/W
+              <Contrast size={14} /> B/W{prices?.bw !== undefined ? ` · Rs. ${prices.bw}` : ""}
             </button>
           </div>
           <div className="idcard-toolbar-divider" />

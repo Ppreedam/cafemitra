@@ -118,15 +118,28 @@ function makeAadhaarCore(PDFLib, pdfjsLib) {
     return { blocks, images };
   }
 
-  function groupLines(blocks, pred) {
+  // One line = every text block on the same baseline. The standard letter
+  // draws a line as one block (words placed with Td offsets); some letters
+  // (e.g. Odia ones) draw each glyph cluster as its own block at its own x.
+  // L.x is the line's leftmost block; each block keeps its own b.x.
+  // startPred (optional) filters whole lines by where they start.
+  function groupLines(blocks, pred, startPred) {
     const lines = [];
     for (const b of blocks) {
       if (b.rot || !pred(b)) continue;
-      let L = lines.find(l => Math.abs(l.y - b.y) < 0.6 && Math.abs(l.x - b.x) < 0.6);
+      let L = lines.find(l => Math.abs(l.y - b.y) < 0.6);
       if (!L) { L = { x: b.x, y: b.y, eff: b.eff, blocks: [] }; lines.push(L); }
       L.blocks.push(b);
+      if (b.x < L.x) L.x = b.x;
     }
-    return lines.sort((a, b) => b.y - a.y); // top first
+    return lines.filter(L => !startPred || startPred(L)).sort((a, b) => b.y - a.y); // top first
+  }
+
+  // Some letters (e.g. Odia ones) draw each digit separately, so the text
+  // reads "7 3 9 7 0 7 1 8 0 9". Join runs of 4+ digits split by single
+  // spaces; normal "3064 7710 9287" (4-digit groups) is left as it is.
+  function joinSpacedDigits(text) {
+    return text.replace(/\d(?: \d){3,}/g, run => run.replace(/ /g, '')).replace(/\s+/g, ' ');
   }
 
   // ---------- load: gather everything needed once ----------
@@ -152,7 +165,7 @@ function makeAadhaarCore(PDFLib, pdfjsLib) {
       const p = await pdf.getPage(1);
       const tc = await p.getTextContent();
       items = tc.items.filter(it => typeof it.str === 'string' && it.transform);
-      const all = items.map(it => it.str).join(' ');
+      const all = joinSpacedDigits(items.map(it => it.str).join(' '));
       const m = all.match(/Mobile\s*(?:No\.?)?\s*:?\s*([6-9]\d{9})/i);
       if (m) mobile = m[1];
       await task.destroy();
@@ -170,19 +183,24 @@ function makeAadhaarCore(PDFLib, pdfjsLib) {
     const photoImg = images.find(im => { const cx = (im.x0 + im.x1) / 2, ct = T((im.y0 + im.y1) / 2); return inRect(cx, ct, front) && (im.x1 - im.x0) < 80 && (im.y1 - im.y0) > 40 && cx < front.x0 + 90; });
     const frontLines = groupLines(blocks, b => inRect(b.x, T(b.y), front) && b.eff < 9 && T(b.y) < front.top + 85 && b.x > front.x0 + 60);
     const infoImg = images.find(im => { const cx = (im.x0 + im.x1) / 2, ct = T((im.y0 + im.y1) / 2); return inRect(cx, ct, front) && (im.x1 - im.x0) > 100 && T(im.y1) > (frontLines.length ? T(frontLines[frontLines.length - 1].y) : 0); });
-    const backLines = groupLines(blocks, b => inRect(b.x, T(b.y), back) && b.eff < 9 && b.x < back.x0 + 40 && T(b.y) < back.bottom - 30);
     const qrImg = images.find(im => { const cx = (im.x0 + im.x1) / 2, ct = T((im.y0 + im.y1) / 2); const w = im.x1 - im.x0, h = im.y1 - im.y0; return inRect(cx, ct, back) && Math.abs(w - h) < 3 && w > 60; });
+    // Address lines start near the left edge; the rest of each line (left of the QR) comes with it.
+    const backLines = groupLines(
+      blocks,
+      b => inRect(b.x, T(b.y), back) && b.eff < 9 && T(b.y) < back.bottom - 30 && (!qrImg || b.x < qrImg.x0),
+      L => L.x < back.x0 + 40,
+    );
     const bigNumBack = blocks.filter(b => !b.rot && inRect(b.x, T(b.y), back) && b.eff >= 9).map(b => T(b.y) - b.eff * 0.75);
     frontLines.forEach(L => L.w = lineWidth(L, front.x1));
     backLines.forEach(L => L.w = lineWidth(L, qrImg ? qrImg.x0 : back.x1));
     // per-block start/end/text on the back so address lines can wrap at word gaps
     backLines.forEach(L => {
-      L.blocks.sort((a, b) => a.off - b.off);
+      L.blocks.forEach(b => { b.px0 = b.x + b.off * b.k; });
+      L.blocks.sort((a, b) => a.px0 - b.px0);
       const lineEnd = L.x + L.w;
       const its = items.filter(it => Math.abs(it.transform[5] - L.y) < 0.8 && it.transform[4] >= L.x - 1 && it.transform[4] < lineEnd + 0.5);
       L.blocks.forEach((b, i) => {
-        b.px0 = L.x + b.off * b.k;
-        b.px1 = i + 1 < L.blocks.length ? L.x + L.blocks[i + 1].off * L.blocks[i + 1].k : lineEnd;
+        b.px1 = i + 1 < L.blocks.length ? L.blocks[i + 1].px0 : lineEnd;
         b.text = its.filter(it => it.transform[4] >= b.px0 - 0.3 && it.transform[4] < b.px1 - 0.3).sort((a, c) => a.transform[4] - c.transform[4]).map(it => it.str).join('');
       });
     });
@@ -321,7 +339,8 @@ function makeAadhaarCore(PDFLib, pdfjsLib) {
           placeImage(infoImg, infoImg.x0, H - bb, bw * k, nh);
         }
       }
-      frontLines.forEach((L, i) => L.blocks.forEach(b => { setTm(b, s, L.x, H - (t0 + i * d)); if (opts.boldFront) embolden(b); }));
+      // Each block keeps its distance from the line start (0 on the standard letter), scaled with the text.
+      frontLines.forEach((L, i) => L.blocks.forEach(b => { setTm(b, s, L.x + (b.x - L.x) * s, H - (t0 + i * d)); if (opts.boldFront) embolden(b); }));
       if (opts.mobile) mobileDraw = { x: frontLines[0].x, y: H - tLast, size: size * s, bold: !!opts.boldFront };
     } else if (opts.removeInfo && infoImg) {
       reps.push({ start: ops[infoImg.doIdx].start, end: ops[infoImg.doIdx].end, text: '' });
@@ -356,7 +375,7 @@ function makeAadhaarCore(PDFLib, pdfjsLib) {
               if (/\s$/.test(prev) && cur.trim() !== '') lastBreak = i;
               if ((bl[i].px1 - base) * s > avail + 0.01) { if (lastBreak > startIdx) end = lastBreak; break; }
             }
-            for (let i = startIdx; i < end; i++) placed.push({ block: bl[i], originX: x - (base - L.x) * s, top: t });
+            for (let i = startIdx; i < end; i++) placed.push({ block: bl[i], originX: x + (bl[i].x - base) * s, top: t });
             lastTop = t;
             startIdx = end;
             if (startIdx < bl.length) t += baseGap * s * sp;

@@ -5,11 +5,20 @@ import { apiFetch } from "./api";
 // report as valid/online but never produce physical paper (they write a
 // PDF, a fax queue entry, a OneNote page instead), so a shop that leaves
 // one selected has jobs silently going nowhere.
-const VIRTUAL_PRINTER_MARKERS = ["Print to PDF", "XPS Document Writer", "OneNote", "Fax"];
+const VIRTUAL_PRINTER_MARKERS = ["Print to PDF", "XPS Document", "OneNote", "Fax", "AnyDesk"];
 
 export function isVirtualPrinter(printerName: string) {
   const name = printerName.toLowerCase();
   return VIRTUAL_PRINTER_MARKERS.some((marker) => name.includes(marker.toLowerCase()));
+}
+
+// NEXT_PUBLIC_REMOVE_VIRTUAL_PRINTER=true hides virtual printers from every
+// printer dropdown (all lists come from the agent through this file). Keep it
+// false on a dev PC, where "Microsoft Print to PDF" is the only "printer".
+const removeVirtualPrinters = String(process.env.NEXT_PUBLIC_REMOVE_VIRTUAL_PRINTER ?? "").trim().toLowerCase() === "true";
+
+export function visiblePrinters(printers: string[]) {
+  return removeVirtualPrinters ? printers.filter((printer) => !isVirtualPrinter(printer)) : printers;
 }
 
 export type AgentHealth = {
@@ -103,7 +112,7 @@ export type PrintProfilesResult = {
   printers?: string[];
 };
 
-export const fallbackPrinters = ["Microsoft Print to PDF", "Fax"];
+export const fallbackPrinters = visiblePrinters(["Microsoft Print to PDF", "Fax"]);
 export const fallbackPaperSizes = ["A4", "A5", "A3", "A6", "B5", "Letter", "Legal", "Executive", "4x6"];
 export const fallbackColorModes = ["Color", "Grayscale"];
 
@@ -271,6 +280,10 @@ async function fetchAgentEndpoint<T>(endpoints: string[], init?: RequestInit, ti
       const result = await response.json().catch(() => ({}));
       if (!response.ok) {
         throw new Error(getAgentErrorMessage(result, getAgentFallbackMessage(init, endpoint)));
+      }
+      // Every agent response that lists printers goes through here.
+      if (result && typeof result === "object" && Array.isArray((result as { printers?: unknown }).printers)) {
+        (result as { printers: string[] }).printers = visiblePrinters((result as { printers: string[] }).printers);
       }
       return result as T;
     } catch (error) {

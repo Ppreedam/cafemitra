@@ -396,12 +396,20 @@ class PrintOrder(models.Model):
 
 
 def resolve_print_profile(user_id, service_key, price_item_id):
-    """Profile name the shop assigned to this print type in Printer Setup
-    (ServicePricing.settings["printProfiles"] = {price_item_id: name}), or
+    """Profile name the shop assigned to this print type: the price item's own
+    "profile" (a profile shown to customers from Printer Setup), else
+    ServicePricing.settings["printProfiles"] = {price_item_id: name}, or
     None when no profile is assigned."""
     if not user_id or not service_key or not price_item_id:
         return None
     settings = ServicePricing.objects.filter(user_id=user_id, service_key=service_key).values_list("settings", flat=True).first()
+    price_items = settings.get("priceItems") if isinstance(settings, dict) else None
+    for item in price_items if isinstance(price_items, list) else []:
+        if isinstance(item, dict) and str(item.get("id", "")) == str(price_item_id):
+            linked = str(item.get("profile", "") or "").strip()[:120]
+            if linked:
+                return linked
+            break
     profiles = settings.get("printProfiles") if isinstance(settings, dict) else None
     name = str((profiles or {}).get(str(price_item_id), "") or "").strip() if isinstance(profiles, dict) else ""
     return name or None

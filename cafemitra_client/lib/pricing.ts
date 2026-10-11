@@ -5,6 +5,8 @@ export type PriceItem = {
   label: string;
   rate: number;
   ranges?: PriceRange[];
+  /** PrintPilot only: Print Agent profile this category prints with (a profile shown to customers from Printer Setup). */
+  profile?: string;
 };
 
 export type PriceRange = {
@@ -14,8 +16,25 @@ export type PriceRange = {
   rate: number;
 };
 
-// Record<string, string> = settings.printProfiles ({ priceItemId: Print Agent profile name }).
+// Record<string, string> = settings.printProfiles ({ priceItemId: Print Agent profile name });
 export type PricingValue = string | number | boolean | PriceItem[] | Record<string, string>;
+
+const duplexItemLabels: Record<string, string> = { black_white: "Black & White Duplex", color: "Color Duplex" };
+
+/** PrintPilot Duplex prices (settings.duplexPriceItems): one per B/W / Color item id, with page ranges like a category. */
+export function getDuplexPriceItems(settings: Record<string, PricingValue> | undefined): PriceItem[] {
+  const saved = Array.isArray(settings?.duplexPriceItems) ? (settings.duplexPriceItems as PriceItem[]) : [];
+  return Object.entries(duplexItemLabels).map(([id, label]) => {
+    const item = saved.find((entry) => entry.id === id);
+    return { id, label, rate: Number(item?.rate ?? 0) || 0, ranges: item?.ranges ?? [] };
+  });
+}
+
+/** Per-page Duplex price for a price item at this many printed pages; 0 = no separate price (normal rate applies). */
+export function getDuplexRate(settings: Record<string, PricingValue> | undefined, priceItemId: string | undefined, pages: number) {
+  const item = getDuplexPriceItems(settings).find((entry) => entry.id === priceItemId);
+  return item ? Math.max(0, calculatePriceItemRate(item, pages)) : 0;
+}
 
 export type PricingService = {
   serviceKey: string;
@@ -33,6 +52,11 @@ export const defaultPricingServices: PricingService[] = [
       selectedPrinter: "",
       pricingSaved: false,
       testPrintDone: false,
+      // Price when the customer ticks Duplex, per B/W / Color item id, with page ranges; 0 = normal rate.
+      duplexPriceItems: [
+        { id: "black_white", label: "Black & White Duplex", rate: 0 },
+        { id: "color", label: "Color Duplex", rate: 0 },
+      ],
       priceItems: [
         { id: "black_white", label: "Black & White", rate: 2 },
         { id: "color", label: "Color", rate: 10 },
@@ -52,7 +76,11 @@ export const defaultPricingServices: PricingService[] = [
     serviceName: "ID Card Print",
     settings: {
       paymentMode: "Online Payment",
-      priceItems: [{ id: "single_card", label: "ID Card (Front + Back)", rate: 20 }],
+      // Per card, by the customer's Color / B/W choice (ids match the IdCardPrintUpload toggle).
+      priceItems: [
+        { id: "color", label: "Color", rate: 20 },
+        { id: "black_white", label: "Black & White", rate: 20 },
+      ],
     },
   },
   {

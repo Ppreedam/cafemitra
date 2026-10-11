@@ -1,0 +1,2669 @@
+"use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { CircleAlert, CircleCheck, Clock3, Copy, Crop, Download, Eye, EyeOff, FileText, IdCard, Image as ImageIcon, Info, LoaderCircle, LockKeyhole, Printer, RotateCw, ShieldCheck, Trash2, Undo2, Upload, Wallet, X } from "lucide-react";
+import { apiUrl } from "@/lib/api";
+import { calculatePriceItemRate, formatPriceItem, getAllowedPaymentModes, getDuplexRate, mergePricingDefaults, type PriceItem, type PricingService } from "@/lib/pricing";
+import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
+import { stashPhotoForPrintSheet } from "@/lib/printSheetHandoff";
+import { CropEditor, cropImage, rotateImageBlob, loadImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, warpPerspectiveCrop, type CropQuad, type CropRect } from "../../CropEditor";
+import PublicResumeBuilder from "./PublicResumeBuilder";
+import PublicBiodataMaker from "./PublicBiodataMaker";
+import IdCardPrintUpload from "./IdCardPrintUpload";
+import { applyCleanScanToFile, type CleanScanProgress } from "./cleanScan/cleanScanEngine";
+import { scanDocument } from "../../id-card-print/cardScan";
+import { PrintProfileSelect, useAgentPrint } from "../../PrintProfileSelect";
+
+type DocLook = "bw" | "color" | "original";
+
+const DEFAULT_DOC_DARKNESS = 25;
+
+const DOC_LOOKS: Array<{ value: DocLook; label: string }> = [
+  { value: "bw", label: "B/W" },
+  { value: "color", label: "Color" },
+  { value: "original", label: "Original" },
+];
+
+type PublicShop = {
+  code: string;
+  shop: {
+    shopName: string;
+    address: string;
+    city: string;
+    state: string;
+    mobile: string;
+    whatsapp: string;
+    logo?: string;
+    banner?: string;
+    duplexAvailable?: boolean;
+  };
+  services: PricingService[];
+  status: {
+    verified: boolean;
+    open: boolean;
+  };
+};
+
+type PrintOrder = {
+  id: number;
+  orderNumber: string;
+  tokenId: string;
+  tokenNumber: number;
+  serviceKey: string;
+  paymentStatus: string;
+  paymentGateway: string;
+  status: string;
+  totalAmount: number;
+  documentDeleted?: boolean;
+  geminiPhoto?: string;
+  photoErrorMessage?: string;
+};
+
+const serviceIcons: Record<string, typeof FileText> = {
+  auto_document_print: FileText,
+  passport_photo: ImageIcon,
+  id_card_print: IdCard,
+};
+
+const NOOP = () => {};
+
+function loadScript(src: string) {
+  return new Promise<void>((resolve, reject) => {
+    const existing = document.querySelector<HTMLScriptElement>(`script[src="${src}"]`);
+    if (existing) {
+      if (existing.dataset.loaded === "true") resolve();
+      else existing.addEventListener("load", () => resolve(), { once: true });
+      return;
+    }
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.onload = () => { script.dataset.loaded = "true"; resolve(); };
+    script.onerror = () => reject(new Error("Razorpay Checkout could not load."));
+    document.body.appendChild(script);
+  });
+}
+
+// The PrintPilot upload tool. Customer QR page (app/s/[code]/page.tsx) by
+// default; ownerMode = the cafe dashboard (app/print-desk): same upload and
+// document tools, printed straight through the PrintPilot agent - no shop
+// lookup, no order, no payment.
+export default function PrintPilotScan({ code, ownerMode = false }: { code: string; ownerMode?: boolean }) {
+  const router = useRouter();
+  const [data, setData] = useState<PublicShop | null>(null);
+  const [error, setError] = useState("");
+  const [selectedService, setSelectedService] = useState("auto_document_print");
+  const [selectedItemId, setSelectedItemId] = useState("");
+  const [pages, setPages] = useState(0);
+  const [copies, setCopies] = useState(1);
+  const [duplex, setDuplex] = useState(false);
+  const [duplexEdge, setDuplexEdge] = useState<"long" | "short">("long");
+  const [finalFile, setFinalFile] = useState<Blob | null>(null);
+  const [fileName, setFileName] = useState("");
+  const [fileUrl, setFileUrl] = useState("");
+  const [fileType, setFileType] = useState("");
+  const [passportSheetUrl, setPassportSheetUrl] = useState("");
+  const [attireCategory, setAttireCategory] = useState(passportAttireOptions[0].key);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [isPageManagerOpen, setIsPageManagerOpen] = useState(false);
+  const [isCropOpen, setIsCropOpen] = useState(false);
+  const [isRotating, setIsRotating] = useState(false);
+  // Original page id of every current page (empty = untouched file), so copies
+  // made in Manage Pages can be labelled with the page they came from.
+  const [pageOrigins, setPageOrigins] = useState<number[]>([]);
+  const [isDeleteDocumentOpen, setIsDeleteDocumentOpen] = useState(false);
+  const [isPasswordPromptOpen, setIsPasswordPromptOpen] = useState(false);
+  const [pendingPdfFile, setPendingPdfFile] = useState<File | null>(null);
+  const [pdfPasswordInput, setPdfPasswordInput] = useState("");
+  const [pdfPasswordError, setPdfPasswordError] = useState("");
+  const [isUnlockingPdf, setIsUnlockingPdf] = useState(false);
+  const [showPdfPassword, setShowPdfPassword] = useState(false);
+  const [cropRect, setCropRect] = useState<CropRect>(DEFAULT_CROP_RECT);
+  const [cropQuad, setCropQuad] = useState<CropQuad>(DEFAULT_CROP_QUAD);
+  const [cropMode, setCropMode] = useState<"straight" | "perspective">("perspective");
+  const [isProcessingPdf, setIsProcessingPdf] = useState(false);
+  const [pageRangeInput, setPageRangeInput] = useState("");
+  const [pageRangeError, setPageRangeError] = useState("");
+  const [isCombiningFiles, setIsCombiningFiles] = useState(false);
+  // Reading a single large file (encryption check + page count) takes a moment.
+  const [isReadingUpload, setIsReadingUpload] = useState(false);
+  const isUploadBusy = isCombiningFiles || isReadingUpload;
+  const [isCleanScanProcessing, setIsCleanScanProcessing] = useState(false);
+  const [cleanScanProgress, setCleanScanProgress] = useState<CleanScanProgress | null>(null);
+  const cleanScanAbortRef = useRef<AbortController | null>(null);
+  // Auto clean of an uploaded document photo (no crop - the whole photo).
+  // look = how the page is shown: scanner black & white, colour kept, or
+  // the photo exactly as uploaded (original).
+  const [autoScan, setAutoScan] = useState<{ status: "working" | "done" | "cleaned" | "original" | "error"; look: DocLook; original: File } | null>(null);
+  const autoScanTokenRef = useRef(0);
+  // The exact file the customer uploaded, before any crop - never
+  // reassigned after upload. autoScan.original is the re-scan source and
+  // moves to the cropped version once a crop is applied (see
+  // applyImageCrop); this stays put so "Reset" can always get back to the
+  // untouched upload.
+  const trueOriginalRef = useRef<File | null>(null);
+  // The PDF exactly as uploaded, so Manage Pages can undo all page edits.
+  const originalPdfRef = useRef<{ file: File; pages: number } | null>(null);
+  const [isPdfEdited, setIsPdfEdited] = useState(false);
+  const [copyPromptIndex, setCopyPromptIndex] = useState<number | null>(null);
+  const [copyCountInput, setCopyCountInput] = useState("1");
+  // Black & white darkness, 0 (light) .. 100 (dark).
+  const [docDarkness, setDocDarkness] = useState(DEFAULT_DOC_DARKNESS);
+  const darknessTimerRef = useRef<number | null>(null);
+  const [combineStatus, setCombineStatus] = useState("");
+  const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
+  const [isDeletingDocument, setIsDeletingDocument] = useState(false);
+  const [order, setOrder] = useState<PrintOrder | null>(null);
+  const [orderError, setOrderError] = useState("");
+  const [paymentMode, setPaymentMode] = useState("Online Payment");
+  const [upiQrDataUrl, setUpiQrDataUrl] = useState("");
+  const [paymentStarted, setPaymentStarted] = useState(false);
+  const [isCheckingPayment, setIsCheckingPayment] = useState(false);
+  const [paymentMessage, setPaymentMessage] = useState("");
+  const [optionsTouched, setOptionsTouched] = useState(false);
+  const [printProgress, setPrintProgress] = useState(0);
+  const paymentPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const paymentCheckInFlightRef = useRef(false);
+  const deletePromptShownForOrderRef = useRef<number | null>(null);
+  const deletedNoticeShownForOrderRef = useRef<number | null>(null);
+  const [isDocumentDeletedNoticeOpen, setIsDocumentDeletedNoticeOpen] = useState(false);
+  // Owner mode (dashboard): prints go straight to the PrintPilot agent.
+  const agentPrint = useAgentPrint("print-desk", ownerMode);
+  const [ownerPrinted, setOwnerPrinted] = useState(false);
+
+  useEffect(() => {
+    if (ownerMode) {
+      // Dashboard: no shop lookup - just the PrintPilot document tool.
+      const services = mergePricingDefaults([]).filter((service) => service.serviceKey === "auto_document_print");
+      setData({
+        code: "",
+        shop: { shopName: "", address: "", city: "", state: "", mobile: "", whatsapp: "" },
+        services,
+        status: { verified: true, open: true },
+      });
+      setSelectedService("auto_document_print");
+      return;
+    }
+    fetch(apiUrl(`/api/public-shop/${code}/`))
+      .then(async (response) => {
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(result.message || `Cafe QR request failed (${response.status}).`);
+        }
+        return result;
+      })
+      .then((result: PublicShop) => {
+        // mergePricingDefaults backfills every known service (including ones
+        // the shop never exposed here, like resume_builder - that one is a
+        // cafe-staff-assisted flow, not a self-service upload) - keep only
+        // the services the backend actually returned for this shop.
+        const returnedKeys = new Set(result.services.map((service) => service.serviceKey));
+        const services = mergePricingDefaults(result.services).filter((service) => returnedKeys.has(service.serviceKey));
+        setData({ ...result, services });
+        setError("");
+        // Skip the default-service pick when a ?order= link is being
+        // recovered (PayU redirect, or a reopened/bookmarked link) - the
+        // sibling effect below sets selectedService from the recovered
+        // order instead, and whichever of these two effects' fetches
+        // resolves last would otherwise win the race and could stomp on it.
+        const isRecoveringOrder = !!new URLSearchParams(window.location.search).get("order");
+        if (!isRecoveringOrder) setSelectedService(services[0]?.serviceKey || "auto_document_print");
+        const firstItem = getPriceItems(services[0])[0];
+        setSelectedItemId(firstItem?.id || "");
+        setPaymentMode(getAllowedPaymentModes(services[0])[0] || "Online Payment");
+      })
+      .catch((shopError) =>
+        setError(shopError instanceof Error ? shopError.message : "Cafe QR not found or temporarily unavailable."),
+      );
+  }, [code, ownerMode]);
+
+  // PayU is a full-page redirect flow (unlike Razorpay's popup), so after
+  // PayU sends the browser back here the React state is gone - recover the
+  // order from the ?order= query param the backend callback appended.
+  useEffect(() => {
+    const searchParams = new URLSearchParams(window.location.search);
+    const orderIdParam = searchParams.get("order");
+    const paymentResult = searchParams.get("payment");
+    if (!orderIdParam || ownerMode) return;
+
+    fetch(apiUrl(`/api/public-orders/${orderIdParam}/`))
+      .then(async (response) => {
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.message || "Could not load the order.");
+        return result;
+      })
+      .then((result: { order: PrintOrder }) => {
+        setOrder(result.order);
+        // isPassportPhoto (and thus which status/progress UI renders below)
+        // is driven by selectedService, which only exists as in-memory React
+        // state from Step 1 - a PayU redirect (or any reload of this ?order=
+        // link) loses that state entirely, so it must be restored from the
+        // recovered order itself or the passport-specific status UI never shows.
+        setSelectedService(result.order.serviceKey);
+        if (paymentResult === "success" || result.order.paymentStatus === "paid") {
+          setPaymentMessage("Payment received. Your document has been sent to the print queue.");
+        } else if (paymentResult === "failure") {
+          setPaymentMessage("Payment was not completed. Please try again.");
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const activeService = useMemo(() => data?.services.find((service) => service.serviceKey === selectedService), [data, selectedService]);
+  const allowedPaymentModes = useMemo(() => getAllowedPaymentModes(activeService), [activeService]);
+  const priceItems = activeService ? getPriceItems(activeService) : [];
+  const selectedItem = priceItems.find((item) => item.id === selectedItemId) || priceItems[0];
+  // Profile categories (shop's print profiles shown to customers) go in their own "Special Print" box.
+  const standardPriceItems = priceItems.filter((item) => !item.profile);
+  const profilePriceItems = priceItems.filter((item) => item.profile);
+  const isPassportPhoto = selectedService === "passport_photo";
+  const isIdCardPrint = selectedService === "id_card_print";
+  const hasUploadedFile = Boolean(fileUrl);
+  const totalUnits = isPassportPhoto ? copies : pages * copies;
+  const hasPdfFile = isPdfFile(fileType, fileName);
+  const hasImageFile = isImageFile(fileType, fileName);
+  // Double-side printing only makes sense for a multi-page PDF; the agent turns on the printer's two-sided setting when ticked.
+  const canDuplex = hasPdfFile && pages > 1 && !isPassportPhoto && !isIdCardPrint;
+  // Shop's per-page Duplex price for the selected B/W / Color item (0 = normal rate).
+  const duplexRate = getDuplexRate(activeService?.settings, selectedItem?.id, totalUnits);
+  const selectedRate = canDuplex && duplex && duplexRate > 0 ? duplexRate : calculatePriceItemRate(selectedItem, isPassportPhoto ? 1 : totalUnits);
+  const amount = hasUploadedFile ? Math.max(0, selectedRate * totalUnits) : 0;
+  const canCropImage = (selectedService === "auto_document_print" || isPassportPhoto) && hasImageFile;
+  // Document photos are scanned automatically; passport photos and ID cards have their own flows.
+  const autoScansImages = !isPassportPhoto && !isIdCardPrint;
+  const autoScanWorking = autoScan?.status === "working";
+  const showServiceSelector = (data?.services.length || 0) > 1;
+  const activeStep = showServiceSelector
+    ? order || (hasUploadedFile && optionsTouched)
+      ? 4
+      : hasUploadedFile
+        ? 3
+        : selectedService
+          ? 2
+          : 1
+    : order || (hasUploadedFile && optionsTouched)
+      ? 3
+      : hasUploadedFile
+        ? 2
+        : 1;
+  const completedStepCount = showServiceSelector
+    ? order
+      ? 4
+      : hasUploadedFile && optionsTouched
+        ? 3
+        : hasUploadedFile
+          ? 2
+          : selectedService
+            ? 1
+            : 0
+    : order || ownerPrinted
+      ? 3
+      : hasUploadedFile && optionsTouched
+        ? 2
+        : hasUploadedFile
+          ? 1
+          : 0;
+  const customerSteps = ownerMode
+    ? [
+        { label: "Upload", text: "Select PDF or image" },
+        { label: "Options", text: "Pages, copies, remove page" },
+        { label: "Print", text: "Pick a profile and print" },
+      ]
+    : showServiceSelector
+    ? [
+        { label: "Service", text: "Choose print or photo" },
+        { label: "Upload", text: "Select PDF or image" },
+        { label: "Options", text: "Pages, copies, remove page" },
+        { label: "Payment", text: "Check total and continue" },
+      ]
+    : [
+        { label: "Upload", text: "Select PDF or image" },
+        { label: "Options", text: "Pages, copies, remove page" },
+        { label: "Payment", text: "Check total and continue" },
+      ];
+  const progressPercent = Math.round((completedStepCount / customerSteps.length) * 100);
+  const activeStepLabel = customerSteps[activeStep - 1]?.label || "Service";
+  const canDeletePrintedDocument = order?.status === "printed" && !order.documentDeleted;
+  const isOnlinePaymentOrder = order?.paymentStatus === "pending" && paymentMode === "Online Payment";
+  const isDirectUpiOrder = isOnlinePaymentOrder && order?.paymentGateway === "direct_upi";
+  const isRazorpayOrder = isOnlinePaymentOrder && order?.paymentGateway === "razorpay";
+  const isPayuOrder = isOnlinePaymentOrder && order?.paymentGateway === "payu";
+  const isPhonepeOrder = isOnlinePaymentOrder && order?.paymentGateway === "phonepe";
+  const upiLink = useMemo(() => (order && data ? buildUpiLink(order, data.shop.shopName) : ""), [data, order]);
+  const isCafeOpen = data?.status.open !== false;
+
+  useEffect(() => {
+    if (allowedPaymentModes.length && !allowedPaymentModes.includes(paymentMode)) {
+      setPaymentMode(allowedPaymentModes[0]);
+    }
+  }, [allowedPaymentModes, paymentMode]);
+
+  useEffect(() => {
+    if (!isPassportPhoto || !fileUrl || !hasImageFile) {
+      if (passportSheetUrl) {
+        URL.revokeObjectURL(passportSheetUrl);
+        setPassportSheetUrl("");
+      }
+      return;
+    }
+
+    let cancelled = false;
+    setFinalFile(null);
+    Promise.all([fetch(fileUrl).then((response) => response.blob()), generatePassportSheet(fileUrl)])
+      .then(([rawBlob, sheetBlob]) => {
+        if (cancelled) return;
+        // The tiled sheet is preview-only; the raw photo is what gets sent to the backend.
+        setFinalFile(rawBlob);
+        setPages(1);
+        setPassportSheetUrl((current) => {
+          if (current) URL.revokeObjectURL(current);
+          return URL.createObjectURL(sheetBlob);
+        });
+      })
+      .catch(() => setOrderError("Could not prepare the passport photo."));
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fileUrl, hasImageFile, isPassportPhoto]);
+
+  useEffect(() => {
+    let isActive = true;
+
+    if (!upiLink || !isDirectUpiOrder) {
+      setUpiQrDataUrl("");
+      return;
+    }
+
+    import("qrcode")
+      .then(({ default: QRCode }) => QRCode.toDataURL(upiLink, {
+        errorCorrectionLevel: "M",
+        margin: 1,
+        width: 220,
+      }))
+      .then((url) => {
+        if (isActive) setUpiQrDataUrl(url);
+      })
+      .catch(() => {
+        if (isActive) setUpiQrDataUrl("");
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [upiLink, isDirectUpiOrder]);
+
+  useEffect(() => {
+    if (!paymentStarted || !order || order.paymentStatus !== "pending" || order.paymentGateway !== "direct_upi") return;
+
+    paymentPollRef.current = setInterval(() => {
+      checkUpiPayment(order.id);
+    }, 3000);
+
+    return () => {
+      if (paymentPollRef.current) {
+        clearInterval(paymentPollRef.current);
+        paymentPollRef.current = null;
+      }
+    };
+  }, [paymentStarted, order?.id, order?.paymentStatus]);
+
+  useEffect(() => {
+    if (!order || order.status === "printed" || order.status === "failed") return;
+    if (isPassportPhoto && order.geminiPhoto) return;
+
+    const intervalId = window.setInterval(async () => {
+      try {
+        const response = await fetch(apiUrl(`/api/public-orders/${order.id}/`));
+        const result = await response.json().catch(() => ({}));
+        if (response.ok && result.order) setOrder(result.order);
+      } catch {
+        // Keep the current token visible if status refresh is temporarily unavailable.
+      }
+    }, 5000);
+
+    return () => window.clearInterval(intervalId);
+  }, [order]);
+
+  useEffect(() => {
+    if (!order || order.status !== "printed" || order.documentDeleted) return;
+    if (deletePromptShownForOrderRef.current === order.id) return;
+
+    deletePromptShownForOrderRef.current = order.id;
+    setIsDeleteDocumentOpen(true);
+  }, [order]);
+
+  // Confirming deletion as a modal (not just a status line) matters here -
+  // the whole point is reassuring the customer their document is gone from
+  // our servers, whether they deleted it themselves or it was auto-deleted.
+  useEffect(() => {
+    if (!order || !order.documentDeleted) return;
+    if (deletedNoticeShownForOrderRef.current === order.id) return;
+
+    deletedNoticeShownForOrderRef.current = order.id;
+    setIsDocumentDeletedNoticeOpen(true);
+  }, [order]);
+
+  useEffect(() => {
+    setPrintProgress(0);
+  }, [order?.id]);
+
+  useEffect(() => {
+    if (!order) return;
+    // Passport photo never enters the desktop Print Agent's queue (the
+    // agent excludes that service entirely) - `status` stays "queued"
+    // forever regardless of how far along the AI generation is, so its
+    // own completion signal (geminiPhoto present) drives progress instead.
+    // Still animates up to 92% meanwhile so the wait doesn't look stalled.
+    if (isPassportPhoto) {
+      if (order.geminiPhoto) {
+        setPrintProgress(100);
+        return;
+      }
+      // Generation hasn't started yet while a cash-counter order is waiting
+      // on the shop owner's approval, or an online-payment order is still
+      // waiting on the gateway - animating toward 92% here would read as
+      // "in progress" when nothing is actually happening. Same for "failed" -
+      // both the agent and the Gemini fallback have given up, so there is no
+      // "in progress" left to animate toward.
+      if (order.status === "awaiting_approval" || order.status === "awaiting_payment" || order.status === "failed") return;
+    } else if (order.status === "printed") {
+      setPrintProgress(100);
+      return;
+    } else if (order.status !== "queued" && order.status !== "printing") {
+      return;
+    }
+
+    const intervalId = window.setInterval(() => {
+      setPrintProgress((current) => {
+        if (current >= 92) return current;
+        const step = current < 45 ? 7 : current < 75 ? 3 : 1;
+        return Math.min(92, current + step);
+      });
+    }, 650);
+
+    return () => window.clearInterval(intervalId);
+  }, [order?.status, order?.id, isPassportPhoto, order?.geminiPhoto]);
+
+  function selectService(service: PricingService) {
+    setSelectedService(service.serviceKey);
+    setPaymentMode(getAllowedPaymentModes(service)[0] || "Online Payment");
+    setSelectedItemId(getPriceItems(service)[0]?.id || "");
+    setOptionsTouched(false);
+    // Switching services should start clean - an uploaded file, its price
+    // calculation, and any in-progress order/payment state all belonged to
+    // the previous service and don't carry over.
+    clearUpload();
+  }
+
+  function selectAttireCategory(category: string) {
+    setAttireCategory(category);
+    resetOrderDraft();
+  }
+
+  function resetOrderDraft() {
+    setOrder(null);
+    setOrderError("");
+    setOwnerPrinted(false);
+    resetPaymentFlow();
+  }
+
+  // Owner mode: the current document as a PDF for the agent. A PDF goes as
+  // it is; an image is fitted onto an A4 page with a small margin.
+  async function currentDocumentPdf(): Promise<Blob> {
+    if (!finalFile) throw new Error("Upload a document first.");
+    if (isPdfFile(fileType, fileName)) return finalFile;
+    const { PDFDocument } = await import("pdf-lib");
+    const doc = await PDFDocument.create();
+    const image = await doc.embedPng(await imageFileToPngBytes(finalFile));
+    const pageW = 595.28, pageH = 841.89, margin = 18;
+    const scale = Math.min((pageW - 2 * margin) / image.width, (pageH - 2 * margin) / image.height);
+    const w = image.width * scale, h = image.height * scale;
+    const page = doc.addPage([pageW, pageH]);
+    page.drawImage(image, { x: (pageW - w) / 2, y: (pageH - h) / 2, width: w, height: h });
+    return new Blob([await doc.save()], { type: "application/pdf" });
+  }
+
+  async function printFromDashboard() {
+    if (!finalFile) return;
+    const baseName = (fileName || "document").replace(/\.[^.]+$/, "");
+    const outcome = await agentPrint.printPdf(currentDocumentPdf, {
+      fileName: `${baseName}.pdf`,
+      copies: Math.max(1, copies),
+      // Agent not running / "Browser print": open the PDF so the browser's print dialog can be used.
+      fallback: () => {
+        currentDocumentPdf()
+          .then((blob) => window.open(URL.createObjectURL(blob), "_blank", "noopener"))
+          .catch(() => setOrderError("Could not prepare the document for printing."));
+      },
+    });
+    if (outcome.ok) setOwnerPrinted(true);
+  }
+
+  function resetPaymentFlow() {
+    setUpiQrDataUrl("");
+    setPaymentStarted(false);
+    setIsCheckingPayment(false);
+    setPaymentMessage("");
+    if (paymentPollRef.current) {
+      clearInterval(paymentPollRef.current);
+      paymentPollRef.current = null;
+    }
+  }
+
+  async function handleUpload(fileList?: FileList | null) {
+    const files = fileList ? Array.from(fileList) : [];
+    if (!files.length) return;
+
+    if (files.length === 1) {
+      setIsReadingUpload(true);
+      // Let the spinner paint before the heavy file reads start.
+      await new Promise((resolve) => window.setTimeout(resolve, 30));
+      try {
+        await handleSingleUpload(files[0]);
+      } finally {
+        setIsReadingUpload(false);
+      }
+      return;
+    }
+
+    if (isPassportPhoto) {
+      alert("Please upload only one photo for passport size photo.");
+      return;
+    }
+
+    await handleMultipleUpload(files);
+  }
+
+  async function handleSingleUpload(file: File) {
+    const isImageUpload = file.type.startsWith("image/") || /\.(jpg|jpeg|png)$/i.test(file.name);
+    if (isPassportPhoto && !isImageUpload) {
+      alert("Please upload only JPG, PNG, or JPEG images for passport photos.");
+      return;
+    }
+
+    const isPdfUpload = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+    if (isPdfUpload) {
+      try {
+        const { isEncrypted } = await import("@pdfsmaller/pdf-decrypt");
+        const status = await isEncrypted(new Uint8Array(await file.arrayBuffer()));
+        if (status.encrypted) {
+          setPendingPdfFile(file);
+          setPdfPasswordInput("");
+          setPdfPasswordError("");
+          setIsPasswordPromptOpen(true);
+          return;
+        }
+      } catch {
+        // Encryption check failed to run; fall through and let the normal PDF flow surface any issue.
+      }
+    }
+
+    await applyUploadedFile(file);
+    if (isImageUpload && autoScansImages) {
+      trueOriginalRef.current = file;
+      void autoScanImage(file, "original");
+    }
+  }
+
+  // Shows the new image file in place of the current one (same upload).
+  function replaceImageFile(file: File) {
+    const nextUrl = URL.createObjectURL(file);
+    setFileUrl((previous) => {
+      if (previous) URL.revokeObjectURL(previous);
+      return nextUrl;
+    });
+    setFinalFile(file);
+    setFileName(file.name);
+    setFileType(file.type);
+    setCropRect(DEFAULT_CROP_RECT);
+    setCropQuad(DEFAULT_CROP_QUAD);
+  }
+
+  // Cleans the document photo for printing (no automatic crop - the whole
+  // photo is kept). The photo shows at once; the cleaned one replaces it when
+  // ready (unless the customer has moved on to another file meanwhile).
+  async function autoScanImage(original: File, look: DocLook = "bw", darkness = docDarkness) {
+    if (look === "original") {
+      autoScanTokenRef.current++;
+      replaceImageFile(original);
+      setAutoScan({ status: "original", look, original });
+      return;
+    }
+    const token = ++autoScanTokenRef.current;
+    setAutoScan({ status: "working", look, original });
+    try {
+      const result = await scanDocument(original, look === "bw" ? "photocopy" : "clean", null, darkness);
+      if (token !== autoScanTokenRef.current) return;
+      if (!result.found) {
+        setAutoScan({ status: "error", look, original });
+        return;
+      }
+      replaceImageFile(new File([result.blob], original.name.replace(/(\.[^.]+)?$/, "-scan.jpg"), { type: "image/jpeg" }));
+      setAutoScan({ status: result.detected ? "done" : "cleaned", look, original });
+    } catch (reason) {
+      console.error(reason);
+      if (token === autoScanTokenRef.current) setAutoScan({ status: "error", look, original });
+    }
+  }
+
+  // Discards any crop (and re-picks the current look against the untouched
+  // upload) - the only way back to the full photo once a crop is applied,
+  // since applyImageCrop rebases autoScan.original onto the cropped image.
+  function resetToTrueOriginal() {
+    if (!trueOriginalRef.current) return;
+    void autoScanImage(trueOriginalRef.current, "original");
+  }
+
+  // The slider moves at once; the page is re-cleaned once it stops for a moment.
+  function changeDocDarkness(value: number) {
+    setDocDarkness(value);
+    if (darknessTimerRef.current) window.clearTimeout(darknessTimerRef.current);
+    const original = autoScan?.original;
+    if (!original) return;
+    darknessTimerRef.current = window.setTimeout(() => void autoScanImage(original, "bw", value), 400);
+  }
+
+  // For a photo in a multi-file upload: the scanned page, or the photo as it
+  // is if scanning fails.
+  async function scannedOrOriginal(file: File) {
+    try {
+      const result = await scanDocument(file, "photocopy", null, docDarkness);
+      return result.found ? result.blob : file;
+    } catch {
+      return file;
+    }
+  }
+
+  // Merges every selected file into one combined PDF (images become full-page
+  // scans) so the rest of the flow - page/price calculation, order creation,
+  // and the single-document print job the agent picks up - needs no changes
+  // at all to handle "multiple documents" as one bigger document.
+  async function handleMultipleUpload(files: File[]) {
+    const invalidFile = files.find((file) => {
+      const isImage = file.type.startsWith("image/") || /\.(jpg|jpeg|png)$/i.test(file.name);
+      const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+      return !isImage && !isPdf;
+    });
+    if (invalidFile) {
+      alert("Please upload only PDF, JPG, PNG, or JPEG files.");
+      return;
+    }
+
+    setIsCombiningFiles(true);
+    try {
+      const [{ PDFDocument }, { isEncrypted }] = await Promise.all([import("pdf-lib"), import("@pdfsmaller/pdf-decrypt")]);
+      const mergedDoc = await PDFDocument.create();
+      const imageCount = files.filter((file) => !(file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf"))).length;
+      let imageIndex = 0;
+
+      for (const file of files) {
+        const bytes = new Uint8Array(await file.arrayBuffer());
+        const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+
+        if (isPdf) {
+          const encryptionStatus = await isEncrypted(bytes).catch(() => ({ encrypted: false }));
+          if (encryptionStatus.encrypted) {
+            alert(`"${file.name}" is password-protected. Please remove its password first, or upload it on its own.`);
+            return;
+          }
+          const sourceDoc = await PDFDocument.load(bytes);
+          const copiedPages = await mergedDoc.copyPages(sourceDoc, sourceDoc.getPageIndices());
+          copiedPages.forEach((page) => mergedDoc.addPage(page));
+        } else {
+          // Route every image through <canvas> and re-encode as PNG instead
+          // of calling embedJpg directly - pdf-lib's own JPEG decoder can't
+          // handle progressive JPEGs (common from phone cameras/screenshots)
+          // and throws, which was silently aborting the whole merge whenever
+          // a JPG was mixed in. The canvas re-encode uses the browser's own
+          // decoder instead, which handles any JPEG/PNG variant.
+          let source: Blob = file;
+          if (autoScansImages) {
+            imageIndex += 1;
+            setCombineStatus(`Cleaning photo ${imageIndex}/${imageCount}…`);
+            source = await scannedOrOriginal(file);
+            setCombineStatus("");
+          }
+          const pngBytes = await imageFileToPngBytes(source);
+          const image = await mergedDoc.embedPng(pngBytes);
+          const page = mergedDoc.addPage([image.width, image.height]);
+          page.drawImage(image, { x: 0, y: 0, width: image.width, height: image.height });
+        }
+      }
+
+      const totalPages = mergedDoc.getPageCount();
+      if (!totalPages) {
+        alert("Could not read any pages from the selected files. Please try again.");
+        return;
+      }
+
+      const mergedBytes = await mergedDoc.save();
+      const mergedFile = new File([mergedBytes], `${files.length} files combined.pdf`, { type: "application/pdf" });
+      await applyUploadedFile(mergedFile, totalPages);
+    } catch {
+      alert("Could not combine the selected files. Please try uploading them one at a time.");
+    } finally {
+      setIsCombiningFiles(false);
+      setCombineStatus("");
+    }
+  }
+
+  async function applyUploadedFile(file: File, knownPages?: number) {
+    // A newer upload - drop any auto scan still running for the previous one.
+    autoScanTokenRef.current++;
+    setAutoScan(null);
+    if (fileUrl) URL.revokeObjectURL(fileUrl);
+    if (passportSheetUrl) URL.revokeObjectURL(passportSheetUrl);
+    const nextUrl = URL.createObjectURL(file);
+    setFinalFile(isPassportPhoto ? null : file);
+    setFileUrl(nextUrl);
+    setFileName(file.name);
+    setFileType(file.type || file.name.split(".").pop()?.toLowerCase() || "");
+    setIsPageManagerOpen(false);
+    setPageOrigins([]);
+    setIsPdfEdited(false);
+    originalPdfRef.current = null;
+    setIsPreviewOpen(false);
+    setIsCropOpen(false);
+    setCropRect(DEFAULT_CROP_RECT);
+    setCropQuad(DEFAULT_CROP_QUAD);
+    setOrder(null);
+    setOrderError("");
+    setOptionsTouched(false);
+    setPassportSheetUrl("");
+    resetPaymentFlow();
+
+    const isPdfUpload = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+
+    if (knownPages !== undefined) {
+      if (isPdfUpload) originalPdfRef.current = { file, pages: knownPages };
+      setPages(knownPages);
+      return;
+    }
+
+    if (isPdfUpload) {
+      const detectedPages = await detectPdfPages(file);
+      originalPdfRef.current = { file, pages: detectedPages };
+      setPages(detectedPages);
+      return;
+    }
+
+    setPages(1);
+  }
+
+  async function unlockPendingPdf() {
+    if (!pendingPdfFile || !pdfPasswordInput) return;
+
+    setIsUnlockingPdf(true);
+    setPdfPasswordError("");
+    try {
+      const { decryptPDF } = await import("@pdfsmaller/pdf-decrypt");
+      const bytes = new Uint8Array(await pendingPdfFile.arrayBuffer());
+      const decryptedBytes = await decryptPDF(bytes, pdfPasswordInput);
+      const unlockedFile = new File([decryptedBytes], pendingPdfFile.name, { type: "application/pdf" });
+      setIsPasswordPromptOpen(false);
+      setPendingPdfFile(null);
+      setPdfPasswordInput("");
+      await applyUploadedFile(unlockedFile);
+    } catch {
+      setPdfPasswordError("Incorrect password. Please try again.");
+    } finally {
+      setIsUnlockingPdf(false);
+    }
+  }
+
+  function cancelPdfPasswordPrompt() {
+    if (isUnlockingPdf) return;
+    setIsPasswordPromptOpen(false);
+    setPendingPdfFile(null);
+    setPdfPasswordInput("");
+    setPdfPasswordError("");
+  }
+
+  function clearUploadedFileState() {
+    autoScanTokenRef.current++;
+    setAutoScan(null);
+    if (fileUrl) URL.revokeObjectURL(fileUrl);
+    if (passportSheetUrl) URL.revokeObjectURL(passportSheetUrl);
+    setFinalFile(null);
+    setFileUrl("");
+    setPassportSheetUrl("");
+    setFileName("");
+    setFileType("");
+    setPages(0);
+    setPageOrigins([]);
+    setIsPdfEdited(false);
+    originalPdfRef.current = null;
+    setIsPreviewOpen(false);
+    setIsPageManagerOpen(false);
+    setIsCropOpen(false);
+    setCropRect(DEFAULT_CROP_RECT);
+    setCropQuad(DEFAULT_CROP_QUAD);
+  }
+
+  function clearUpload() {
+    clearUploadedFileState();
+    setCopies(1);
+    setDuplex(false);
+    setDuplexEdge("long");
+    setAttireCategory(passportAttireOptions[0].key);
+    setOrder(null);
+    setOrderError("");
+    setOwnerPrinted(false);
+    resetPaymentFlow();
+  }
+
+  // Once the customer has acknowledged their document is gone, this order is
+  // fully wrapped up - reset the whole flow so they land back at a clean
+  // upload screen instead of staring at a finished, deleted order.
+  function dismissDocumentDeletedNotice() {
+    setIsDocumentDeletedNoticeOpen(false);
+    clearUpload();
+  }
+
+  async function applyImageCrop() {
+    if (!fileUrl || !hasImageFile) return;
+
+    try {
+      const croppedBlob = cropMode === "perspective" ? await warpPerspectiveCrop(fileUrl, cropQuad) : await cropImage(fileUrl, cropRect);
+      const croppedUrl = URL.createObjectURL(croppedBlob);
+      URL.revokeObjectURL(fileUrl);
+      setFinalFile(croppedBlob);
+      setFileUrl(croppedUrl);
+      setFileName(fileName.replace(/(\.[^.]+)?$/, "-cropped.png"));
+      setFileType("image/png");
+      setIsCropOpen(false);
+      setIsPreviewOpen(false);
+
+      // Rebase future B/W / Color / Original switches onto this crop instead
+      // of the pre-crop upload - crop the true original the same way (rect/
+      // quad are percentage-based, so this lines up regardless of the auto-
+      // scan possibly having resized the currently-shown image) so switching
+      // looks later never re-processes an already-cleaned image, and never
+      // silently drops the crop back to the full, uncropped photo.
+      if (trueOriginalRef.current) {
+        const trueOriginalUrl = URL.createObjectURL(trueOriginalRef.current);
+        try {
+          const croppedOriginalBlob =
+            cropMode === "perspective" ? await warpPerspectiveCrop(trueOriginalUrl, cropQuad) : await cropImage(trueOriginalUrl, cropRect);
+          const croppedOriginalFile = new File(
+            [croppedOriginalBlob],
+            trueOriginalRef.current.name.replace(/(\.[^.]+)?$/, "-cropped.png"),
+            { type: "image/png" },
+          );
+          setAutoScan((current) => (current ? { ...current, original: croppedOriginalFile } : current));
+        } finally {
+          URL.revokeObjectURL(trueOriginalUrl);
+        }
+      }
+
+      setCropRect(DEFAULT_CROP_RECT);
+      setCropQuad(DEFAULT_CROP_QUAD);
+      setOrder(null);
+      setOrderError("");
+      if (passportSheetUrl) {
+        URL.revokeObjectURL(passportSheetUrl);
+        setPassportSheetUrl("");
+      }
+    } catch {
+      alert("Could not crop the image. Please upload the image again and try.");
+    }
+  }
+
+  // Rotates the shown image 90 degrees clockwise. The stored originals are
+  // rotated too, so switching B/W / Color / Original or re-cropping later
+  // keeps the new orientation.
+  async function rotateImage() {
+    if (!fileUrl || !hasImageFile || isRotating) return;
+
+    setIsRotating(true);
+    try {
+      const currentBlob = await fetch(fileUrl).then((response) => response.blob());
+      const rotatedBlob = await rotateImageBlob(currentBlob, 90);
+      const rotatedUrl = URL.createObjectURL(rotatedBlob);
+      URL.revokeObjectURL(fileUrl);
+      setFinalFile(rotatedBlob);
+      setFileUrl(rotatedUrl);
+      setIsPreviewOpen(false);
+
+      const rotateFile = async (file: File) => new File([await rotateImageBlob(file, 90)], file.name, { type: file.type });
+      if (trueOriginalRef.current) trueOriginalRef.current = await rotateFile(trueOriginalRef.current);
+      const scanOriginal = autoScan?.original;
+      if (scanOriginal) {
+        const rotatedOriginal = scanOriginal === trueOriginalRef.current ? scanOriginal : await rotateFile(scanOriginal);
+        setAutoScan((current) => (current ? { ...current, original: rotatedOriginal } : current));
+      }
+
+      setCropRect(DEFAULT_CROP_RECT);
+      setCropQuad(DEFAULT_CROP_QUAD);
+      setOrder(null);
+      setOrderError("");
+      if (passportSheetUrl) {
+        URL.revokeObjectURL(passportSheetUrl);
+        setPassportSheetUrl("");
+      }
+    } catch {
+      alert("Could not rotate the image. Please upload the image again and try.");
+    } finally {
+      setIsRotating(false);
+    }
+  }
+
+  function resetPdfPages() {
+    const original = originalPdfRef.current;
+    if (!original || isProcessingPdf) return;
+
+    const restoredUrl = URL.createObjectURL(original.file);
+    if (fileUrl) URL.revokeObjectURL(fileUrl);
+    setFinalFile(original.file);
+    setFileUrl(restoredUrl);
+    setFileName(original.file.name);
+    setPages(original.pages);
+    setCopyPromptIndex(null);
+    setPageOrigins([]);
+    setIsPdfEdited(false);
+    setPageRangeInput("");
+    setPageRangeError("");
+    setIsPreviewOpen(false);
+    setOrder(null);
+    setOrderError("");
+  }
+
+  function currentPageOrigins() {
+    return pageOrigins.length === pages ? pageOrigins : Array.from({ length: pages }, (_, index) => index + 1);
+  }
+
+  // Adds one more copy of a page right after it (click again for more).
+  async function duplicatePdfPage(pageIndex: number, count = 1) {
+    if (!fileUrl || !hasPdfFile || isProcessingPdf || pages >= 200) return;
+    const copyCount = Math.min(Math.max(1, Math.floor(count)), 200 - pages);
+
+    setIsProcessingPdf(true);
+    try {
+      const { PDFDocument } = await import("pdf-lib");
+      const sourceBytes = await fetch(fileUrl).then((response) => response.arrayBuffer());
+      const pdfDoc = await PDFDocument.load(sourceBytes, { updateMetadata: false });
+      if (pageIndex < 0 || pageIndex >= pdfDoc.getPageCount()) return;
+
+      const copiedPages = await pdfDoc.copyPages(pdfDoc, Array.from({ length: copyCount }, () => pageIndex));
+      copiedPages.forEach((copied, offset) => pdfDoc.insertPage(pageIndex + 1 + offset, copied));
+      const updatedBytes = await pdfDoc.save();
+      const updatedBlob = new Blob([updatedBytes], { type: "application/pdf" });
+      const updatedUrl = URL.createObjectURL(updatedBlob);
+
+      URL.revokeObjectURL(fileUrl);
+      setFinalFile(updatedBlob);
+      setFileUrl(updatedUrl);
+      const nextOrigins = currentPageOrigins();
+      nextOrigins.splice(pageIndex + 1, 0, ...Array.from({ length: copyCount }, () => nextOrigins[pageIndex]));
+      setPageOrigins(nextOrigins);
+      setIsPdfEdited(true);
+      setPages(pdfDoc.getPageCount());
+      setIsPreviewOpen(false);
+      setOrder(null);
+      setOrderError("");
+    } catch {
+      alert("Could not copy the PDF page. Please upload the file again and try.");
+    } finally {
+      setIsProcessingPdf(false);
+    }
+  }
+
+  async function removePdfPage(pageIndex: number) {
+    if (!fileUrl || !hasPdfFile || pages <= 1 || isProcessingPdf) return;
+
+    setIsProcessingPdf(true);
+    try {
+      const { PDFDocument } = await import("pdf-lib");
+      const sourceBytes = await fetch(fileUrl).then((response) => response.arrayBuffer());
+      const pdfDoc = await PDFDocument.load(sourceBytes, { updateMetadata: false });
+      const currentPageCount = pdfDoc.getPageCount();
+
+      if (currentPageCount <= 1 || pageIndex < 0 || pageIndex >= currentPageCount) return;
+
+      pdfDoc.removePage(pageIndex);
+      const updatedBytes = await pdfDoc.save();
+      const updatedBlob = new Blob([updatedBytes], { type: "application/pdf" });
+      const updatedUrl = URL.createObjectURL(updatedBlob);
+
+      URL.revokeObjectURL(fileUrl);
+      setPageOrigins(currentPageOrigins().filter((_, index) => index !== pageIndex));
+      setIsPdfEdited(true);
+      setFinalFile(updatedBlob);
+      setFileUrl(updatedUrl);
+      setPages(pdfDoc.getPageCount());
+      setIsPreviewOpen(false);
+      setOrder(null);
+      setOrderError("");
+      if (pdfDoc.getPageCount() <= 1) setIsPageManagerOpen(false);
+    } catch {
+      alert("Could not remove the PDF page. Please upload the file again and try.");
+    } finally {
+      setIsProcessingPdf(false);
+    }
+  }
+
+  // Parses input like "1,3,5-7" into a sorted, deduped list of 1-based page
+  // numbers, all validated against the document's actual page count. `null`
+  // means the input couldn't be parsed or referenced an out-of-range page -
+  // the caller shows a single, specific error rather than guessing which
+  // part was wrong.
+  function parsePageSelection(input: string, maxPages: number): number[] | null {
+    const parts = input.trim().split(",").map((part) => part.trim()).filter(Boolean);
+    if (!parts.length) return null;
+
+    // "2x3" keeps page 2 three times; plain numbers/ranges are deduped.
+    const pageNumbers = new Set<number>();
+    const repeated: number[] = [];
+    for (const part of parts) {
+      const repeatMatch = part.match(/^(\d+)\s*[x*]\s*(\d+)$/i);
+      const rangeMatch = part.match(/^(\d+)\s*-\s*(\d+)$/);
+      if (repeatMatch) {
+        const page = Number(repeatMatch[1]);
+        const count = Number(repeatMatch[2]);
+        if (page < 1 || page > maxPages || count < 1 || count > 200) return null;
+        for (let copy = 0; copy < count; copy += 1) repeated.push(page);
+      } else if (rangeMatch) {
+        const start = Number(rangeMatch[1]);
+        const end = Number(rangeMatch[2]);
+        if (start < 1 || end > maxPages || start > end) return null;
+        for (let page = start; page <= end; page += 1) pageNumbers.add(page);
+      } else if (/^\d+$/.test(part)) {
+        const page = Number(part);
+        if (page < 1 || page > maxPages) return null;
+        pageNumbers.add(page);
+      } else {
+        return null;
+      }
+    }
+    const all = [...Array.from(pageNumbers), ...repeated].sort((a, b) => a - b);
+    return all.length ? all : null;
+  }
+
+  async function extractPdfPages(pageNumbers: number[]) {
+    if (!fileUrl || !hasPdfFile || isProcessingPdf) return;
+
+    setIsProcessingPdf(true);
+    try {
+      const { PDFDocument } = await import("pdf-lib");
+      const sourceBytes = await fetch(fileUrl).then((response) => response.arrayBuffer());
+      const sourceDoc = await PDFDocument.load(sourceBytes, { updateMetadata: false });
+      const newDoc = await PDFDocument.create();
+      const copiedPages = await newDoc.copyPages(sourceDoc, pageNumbers.map((page) => page - 1));
+      copiedPages.forEach((page) => newDoc.addPage(page));
+      const updatedBytes = await newDoc.save();
+      const updatedBlob = new Blob([updatedBytes], { type: "application/pdf" });
+      const updatedUrl = URL.createObjectURL(updatedBlob);
+
+      URL.revokeObjectURL(fileUrl);
+      const sourceOrigins = currentPageOrigins();
+      setPageOrigins(pageNumbers.map((page) => sourceOrigins[page - 1]));
+      setIsPdfEdited(true);
+      setFinalFile(updatedBlob);
+      setFileUrl(updatedUrl);
+      setPages(newDoc.getPageCount());
+      setPageRangeInput("");
+      setPageRangeError("");
+      setIsPreviewOpen(false);
+      setOrder(null);
+      setOrderError("");
+      if (newDoc.getPageCount() <= 1) setIsPageManagerOpen(false);
+    } catch {
+      alert("Could not extract the selected pages. Please upload the file again and try.");
+    } finally {
+      setIsProcessingPdf(false);
+    }
+  }
+
+  function handleExtractPages() {
+    const selected = parsePageSelection(pageRangeInput, pages);
+    if (!selected) {
+      setPageRangeError(`Enter valid page numbers between 1 and ${pages}, e.g. "1,3,5-7".`);
+      return;
+    }
+    setPageRangeError("");
+    void extractPdfPages(selected);
+  }
+
+  async function runCleanScan() {
+    if (!fileUrl || isCleanScanProcessing) return;
+
+    const controller = new AbortController();
+    cleanScanAbortRef.current = controller;
+    setIsCleanScanProcessing(true);
+    setCleanScanProgress({ processed: 0, total: hasPdfFile ? Math.max(pages, 1) : 1 });
+
+    try {
+      const sourceBlob = await fetch(fileUrl).then((response) => response.blob());
+      const sourceFile = new File([sourceBlob], fileName || (hasPdfFile ? "document.pdf" : "image.jpg"), { type: fileType || sourceBlob.type });
+
+      const cleanedFile = await applyCleanScanToFile(sourceFile, {
+        signal: controller.signal,
+        onProgress: (progress) => setCleanScanProgress(progress),
+      });
+
+      const cleanedUrl = URL.createObjectURL(cleanedFile);
+      URL.revokeObjectURL(fileUrl);
+      setFinalFile(cleanedFile);
+      setFileUrl(cleanedUrl);
+      setFileName(cleanedFile.name);
+      setFileType(cleanedFile.type);
+      setIsPreviewOpen(false);
+      setOrder(null);
+      setOrderError("");
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === "AbortError")) {
+        console.error("Clean scan failed:", error);
+        const detail = error instanceof Error ? error.message : String(error);
+        alert(`Could not clean up the scan. Please try again.\n\n(${detail})`);
+      }
+    } finally {
+      cleanScanAbortRef.current = null;
+      setIsCleanScanProcessing(false);
+      setCleanScanProgress(null);
+    }
+  }
+
+  function cancelCleanScan() {
+    cleanScanAbortRef.current?.abort();
+  }
+
+  async function createPrintOrder() {
+    if (!finalFile || !selectedItem || !activeService || autoScanWorking) return;
+    if (!isCafeOpen) {
+      setOrderError("This print shop is currently closed. Please try again when the service is open.");
+      return;
+    }
+
+    setOptionsTouched(true);
+    setIsSubmittingOrder(true);
+    setOrderError("");
+    try {
+      const formData = new FormData();
+      const uploadName = fileName || (isPassportPhoto ? "passport-photo.jpg" : "document");
+      formData.append("document", finalFile, uploadName);
+      formData.append("serviceKey", activeService.serviceKey);
+      formData.append("priceItemId", selectedItem.id);
+      formData.append("priceLabel", selectedItem.label);
+      formData.append("rate", String(selectedRate));
+      formData.append("pages", String(isPassportPhoto ? 1 : pages));
+      formData.append("copies", String(copies));
+      if (canDuplex && duplex) {
+        formData.append("duplex", "true");
+        formData.append("duplexEdge", duplexEdge);
+      }
+      formData.append("totalAmount", String(amount));
+      formData.append("paymentMode", paymentMode);
+      if (isPassportPhoto) {
+        formData.append("attireCategory", attireCategory);
+        formData.append("prompt", buildPassportPrompt(attireCategory));
+      }
+
+      const response = await fetch(apiUrl(`/api/public-shop/${data?.code || code}/orders/`), {
+        method: "POST",
+        body: formData,
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || "Could not create the order.");
+      setOrder(result.order);
+      if (result.order?.paymentStatus === "pending" && paymentMode === "Online Payment") {
+        if (result.order.paymentGateway === "razorpay") {
+          await openRazorpay(result.order);
+        } else if (result.order.paymentGateway === "payu") {
+          await openPayu(result.order);
+        } else if (result.order.paymentGateway === "phonepe") {
+          await openPhonepe(result.order);
+        } else {
+          setPaymentStarted(true);
+          setPaymentMessage("Scan the QR code or open your UPI app. We will verify payment automatically.");
+        }
+      }
+    } catch (submitError) {
+      setOrderError(submitError instanceof Error ? submitError.message : "Could not create the order.");
+    } finally {
+      setIsSubmittingOrder(false);
+    }
+  }
+
+  async function checkUpiPayment(orderId: number) {
+    if (paymentCheckInFlightRef.current) return;
+
+    paymentCheckInFlightRef.current = true;
+    setIsCheckingPayment(true);
+    setOrderError("");
+    try {
+      const response = await fetch(apiUrl(`/api/public-orders/${orderId}/check-upi-payment/`), {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || "Could not verify the payment.");
+      if (result.order) setOrder(result.order);
+
+      if (result.order?.paymentStatus === "paid") {
+        setPaymentStarted(false);
+        setPaymentMessage("Payment received. Your document has been sent to the print queue.");
+      } else {
+        setPaymentMessage("Waiting for UPI payment confirmation...");
+      }
+    } catch (paymentError) {
+      setPaymentMessage("");
+      setOrderError(paymentError instanceof Error ? paymentError.message : "Could not verify the payment.");
+    } finally {
+      paymentCheckInFlightRef.current = false;
+      setIsCheckingPayment(false);
+    }
+  }
+
+  async function openRazorpay(targetOrder: PrintOrder) {
+    setIsSubmittingOrder(true);
+    setOrderError("");
+    try {
+      await loadScript("https://checkout.razorpay.com/v1/checkout.js");
+      const response = await fetch(apiUrl(`/api/public-orders/${targetOrder.id}/razorpay/order/`), { method: "POST" });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.message || "Could not start Razorpay.");
+      const Razorpay = (window as typeof window & { Razorpay?: new (options: Record<string, unknown>) => { open: () => void } }).Razorpay;
+      if (!Razorpay) throw new Error("Razorpay Checkout could not load.");
+      const checkout = new Razorpay({
+        key: result.payment.keyId,
+        amount: result.payment.amount,
+        currency: result.payment.currency,
+        name: result.payment.name,
+        description: result.payment.description,
+        order_id: result.payment.gatewayOrderId,
+        theme: { color: "#2563eb" },
+        handler: async (payment: Record<string, string>) => {
+          const verifyResponse = await fetch(apiUrl(`/api/public-orders/${targetOrder.id}/razorpay/verify/`), {
+            method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payment),
+          });
+          const verified = await verifyResponse.json().catch(() => ({}));
+          if (!verifyResponse.ok) {
+            setOrderError(verified.message || "Payment verification failed.");
+            return;
+          }
+          setOrder(verified.order);
+          setPaymentMessage("Payment received. Your document has been sent to the print queue.");
+        },
+        modal: { ondismiss: () => setPaymentMessage("Payment was not completed. Click Pay with Razorpay to retry.") },
+      });
+      checkout.open();
+    } catch (paymentError) {
+      setOrderError(paymentError instanceof Error ? paymentError.message : "Could not start Razorpay.");
+    } finally {
+      setIsSubmittingOrder(false);
+    }
+  }
+
+  async function openPayu(targetOrder: PrintOrder) {
+    setIsSubmittingOrder(true);
+    setOrderError("");
+    try {
+      const response = await fetch(apiUrl(`/api/public-orders/${targetOrder.id}/payu/order/`), { method: "POST" });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.message || "Could not start PayU.");
+
+      // PayU has no JS popup for hosted checkout - submit a real form so the
+      // browser navigates to PayU's page; it redirects back to our backend
+      // callback, which then redirects here with ?order=&payment=.
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = result.payment.actionUrl;
+      Object.entries(result.payment.fields as Record<string, string>).forEach(([fieldName, fieldValue]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = fieldName;
+        input.value = fieldValue;
+        form.appendChild(input);
+      });
+      document.body.appendChild(form);
+      form.submit();
+    } catch (paymentError) {
+      setOrderError(paymentError instanceof Error ? paymentError.message : "Could not start PayU.");
+      setIsSubmittingOrder(false);
+    }
+  }
+
+  async function openPhonepe(targetOrder: PrintOrder) {
+    setIsSubmittingOrder(true);
+    setOrderError("");
+    try {
+      const response = await fetch(apiUrl(`/api/public-orders/${targetOrder.id}/phonepe/order/`), { method: "POST" });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.message || "Could not start PhonePe.");
+      // PhonePe returns its own hosted checkout URL - just navigate there.
+      window.location.href = result.payment.redirectUrl;
+    } catch (paymentError) {
+      setOrderError(paymentError instanceof Error ? paymentError.message : "Could not start PhonePe.");
+      setIsSubmittingOrder(false);
+    }
+  }
+
+  function openUpiApp() {
+    if (!upiLink || !order) return;
+
+    setPaymentStarted(true);
+    setPaymentMessage("Opening UPI app. Complete the payment, then keep this page open for confirmation.");
+    window.setTimeout(() => checkUpiPayment(order.id), 3000);
+    const opened = window.open(upiLink, "_blank", "noopener,noreferrer");
+    if (!opened) {
+      window.location.href = upiLink;
+    }
+  }
+
+  async function markOrderPaid() {
+    if (!order) return;
+
+    setIsSubmittingOrder(true);
+    setOrderError("");
+    try {
+      const response = await fetch(apiUrl(`/api/public-orders/${order.id}/mark-paid/`), { method: "POST" });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || "Could not update the payment.");
+      setOrder(result.order);
+    } catch (paymentError) {
+      setOrderError(paymentError instanceof Error ? paymentError.message : "Could not update the payment.");
+    } finally {
+      setIsSubmittingOrder(false);
+    }
+  }
+
+  async function deletePrintedDocument() {
+    if (!order) return;
+
+    setIsDeletingDocument(true);
+    setOrderError("");
+    try {
+      const response = await fetch(apiUrl(`/api/public-orders/${order.id}/delete-document/`), { method: "POST" });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result.message || "Could not delete the document.");
+      setIsDeleteDocumentOpen(false);
+      clearUpload();
+    } catch (deleteError) {
+      setOrderError(deleteError instanceof Error ? deleteError.message : "Could not delete the document.");
+    } finally {
+      setIsDeletingDocument(false);
+    }
+  }
+
+  if (error) {
+    return (
+      <main className="customer-portal">
+        <section className="customer-error">{error}</section>
+      </main>
+    );
+  }
+
+  if (!data) {
+    return (
+      <main className="customer-portal">
+        <section className="customer-loading">
+          <div className="customer-loading-mark">
+            <Printer size={26} />
+          </div>
+          <span className="customer-loading-text">Loading your print shop…</span>
+          <div className="customer-loading-dots">
+            <i></i>
+            <i></i>
+            <i></i>
+          </div>
+        </section>
+      </main>
+    );
+  }
+
+  return (
+    <main className={`customer-portal ${ownerMode ? "customer-portal-owner" : ""}`}>
+      <section className="customer-shop-hero" hidden={ownerMode}>
+        <div className="customer-shop-overlay">
+          <div className="customer-shop-identity">
+            <div className="customer-logo">
+              {data.shop.logo ? <img src={data.shop.logo} alt="" /> : <img src="/Fab-Icon.png" alt="RepetiGo" />}
+            </div>
+            <div className="customer-shop-copy">
+              <div>
+                <span className="customer-brand">RepetiGo PrintPilot</span>
+                <h1>{data.shop.shopName || "RepetiGo Cafe"}</h1>
+              </div>
+              <div className="customer-badges">
+                <span className={data.status.open ? "open" : "closed"}>{data.status.open ? "Open" : "Closed"}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {!isCafeOpen ? (
+        <section className="customer-closed-state">
+          <div className="customer-closed-icon">
+            <Clock3 size={30} />
+          </div>
+          <span>Service Closed</span>
+          <h2>{data.shop.shopName || "This print shop"} is not accepting uploads right now.</h2>
+          <p>Please scan again later when the cafe reopens. Your documents are safe because no file upload is accepted while the service is closed.</p>
+        </section>
+      ) : null}
+
+      {isCafeOpen ? (
+      <section className="customer-flow-grid">
+        {selectedService !== "resume_builder" && selectedService !== "biodata_maker" ? (
+          <div className="customer-flow-guide" aria-label="Order steps">
+            <div className="customer-progress-summary">
+              <div>
+                <span>Step {activeStep} of {customerSteps.length}</span>
+                <strong>{progressPercent}% complete</strong>
+              </div>
+              <div className="customer-progress-track" aria-hidden="true">
+                <span style={{ width: `${progressPercent}%` }} />
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {showServiceSelector ? (
+          <article className={`customer-panel ${activeStep === 1 ? "is-guided" : ""}`}>
+            <div className="customer-panel-head">
+              <span>Step 1</span>
+              <h2>Select Service</h2>
+            </div>
+            <div className="customer-service-grid">
+              {data.services.map((service) => {
+                const Icon = serviceIcons[service.serviceKey] || FileText;
+                return (
+                  <label className={selectedService === service.serviceKey ? "active" : ""} key={service.serviceKey}>
+                    <input
+                      checked={selectedService === service.serviceKey}
+                      name="customer-service"
+                      type="radio"
+                      value={service.serviceKey}
+                      onChange={() => selectService(service)}
+                    />
+                    <Icon size={18} />
+                    <strong>{service.serviceName}</strong>
+                  </label>
+                );
+              })}
+            </div>
+          </article>
+        ) : null}
+
+        {selectedService === "resume_builder" ? (
+          <PublicResumeBuilder code={data.code} pricingService={activeService} stepNumber={showServiceSelector ? 2 : 1} />
+        ) : selectedService === "biodata_maker" ? (
+          <PublicBiodataMaker code={data.code} pricingService={activeService} stepNumber={showServiceSelector ? 2 : 1} />
+        ) : (
+        <>
+        <article className={`customer-panel ${activeStep === (showServiceSelector ? 2 : 1) ? "is-guided" : ""}`}>
+          <div className="customer-panel-head">
+            <span>Step {showServiceSelector ? 2 : 1}</span>
+            <h2>{isIdCardPrint ? "Upload Your ID Card" : "Upload Document"}</h2>
+          </div>
+          {isIdCardPrint && !hasUploadedFile ? (
+            <IdCardPrintUpload
+              prices={{
+                color: priceItems.find((item) => item.id === "color")?.rate,
+                bw: priceItems.find((item) => item.id === "black_white")?.rate,
+              }}
+              onComposed={(file, cardCount, colorMode) => {
+                const item = priceItems.find((entry) => entry.id === (colorMode === "bw" ? "black_white" : "color"));
+                if (item) setSelectedItemId(item.id);
+                applyUploadedFile(file, cardCount);
+              }}
+              busy={isCombiningFiles}
+            />
+          ) : hasUploadedFile ? (
+            <div className="customer-document-preview">
+              <div className="document-thumb">
+                {isImageFile(fileType, fileName) ? <img src={fileUrl} alt="" /> : <PdfThumb fileName={fileName} fileUrl={fileUrl} pages={pages} onPageCount={isIdCardPrint ? NOOP : setPages} unitLabel={isIdCardPrint ? "card" : "page"} />}
+                <button className="document-thumb-preview" type="button" onClick={() => setIsPreviewOpen(true)} aria-label="Preview document">
+                  <Eye size={17} />
+                </button>
+              </div>
+              <div>
+                <strong>{fileName}</strong>
+                <span>{isIdCardPrint ? `${pages} ID card${pages > 1 ? "s" : ""} in this order` : pages ? `${pages} page${pages > 1 ? "s" : ""} detected` : "Detecting pages..."}</span>
+                <p className="customer-inline-help">
+                  {isIdCardPrint
+                    ? "To add, remove, or edit a card, use Remove below and upload again."
+                    : hasPdfFile
+                      ? "If there is a wrong page, use Remove Page. Preview the file before continuing."
+                      : canCropImage
+                        ? "Use Crop if you only want to print a specific part of the image."
+                        : "Preview the file before continuing."}
+                </p>
+                <div className="document-actions">
+                  {hasPdfFile && !isIdCardPrint ? (
+                    <button type="button" onClick={() => setIsPageManagerOpen(true)} disabled={(pages <= 1 && !isPdfEdited) || isProcessingPdf || isCleanScanProcessing}>
+                      <Trash2 size={16} /> Manage Pages
+                    </button>
+                  ) : null}
+                  {canCropImage ? (
+                    <button type="button" onClick={() => setIsCropOpen(true)} disabled={isCleanScanProcessing || autoScanWorking}>
+                      <Crop size={16} /> Crop
+                    </button>
+                  ) : null}
+                  {hasImageFile && !isIdCardPrint ? (
+                    <button type="button" onClick={rotateImage} disabled={isRotating || isCleanScanProcessing || autoScanWorking}>
+                      <RotateCw size={16} /> {isRotating ? "Rotating…" : "Rotate"}
+                    </button>
+                  ) : null}
+                  {canCropImage && autoScan && fileName.endsWith("-cropped.png") ? (
+                    <button
+                      type="button"
+                      onClick={resetToTrueOriginal}
+                      disabled={isCleanScanProcessing || autoScanWorking}
+                      title="Discard the crop and go back to the full, uncropped photo"
+                    >
+                      <Undo2 size={16} /> Reset to Original
+                    </button>
+                  ) : null}
+                  {!isPassportPhoto && !isIdCardPrint ? (
+                    <button type="button" onClick={runCleanScan} disabled title="Coming soon">
+                      <ImageIcon size={16} /> Clean Scan <small className="coming-soon-tag">Coming Soon</small>
+                    </button>
+                  ) : null}
+                  <button type="button" onClick={clearUpload} disabled={isCleanScanProcessing}>
+                    <X size={16} /> Remove
+                  </button>
+                </div>
+                {autoScan ? (
+                  <div className={`doc-autoscan ${autoScan.status}`}>
+                    {autoScan.status === "working" ? (
+                      <span>
+                        <LoaderCircle size={15} className="spin" /> Cleaning your document…
+                      </span>
+                    ) : autoScan.status === "done" || autoScan.status === "cleaned" ? (
+                      <span>
+                        <CircleCheck size={15} /> Document cleaned for printing - use Crop if needed
+                      </span>
+                    ) : autoScan.status === "error" ? (
+                      <span>
+                        <CircleAlert size={15} /> Auto clean failed - original photo kept
+                      </span>
+                    ) : (
+                      <span>Showing your original photo</span>
+                    )}
+                    <div className="doc-autoscan-looks" role="group" aria-label="Page look">
+                      {DOC_LOOKS.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={autoScan.look === option.value && autoScan.status !== "error" ? "active" : ""}
+                          disabled={autoScanWorking}
+                          onClick={() => void autoScanImage(autoScan.original, option.value)}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                    {autoScan.look === "bw" && autoScan.status !== "error" ? (
+                      <label className="doc-autoscan-darkness">
+                        <span>Light</span>
+                        <input type="range" min={0} max={100} value={docDarkness} onChange={(event) => changeDocDarkness(Number(event.target.value))} aria-label="Black and white darkness" />
+                        <span>Dark</span>
+                        <b>{docDarkness}</b>
+                      </label>
+                    ) : null}
+                  </div>
+                ) : null}
+                {isCleanScanProcessing ? (
+                  <div className="clean-scan-progress">
+                    <span>
+                      {cleanScanProgress?.loadingEngine
+                        ? "Loading Clean Scan engine (first time only)…"
+                        : cleanScanProgress && cleanScanProgress.total > 1
+                          ? `Cleaning page ${cleanScanProgress.processed}/${cleanScanProgress.total}…`
+                          : "Cleaning scan…"}
+                    </span>
+                    {cleanScanProgress && !cleanScanProgress.loadingEngine && cleanScanProgress.total > 1 ? (
+                      <div className="clean-scan-progress-bar">
+                        <div style={{ width: `${Math.round((cleanScanProgress.processed / cleanScanProgress.total) * 100)}%` }} />
+                      </div>
+                    ) : null}
+                    <button type="button" onClick={cancelCleanScan}>
+                      Cancel
+                    </button>
+                  </div>
+                ) : null}
+                {isPassportPhoto && passportSheetUrl ? (
+                  <>
+                    <div className="passport-attire-picker">
+                      <span>Dress</span>
+                      <div className="passport-attire-options">
+                        {passportAttireOptions.map((option) => {
+                          const OptionIcon = option.icon;
+                          return (
+                            <button
+                              className={attireCategory === option.key ? "active" : ""}
+                              key={option.key}
+                              type="button"
+                              onClick={() => selectAttireCategory(option.key)}
+                              aria-label={option.label}
+                              title={option.label}
+                            >
+                              <OptionIcon size={18} />
+                              <span>{option.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                    <div className="passport-sheet-mini">
+                      <img src={passportSheetUrl} alt="" />
+                      <span>6 pcs sheet ready</span>
+                    </div>
+                  </>
+                ) : null}
+              </div>
+            </div>
+          ) : (
+            <label className={`customer-upload ${isUploadBusy ? "is-busy" : ""}`}>
+              {isReadingUpload ? <LoaderCircle size={24} className="spin" /> : <Upload size={24} />}
+              <strong>{isReadingUpload ? "Reading your document…" : isPassportPhoto ? "Upload Passport Photo" : "Upload PDF, JPG, PNG, JPEG"}</strong>
+              <span>
+                {isReadingUpload
+                  ? "Large files can take a few seconds - please keep this page open."
+                  : isCombiningFiles
+                  ? combineStatus || "Combining your files into one document…"
+                  : isPassportPhoto
+                    ? "Upload a JPG, PNG, or JPEG image. A 6-piece printable sheet will be created after cropping."
+                    : "Pages will be detected automatically. You can also select multiple files at once - they'll be combined and priced together."}
+              </span>
+              <em>{isUploadBusy ? "Please wait…" : "Tap to choose a file"}</em>
+              <input
+                accept={isPassportPhoto ? "image/jpeg,image/png,.jpg,.jpeg,.png" : "application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png"}
+                type="file"
+                multiple={!isPassportPhoto}
+                disabled={isUploadBusy}
+                onChange={(event) => handleUpload(event.target.files)}
+              />
+            </label>
+          )}
+        </article>
+
+        <article className={`customer-panel customer-options-panel ${activeStep === (showServiceSelector ? 3 : 2) ? "is-guided" : ""}`}>
+          <div className="customer-panel-head">
+            <span>Step {showServiceSelector ? 3 : 2}</span>
+            <h2>Print Options</h2>
+          </div>
+          {/* <div className="customer-tip-row">
+            <Printer size={16} />
+            <span>{hasUploadedFile ? "Now confirm the print type, pages, and copies." : "After upload, you can edit pages and copies."}</span>
+          </div> */}
+          {/* ID Card Print: Color / B/W is picked on the upload toolbar (it decides how the cards are rendered), so no separate chooser here. */}
+          {/* Dashboard: the print profile decides paper, colour and two-sided printing, so no charge types here. */}
+          <div className="print-type-control" hidden={isIdCardPrint || ownerMode}>
+            <span>{isPassportPhoto ? "Package" : "Charge Type"}</span>
+            <div className={`print-type-options ${canDuplex ? "has-duplex" : ""}`}>
+              {standardPriceItems.map((item) => (
+                <label className={selectedItem?.id === item.id ? "active" : ""} key={item.id}>
+                  <input
+                    checked={selectedItem?.id === item.id}
+                    name="print-type"
+                    type="radio"
+                    value={item.id}
+                    onChange={() => {
+                      setSelectedItemId(item.id);
+                      setOptionsTouched(true);
+                      resetOrderDraft();
+                    }}
+                  />
+                  <span>
+                    <strong>{item.label}</strong>
+                    <small>{formatPriceItem(item).replace(`${item.label} `, "")}</small>
+                  </span>
+                </label>
+              ))}
+              {canDuplex ? (
+                <label className={`duplex-option ${duplex ? "active" : ""}`}>
+                  <input
+                    type="checkbox"
+                    checked={duplex}
+                    onChange={(event) => {
+                      setDuplex(event.target.checked);
+                      setOptionsTouched(true);
+                      resetOrderDraft();
+                    }}
+                  />
+                  <span>
+                    <strong>Duplex</strong>
+                    <small>{duplexRate > 0 ? `Both sides · Rs. ${duplexRate}` : "Print both sides"}</small>
+                  </span>
+                </label>
+              ) : null}
+              {/* The shop's print profiles shown to customers (e.g. bond paper), picked from one box. */}
+              {profilePriceItems.length ? (
+                <div className={`profile-print-option ${selectedItem?.profile ? "active" : ""}`}>
+                  <label>
+                    <input
+                      checked={Boolean(selectedItem?.profile)}
+                      name="print-type"
+                      type="radio"
+                      value="profile"
+                      onChange={() => {
+                        setSelectedItemId(profilePriceItems[0].id);
+                        setOptionsTouched(true);
+                        resetOrderDraft();
+                      }}
+                    />
+                    <span>
+                      <strong>Special Print</strong>
+                      <small>Choose a print profile</small>
+                    </span>
+                  </label>
+                  <select
+                    value={selectedItem?.profile ? selectedItem.id : ""}
+                    onChange={(event) => {
+                      if (!event.target.value) return;
+                      setSelectedItemId(event.target.value);
+                      setOptionsTouched(true);
+                      resetOrderDraft();
+                    }}
+                    aria-label="Print profile"
+                  >
+                    <option value="">Select a profile</option>
+                    {profilePriceItems.map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.label} - {formatPriceItem(item).replace(`${item.label} `, "").replace(`${item.label}: `, "")}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
+            </div>
+          </div>
+          {isIdCardPrint && hasUploadedFile ? (
+            <p className="customer-inline-help">
+              {pages} ID card{pages > 1 ? "s" : ""} ({selectedItem?.label}) × Rs. {selectedRate} each
+            </p>
+          ) : null}
+          {!isPassportPhoto && !isIdCardPrint ? (
+            <label>
+              <span>Pages</span>
+              <input
+                disabled={!hasUploadedFile}
+                min="1"
+                placeholder="Upload document first"
+                type="number"
+                value={hasUploadedFile ? pages : ""}
+                onChange={(event) => {
+                  setPages(Number(event.target.value || 1));
+                  setOptionsTouched(true);
+                  resetOrderDraft();
+                }}
+              />
+            </label>
+          ) : null}
+          <label className="copies-control">
+            <span>{isPassportPhoto ? "Sets" : "Copies"}</span>
+            <div className="copies-stepper">
+              <button
+                aria-label="Decrease copies"
+                disabled={!hasUploadedFile || copies <= 1}
+                type="button"
+                onClick={() => {
+                  setCopies((current) => Math.max(1, current - 1));
+                  setOptionsTouched(true);
+                  resetOrderDraft();
+                }}
+              >
+                -
+              </button>
+              <input
+                disabled={!hasUploadedFile}
+                min="1"
+                placeholder="Upload document first"
+                type="number"
+                value={hasUploadedFile ? copies : ""}
+                onChange={(event) => {
+                  setCopies(Number(event.target.value || 1));
+                  setOptionsTouched(true);
+                  resetOrderDraft();
+                }}
+              />
+              <button
+                aria-label="Increase copies"
+                disabled={!hasUploadedFile}
+                type="button"
+                onClick={() => {
+                  setCopies((current) => current + 1);
+                  setOptionsTouched(true);
+                  resetOrderDraft();
+                }}
+              >
+                +
+              </button>
+            </div>
+          </label>
+          <label hidden={ownerMode}>
+            <span>Payment Mode</span>
+            <select
+              value={paymentMode}
+              disabled={allowedPaymentModes.length <= 1}
+              onChange={(event) => {
+                setPaymentMode(event.target.value);
+                setOptionsTouched(true);
+                resetOrderDraft();
+              }}
+            >
+              {allowedPaymentModes.map((mode) => (
+                <option value={mode} key={mode}>
+                  {mode}
+                </option>
+              ))}
+            </select>
+          </label>
+        </article>
+
+        {ownerMode ? (
+          <article className={`customer-panel customer-summary-panel ${activeStep === 3 ? "is-guided" : ""}`}>
+            <div className="customer-panel-head">
+              <span>Step 3</span>
+              <h2>Print</h2>
+            </div>
+            <div className="customer-summary-row">
+              <span>Pages x Copies</span>
+              <strong>{hasUploadedFile ? `${pages} x ${copies}` : "Upload pending"}</strong>
+            </div>
+            <PrintProfileSelect print={agentPrint} />
+            <p className="customer-inline-help">Prints straight on this PC&apos;s printer with the selected profile - paper size, colour and two-sided printing come from that profile. No order, no payment.</p>
+            {orderError ? <p className="customer-inline-help">{orderError}</p> : null}
+            <button type="button" onClick={printFromDashboard} disabled={!hasUploadedFile || !finalFile || agentPrint.busy || autoScanWorking}>
+              <Printer size={18} /> {agentPrint.busy ? "Sending to printer..." : ownerPrinted ? "Print Again" : "Print"}
+            </button>
+          </article>
+        ) : (
+        <article className={`customer-panel customer-summary-panel ${activeStep === (showServiceSelector ? 4 : 3) ? "is-guided" : ""}`}>
+          <div className="customer-panel-head">
+            <span>Step {showServiceSelector ? 4 : 3}</span>
+            <h2>Order Summary</h2>
+          </div>
+          <div className="customer-summary-row">
+            <span>Rate</span>
+            <strong>
+              {selectedItem?.label}
+              {canDuplex && duplex ? " + Duplex" : ""} Rs. {selectedRate}
+            </strong>
+          </div>
+          <div className="customer-summary-row">
+            <span>{isPassportPhoto ? "Package x Copies" : isIdCardPrint ? "Cards x Copies" : "Pages x Copies"}</span>
+            <strong>
+              {hasUploadedFile
+                ? isPassportPhoto
+                  ? `${selectedItem?.label || "1"} x ${copies}`
+                  : isIdCardPrint
+                    ? `${pages} card${pages > 1 ? "s" : ""} x ${copies}`
+                    : `${pages} x ${copies}`
+                : "Upload pending"}
+            </strong>
+          </div>
+          {isPassportPhoto ? (
+            <div className="customer-summary-row">
+              <span>Dress</span>
+              <strong>{passportAttireOptions.find((option) => option.key === attireCategory)?.label || passportAttireOptions[0].label}</strong>
+            </div>
+          ) : null}
+          {isPassportPhoto && passportSheetUrl ? (
+            <div className="passport-sheet-preview">
+              <img src={passportSheetUrl} alt="" />
+              <span>Final printable sheet preview</span>
+            </div>
+          ) : null}
+          <div className="customer-total">
+            <span>Total</span>
+            <strong>Rs. {amount}</strong>
+          </div>
+          {!hasUploadedFile ? <p className="customer-payment-help">The payment button will be active after upload.</p> : null}
+          {order ? (
+            <div className="order-created-box">
+              <small>Order Created</small>
+              <strong>{order.orderNumber}</strong>
+              {order.paymentStatus === "paid" || order.paymentStatus === "cash_counter" || order.status === "queued" || order.status === "printing" || order.status === "printed" ? (
+                <div className="customer-token-card">
+                  <div className="customer-token-head">
+                    <small>Your Token ID</small>
+                    {canDeletePrintedDocument ? (
+                      <button type="button" onClick={() => setIsDeleteDocumentOpen(true)} aria-label="Delete printed document">
+                        <Trash2 size={16} />
+                      </button>
+                    ) : null}
+                  </div>
+                  <strong>{order.tokenId}</strong>
+                </div>
+              ) : null}
+              {isPassportPhoto ? (
+                <div className="customer-token-card">
+                  <small>Passport Photo Preview</small>
+                  {order.geminiPhoto ? (
+                    <>
+                      <img src={apiUrl(order.geminiPhoto)} alt="Generated passport photo" className="gemini-photo-preview" />
+                      <div className="customer-photo-actions">
+                        <a className="customer-download-btn" href={apiUrl(order.geminiPhoto)} download="passport-photo.jpg">
+                          <Download size={16} /> Download photo
+                        </a>
+                        <button
+                          type="button"
+                          className="customer-download-btn"
+                          onClick={() => {
+                            if (!order.geminiPhoto) return;
+                            stashPhotoForPrintSheet(order.geminiPhoto, "passport-photo.jpg");
+                            router.push("/photo-print-sheet");
+                          }}
+                        >
+                          <Printer size={16} /> Print
+                        </button>
+                      </div>
+                      <p className="customer-inline-help">Please collect your hardcopy passport photo from your cyber cafe shop.</p>
+                    </>
+                  ) : order.status === "awaiting_approval" ? (
+                    <span>Waiting for the cafe owner to confirm your cash counter payment before your photo is generated.</span>
+                  ) : order.status === "failed" ? (
+                    <span className="customer-photo-failed">
+                      {order.photoErrorMessage || "We couldn't generate your passport photo. Please contact the cafe owner."}
+                    </span>
+                  ) : (
+                    <div className="print-progress-box">
+                      <div className="print-progress-head">
+                        <LoaderCircle className="spin" size={16} />
+                        <span>Generating your passport photo…</span>
+                        <strong>{printProgress}%</strong>
+                      </div>
+                      <progress value={printProgress} max={100} />
+                      <p>This page checks every few seconds - your photo and download link will appear here.</p>
+                    </div>
+                  )}
+                </div>
+              ) : null}
+              {!isPassportPhoto ? (
+                order.status === "queued" || order.status === "printing" ? (
+                  <div className="print-progress-box">
+                    <div className="print-progress-head">
+                      <LoaderCircle className="spin" size={16} />
+                      <span>{order.status === "printing" ? "Printing your document…" : "Waiting in the print queue…"}</span>
+                      <strong>{printProgress}%</strong>
+                    </div>
+                    <progress value={printProgress} max={100} />
+                    <p>Please stay on this page — you&apos;ll be able to delete your document here once printing is complete.</p>
+                  </div>
+                ) : (
+                  <span>
+                    {order.status === "awaiting_approval"
+                      ? "Cash counter approval is pending. The cafe owner will approve the print after receiving cash."
+                      : order.documentDeleted
+                        ? "The document has been deleted. The token record is saved."
+                        : order.status === "printed"
+                          ? "Print is complete. You can delete the uploaded document if you want."
+                          : order.status === "failed"
+                            ? "Printing failed. Please contact the cafe for help."
+                            : "Payment is pending."}
+                  </span>
+                )
+              ) : null}
+            </div>
+          ) : null}
+          {orderError ? <div className="profile-alert error">{orderError}</div> : null}
+          {isDirectUpiOrder ? (
+            <div className="upi-payment-box">
+              <div className="upi-payment-head">
+                <span>UPI Payment</span>
+                <strong>Rs. {order.totalAmount}</strong>
+              </div>
+              {upiQrDataUrl ? <img src={upiQrDataUrl} alt="UPI payment QR code" /> : <div className="upi-qr-placeholder">Generating QR...</div>}
+              <p>Pay for {order.orderNumber}. Printing will start after payment confirmation.</p>
+              {paymentMessage ? <small>{paymentMessage}</small> : null}
+              <button type="button" onClick={openUpiApp} disabled={!upiLink || isSubmittingOrder}>
+                <Wallet size={18} /> Open UPI App
+              </button>
+              <button className="secondary-action" type="button" onClick={() => checkUpiPayment(order.id)} disabled={isCheckingPayment}>
+                {isCheckingPayment ? "Checking..." : "I have paid, check now"}
+              </button>
+            </div>
+          ) : isRazorpayOrder && order ? (
+            <button type="button" onClick={() => openRazorpay(order)} disabled={isSubmittingOrder}>
+              <Wallet size={18} /> {isSubmittingOrder ? "Opening Razorpay..." : "Pay with Razorpay"}
+            </button>
+          ) : isPayuOrder && order ? (
+            <div className="upi-payment-box">
+              {paymentMessage ? <small>{paymentMessage}</small> : null}
+              <button type="button" onClick={() => openPayu(order)} disabled={isSubmittingOrder}>
+                <Wallet size={18} /> {isSubmittingOrder ? "Opening PayU..." : "Pay with PayU"}
+              </button>
+            </div>
+          ) : isPhonepeOrder && order ? (
+            <div className="upi-payment-box">
+              {paymentMessage ? <small>{paymentMessage}</small> : null}
+              <button type="button" onClick={() => openPhonepe(order)} disabled={isSubmittingOrder}>
+                <Wallet size={18} /> {isSubmittingOrder ? "Opening PhonePe..." : "Pay with PhonePe"}
+              </button>
+            </div>
+          ) : (
+            <button type="button" onClick={createPrintOrder} disabled={!hasUploadedFile || !finalFile || isSubmittingOrder || Boolean(order) || autoScanWorking}>
+              <Wallet size={18} /> {isSubmittingOrder ? "Creating Order..." : order ? "Order Created" : "Continue to Payment"}
+            </button>
+          )}
+        </article>
+        )}
+        </>
+        )}
+      </section>
+      ) : null}
+
+      {isDeleteDocumentOpen ? (
+        <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Delete printed document">
+          <div className="confirm-dialog">
+            <span className="confirm-dialog-kicker">RepetiGo Privacy</span>
+            <div className="confirm-dialog-icon">
+              <Trash2 size={22} />
+            </div>
+            <h2>Delete your document?</h2>
+            <p>RepetiGo does not store your documents. Please delete it now to keep your data private. If you choose &quot;No&quot;, RepetiGo will not be responsible for anything that happens to your document — though it will be auto-deleted from our servers within 7 days regardless.</p>
+            <div className="confirm-dialog-actions">
+              <button type="button" onClick={() => setIsDeleteDocumentOpen(false)} disabled={isDeletingDocument}>
+                No, Keep It
+              </button>
+              <button type="button" onClick={deletePrintedDocument} disabled={isDeletingDocument}>
+                {isDeletingDocument ? "Deleting..." : "Yes, Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isDocumentDeletedNoticeOpen ? (
+        <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Document deleted">
+          <div className="confirm-dialog">
+            <span className="confirm-dialog-kicker">RepetiGo Privacy</span>
+            <div className="confirm-dialog-icon confirm-dialog-icon-success">
+              <ShieldCheck size={22} />
+            </div>
+            <h2>Your document has been deleted</h2>
+            <p>The uploaded file is now permanently removed from our servers. Only your token record ({order?.tokenId}) is kept, so the cafe can confirm your order.</p>
+            <div className="confirm-dialog-actions confirm-dialog-actions-single">
+              <button type="button" className="confirm-dialog-primary" onClick={dismissDocumentDeletedNotice}>
+                OK, Got It
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isPreviewOpen ? (
+        <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Document preview">
+          <div className="document-preview-window">
+            <div className="document-preview-head">
+              <div>
+                <strong>{fileName}</strong>
+                <span>{pages ? `${pages} page${pages > 1 ? "s" : ""}` : "Preview"}</span>
+              </div>
+              <button type="button" onClick={() => setIsPreviewOpen(false)} aria-label="Close preview">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="document-preview-body">
+              {isImageFile(fileType, fileName) ? <img src={fileUrl} alt="" /> : <iframe src={fileUrl} title={fileName} />}
+            </div>
+            <div className="document-preview-actions">
+              <button type="button" onClick={() => setIsPreviewOpen(false)}>
+                <X size={16} /> Close Preview
+              </button>
+              <button type="button" onClick={clearUpload}>
+                <Trash2 size={16} /> Remove File
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isPageManagerOpen ? (
+        <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Manage PDF pages">
+          <div className="page-manager-window">
+            <div className="document-preview-head">
+              <div>
+                <strong>Manage Pages</strong>
+                <span>{fileName}</span>
+              </div>
+              {isPdfEdited ? (
+                <button type="button" className="page-manager-reset" onClick={resetPdfPages} disabled={isProcessingPdf}>
+                  <Undo2 size={15} /> Reset to original
+                </button>
+              ) : null}
+              <button type="button" onClick={() => setIsPageManagerOpen(false)} aria-label="Close page manager">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="page-extract-bar">
+              <label htmlFor="page-extract-input">Keep only these pages</label>
+              <div className="page-extract-row">
+                <input
+                  id="page-extract-input"
+                  type="text"
+                  inputMode="text"
+                  placeholder={`e.g. 1,3,5-7 or 2x3 (1-${pages})`}
+                  value={pageRangeInput}
+                  onChange={(event) => {
+                    setPageRangeInput(event.target.value);
+                    if (pageRangeError) setPageRangeError("");
+                  }}
+                  disabled={isProcessingPdf}
+                />
+                <button type="button" onClick={handleExtractPages} disabled={isProcessingPdf || !pageRangeInput.trim()}>
+                  <Crop size={15} /> Extract
+                </button>
+              </div>
+              {pageRangeError ? <p className="page-extract-error">{pageRangeError}</p> : null}
+              <p className="page-extract-hint">Page numbers here are the current numbers shown on each card. Type them separated by commas, or a range like 2-4. Use 2x3 to keep page 2 three times. Everything else gets removed.</p>
+              {pages >= 200 ? (
+                <p className="page-extract-limit-note">
+                  <Info size={14} /> Copy is disabled for PDFs with 200 or more pages. You can still remove or extract pages.
+                </p>
+              ) : null}
+            </div>
+            <div className="page-manager-body">
+              {(() => {
+                const origins = currentPageOrigins();
+                // Copies sit right after their source page, so consecutive pages with the same origin form one card.
+                const groups: Array<{ start: number; count: number }> = [];
+                origins.forEach((origin, index) => {
+                  const last = groups[groups.length - 1];
+                  if (last && origins[last.start] === origin) last.count += 1;
+                  else groups.push({ start: index, count: 1 });
+                });
+                return groups;
+              })().map(({ start: index, count: groupCount }) => {
+                const origins = currentPageOrigins();
+                const firstShiftedGroup = origins.findIndex((origin, i) => origin !== i + 1 && origins.indexOf(origin) === i);
+                const lastIndex = index + groupCount - 1;
+                return (
+                <div className={`pdf-page-card${groupCount > 1 ? " is-copy" : ""}`} key={`${fileUrl}-${index}`}>
+                  <div className="pdf-page-thumb-wrap">
+                    <PdfPageThumb fileUrl={fileUrl} pageNumber={index + 1} />
+                    {groupCount > 1 ? (
+                      <span className="page-copy-badge count" title={`${groupCount} copies of original page ${origins[index]}`}>×{groupCount}</span>
+                    ) : null}
+                    {origins[index] !== index + 1 ? (
+                      <span className="page-copy-badge original" title={`Original page ${origins[index]}`}>{index === firstShiftedGroup ? `Original ${origins[index]}` : origins[index]}</span>
+                    ) : null}
+                  </div>
+                  <div>
+                    <strong>{groupCount > 1 ? `Pages ${index + 1}–${lastIndex + 1}` : `Page ${index + 1}`}</strong>
+                    {copyPromptIndex === index ? (
+                      <form
+                        className="pdf-page-copy-form"
+                        onSubmit={(event) => {
+                          event.preventDefault();
+                          void duplicatePdfPage(index, Number(copyCountInput) || 1).then(() => setCopyPromptIndex(null));
+                        }}
+                      >
+                        <span className="pdf-page-copy-label">How many copies?</span>
+                        <div className="pdf-page-copy-stepper">
+                          <button
+                            type="button"
+                            onClick={() => setCopyCountInput(String(Math.max(1, (Number(copyCountInput) || 1) - 1)))}
+                            disabled={isProcessingPdf}
+                            aria-label="Fewer copies"
+                          >
+                            −
+                          </button>
+                          <input
+                            type="text"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
+                            aria-label="Number of copies"
+                            value={copyCountInput}
+                            onChange={(event) => setCopyCountInput(event.target.value.replace(/\D/g, "").slice(0, 3))}
+                            onFocus={(event) => event.target.select()}
+                            autoFocus
+                            disabled={isProcessingPdf}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setCopyCountInput(String(Math.min(200 - pages, (Number(copyCountInput) || 0) + 1)))}
+                            disabled={isProcessingPdf}
+                            aria-label="More copies"
+                          >
+                            +
+                          </button>
+                        </div>
+                        <div className="pdf-page-actions">
+                          <button type="submit" className="page-copy-btn" disabled={isProcessingPdf}>
+                            <Copy size={13} /> Add {Math.min(Math.max(Number(copyCountInput) || 1, 1), 200 - pages)}
+                          </button>
+                          <button type="button" className="page-copy-cancel" onClick={() => setCopyPromptIndex(null)} disabled={isProcessingPdf}>
+                            Cancel
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                    <div className="pdf-page-actions">
+                    <button
+                      type="button"
+                      className="page-copy-btn"
+                      onClick={() => {
+                        setCopyPromptIndex(index);
+                        setCopyCountInput("1");
+                      }}
+                      disabled={isProcessingPdf || pages >= 200}
+                      title={pages >= 200 ? "Copy is available only for PDFs under 200 pages" : undefined}
+                    >
+                      <Copy size={13} /> Copy
+                    </button>
+                    <button type="button" onClick={() => removePdfPage(lastIndex)} disabled={pages <= 1 || isProcessingPdf} title={groupCount > 1 ? "Removes one copy" : undefined}>
+                      <Trash2 size={13} /> {groupCount > 1 ? "Remove 1" : "Remove"}
+                    </button>
+                    </div>
+                    )}
+                  </div>
+                </div>
+                );
+              })}
+            </div>
+            {isProcessingPdf ? (
+              <div className="page-manager-busy" role="status" aria-live="polite">
+                <LoaderCircle size={28} className="spin" />
+                <span>Updating pages…</span>
+              </div>
+            ) : null}
+            <div className="page-manager-footer">
+              <button type="button" className="page-manager-done" onClick={() => setIsPageManagerOpen(false)}>
+                <CircleCheck size={17} /> Done - Use these {pages} page{pages > 1 ? "s" : ""}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isCropOpen ? (
+        <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Crop image">
+          <div className="crop-window">
+            <div className="document-preview-head">
+              <div>
+                <strong>Crop Image</strong>
+                <span>{fileName}</span>
+              </div>
+              <button type="button" onClick={() => setIsCropOpen(false)} aria-label="Close crop">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="crop-body">
+              <div className="crop-mode-toggle">
+                <button type="button" className={cropMode === "perspective" ? "active" : ""} onClick={() => setCropMode("perspective")}>
+                  Perspective crop
+                </button>
+                <button type="button" className={cropMode === "straight" ? "active" : ""} onClick={() => setCropMode("straight")}>
+                  Straight crop
+                </button>
+              </div>
+              {cropMode === "straight" ? (
+                <CropEditor fileUrl={fileUrl} rect={cropRect} onRectChange={setCropRect} />
+              ) : (
+                <PerspectiveCropEditor fileUrl={fileUrl} quad={cropQuad} onQuadChange={setCropQuad} />
+              )}
+              <div className="crop-controls">
+                <p>
+                  {cropMode === "straight"
+                    ? "Drag a corner or edge to resize the print area. Drag inside the box to move the crop area."
+                    : "Drag each corner onto the document's actual edge - useful when the photo was taken at an angle. Click anywhere on an edge to move its nearest corner there."}
+                </p>
+                <button type="button" onClick={() => (cropMode === "straight" ? setCropRect(DEFAULT_CROP_RECT) : setCropQuad(DEFAULT_CROP_QUAD))}>
+                  Reset Crop
+                </button>
+                <button type="button" onClick={applyImageCrop}>
+                  <Crop size={17} /> Apply Crop
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
+      {isPasswordPromptOpen ? (
+        <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Enter PDF password">
+          <div className="pdf-password-window">
+            <div className="pdf-password-icon">
+              <LockKeyhole size={22} />
+            </div>
+            <h2>Password Protected PDF</h2>
+            <p>{pendingPdfFile?.name || "This PDF"} is locked. Enter the password to unlock it and continue.</p>
+            <div className="password-input">
+              <input
+                type={showPdfPassword ? "text" : "password"}
+                value={pdfPasswordInput}
+                onChange={(event) => setPdfPasswordInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") unlockPendingPdf();
+                }}
+                placeholder="Enter PDF password"
+                autoFocus
+              />
+              <button type="button" onClick={() => setShowPdfPassword((value) => !value)} aria-label={showPdfPassword ? "Hide password" : "Show password"}>
+                {showPdfPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+            {pdfPasswordError ? <span className="pdf-password-error">{pdfPasswordError}</span> : null}
+            <div className="pdf-password-actions">
+              <button type="button" onClick={cancelPdfPasswordPrompt} disabled={isUnlockingPdf}>
+                Cancel
+              </button>
+              <button type="button" onClick={unlockPendingPdf} disabled={isUnlockingPdf || !pdfPasswordInput}>
+                {isUnlockingPdf ? "Unlocking..." : "Unlock PDF"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </main>
+  );
+}
+
+function getPriceItems(service?: PricingService) {
+  const items = Array.isArray(service?.settings.priceItems) ? service.settings.priceItems : [];
+  // Profile categories last, so the default selection stays B&W / Color.
+  return [...items.filter((item) => !item.profile), ...items.filter((item) => item.profile)];
+}
+
+function getUpiTransactionRef(order: PrintOrder) {
+  return `${order.orderNumber}`.replace(/[^A-Za-z0-9]/g, "").slice(0, 35);
+}
+
+function buildUpiLink(order: PrintOrder, shopName: string) {
+  const transactionRef = getUpiTransactionRef(order);
+  const params = new URLSearchParams({
+    pa: "8298972939@okbizaxis",
+    pn: shopName || "RepetiGo Print",
+    mc: "5944",
+    aid: "uGICAgICTie7ceg",
+    ver: "01",
+    mode: "01",
+    tr: transactionRef,
+    am: order.totalAmount.toFixed(2),
+    cu: "INR",
+    tn: transactionRef,
+  });
+
+  return `upi://pay?${params.toString()}`;
+}
+
+function isImageFile(fileType: string, fileName: string) {
+  return fileType.startsWith("image/") || /\.(jpg|jpeg|png)$/i.test(fileName);
+}
+
+function isPdfFile(fileType: string, fileName: string) {
+  return fileType === "application/pdf" || /\.pdf$/i.test(fileName);
+}
+
+async function detectPdfPages(file: File) {
+  try {
+    const text = await file.text();
+    const matches = text.match(/\/Type\s*\/Page\b/g);
+    return Math.max(matches?.length || 1, 1);
+  } catch {
+    return 1;
+  }
+}
+
+async function imageFileToPngBytes(file: Blob): Promise<Uint8Array> {
+  const objectUrl = URL.createObjectURL(file);
+  try {
+    const image = await loadImage(objectUrl);
+    const canvas = document.createElement("canvas");
+    canvas.width = image.naturalWidth;
+    canvas.height = image.naturalHeight;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Canvas not supported");
+    context.drawImage(image, 0, 0);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+    if (!blob) throw new Error("Could not encode image as PNG");
+    return new Uint8Array(await blob.arrayBuffer());
+  } finally {
+    URL.revokeObjectURL(objectUrl);
+  }
+}
+
+async function generatePassportSheet(fileUrl: string) {
+  const image = await loadImage(fileUrl);
+  const canvas = document.createElement("canvas");
+  const context = canvas.getContext("2d");
+  const sheetWidth = 1800;
+  const sheetHeight = 1200;
+  const photoWidth = 360;
+  const photoHeight = 463;
+  const gapX = 180;
+  const gapY = 80;
+  const startX = (sheetWidth - photoWidth * 3 - gapX * 2) / 2;
+  const startY = (sheetHeight - photoHeight * 2 - gapY) / 2;
+
+  canvas.width = sheetWidth;
+  canvas.height = sheetHeight;
+  if (!context) throw new Error("Canvas not supported");
+
+  context.fillStyle = "#ffffff";
+  context.fillRect(0, 0, sheetWidth, sheetHeight);
+
+  for (let row = 0; row < 2; row += 1) {
+    for (let col = 0; col < 3; col += 1) {
+      const x = startX + col * (photoWidth + gapX);
+      const y = startY + row * (photoHeight + gapY);
+      drawPassportPhoto(context, image, x, y, photoWidth, photoHeight);
+    }
+  }
+
+  context.fillStyle = "#111a44";
+  context.font = "bold 28px Segoe UI, Arial";
+  context.fillText("RepetiGo Passport Photo", 56, sheetHeight - 44);
+
+  return new Promise<Blob>((resolve, reject) => {
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Passport sheet failed"))), "image/png", 0.95);
+  });
+}
+
+function drawPassportPhoto(context: CanvasRenderingContext2D, image: HTMLImageElement, x: number, y: number, width: number, height: number) {
+  context.save();
+  context.fillStyle = "#ffffff";
+  context.fillRect(x, y, width, height);
+  context.beginPath();
+  context.rect(x, y, width, height);
+  context.clip();
+
+  const sourceRatio = image.naturalWidth / image.naturalHeight;
+  const targetRatio = width / height;
+  let sourceWidth = image.naturalWidth;
+  let sourceHeight = image.naturalHeight;
+  let sourceX = 0;
+  let sourceY = 0;
+
+  if (sourceRatio > targetRatio) {
+    sourceWidth = image.naturalHeight * targetRatio;
+    sourceX = (image.naturalWidth - sourceWidth) / 2;
+  } else {
+    sourceHeight = image.naturalWidth / targetRatio;
+    sourceY = (image.naturalHeight - sourceHeight) / 2;
+  }
+
+  context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
+  context.restore();
+  context.strokeStyle = "#d6dbea";
+  context.lineWidth = 3;
+  context.strokeRect(x, y, width, height);
+}
+
+function PdfThumb({ fileName, fileUrl, pages, onPageCount, unitLabel = "page" }: { fileName: string; fileUrl: string; pages: number; onPageCount: (pages: number) => void; unitLabel?: string }) {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [rendering, setRendering] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    let loadingTask: { destroy: () => void; promise: Promise<any> } | null = null;
+
+    async function renderPdfThumbnail() {
+      if (!fileUrl || !canvasRef.current) return;
+
+      try {
+        setFailed(false);
+        setRendering(true);
+        const pdfjs = await import("pdfjs-dist");
+        pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.mjs", import.meta.url).toString();
+
+        loadingTask = pdfjs.getDocument({ url: fileUrl });
+        const pdf = await loadingTask.promise;
+        if (cancelled) return;
+
+        onPageCount(Math.max(pdf.numPages, 1));
+        const page = await pdf.getPage(1);
+        if (cancelled) return;
+
+        const baseViewport = page.getViewport({ scale: 1 });
+        const cssWidth = 128;
+        const scale = cssWidth / baseViewport.width;
+        const viewport = page.getViewport({ scale });
+        const canvas = canvasRef.current;
+        const context = canvas.getContext("2d");
+        const ratio = window.devicePixelRatio || 1;
+
+        if (!context) return;
+
+        canvas.width = Math.floor(viewport.width * ratio);
+        canvas.height = Math.floor(viewport.height * ratio);
+        canvas.style.width = `${viewport.width}px`;
+        canvas.style.height = `${viewport.height}px`;
+        context.setTransform(ratio, 0, 0, ratio, 0, 0);
+        await page.render({ canvasContext: context, viewport }).promise;
+      } catch {
+        if (!cancelled) setFailed(true);
+      } finally {
+        if (!cancelled) setRendering(false);
+      }
+    }
+
+    renderPdfThumbnail();
+
+    return () => {
+      cancelled = true;
+      loadingTask?.destroy();
+    };
+  }, [fileUrl, onPageCount]);
+
+  return (
+    <div className="pdf-thumb">
+      {failed ? <FileText size={34} /> : <canvas ref={canvasRef} aria-label={`${fileName} preview`} hidden={rendering} />}
+      {rendering && !failed ? <LoaderCircle size={28} className="spin" aria-label="Loading preview" /> : null}
+      <span>{pages || 1} {unitLabel}{pages > 1 ? "s" : ""}</span>
+    </div>
+  );
+}
+
+// One shared pdf.js document for every page thumbnail (instead of re-parsing
+// the whole file per thumbnail), plus a small render queue so a 285-page PDF
+// never renders hundreds of canvases at once.
+let sharedThumbPdf: { url: string; promise: Promise<any> } | null = null;
+let activeThumbRenders = 0;
+const thumbRenderWaiters: Array<() => void> = [];
+const MAX_THUMB_RENDERS = 3;
+
+function getSharedThumbPdf(url: string) {
+  if (sharedThumbPdf?.url === url) return sharedThumbPdf.promise;
+  const previous = sharedThumbPdf;
+  const promise = (async () => {
+    const pdfjs = await import("pdfjs-dist");
+    pdfjs.GlobalWorkerOptions.workerSrc = new URL("pdfjs-dist/build/pdf.worker.mjs", import.meta.url).toString();
+    return pdfjs.getDocument({ url }).promise;
+  })();
+  sharedThumbPdf = { url, promise };
+  previous?.promise.then((pdf) => pdf.destroy()).catch(() => {});
+  return promise;
+}
+
+async function acquireThumbRenderSlot() {
+  if (activeThumbRenders >= MAX_THUMB_RENDERS) await new Promise<void>((resolve) => thumbRenderWaiters.push(resolve));
+  activeThumbRenders += 1;
+}
+
+function releaseThumbRenderSlot() {
+  activeThumbRenders -= 1;
+  thumbRenderWaiters.shift()?.();
+}
+
+function PdfPageThumb({ fileUrl, pageNumber }: { fileUrl: string; pageNumber: number }) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+
+  // Only render a thumbnail once it scrolls near the viewport.
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") {
+      setIsVisible(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setIsVisible(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: "300px" },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!isVisible) return;
+    let cancelled = false;
+
+    async function renderPage() {
+      if (!fileUrl || !canvasRef.current) return;
+
+      let slotHeld = false;
+      try {
+        setFailed(false);
+        const pdf = await getSharedThumbPdf(fileUrl);
+        if (cancelled) return;
+
+        await acquireThumbRenderSlot();
+        slotHeld = true;
+        if (cancelled) return;
+
+        const page = await pdf.getPage(pageNumber);
+        if (cancelled) return;
+
+        const baseViewport = page.getViewport({ scale: 1 });
+        const cssWidth = 118;
+        const scale = cssWidth / baseViewport.width;
+        const viewport = page.getViewport({ scale });
+        const canvas = canvasRef.current;
+        const context = canvas?.getContext("2d");
+        const ratio = window.devicePixelRatio || 1;
+
+        if (!canvas || !context) return;
+
+        canvas.width = Math.floor(viewport.width * ratio);
+        canvas.height = Math.floor(viewport.height * ratio);
+        canvas.style.width = `${viewport.width}px`;
+        canvas.style.height = `${viewport.height}px`;
+        context.setTransform(ratio, 0, 0, ratio, 0, 0);
+        await page.render({ canvasContext: context, viewport }).promise;
+        page.cleanup();
+      } catch {
+        if (!cancelled) setFailed(true);
+      } finally {
+        if (slotHeld) releaseThumbRenderSlot();
+      }
+    }
+
+    renderPage();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fileUrl, pageNumber, isVisible]);
+
+  return (
+    <div className="pdf-page-thumb" ref={containerRef}>
+      {failed ? <FileText size={32} /> : <canvas ref={canvasRef} aria-label={`Page ${pageNumber} preview`} />}
+    </div>
+  );
+}

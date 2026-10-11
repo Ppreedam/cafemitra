@@ -14,6 +14,7 @@ import {
   LayoutGrid,
   Printer,
   QrCode,
+  Upload,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -51,6 +52,7 @@ const navGroups: NavGroup[] = [
     label: "Services",
     items: [
       { name: "PrintPilot", icon: Printer, href: "/auto-print", match: ["/auto-print"], serviceKey: "auto_document_print" },
+      { name: "PrintPilot Upload", icon: Upload, href: "/print-desk", match: ["/print-desk"] },
       { name: "Passport Photo", icon: IdCard, href: "/passport-photo", match: ["/passport-photo"], serviceKey: "passport_photo" },
       { name: "Family Passport Photo", icon: Users, href: "/family-passport-photo", match: ["/family-passport-photo"], serviceKey: "family_passport_photo" },
       { name: "ID Card Maker", icon: FileScan, href: "/id-card-maker", match: ["/id-card-maker"], serviceKey: "id_card_maker" },

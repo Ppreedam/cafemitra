@@ -17,18 +17,23 @@ import {
   type PrinterPresetsResult,
   type PrintProfilesResult,
 } from "@/lib/printpilot-agent";
+import type { PriceItem } from "@/lib/pricing";
 
 type Props = {
   agentConnected: boolean;
   /** Called with the printer of every saved Printer Settings row. */
   onPresetSaved?: (printer: string) => void;
+  /** PrintPilot pricing categories; one with `profile` set = that profile is shown to customers. */
+  priceItems: PriceItem[];
+  /** Applies a change to the pricing categories and saves them. */
+  onUpdatePriceItems: (transform: (items: PriceItem[]) => PriceItem[]) => Promise<void>;
 };
 
 // Step 3 of PrintPilot Setup. (1) Print profiles: a name + printer + that
 // printer's own Preferences (paper size, glossy paper, quality...), opened on
 // this PC by the desktop agent. (2) Printer Settings: which profile prints
 // each paper size + color/grayscale order.
-export default function PrinterProfileSetup({ agentConnected, onPresetSaved }: Props) {
+export default function PrinterProfileSetup({ agentConnected, onPresetSaved, priceItems, onUpdatePriceItems }: Props) {
   const [profiles, setProfiles] = useState<PrintProfile[]>([]);
   const [printers, setPrinters] = useState<string[]>([]);
   const [unsupported, setUnsupported] = useState(false);
@@ -44,6 +49,7 @@ export default function PrinterProfileSetup({ agentConnected, onPresetSaved }: P
   const [isSavingProfile, setIsSavingProfile] = useState(false);
   const [profileMessage, setProfileMessage] = useState("");
   const [profileError, setProfileError] = useState("");
+  const [showOnCustomerPage, setShowOnCustomerPage] = useState(false);
 
   // Printer Settings form
   const [presets, setPresets] = useState<PrinterPreset[]>([]);
@@ -104,9 +110,11 @@ export default function PrinterProfileSetup({ agentConnected, onPresetSaved }: P
     setDevMode("");
     setDevModePrinter("");
     setPreferencesSummary("");
+    setShowOnCustomerPage(false);
   }
 
   function editProfile(profile: PrintProfile) {
+    setShowOnCustomerPage(customerProfiles.has(profile.name));
     setName(profile.name);
     setPrinter(profile.missing ? "" : profile.printer);
     setEditingName(profile.name);
@@ -157,7 +165,23 @@ export default function PrinterProfileSetup({ agentConnected, onPresetSaved }: P
       );
       // A rename/printer change is carried over into Printer Settings rows.
       applyPresets(await fetchAgentPrinterPresets());
-      setProfileMessage(`Profile "${trimmed}" saved.`);
+      // "Show on customer page": add/remove its pricing category, and carry a rename over to it.
+      const previous = editingName || trimmed;
+      const wasShown = customerProfiles.has(previous);
+      await onUpdatePriceItems((items) => {
+        const linked = items.some((item) => item.profile === previous);
+        if (!showOnCustomerPage) return linked ? items.filter((item) => item.profile !== previous) : items;
+        if (!linked) return [...items, { id: `profile-${Date.now()}`, label: trimmed, rate: 0, profile: trimmed }];
+        if (previous === trimmed) return items;
+        return items.map((item) =>
+          item.profile === previous ? { ...item, profile: trimmed, label: item.label === previous ? trimmed : item.label } : item,
+        );
+      }).catch(() => undefined);
+      setProfileMessage(
+        showOnCustomerPage && !wasShown
+          ? `Profile "${trimmed}" saved and added as a customer print option. Set its price in Step 4: Pricing (it starts at Rs. 0).`
+          : `Profile "${trimmed}" saved.`,
+      );
       resetProfileForm();
     } catch (error) {
       setProfileError(error instanceof Error ? error.message : "Could not save print profile.");
@@ -169,14 +193,46 @@ export default function PrinterProfileSetup({ agentConnected, onPresetSaved }: P
   async function removeProfile(profile: PrintProfile) {
     const used = presets.filter((preset) => preset.profile === profile.name).length;
     const warning = used ? ` ${used} printer setting(s) use it - those orders will be held until you pick another profile.` : "";
-    if (!window.confirm(`Delete profile "${profile.name}"?${warning}`)) return;
+    const shown = customerProfiles.has(profile.name) ? " It will also be removed from the customer page." : "";
+    if (!window.confirm(`Delete profile "${profile.name}"?${warning}${shown}`)) return;
     setProfileError("");
     setProfileMessage("");
     try {
       applyProfiles(await deleteAgentPrintProfile(profile.name));
       if (editingName === profile.name) resetProfileForm();
+      if (shown) await onUpdatePriceItems((items) => items.filter((item) => item.profile !== profile.name));
     } catch (error) {
       setProfileError(error instanceof Error ? error.message : "Could not delete print profile.");
+    }
+  }
+
+  // ── Show to customers ──────────────────────────────────────────────
+  // A shown profile = a PrintPilot pricing category named after it; the
+  // customer page lists it next to Black & White / Color once it has a price.
+  const customerProfiles = new Set(priceItems.map((item) => item.profile).filter(Boolean) as string[]);
+  const [togglingProfile, setTogglingProfile] = useState("");
+
+  async function toggleCustomerProfile(profile: PrintProfile, show: boolean) {
+    setTogglingProfile(profile.name);
+    setProfileError("");
+    setProfileMessage("");
+    try {
+      await onUpdatePriceItems((items) =>
+        show
+          ? items.some((item) => item.profile === profile.name)
+            ? items
+            : [...items, { id: `profile-${Date.now()}`, label: profile.name, rate: 0, profile: profile.name }]
+          : items.filter((item) => item.profile !== profile.name),
+      );
+      setProfileMessage(
+        show
+          ? `"${profile.name}" added as a customer print option. Set its price in Step 4: Pricing (it starts at Rs. 0).`
+          : `"${profile.name}" removed from the customer page.`,
+      );
+    } catch (error) {
+      setProfileError(error instanceof Error ? error.message : "Could not update the customer print options.");
+    } finally {
+      setTogglingProfile("");
     }
   }
 
@@ -237,8 +293,8 @@ export default function PrinterProfileSetup({ agentConnected, onPresetSaved }: P
           <h2>Print Profiles</h2>
           <p>
             Name a profile, pick its printer and click Set Preferences - the printer&apos;s own Preferences window opens on this PC (paper size, glossy/plain paper,
-            print quality...). Press OK there, then Save Profile. For double-side orders, save a profile named <strong>duplex</strong> with two-sided printing
-            turned on in its Preferences.
+            print quality...). Press OK there, then Save Profile. Double-side orders print on the same printer - PrintPilot turns two-sided printing on
+            automatically when the customer ticks &quot;Print on both sides&quot;.
           </p>
         </div>
       </div>
@@ -272,6 +328,10 @@ export default function PrinterProfileSetup({ agentConnected, onPresetSaved }: P
           </button>
         ) : null}
       </div>
+      <label className="profile-customer-toggle profile-form-customer-toggle">
+        <input type="checkbox" checked={showOnCustomerPage} onChange={(event) => setShowOnCustomerPage(event.target.checked)} disabled={!agentConnected || busy} />
+        Show this profile on the customer page (as a print option - set its price in Step 4: Pricing)
+      </label>
       {printer ? (
         <p className="printer-preset-empty">
           {hasPreferences || keepsSavedPreferences
@@ -293,6 +353,15 @@ export default function PrinterProfileSetup({ agentConnected, onPresetSaved }: P
                 {profile.summary ? ` · ${profile.summary}` : ""}
               </small>
             </div>
+            <label className="profile-customer-toggle" title="Show this profile as a print option on the customer page">
+              <input
+                type="checkbox"
+                checked={customerProfiles.has(profile.name)}
+                disabled={Boolean(togglingProfile)}
+                onChange={(event) => toggleCustomerProfile(profile, event.target.checked)}
+              />
+              Show to customers
+            </label>
             <button className="printer-preset-edit" type="button" onClick={() => editProfile(profile)} disabled={!agentConnected || busy}>
               Edit
             </button>

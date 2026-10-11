@@ -67,7 +67,7 @@ export function ProfileTopbar({ isSidebarCollapsed = false, onMenuClick, printer
   const [agentHealth, setAgentHealth] = useState<AgentHealth | null>(null);
   const [wallet, setWallet] = useState<WalletSummary | null>(null);
   const [topbarPrinters, setTopbarPrinters] = useState<string[]>(fallbackPrinters);
-  const [selectedPrinter, setSelectedPrinter] = useState(fallbackPrinters[0]);
+  const [selectedPrinter, setSelectedPrinter] = useState(fallbackPrinters[0] ?? "");
   // Free tools (Resume Builder, Biodata Maker, PDF/Image Tools, etc.) render this
   // same shell for visitors who have never logged in - the "Owner" fallback
   // profile is not a real account, so it should read as a guest, not a person.
@@ -157,7 +157,7 @@ export function ProfileTopbar({ isSidebarCollapsed = false, onMenuClick, printer
     } catch {
       setAgentHealth(null);
       setTopbarPrinters(fallbackPrinters);
-      setSelectedPrinter((current) => (fallbackPrinters.includes(current) ? current : fallbackPrinters[0]));
+      setSelectedPrinter((current) => (fallbackPrinters.includes(current) ? current : fallbackPrinters[0] ?? ""));
     }
   }
 

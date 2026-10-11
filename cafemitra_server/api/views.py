@@ -79,6 +79,12 @@ DEFAULT_SERVICE_PRICING = {
             "pricingSaved": False,
             "testPrintDone": False,
             "isOpen": True,
+            # Price when the customer ticks Duplex, per B/W / Color price
+            # item id, with page ranges like a category; 0 = normal rate.
+            "duplexPriceItems": [
+                {"id": "black_white", "label": "Black & White Duplex", "rate": 0},
+                {"id": "color", "label": "Color Duplex", "rate": 0},
+            ],
             "priceItems": [
                 {"id": "black_white", "label": "Black & White", "rate": 2},
                 {"id": "color", "label": "Color", "rate": 10},
@@ -96,10 +102,13 @@ DEFAULT_SERVICE_PRICING = {
         "serviceName": "ID Card Print",
         "settings": {
             "paymentMode": "Online Payment",
-            # Flat per-card pricing, same shape as passport_photo - the
+            # Per-card pricing by the customer's Color / B/W choice - the
             # customer uploads one existing ID (front + back, back optional),
             # not a per-page document, so there's no page-count dimension.
-            "priceItems": [{"id": "single_card", "label": "ID Card (Front + Back)", "rate": 20}],
+            "priceItems": [
+                {"id": "color", "label": "Color", "rate": 20},
+                {"id": "black_white", "label": "Black & White", "rate": 20},
+            ],
         },
     },
     "resume_builder": {
@@ -2007,11 +2016,34 @@ def ensure_service_pricing(user):
         ServicePricing.objects.bulk_update(to_update, ["service_name", "updated_at"])
 
 
+def id_card_price_items(items):
+    """ID Card Print is priced per card as Color / Black & White. Accounts
+    saved before that have one flat "single_card" item - both modes take its
+    rate until the shop saves new prices."""
+    items = items if isinstance(items, list) else []
+    ids = {str(item.get("id", "")) for item in items if isinstance(item, dict)}
+    if {"color", "black_white"} <= ids:
+        return items
+    legacy = next((item for item in items if isinstance(item, dict)), {})
+    rate = legacy.get("rate", 20)
+    return [
+        {"id": "color", "label": "Color", "rate": rate},
+        {"id": "black_white", "label": "Black & White", "rate": rate},
+    ]
+
+
+def effective_pricing_settings(pricing):
+    settings = pricing.settings if isinstance(pricing.settings, dict) else {}
+    if pricing.service_key == "id_card_print":
+        return {**settings, "priceItems": id_card_price_items(settings.get("priceItems"))}
+    return settings
+
+
 def public_pricing(pricing):
     return {
         "serviceKey": pricing.service_key,
         "serviceName": pricing.service_name,
-        "settings": pricing.settings,
+        "settings": effective_pricing_settings(pricing),
         "updatedAt": pricing.updated_at.isoformat(),
     }
 
@@ -4035,7 +4067,25 @@ def public_print_order(request, code):
     # Page-range rates bracket on the total sheets printed (pages x copies),
     # not the source document's own page count - a 2-page PDF x 4 copies is
     # 8 printed sheets, which can fall in a different range than 2 pages alone.
-    rate = pricing_rate(pricing.settings, price_item_id, pages * copies, money(request.POST.get("rate")))
+    rate = pricing_rate(effective_pricing_settings(pricing), price_item_id, pages * copies, money(request.POST.get("rate")))
+    # Double-side only for a multi-page PrintPilot document; the shop's own
+    # Duplex price for this B/W / Color item (default or page range) replaces
+    # the normal rate when set (0 = normal rate).
+    duplex_requested = (
+        service_key == "auto_document_print"
+        and pages > 1
+        and str(request.POST.get("duplex", "")).strip().lower() in ("1", "true", "yes", "on")
+    )
+    if duplex_requested:
+        duplex_items = (pricing.settings or {}).get("duplexPriceItems")
+        duplex_rate = pricing_rate(
+            {"priceItems": duplex_items if isinstance(duplex_items, list) else []},
+            price_item_id,
+            pages * copies,
+            Decimal("0.00"),
+        )
+        if duplex_rate > 0:
+            rate = duplex_rate
     total = money(request.POST.get("totalAmount"))
     calculated_total = (rate * pages * copies).quantize(Decimal("0.01"))
     if total != calculated_total:
@@ -4100,10 +4150,7 @@ def public_print_order(request, code):
         passport_prompt=passport_prompt,
         photo_status=PrintOrder.PHOTO_STATUS_PENDING if passport_prompt else "",
         photo_updated_at=timezone.now() if passport_prompt else None,
-        duplex=(
-            str(request.POST.get("duplex", "")).strip().lower() in ("1", "true", "yes", "on")
-            and ShopProfile.objects.filter(user=user, duplex_available=True).exists()
-        ),
+        duplex=duplex_requested,
         duplex_edge="short" if str(request.POST.get("duplexEdge", "")).strip().lower() == "short" else "long",
     )
 
