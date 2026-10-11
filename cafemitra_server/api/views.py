@@ -1976,6 +1976,7 @@ def public_shop(shop):
         "address": shop.address,
         "city": shop.city,
         "state": shop.state,
+        "country": shop.country,
         "pinCode": shop.pin_code,
         "mobile": shop.mobile,
         "whatsapp": shop.whatsapp,
@@ -3690,7 +3691,8 @@ def profile(request):
     shop.address = str(shop_data.get("address", shop.address))
     shop.city = str(shop_data.get("city", shop.city))
     shop.state = str(shop_data.get("state", shop.state))
-    shop.pin_code = str(shop_data.get("pinCode", shop.pin_code))
+    shop.country = str(shop_data.get("country", shop.country)).strip()[:60]
+    shop.pin_code = str(shop_data.get("pinCode", shop.pin_code)).strip()[:12]
     shop.mobile = str(shop_data.get("mobile", shop.mobile))
     shop.whatsapp = str(shop_data.get("whatsapp", shop.whatsapp))
     shop.email = str(shop_data.get("email", shop.email))

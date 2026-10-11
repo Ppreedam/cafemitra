@@ -19,6 +19,7 @@ type ProfileData = {
     address: string;
     city: string;
     state: string;
+    country: string;
     pinCode: string;
     mobile: string;
     whatsapp: string;
@@ -47,6 +48,7 @@ const defaultData: ProfileData = {
     address: "",
     city: "",
     state: "",
+    country: "India",
     pinCode: "",
     mobile: "",
     whatsapp: "",
@@ -95,6 +97,36 @@ const indianStates = [
   "West Bengal",
 ];
 
+// Suggestions only - the field accepts any country, so the app isn't tied to India.
+const countrySuggestions = [
+  "India",
+  "Nepal",
+  "Bangladesh",
+  "Sri Lanka",
+  "Bhutan",
+  "Pakistan",
+  "United Arab Emirates",
+  "Saudi Arabia",
+  "Qatar",
+  "Oman",
+  "Kuwait",
+  "Bahrain",
+  "Singapore",
+  "Malaysia",
+  "Indonesia",
+  "Thailand",
+  "Philippines",
+  "United Kingdom",
+  "United States",
+  "Canada",
+  "Australia",
+  "New Zealand",
+];
+
+function isIndia(country: string) {
+  return !country.trim() || country.trim().toLowerCase() === "india";
+}
+
 export function ProfileForms() {
   const [data, setData] = useState<ProfileData>(defaultData);
   const [savedData, setSavedData] = useState<ProfileData>(defaultData);
@@ -138,10 +170,18 @@ export function ProfileForms() {
   function validateShop() {
     if (!data.shop.shopName.trim()) return "Shop name is required.";
     if (!data.shop.city.trim()) return "City is required.";
-    if (!data.shop.state.trim()) return "Please select state.";
-    if (data.shop.pinCode && !/^\d{6}$/.test(data.shop.pinCode)) return "PIN Code must be 6 digits.";
-    if (data.shop.mobile && !/^\d{10}$/.test(data.shop.mobile)) return "Mobile number must be 10 digits.";
-    if (data.shop.whatsapp && !/^\d{10}$/.test(data.shop.whatsapp)) return "WhatsApp number must be 10 digits.";
+    if (!data.shop.country.trim()) return "Country is required.";
+    if (!data.shop.state.trim()) return isIndia(data.shop.country) ? "Please select state." : "State / province / region is required.";
+    // India keeps its strict formats; other countries just get a sane range, since formats differ.
+    if (isIndia(data.shop.country)) {
+      if (data.shop.pinCode && !/^\d{6}$/.test(data.shop.pinCode)) return "PIN Code must be 6 digits.";
+      if (data.shop.mobile && !/^\d{10}$/.test(data.shop.mobile)) return "Mobile number must be 10 digits.";
+      if (data.shop.whatsapp && !/^\d{10}$/.test(data.shop.whatsapp)) return "WhatsApp number must be 10 digits.";
+    } else {
+      if (data.shop.pinCode && !/^[A-Za-z0-9][A-Za-z0-9 -]{1,10}[A-Za-z0-9]$/.test(data.shop.pinCode)) return "Enter a valid postal code.";
+      if (data.shop.mobile && !/^\d{6,15}$/.test(data.shop.mobile)) return "Mobile number must be 6 to 15 digits (without country code or spaces).";
+      if (data.shop.whatsapp && !/^\d{6,15}$/.test(data.shop.whatsapp)) return "WhatsApp number must be 6 to 15 digits (without country code or spaces).";
+    }
     if (data.shop.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.shop.email)) return "Enter a valid shop email.";
     return "";
   }
@@ -285,9 +325,18 @@ export function ProfileForms() {
           <div className="profile-owner-grid">
             <ProfileInput label="Shop Name *" value={data.shop.shopName} onChange={(value) => updateShop("shopName", value)} />
             <ProfileInput label="Address (optional)" value={data.shop.address} onChange={(value) => updateShop("address", value)} />
+            <ProfileInput label="Country *" value={data.shop.country} suggestions={countrySuggestions} onChange={(value) => updateShop("country", value)} />
             <ProfileInput label="City *" value={data.shop.city} onChange={(value) => updateShop("city", value)} />
-            <ProfileSelect label="State *" value={data.shop.state} options={indianStates} onChange={(value) => updateShop("state", value)} />
-            <ProfileInput label="PIN Code (optional)" value={data.shop.pinCode} onChange={(value) => updateShop("pinCode", value)} />
+            {isIndia(data.shop.country) ? (
+              <ProfileSelect label="State *" value={data.shop.state} options={indianStates} onChange={(value) => updateShop("state", value)} />
+            ) : (
+              <ProfileInput label="State / Province / Region *" value={data.shop.state} onChange={(value) => updateShop("state", value)} />
+            )}
+            <ProfileInput
+              label={isIndia(data.shop.country) ? "PIN Code (optional)" : "ZIP / Postal Code (optional)"}
+              value={data.shop.pinCode}
+              onChange={(value) => updateShop("pinCode", value)}
+            />
             <ProfileInput label="Mobile (optional)" value={data.shop.mobile} onChange={(value) => updateShop("mobile", value)} />
             <ProfileInput label="WhatsApp (optional)" value={data.shop.whatsapp} onChange={(value) => updateShop("whatsapp", value)} />
             <ProfileInput label="Email (optional)" value={data.shop.email} onChange={(value) => updateShop("email", value)} />
@@ -312,6 +361,7 @@ function ProfileInput({
   placeholder,
   value,
   readOnly,
+  suggestions,
   onChange,
 }: {
   label: string;
@@ -319,6 +369,7 @@ function ProfileInput({
   placeholder?: string;
   value: string;
   readOnly?: boolean;
+  suggestions?: string[];
   onChange?: (value: string) => void;
 }) {
   const isPasswordField = type === "password";
@@ -334,8 +385,16 @@ function ProfileInput({
           placeholder={placeholder}
           value={type === "file" ? undefined : value}
           readOnly={readOnly}
+          list={suggestions ? `${label}-suggestions` : undefined}
           onChange={(event) => onChange?.(event.target.value)}
         />
+        {suggestions ? (
+          <datalist id={`${label}-suggestions`}>
+            {suggestions.map((option) => (
+              <option value={option} key={option} />
+            ))}
+          </datalist>
+        ) : null}
         {isPasswordField ? (
           <button
             type="button"

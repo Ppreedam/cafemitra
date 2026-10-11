@@ -140,7 +140,10 @@ class ShopProfile(models.Model):
     address = models.TextField(blank=True)
     city = models.CharField(max_length=80, blank=True)
     state = models.CharField(max_length=80, blank=True)
-    pin_code = models.CharField(max_length=6, blank=True)
+    # Existing shops are all in India; new ones pick their country in Profile.
+    country = models.CharField(max_length=60, blank=True, default="India")
+    # PIN / ZIP / postal code - formats differ by country, so not limited to 6 digits.
+    pin_code = models.CharField(max_length=12, blank=True)
     mobile = models.CharField(max_length=16, blank=True)
     whatsapp = models.CharField(max_length=16, blank=True)
     email = models.EmailField(blank=True)

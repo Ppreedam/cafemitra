@@ -8,10 +8,10 @@ export const BUSINESS = {
   // Never claim "Pvt. Ltd." status anywhere until the company is actually registered.
   entityType: "proprietorship" as const,
   ownerName: "Ankit Kumar",
-  registeredAddress: "C/O Ankit Kumar, 79, Ward 05, Rasalpur, Bajpatti",
-  city: "Sitamarhi",
-  state: "Bihar",
-  pincode: "843314",
+  registeredAddress: "C1101, UTC, Sector 135",
+  city: "Noida",
+  state: "Uttar Pradesh",
+  pincode: "201304",
   // WhatsApp-only number - does not take voice calls. Any page showing this
   // must label it "WhatsApp", never a plain "Phone"/"Call us" line.
   phone: "+91 76449 44485",
