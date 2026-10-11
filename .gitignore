@@ -32,3 +32,6 @@ docs/
 
 # Local dev config (local Postgres etc.) - never commit
 cafemitra_server/.env.local
+
+# GPTPooler local tool - not part of repo
+GPTPooler - Copy + Qwan/
