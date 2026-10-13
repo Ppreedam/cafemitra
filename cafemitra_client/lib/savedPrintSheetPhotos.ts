@@ -13,6 +13,7 @@ export type SavedPrintSheetPhoto = {
   heightCm: number;
   count: number;
   sizeKey: string;
+  rotateOnPrint?: boolean;
   savedAt: number;
 };
 

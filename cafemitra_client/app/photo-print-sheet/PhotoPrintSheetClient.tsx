@@ -124,6 +124,7 @@ export default function PhotoPrintSheetClient() {
             heightCm: item.heightCm,
             count: item.count,
             sizeKey: item.sizeKey,
+            rotateOnPrint: item.rotateOnPrint,
           }),
         );
         setPhotos((prev) => [...restored, ...prev]);
@@ -220,6 +221,7 @@ export default function PhotoPrintSheetClient() {
       heightCm: photo.heightCm,
       count: photo.count,
       sizeKey: photo.sizeKey,
+      rotateOnPrint: photo.rotateOnPrint,
       savedAt: Date.now(),
     };
   }
