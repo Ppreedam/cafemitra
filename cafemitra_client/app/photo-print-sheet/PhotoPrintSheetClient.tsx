@@ -2,9 +2,8 @@
 
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { Bookmark, BookmarkCheck, CaseSensitive, ChevronLeft, ChevronRight, Download, Eye, ImagePlus, Loader2, LogIn, Minus, Paintbrush, Plus, Printer, RefreshCw, RotateCw, Trash2, Upload, Wallet, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Bookmark, BookmarkCheck, Pencil, CaseSensitive, ChevronLeft, ChevronRight, Download, Eye, ImagePlus, Loader2, Minus, Paintbrush, Plus, Printer, RefreshCw, RotateCw, Trash2, Upload, Wallet, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
 import { PrintProfileSelect, useAgentPrint } from "../PrintProfileSelect";
 import { canvasesToPdfBytes } from "@/lib/agent-print";
@@ -27,6 +26,9 @@ import {
   PAPER_SIZES,
   PHOTO_SIZE_PRESETS,
   downloadCanvas,
+  MARK_DASH_MM,
+  MARK_WIDTH_MM,
+  cutMarkSegments,
   openPrintWindow,
   packQueue,
   renderPageCanvas,
@@ -35,7 +37,6 @@ import {
   rotateImageFile,
   type MarginGapMm,
   type PaperSize,
-  type PackedTile,
   type QueuePhoto,
 } from "./printLayout";
 
@@ -45,22 +46,32 @@ const CM_PER_INCH = 2.54;
 
 const PAPER_SIZE_ORDER: PaperSize[] = ["a4", "4x6", "5x7", "a5", "letter", "custom"];
 
-export default function PhotoPrintSheetClient() {
-  const pathname = usePathname();
-  const router = useRouter();
-  const searchParams = useSearchParams();
-  const price = useToolPrice("photo_print_sheet");
-  const [loginPrompt, setLoginPrompt] = useState(false);
-  const [chargeConfirm, setChargeConfirm] = useState<{ resolve: (ok: boolean) => void } | null>(null);
-  const loginNextUrl = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
+function sheetTurnsOf(photo: QueuePhoto) {
+  return (((photo.sheetTurns ?? 0) % 4) + 4) % 4;
+}
 
-  // Uploading, arranging, and previewing the sheet is free for anyone.
-  // Login (and the wallet charge) is only required for the actions that
-  // actually produce output - Print and Download HD.
-  function requireLogin() {
-    if (hasStoredSession()) return true;
-    setLoginPrompt(true);
-    return false;
+// The sheet shows a turned copy of this photo that has not been built yet.
+function sheetCopyPending(photo: QueuePhoto) {
+  const turns = sheetTurnsOf(photo);
+  return turns !== 0 && photo.printKey !== `${photo.url}|${turns}`;
+}
+
+function revokePhotoUrls(photo: QueuePhoto) {
+  URL.revokeObjectURL(photo.url);
+  if (photo.printUrl) URL.revokeObjectURL(photo.printUrl);
+}
+
+export default function PhotoPrintSheetClient() {
+  const router = useRouter();
+  const price = useToolPrice("photo_print_sheet");
+  const [chargeConfirm, setChargeConfirm] = useState<{ resolve: (ok: boolean) => void } | null>(null);
+
+  // The sheet maker needs no login at all - a customer sent here from their order
+  // (or anyone else) can print or download straight away. Only a signed-in shop
+  // owner is charged from their wallet, as before; a visitor without an account
+  // is never charged and never asked to log in.
+  function isSignedIn() {
+    return hasStoredSession();
   }
 
   // No price loaded yet, or the tool is still free - skip the modal
@@ -98,20 +109,75 @@ export default function PhotoPrintSheetClient() {
   const [printBusy, setPrintBusy] = useState(false);
   const agentPrint = useAgentPrint("photo-print-sheet");
   const [error, setError] = useState("");
-  const [rotatingIds, setRotatingIds] = useState<Set<string>>(new Set());
+  const [printTick, setPrintTick] = useState(0);
   // Photos the user pressed Save on - kept in this browser (IndexedDB) and
   // put back in the queue on every visit, before any newly arrived photo.
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const photosRef = useRef(photos);
   photosRef.current = photos;
+  const rotatingPrintRef = useRef<Set<string>>(new Set());
+
+  // The sheet shows each photo turned by its own sheetTurns (Rotate button; family
+  // photos start at one turn). Build that turned copy whenever the photo or its
+  // turns change - the queue thumbnail keeps showing the photo as it is.
+  useEffect(() => {
+    photos.forEach((photo) => {
+      const turns = sheetTurnsOf(photo);
+      if (turns === 0) {
+        if (photo.printUrl) {
+          URL.revokeObjectURL(photo.printUrl);
+          setPhotos((prev) => prev.map((item) => (item.id === photo.id && sheetTurnsOf(item) === 0 ? { ...item, printUrl: undefined, printKey: undefined } : item)));
+        }
+        return;
+      }
+      const key = `${photo.url}|${turns}`;
+      if (photo.printKey === key || rotatingPrintRef.current.has(photo.id)) return;
+      rotatingPrintRef.current.add(photo.id);
+      (async () => {
+        let url = photo.url;
+        let file = photo.file;
+        try {
+          for (let step = 0; step < turns; step += 1) {
+            const rotated = await rotateImageFile(url, file);
+            if (url !== photo.url) URL.revokeObjectURL(url);
+            url = rotated.url;
+            file = rotated.file;
+          }
+          // Decide here, not inside the state updater (React may run that later
+          // or twice) - and never revoke the url that is about to be shown.
+          const current = photosRef.current.find((item) => item.id === photo.id);
+          if (!current || current.url !== photo.url || sheetTurnsOf(current) !== turns) {
+            URL.revokeObjectURL(url);
+            return;
+          }
+          if (current.printUrl) URL.revokeObjectURL(current.printUrl);
+          setPhotos((prev) => prev.map((item) => (item.id === photo.id && item.url === photo.url ? { ...item, printUrl: url, printKey: key } : item)));
+        } catch {
+          // Leave it as is; Rotate can be tried again.
+          if (url !== photo.url) URL.revokeObjectURL(url);
+        } finally {
+          rotatingPrintRef.current.delete(photo.id);
+          // The photo may have changed while this was running - look again.
+          setPrintTick((tick) => tick + 1);
+        }
+      })();
+    });
+  }, [photos, printTick]);
 
   useEffect(() => {
     return () => {
-      photosRef.current.forEach((photo) => URL.revokeObjectURL(photo.url));
+      photosRef.current.forEach(revokePhotoUrls);
     };
   }, []);
 
+  // Runs once per page visit. React dev (StrictMode) runs mount effects twice,
+  // which used to restore every saved photo twice under the SAME id - so
+  // deleting one copy also deleted its saved record (and the other copy), and a
+  // photo sent from Orders seemed to wipe the one before it.
+  const initDoneRef = useRef(false);
   useEffect(() => {
+    if (initDoneRef.current) return;
+    initDoneRef.current = true;
     (async () => {
       const saved = await loadSavedPhotos();
       if (saved.length) {
@@ -124,17 +190,25 @@ export default function PhotoPrintSheetClient() {
             heightCm: item.heightCm,
             count: item.count,
             sizeKey: item.sizeKey,
-            rotateOnPrint: item.rotateOnPrint,
+            sheetTurns: item.sheetTurns ?? (item.rotateOnPrint ? 1 : 0),
           }),
         );
-        setPhotos((prev) => [...restored, ...prev]);
-        setSavedIds(new Set(restored.map((photo) => photo.id)));
+        // Never add a photo whose id is already in the queue.
+        setPhotos((prev) => {
+          const have = new Set(prev.map((photo) => photo.id));
+          return [...restored.filter((photo) => !have.has(photo.id)), ...prev];
+        });
+        setSavedIds((prev) => {
+          const next = new Set(prev);
+          restored.forEach((photo) => next.add(photo.id));
+          return next;
+        });
       }
       const pending = takePendingPrintSheetPhoto();
       if (!pending) return;
       try {
         const blob = pending.url.startsWith("data:") ? dataUriToBlob(pending.url) : await fetch(apiUrl(pending.url)).then((res) => res.blob());
-        addFiles([new File([blob], pending.name, { type: blob.type || "image/jpeg" })], { rotateOnPrint: pending.rotateOnPrint });
+        addFiles([new File([blob], pending.name, { type: blob.type || "image/jpeg" })], { sheetTurns: pending.rotateOnPrint ? 1 : 0, count: pending.count });
       } catch {
         setError("Could not load the generated photo into the queue. Please upload it manually.");
       }
@@ -177,13 +251,31 @@ export default function PhotoPrintSheetClient() {
     () => (isCustomPaperReady ? packQueue(photos, paperMeta, gaps) : { pages: [[]], skipped: 0 }),
     [photos, paperMeta, gaps, isCustomPaperReady],
   );
+  // Cut marks are on by default; the choice is remembered on this device.
+  const [cutMarks, setCutMarks] = useState(true);
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("pps:cutMarks") === "0") setCutMarks(false);
+    } catch {
+      // Storage unavailable - keep the default.
+    }
+  }, []);
+  function toggleCutMarks(next: boolean) {
+    setCutMarks(next);
+    try {
+      localStorage.setItem("pps:cutMarks", next ? "1" : "0");
+    } catch {
+      // Not remembered - the choice still applies to this sheet.
+    }
+  }
+  const previewMarks = useMemo(() => (cutMarks ? cutMarkSegments(paperMeta, pages[activePage] || []) : []), [cutMarks, paperMeta, pages, activePage]);
   const totalTiles = pages.reduce((sum, page) => sum + page.length, 0);
 
   useEffect(() => {
     setActivePage((current) => Math.min(current, Math.max(0, pages.length - 1)));
   }, [pages.length]);
 
-  function addFiles(fileList: FileList | File[], options?: { rotateOnPrint?: boolean }) {
+  function addFiles(fileList: FileList | File[], options?: { sheetTurns?: number; count?: number }) {
     const files = Array.from(fileList).filter((file) => file.type.startsWith("image/"));
     if (!files.length) return;
     // New photos default to the Custom size with 6 copies, and the size
@@ -196,9 +288,9 @@ export default function PhotoPrintSheetClient() {
         url: URL.createObjectURL(file),
         widthCm: preset.widthCm,
         heightCm: preset.heightCm,
-        count: DEFAULT_COUNT,
+        count: Math.min(MAX_COUNT, options?.count ?? DEFAULT_COUNT),
         sizeKey: preset.key,
-        rotateOnPrint: options?.rotateOnPrint,
+        sheetTurns: options?.sheetTurns,
       }),
     );
     setPhotos((prev) => [...prev, ...added]);
@@ -221,7 +313,7 @@ export default function PhotoPrintSheetClient() {
       heightCm: photo.heightCm,
       count: photo.count,
       sizeKey: photo.sizeKey,
-      rotateOnPrint: photo.rotateOnPrint,
+      sheetTurns: photo.sheetTurns,
       savedAt: Date.now(),
     };
   }
@@ -252,7 +344,7 @@ export default function PhotoPrintSheetClient() {
     });
     setPhotos((prev) => {
       const target = prev.find((photo) => photo.id === id);
-      if (target) URL.revokeObjectURL(target.url);
+      if (target) revokePhotoUrls(target);
       return prev.filter((photo) => photo.id !== id);
     });
     if (sizeEditorId === id) setSizeEditorId(null);
@@ -275,23 +367,9 @@ export default function PhotoPrintSheetClient() {
     setPhotos((prev) => prev.map((photo) => (photo.id === id ? { ...photo, [dimension]: clamped, sizeKey: "custom" } : photo)));
   }
 
-  async function rotatePhoto(id: string) {
-    const photo = photos.find((item) => item.id === id);
-    if (!photo || rotatingIds.has(id)) return;
-    setRotatingIds((prev) => new Set(prev).add(id));
-    try {
-      const rotated = await rotateImageFile(photo.url, photo.file);
-      URL.revokeObjectURL(photo.url);
-      setPhotos((prev) => prev.map((item) => (item.id === id ? { ...item, file: rotated.file, url: rotated.url } : item)));
-    } catch {
-      setError("Could not rotate this photo. Please try again.");
-    } finally {
-      setRotatingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
-    }
+  // Turns the photo 90deg clockwise on the SHEET only; the queue thumbnail stays as it is.
+  function rotatePhoto(id: string) {
+    setPhotos((prev) => prev.map((photo) => (photo.id === id ? { ...photo, sheetTurns: (sheetTurnsOf(photo) + 1) % 4 } : photo)));
   }
 
   async function downloadSingleTile(photo: QueuePhoto) {
@@ -323,7 +401,7 @@ export default function PhotoPrintSheetClient() {
   function clearQueue() {
     void clearSavedPhotos();
     setSavedIds(new Set());
-    photos.forEach((photo) => URL.revokeObjectURL(photo.url));
+    photos.forEach(revokePhotoUrls);
     setPhotos([]);
     setSizeEditorId(null);
     setPreviewPhotoId(null);
@@ -352,47 +430,32 @@ export default function PhotoPrintSheetClient() {
     });
   }
 
-  // Photos flagged rotateOnPrint (family group photos) go onto the sheet turned
-  // 90deg clockwise; the queue and live preview keep the original orientation.
-  // Returns the pages to render plus the temporary rotated image urls.
-  async function pagesForOutput(): Promise<{ outputPages: PackedTile[][]; temporaryUrls: string[] }> {
-    const flagged = photos.filter((photo) => photo.rotateOnPrint);
-    if (!flagged.length) return { outputPages: pages, temporaryUrls: [] };
-    const rotatedUrlById = new Map<string, string>();
-    for (const photo of flagged) {
-      const rotated = await rotateImageFile(photo.url, photo.file);
-      rotatedUrlById.set(photo.id, rotated.url);
-    }
-    const outputPages = pages.map((tiles) => tiles.map((tile) => ({ ...tile, url: rotatedUrlById.get(tile.photoId) ?? tile.url })));
-    return { outputPages, temporaryUrls: Array.from(rotatedUrlById.values()) };
-  }
-
   async function downloadHD() {
     if (!totalTiles) {
       setError("Add at least one photo to the queue first.");
       return;
     }
-    if (!requireLogin()) return;
-    if (!(await requestChargeConfirm())) return;
+    if (photos.some(sheetCopyPending)) {
+      setError("Still preparing the rotated photo for the sheet - please try again in a moment.");
+      return;
+    }
+    const charged = isSignedIn();
+    if (charged && !(await requestChargeConfirm())) return;
     setIsExporting(true);
     setError("");
-    let temporaryUrls: string[] = [];
     try {
-      await chargePhotoPrintSheet();
-      const output = await pagesForOutput();
-      temporaryUrls = output.temporaryUrls;
+      if (charged) await chargePhotoPrintSheet();
       const imageCache = new Map<string, HTMLImageElement>();
-      for (let pageIndex = 0; pageIndex < output.outputPages.length; pageIndex += 1) {
-        if (!output.outputPages[pageIndex].length) continue;
-        const canvas = await renderPageCanvas(paperMeta, output.outputPages[pageIndex], imageCache);
+      for (let pageIndex = 0; pageIndex < pages.length; pageIndex += 1) {
+        if (!pages[pageIndex].length) continue;
+        const canvas = await renderPageCanvas(paperMeta, pages[pageIndex], imageCache, cutMarks);
         downloadCanvas(canvas, `print-sheet-${paperMeta.badge.toLowerCase()}-page-${pageIndex + 1}.png`);
-        if (pageIndex < output.outputPages.length - 1) await new Promise((resolve) => setTimeout(resolve, 350));
+        if (pageIndex < pages.length - 1) await new Promise((resolve) => setTimeout(resolve, 350));
       }
       trackToolEvent("photo_print_sheet", "download_hd", { total_tiles: totalTiles });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not generate the print sheet. Please try again.");
     } finally {
-      temporaryUrls.forEach((url) => URL.revokeObjectURL(url));
       setIsExporting(false);
     }
   }
@@ -402,16 +465,17 @@ export default function PhotoPrintSheetClient() {
       setError("Add at least one photo to the queue first.");
       return;
     }
+    if (photos.some(sheetCopyPending)) {
+      setError("Still preparing the rotated photo for the sheet - please try again in a moment.");
+      return;
+    }
     if (printBusy) return;
-    if (!requireLogin()) return;
-    if (!(await requestChargeConfirm())) return;
+    const charged = isSignedIn();
+    if (charged && !(await requestChargeConfirm())) return;
     setPrintBusy(true);
     setError("");
-    let temporaryUrls: string[] = [];
     try {
-      await chargePhotoPrintSheet();
-      const output = await pagesForOutput();
-      temporaryUrls = output.temporaryUrls;
+      if (charged) await chargePhotoPrintSheet();
       // Sent to the PrintPilot agent with the chosen print profile, using
       // the same 300 DPI render as Download HD (browser print only when
       // that is picked or the agent is not running).
@@ -419,20 +483,18 @@ export default function PhotoPrintSheetClient() {
         async () => {
           const imageCache = new Map<string, HTMLImageElement>();
           const rendered = [];
-          for (const tiles of output.outputPages) {
+          for (const tiles of pages) {
             if (!tiles.length) continue;
-            rendered.push({ canvas: await renderPageCanvas(paperMeta, tiles, imageCache), widthMm: paperMeta.widthMm, heightMm: paperMeta.heightMm });
+            rendered.push({ canvas: await renderPageCanvas(paperMeta, tiles, imageCache, cutMarks), widthMm: paperMeta.widthMm, heightMm: paperMeta.heightMm });
           }
           return canvasesToPdfBytes(rendered);
         },
-        { fileName: `print-sheet-${paperMeta.badge.toLowerCase()}.pdf`, fallback: () => openPrintWindow(paperMeta, output.outputPages) },
+        { fileName: `print-sheet-${paperMeta.badge.toLowerCase()}.pdf`, fallback: () => openPrintWindow(paperMeta, pages, cutMarks) },
       );
       trackToolEvent("photo_print_sheet", "print_sheet", { total_tiles: totalTiles });
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "Could not prepare the print job. Please try again.");
     } finally {
-      // The browser-print fallback window loads these images after this returns.
-      if (temporaryUrls.length) window.setTimeout(() => temporaryUrls.forEach((url) => URL.revokeObjectURL(url)), 120000);
       setPrintBusy(false);
     }
   }
@@ -463,7 +525,16 @@ export default function PhotoPrintSheetClient() {
             {photos.length ? (
               <div className="pps-queue-list">
                 {photos.map((photo) => (
-                  <div className="pps-queue-item" key={photo.id}>
+                  <div
+                    className={`pps-queue-item${sizeEditorId === photo.id ? " editing" : ""}`}
+                    key={photo.id}
+                    // Clicking a photo's row (not one of its buttons/fields) opens the
+                    // size editor for THAT photo - it used to stay on the last one added.
+                    onClick={(event) => {
+                      if ((event.target as HTMLElement).closest("button, input, select, textarea, a, label")) return;
+                      setSizeEditorId(photo.id);
+                    }}
+                  >
                     <div className="pps-queue-thumb">
                       <img src={photo.url} alt="" />
                       <button type="button" className="pps-queue-thumb-preview" onClick={() => setPreviewPhotoId(photo.id)} aria-label="Preview original photo" title="Preview">
@@ -471,8 +542,13 @@ export default function PhotoPrintSheetClient() {
                       </button>
                     </div>
                     <div className="pps-queue-info">
-                      <button type="button" className="pps-size-chip" onClick={() => setSizeEditorId((current) => (current === photo.id ? null : photo.id))}>
-                        {sizeLabel(photo)}
+                      <button
+                        type="button"
+                        className="pps-size-chip"
+                        title="Edit this photo's size"
+                        onClick={() => setSizeEditorId((current) => (current === photo.id ? null : photo.id))}
+                      >
+                        {sizeLabel(photo)} <Pencil size={11} aria-hidden />
                       </button>
                       <div className="pps-count-stepper">
                         <button type="button" onClick={() => updateCount(photo.id, photo.count - 1)} disabled={photo.count <= 1} aria-label="Decrease quantity">
@@ -484,8 +560,8 @@ export default function PhotoPrintSheetClient() {
                         </button>
                       </div>
                       <div className="pps-queue-actions">
-                        <button type="button" onClick={() => rotatePhoto(photo.id)} disabled={rotatingIds.has(photo.id)} aria-label="Rotate photo" title="Rotate">
-                          {rotatingIds.has(photo.id) ? <Loader2 size={15} className="passport-step-spin" /> : <RotateCw size={15} />}
+                        <button type="button" onClick={() => rotatePhoto(photo.id)} aria-label="Rotate this photo on the sheet" title="Rotate on the sheet (90°) - the queue photo stays as it is">
+                          <RotateCw size={15} />
                         </button>
                         <button
                           type="button"
@@ -611,6 +687,13 @@ export default function PhotoPrintSheetClient() {
                       <img src={tile.url} alt="" />
                     </div>
                   ))}
+                  {previewMarks.length ? (
+                    <svg className="pps-marks" viewBox={`0 0 ${paperMeta.widthMm} ${paperMeta.heightMm}`} preserveAspectRatio="none" aria-hidden="true">
+                      {previewMarks.map((mark, index) => (
+                        <line key={index} x1={mark.x1} y1={mark.y1} x2={mark.x2} y2={mark.y2} stroke="#222" strokeWidth={Math.max(MARK_WIDTH_MM, 0.3)} strokeDasharray={MARK_DASH_MM.join(" ")} />
+                      ))}
+                    </svg>
+                  ) : null}
                 </div>
               ) : (
                 <div className="pps-paper pps-paper-empty" style={{ aspectRatio: `${paperMeta.widthMm} / ${paperMeta.heightMm}` }}>
@@ -658,6 +741,11 @@ export default function PhotoPrintSheetClient() {
                   </button>
                 </div>
               </div>
+
+              <label className="pps-cutmarks" title="A dashed line between the photos to cut along.">
+                <input type="checkbox" checked={cutMarks} onChange={(event) => toggleCutMarks(event.target.checked)} />
+                <span>Cut lines (dashed line between photos)</span>
+              </label>
 
               {paperSize === "custom" ? (
                 <div className="pps-custom-paper">
@@ -757,22 +845,6 @@ export default function PhotoPrintSheetClient() {
             <div className="resbuild-confirm-actions">
               <button type="button" className="resbuild-btn-secondary" onClick={() => answerChargeConfirm(false)}>Cancel</button>
               <button type="button" className="resbuild-btn-primary" onClick={() => answerChargeConfirm(true)}>OK, Continue</button>
-            </div>
-          </div>
-        </div>
-      ) : null}
-
-      {loginPrompt ? (
-        <div className="resbuild-confirm-overlay" onClick={() => setLoginPrompt(false)}>
-          <div className="resbuild-confirm-modal" onClick={(e) => e.stopPropagation()}>
-            <span className="resbuild-confirm-icon"><LogIn size={20} /></span>
-            <h3>Login to continue</h3>
-            <p>
-              Your photo queue stays exactly as you left it. Log in (or create a free account) to print or download.
-            </p>
-            <div className="resbuild-confirm-actions">
-              <button type="button" className="resbuild-btn-secondary" onClick={() => setLoginPrompt(false)}>Keep editing</button>
-              <Link className="resbuild-btn-primary" href={`/login?next=${encodeURIComponent(loginNextUrl)}`}>Login</Link>
             </div>
           </div>
         </div>

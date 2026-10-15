@@ -10,3 +10,4 @@
 .photo-resize-e{right:-7px;top:50%;transform:translateY(-50%);cursor:ew-resize}
 .photo-resize-s{bottom:-7px;left:50%;transform:translateX(-50%);cursor:ns-resize}
 .photo-resize-se{right:-7px;bottom:-7px;cursor:nwse-resize}
+.photo-caption-drag{position:absolute;left:0;right:0;z-index:4;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;border:2px dashed transparent;background:transparent;color:transparent;font-size:11px;font-weight:800;cursor:ns-resize;touch-action:none;user-select:none}.photo-caption-drag:hover,.photo-caption-drag.dragging{border-color:#2563eb;background:rgba(37,99,235,.1);color:#2563eb}.photo-caption-hint{color:#5b6488;font-size:.68rem;font-weight:700}

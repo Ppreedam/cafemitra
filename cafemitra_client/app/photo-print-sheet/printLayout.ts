@@ -46,8 +46,11 @@ export type QueuePhoto = {
   heightCm: number;
   count: number;
   sizeKey: string;
-  /** Turned 90deg clockwise in the printed/downloaded sheet only - the queue preview is untouched. */
-  rotateOnPrint?: boolean;
+  /** Quarter turns clockwise applied on the sheet only (preview, print, download) - the queue thumbnail keeps the photo as is. Family photos start at 1. */
+  sheetTurns?: number;
+  /** The turned copy used for the sheet, and the "url|turns" it was made from (to know when it is stale). */
+  printUrl?: string;
+  printKey?: string;
 };
 
 export type PackedTile = {
@@ -58,6 +61,49 @@ export type PackedTile = {
   wMm: number;
   hMm: number;
 };
+
+// Cut lines: a straight dashed line in the middle of every gap between two photos (vertical between
+// neighbours in a row, horizontal between rows) so the sheet can be cut along them. Lines only run
+// through the gap, so they never cross a photo; photos placed edge to edge (gap 0) get the line on
+// the shared edge.
+export type CutMark = { x1: number; y1: number; x2: number; y2: number };
+export const MARK_WIDTH_MM = 0.2;
+export const MARK_DASH_MM = [1.4, 0.9];
+
+export function cutMarkSegments(_paper: { widthMm: number; heightMm: number }, tiles: PackedTile[]): CutMark[] {
+  const marks: CutMark[] = [];
+  if (tiles.length < 2) return marks;
+
+  // The packer fills the page in rows: tiles of one row share the same top edge.
+  const sorted = [...tiles].sort((a, b) => a.yMm - b.yMm || a.xMm - b.xMm);
+  const rows: PackedTile[][] = [];
+  for (const tile of sorted) {
+    const row = rows[rows.length - 1];
+    if (row && Math.abs(row[0].yMm - tile.yMm) < 0.01) row.push(tile);
+    else rows.push([tile]);
+  }
+  const extent = (row: PackedTile[]) => ({
+    top: row[0].yMm,
+    bottom: Math.max(...row.map((tile) => tile.yMm + tile.hMm)),
+    left: Math.min(...row.map((tile) => tile.xMm)),
+    right: Math.max(...row.map((tile) => tile.xMm + tile.wMm)),
+  });
+
+  for (const row of rows) {
+    const { top, bottom } = extent(row);
+    for (let i = 0; i + 1 < row.length; i += 1) {
+      const x = (row[i].xMm + row[i].wMm + row[i + 1].xMm) / 2;
+      marks.push({ x1: x, y1: top, x2: x, y2: bottom });
+    }
+  }
+  for (let i = 0; i + 1 < rows.length; i += 1) {
+    const upper = extent(rows[i]);
+    const lower = extent(rows[i + 1]);
+    const y = (upper.bottom + lower.top) / 2;
+    marks.push({ x1: Math.min(upper.left, lower.left), y1: y, x2: Math.max(upper.right, lower.right), y2: y });
+  }
+  return marks;
+}
 
 export type MarginGapMm = { gapX: number; gapY: number; marginTop: number; marginLeft: number };
 
@@ -98,7 +144,7 @@ export function packQueue(photos: QueuePhoto[], paper: PaperDims, gaps: MarginGa
       }
       pages[pageIndex].push({
         photoId: photo.id,
-        url: photo.url,
+        url: (photo.sheetTurns ?? 0) % 4 !== 0 && photo.printUrl ? photo.printUrl : photo.url,
         xMm: gaps.marginLeft + x,
         yMm: gaps.marginTop + y,
         wMm,
@@ -132,7 +178,7 @@ function drawCover(ctx: CanvasRenderingContext2D, image: HTMLImageElement, dx: n
 
 const MM_PER_IN = 25.4;
 
-export async function renderPageCanvas(paper: PaperDims, tiles: PackedTile[], imageCache: Map<string, HTMLImageElement>): Promise<HTMLCanvasElement> {
+export async function renderPageCanvas(paper: PaperDims, tiles: PackedTile[], imageCache: Map<string, HTMLImageElement>, cutMarks = false): Promise<HTMLCanvasElement> {
   const { widthMm, heightMm } = paper;
   const pxPerMm = EXPORT_DPI / MM_PER_IN;
   const canvas = document.createElement("canvas");
@@ -157,6 +203,19 @@ export async function renderPageCanvas(paper: PaperDims, tiles: PackedTile[], im
     ctx.strokeStyle = "#c7cbe0";
     ctx.lineWidth = 1;
     ctx.strokeRect(dx, dy, dw, dh);
+  }
+
+  if (cutMarks) {
+    ctx.strokeStyle = "#222222";
+    ctx.lineWidth = Math.max(1, MARK_WIDTH_MM * pxPerMm);
+    ctx.setLineDash(MARK_DASH_MM.map((length) => length * pxPerMm));
+    ctx.beginPath();
+    for (const mark of cutMarkSegments(paper, tiles)) {
+      ctx.moveTo(mark.x1 * pxPerMm, mark.y1 * pxPerMm);
+      ctx.lineTo(mark.x2 * pxPerMm, mark.y2 * pxPerMm);
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
   }
 
   return canvas;
@@ -190,7 +249,7 @@ export function downloadCanvas(canvas: HTMLCanvasElement, filename: string) {
 // Browser print (window.print) as a free alternative to the HD canvas
 // export - no rendering wait, and the shop's own printer driver handles
 // paper feed/scaling, at the cost of DPI being whatever that driver picks.
-export function buildPrintHtml(paper: PaperDims, pages: PackedTile[][]): string {
+export function buildPrintHtml(paper: PaperDims, pages: PackedTile[][], cutMarks = false): string {
   const pageSizeCss = `width:${paper.widthMm}mm;height:${paper.heightMm}mm;`;
   const pageRuleCss = `size:${paper.widthMm}mm ${paper.heightMm}mm;`;
 
@@ -203,7 +262,12 @@ export function buildPrintHtml(paper: PaperDims, pages: PackedTile[][]): string 
             `<div class="tile" style="left:${tile.xMm}mm;top:${tile.yMm}mm;width:${tile.wMm}mm;height:${tile.hMm}mm;"><img src="${tile.url}" /></div>`,
         )
         .join("");
-      return `<div class="page">${tilesHtml}</div>`;
+      const marksHtml = cutMarks
+        ? `<svg class="marks" viewBox="0 0 ${paper.widthMm} ${paper.heightMm}" style="position:absolute;left:0;top:0;width:${paper.widthMm}mm;height:${paper.heightMm}mm;">${cutMarkSegments(paper, tiles)
+            .map((mark) => `<line x1="${mark.x1}" y1="${mark.y1}" x2="${mark.x2}" y2="${mark.y2}" stroke="#222" stroke-width="${MARK_WIDTH_MM}" stroke-dasharray="${MARK_DASH_MM.join(" ")}" />`)
+            .join("")}</svg>`
+        : "";
+      return `<div class="page">${tilesHtml}${marksHtml}</div>`;
     })
     .join("");
 
@@ -239,11 +303,11 @@ ${pagesHtml}
 </html>`;
 }
 
-export function openPrintWindow(paper: PaperDims, pages: PackedTile[][]) {
+export function openPrintWindow(paper: PaperDims, pages: PackedTile[][], cutMarks = false) {
   const printWindow = window.open("", "_blank");
   if (!printWindow) return;
   printWindow.document.open();
-  printWindow.document.write(buildPrintHtml(paper, pages));
+  printWindow.document.write(buildPrintHtml(paper, pages, cutMarks));
   printWindow.document.close();
 }
 

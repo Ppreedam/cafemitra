@@ -22927,3 +22927,382 @@ img.profile-photo {
   -webkit-appearance: none;
   margin: 0;
 }
+
+/* Photo Print Sheet queue: rows open their size editor on click; the open one is outlined, and the size chip shows it can be edited. */
+.pps-queue-item {
+  cursor: pointer;
+}
+
+.pps-queue-item.editing {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.14);
+}
+
+.pps-size-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+/* Customer Family Passport Photo upload: one toolbar for the selected photo, selected photo outlined. */
+.family-photo-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 4px 0 12px;
+}
+
+.family-photo-toolbar > span {
+  margin-right: auto;
+  color: #2563eb;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.family-photo-toolbar button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: #18214d;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.family-photo-toolbar button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.family-public-upload .family-photo-slot {
+  cursor: pointer;
+}
+
+.family-public-upload .family-photo-slot.selected {
+  border-radius: 12px;
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.family-public-upload {
+  display: grid;
+  gap: 12px;
+}
+
+/* PrintPilot setup, QR step: the customer link with a copy button. */
+.qr-link-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 440px;
+  margin: 14px auto 0;
+  padding: 6px 6px 6px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fff;
+}
+
+.qr-link-row span {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: #3d4657;
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qr-link-row button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 12px;
+  border: 0;
+  border-radius: 8px;
+  background: #eaf1ff;
+  color: #1d4ed8;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* Photo preview / crop popups on small screens: use the whole screen, keep the close button reachable. */
+@media (max-width: 640px) {
+  .document-preview-modal {
+    padding: 8px;
+  }
+
+  .document-preview-window {
+    height: min(92vh, 92dvh);
+  }
+
+  .document-preview-actions button {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+}
+
+/* ID Card Print: print / preview popup - the sheet as it will be printed, for the chosen paper. */
+
+
+
+
+
+
+.idcard-preview-loading {
+  padding: 40px 0;
+  color: #6b7598;
+  text-align: center;
+}
+
+.idcard-preview-pages {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 460px));
+  justify-content: center;
+  gap: 18px;
+}
+
+.idcard-preview-pages figure {
+  margin: 0;
+}
+
+.idcard-preview-page {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: 0 6px 22px rgba(20, 35, 75, 0.18);
+}
+
+.idcard-preview-card {
+  position: absolute;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  overflow: hidden;
+  border: 1px solid #999;
+  border-radius: 3%/5%;
+  background: #fff;
+}
+
+.idcard-preview-card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.idcard-preview-pages figcaption {
+  margin-top: 6px;
+  color: #6b7598;
+  font-size: 0.74rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ID Card Print: the preview is a view of the page itself (same toolbar on top), not a popup. */
+.idcard-preview-view {
+  margin-top: 4px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #eef2f7;
+}
+
+.idcard-preview-info {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 16px;
+  margin-bottom: 14px;
+  color: #3d4657;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.idcard-preview-info strong {
+  color: #0d1748;
+  font-size: 0.95rem;
+}
+
+.idcard-preview-info label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.idcard-preview-info select {
+  height: 34px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  font: inherit;
+}
+
+.idcard-preview-info em {
+  color: #b45309;
+  font-style: normal;
+}
+
+.idcard-edit-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: #18214d;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.idcard-preview-card:active {
+  cursor: grabbing;
+  box-shadow: 0 6px 18px rgba(20, 35, 75, 0.35);
+}
+
+.idcard-preview-hint {
+  color: #2563eb;
+}
+
+.idcard-reset-positions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: #18214d;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* ID Card Print crop window. */
+.idcrop-window {
+  width: min(900px, 100%);
+}
+
+.idcrop-body {
+  align-content: start;
+}
+
+.idcrop-note {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #bbf7d0;
+  border-radius: 10px;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.idcrop-note.warn {
+  border-color: #fed7aa;
+  background: #fff7ed;
+  color: #9a3412;
+}
+
+.idcrop-note svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.idcrop-note strong {
+  display: block;
+  margin-bottom: 2px;
+  font-size: 0.92rem;
+}
+
+.idcrop-note span {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.idcrop-window .crop-controls small {
+  color: #6b7598;
+  font-size: 0.76rem;
+  font-weight: 650;
+  text-align: center;
+}
+
+@media (max-width: 720px) {
+  .idcrop-window .crop-body {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ID card crop window on phones: the body scrolls (Apply Crop is always reachable) and corner handles at the photo's edge are not clipped. */
+@media (max-width: 720px) {
+  .idcrop-window {
+    max-height: 94dvh;
+  }
+
+  .idcrop-window .crop-body {
+    overflow-y: auto;
+    max-height: calc(94dvh - 72px);
+    padding: 12px;
+    /* Rows are exactly as tall as their content - in a scrolling grid an aspect-ratio box would otherwise be squeezed to nothing. */
+    grid-auto-rows: max-content;
+  }
+
+  /* The perspective stage keeps its photo's real shape (no squashing) and its corner handles stay inside the visible area. */
+  .idcrop-window .crop-stage-perspective-frame {
+    box-sizing: content-box;
+    width: calc(100% - 28px);
+    height: auto;
+    aspect-ratio: var(--stage-ratio, 1.5);
+    max-height: min(52vh, 420px);
+    overflow: visible;
+    padding: 14px;
+  }
+
+  .idcrop-window .crop-stage-perspective {
+    flex: 0 0 auto;
+    overflow: visible;
+    max-height: min(52vh, 420px);
+  }
+
+  .idcrop-note {
+    padding: 10px 12px;
+  }
+}
+
+/* The floating WhatsApp button must never sit on top of a popup's buttons (Apply Crop, Close...) or the page's last action. */
+body:has(.document-preview-modal) .wa-float-btn,
+body:has(.resbuild-confirm-overlay) .wa-float-btn {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .customer-portal {
+    padding-bottom: 88px;
+  }
+}
+
+.idcard-spacing { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.idcard-spacing label { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; color: #475569; }
+.idcard-spacing select { border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 4px; font-size: 12px; background: #fff; }
+
+.pps-marks { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.pps-cutmarks { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; font-weight: 600; color: #334155; cursor: pointer; }
+.pps-cutmarks input { width: 16px; height: 16px; accent-color: #4f46e5; }

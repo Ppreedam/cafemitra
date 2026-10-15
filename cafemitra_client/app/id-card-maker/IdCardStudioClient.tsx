@@ -25,7 +25,7 @@ import {
   Wallet,
   X,
 } from "lucide-react";
-import { apiFetch, hasStoredSession } from "@/lib/api";
+import { apiFetch, apiUrl, hasStoredSession } from "@/lib/api";
 import { trackToolEvent } from "@/lib/analytics";
 import { useToolPrice } from "@/lib/useToolPrice";
 import { BUSINESS } from "@/lib/businessInfo";
@@ -271,6 +271,16 @@ export default function IdCardStudioClient() {
   // whenever a new card is loaded, so Print Card and Download PDF only
   // charge once between them, whichever happens first (see makeOutput).
   const chargedRef = useRef(false);
+  // Each (card, output kind) is reported for training at most once, and only while the admin has this switched on.
+  const reportedRef = useRef<Set<string>>(new Set());
+  const [keepsPdfs, setKeepsPdfs] = useState(false);
+
+  useEffect(() => {
+    fetch(apiUrl("/api/crop-training/config/"))
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => setKeepsPdfs(Boolean(data?.collectCardMaker)))
+      .catch(() => {});
+  }, []);
   const price = useToolPrice("id_card_maker");
   const [chargeConfirm, setChargeConfirm] = useState<{ resolve: (ok: boolean) => void } | null>(null);
 
@@ -579,6 +589,30 @@ export default function IdCardStudioClient() {
     throw new Error(data.message || "Could not verify your wallet balance. Please try again.");
   }
 
+  // Sends the opened PDF (unlocked) and the card PDF built from it for training - only if the admin has
+  // switched that on (asked right now, not remembered) and never twice for the same card + output kind.
+  async function reportCardMakerRun(loaded: LoadedCard, source: File | undefined, built: Uint8Array, kind: OutputKind) {
+    const key = `${loaded.fileName}:${kind}`;
+    if (reportedRef.current.has(key)) return;
+    reportedRef.current.add(key);
+    try {
+      const config = await fetch(apiUrl("/api/crop-training/config/")).then((response) => (response.ok ? response.json() : null));
+      if (!config?.collectCardMaker) return;
+      const input = loaded.plain ?? (source ? new Uint8Array(await source.arrayBuffer()) : null);
+      if (!input) return;
+      const form = new FormData();
+      form.append("docType", loaded.type.key);
+      form.append("mode", loaded.mode);
+      form.append("kind", kind);
+      form.append("settings", JSON.stringify(currentSettings()));
+      form.append("input", new Blob([input as BlobPart], { type: "application/pdf" }), "input.pdf");
+      form.append("output", new Blob([built as BlobPart], { type: "application/pdf" }), "output.pdf");
+      await fetch(apiUrl("/api/card-maker/sample/"), { method: "POST", body: form });
+    } catch {
+      // Training data only - never affects the user's print or download.
+    }
+  }
+
   async function makeOutput(kind: OutputKind, action: "print" | "download") {
     if (!card || !validateBeforeOutput()) return;
     // Close the Print Card dialog right away - everything below happens
@@ -603,6 +637,8 @@ export default function IdCardStudioClient() {
           return;
         }
       }
+
+      void reportCardMakerRun(card, files[fileIndex], bytes, kind);
 
       const url = URL.createObjectURL(new Blob([bytes as BlobPart], { type: "application/pdf" }));
       const baseName = card.fileName.replace(/\.pdf$/i, "") || "id-card";
@@ -928,7 +964,11 @@ export default function IdCardStudioClient() {
             <li>For other cards, or with Design set to Original, use <b>Adjust Card</b> (move) and <b>Adjust Zoom</b> (size) if the cut is slightly off. The centre button resets.</li>
             <li>Press <b>Print Card</b> and pick PVC card, A4 or 4x6. Print at 100% / Actual size. Press <b>Save</b> in Settings to keep your setup for next time.</li>
           </ol>
-          <p className="idstudio-muted">The PDF is processed inside this browser and is not uploaded.</p>
+          <p className="idstudio-muted">
+            {keepsPdfs
+              ? "The PDF is processed in this browser. To improve the tool, the PDF you open and the card made from it may be kept for training when you print or download. Do not use a document you do not want kept."
+              : "The PDF is processed inside this browser and is not uploaded."}
+          </p>
         </Dialog>
       ) : null}
 

@@ -16,6 +16,7 @@ import {
   ChevronDown,
   CircleHelp,
   ClipboardList,
+  Copy,
   Download,
   FileCheck2,
   FileText,
@@ -264,6 +265,7 @@ export default function AutoPrintClient() {
   const [shopCode, setShopCode] = useState("CM0000");
   const [shopName, setShopName] = useState("RepetiGo Shop");
   const [qrUrl, setQrUrl] = useState("");
+  const [qrLinkCopied, setQrLinkCopied] = useState(false);
   const [qrImage, setQrImage] = useState("");
   const [posterPreviewUrl, setPosterPreviewUrl] = useState("");
   const [testStatus, setTestStatus] = useState<"idle" | "printing" | "success">("idle");
@@ -741,6 +743,26 @@ export default function AutoPrintClient() {
     }
   }
 
+  // Copies the customer link the QR opens, so it can be pasted into WhatsApp, a bio, etc.
+  async function copyQrLink() {
+    if (!qrUrl) return;
+    try {
+      await navigator.clipboard.writeText(qrUrl);
+    } catch {
+      // Clipboard API blocked (e.g. plain http) - fall back to a temporary textarea.
+      const area = document.createElement("textarea");
+      area.value = qrUrl;
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+      document.execCommand("copy");
+      document.body.removeChild(area);
+    }
+    setQrLinkCopied(true);
+    window.setTimeout(() => setQrLinkCopied(false), 1800);
+  }
+
   function shareQr() {
     if (navigator.share) {
       navigator.share({ title: `${shopName} PrintPilot QR`, text: "Upload. Pay. Print.", url: qrUrl }).catch(() => undefined);
@@ -978,6 +1000,15 @@ export default function AutoPrintClient() {
                     ) : (
                       <div className="qr-poster-image qr-poster-image-loading">Preparing poster...</div>
                     )}
+                    {qrUrl ? (
+                      <div className="qr-link-row">
+                        <span title={qrUrl}>{qrUrl}</span>
+                        <button type="button" onClick={() => void copyQrLink()} aria-label="Copy customer link" title="Copy link">
+                          {qrLinkCopied ? <CheckCircle2 size={16} /> : <Copy size={16} />}
+                          {qrLinkCopied ? "Copied" : "Copy"}
+                        </button>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               ) : null}

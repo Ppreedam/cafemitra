@@ -1,5 +1,7 @@
 import csv
+import io
 import json
+import zipfile
 import logging
 import os
 import re
@@ -15,8 +17,8 @@ from django.conf import settings
 from django.contrib.auth import authenticate, get_user_model
 from django.core.files.storage import default_storage
 from django.db import transaction
-from django.db.models import Count, Max, Q, Sum
-from django.db.models.functions import TruncDate, TruncMonth, TruncWeek
+from django.db.models import Count, Max, Q, Sum, TextField
+from django.db.models.functions import Cast, Coalesce, Length, TruncDate, TruncMonth, TruncWeek
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
 from django.views.decorators.csrf import csrf_exempt
@@ -25,13 +27,15 @@ from django.http import HttpResponse, JsonResponse
 
 from .admin_activity import log_admin_activity
 from .admin_auth import get_admin_role, require_admin, require_section
-from .models import WaitingJoke, AdminActivityLog, AdminRole, Agent, BlogArticle, BlogRevision, ContactMessage, Coupon, CouponRedemption, CustomerNote, CustomerTag, Influencer, LeadAgent, LeadTag, PassportAIConfig, PoolerNode, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
+from .models import CardMakerSample, CropSample, CropTrainingConfig, WaitingJoke, AdminActivityLog, AdminRole, Agent, BlogArticle, BlogRevision, ContactMessage, Coupon, CouponRedemption, CustomerNote, CustomerTag, Influencer, LeadAgent, LeadTag, PassportAIConfig, PoolerNode, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from .views import (
     credit_pending_referral_bonuses,
     ORDER_LIST_DEFERRED_FIELDS,
     cafe_code_for_user,
     create_password_reset,
     create_wallet_transaction,
+    delete_order_document,
+    data_uri_to_bytes,
     delete_user_files,
     ensure_referral_code,
     ensure_service_pricing,
@@ -1114,6 +1118,9 @@ def admin_order_detail(request, order_id):
     payload["shopId"] = order.user_id
     payload["shopName"] = order.user.shop.shop_name if hasattr(order.user, "shop") else ""
     payload["shopEmail"] = order.user.email
+    # Family orders keep one uploaded photo per member until the group photo is
+    # generated (then they are deleted) - shown to admins for support.
+    payload["familyInputs"] = list(order.family_photo_inputs or []) if order.service_key == "family_passport_photo" else []
     return JsonResponse({"order": payload})
 
 
@@ -4215,3 +4222,557 @@ def admin_waiting_joke_detail(request, joke_id):
     joke.save()
     log_admin_activity(admin_user, "jokes.update", "waiting_joke", joke.id, joke.text[:80])
     return JsonResponse({"joke": public_waiting_joke(joke)})
+
+
+# --- Stored photo data (base64 uploads / generated photos) --------------------
+# Passport and family photo orders keep their photos as base64 text inside the
+# database. Customer uploads are deleted automatically once the AI photo exists
+# (purge_uploaded_photos); this lets admins find and delete whatever is left
+# (older orders, failed/stuck ones) and, if wanted, old generated photos too.
+
+PHOTO_DATA_SERVICES = ("passport_photo", "family_passport_photo")
+
+
+def photo_data_queryset():
+    return (
+        PrintOrder.objects.filter(service_key__in=PHOTO_DATA_SERVICES)
+        .select_related("user", "user__shop")
+        .annotate(
+            upload_len=Coalesce(Length("original_filename"), 0) + Coalesce(Length(Cast("family_photo_inputs", TextField())), 0),
+            output_len=Coalesce(Length("gemini_photo"), 0),
+        )
+    )
+
+
+def apply_photo_data_filters(queryset, params):
+    """Shared by the list and the delete-all: service, what kind of data is stored, and age."""
+    service = str(params.get("service", "") or "").strip()
+    if service in PHOTO_DATA_SERVICES:
+        queryset = queryset.filter(service_key=service)
+    has = str(params.get("has", "any") or "any").strip()
+    uploads = Q(original_filename__startswith="data:") | Q(family_photo_inputs__isnull=False)
+    generated = ~Q(gemini_photo="")
+    if has == "uploads":
+        queryset = queryset.filter(uploads)
+    elif has == "generated":
+        queryset = queryset.filter(generated)
+    else:
+        queryset = queryset.filter(uploads | generated)
+    try:
+        older_days = int(params.get("olderThanDays") or 0)
+    except (TypeError, ValueError):
+        older_days = 0
+    if older_days > 0:
+        queryset = queryset.filter(created_at__lte=timezone.now() - timedelta(days=older_days))
+    return queryset
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def admin_photo_data(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    _, err = require_section(request, "orders")
+    if err:
+        return err
+
+    queryset = apply_photo_data_filters(photo_data_queryset(), request.GET).order_by("-created_at")
+    totals = queryset.aggregate(orders=Count("id"), upload_bytes=Sum("upload_len"), output_bytes=Sum("output_len"))
+    page_items, meta = paginate(queryset, request, default_size=25)
+
+    def row(order):
+        shop = order.user.shop if hasattr(order.user, "shop") else None
+        return {
+            "id": order.id,
+            "orderNumber": f"{order.shop_code}-{order.id:05d}",
+            "serviceKey": order.service_key,
+            "serviceName": order.service_name,
+            "status": order.status,
+            "photoStatus": order.photo_status,
+            "shopId": order.user_id,
+            "shopName": shop.shop_name if shop else "",
+            "shopEmail": order.user.email,
+            "uploadBytes": order.upload_len or 0,
+            "outputBytes": order.output_len or 0,
+            "createdAt": order.created_at.isoformat(),
+        }
+
+    return JsonResponse(
+        {
+            **meta,
+            "totals": {
+                "orders": totals["orders"] or 0,
+                "uploadBytes": totals["upload_bytes"] or 0,
+                "outputBytes": totals["output_bytes"] or 0,
+            },
+            "orders": [row(order) for order in page_items],
+        }
+    )
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def admin_photo_data_delete(request):
+    """POST {scope: "uploads"|"generated"|"all", ids: [..]} for specific orders, or
+    {scope, all: true, service?, has?, olderThanDays?} for everything matching the filters.
+    "generated" only touches printed / failed orders - a photo still waiting to be
+    printed is never removed - and reports how many were skipped."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "orders")
+    if err:
+        return err
+
+    body = parse_body(request)
+    scope = str(body.get("scope", "")).strip()
+    if scope not in ("uploads", "generated", "all"):
+        return JsonResponse({"message": "Choose what to delete: uploads, generated or all."}, status=400)
+
+    ids = body.get("ids")
+    if isinstance(ids, list) and ids:
+        try:
+            id_list = [int(value) for value in ids][:5000]
+        except (TypeError, ValueError):
+            return JsonResponse({"message": "Invalid order ids."}, status=400)
+        queryset = PrintOrder.objects.filter(id__in=id_list, service_key__in=PHOTO_DATA_SERVICES)
+    elif body.get("all") is True:
+        queryset = apply_photo_data_filters(PrintOrder.objects.filter(service_key__in=PHOTO_DATA_SERVICES), body)
+    else:
+        return JsonResponse({"message": "Select orders, or choose to delete everything that matches."}, status=400)
+
+    uploads_cleared = 0
+    generated_cleared = 0
+    generated_skipped = 0
+    if scope in ("uploads", "all"):
+        uploads_cleared += queryset.filter(service_key="family_passport_photo", family_photo_inputs__isnull=False).update(family_photo_inputs=None)
+        uploads_cleared += queryset.filter(service_key="passport_photo", original_filename__startswith="data:").update(original_filename="")
+    if scope in ("generated", "all"):
+        with_photo = queryset.exclude(gemini_photo="")
+        deletable = with_photo.filter(status__in=[PrintOrder.STATUS_PRINTED, PrintOrder.STATUS_FAILED])
+        generated_skipped = with_photo.count() - deletable.count()
+        generated_cleared = deletable.update(gemini_photo="")
+
+    log_admin_activity(
+        admin_user,
+        "photo_data.delete",
+        "print_order",
+        "",
+        f"scope={scope}, uploads={uploads_cleared}, generated={generated_cleared}, skipped={generated_skipped}",
+    )
+    return JsonResponse(
+        {
+            "uploadsCleared": uploads_cleared,
+            "generatedCleared": generated_cleared,
+            "generatedSkipped": generated_skipped,
+        }
+    )
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def admin_orders_delete(request):
+    """POST {ids: [..]} - permanently deletes those orders (and their uploaded files).
+    Super admin only: orders are the record behind a shop's bills, so this is not for
+    day-to-day support staff. Wallet transactions that point at a deleted order stay in
+    the ledger (the link is just cleared), so balances never change."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "staff")
+    if err:
+        return err
+
+    ids = parse_body(request).get("ids")
+    if not isinstance(ids, list) or not ids:
+        return JsonResponse({"message": "Select at least one order."}, status=400)
+    try:
+        id_list = [int(value) for value in ids]
+    except (TypeError, ValueError):
+        return JsonResponse({"message": "Invalid order ids."}, status=400)
+    if len(id_list) > 500:
+        return JsonResponse({"message": "Delete at most 500 orders at a time."}, status=400)
+
+    orders = list(PrintOrder.objects.filter(id__in=id_list))
+    numbers = [f"{order.shop_code}-{order.id:05d}" for order in orders]
+    for order in orders:
+        if order.document:
+            delete_order_document(order)
+            order.save(update_fields=["document"])
+    PrintOrder.objects.filter(id__in=[order.id for order in orders]).delete()
+
+    log_admin_activity(
+        admin_user,
+        "orders.delete",
+        "print_order",
+        "",
+        f"deleted {len(orders)} order(s): {', '.join(numbers[:20])}{'...' if len(numbers) > 20 else ''}",
+    )
+    return JsonResponse({"deleted": len(orders)})
+
+
+# --- ID Card auto-crop training data ------------------------------------------
+
+
+def crop_outcome_counts(queryset):
+    counts = {row["outcome"]: row["n"] for row in queryset.values("outcome").annotate(n=Count("id"))}
+    return {outcome: counts.get(outcome, 0) for outcome, _ in CropSample.OUTCOME_CHOICES}
+
+
+@csrf_exempt
+@require_http_methods(["GET", "PUT", "OPTIONS"])
+def admin_crop_training(request):
+    """GET: the on/off switch, outcome counts (overall, last 7 days, and per shop) and storage used.
+    PUT {collectImages: bool}: turn photo collection on or off."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "tools_config")
+    if err:
+        return err
+
+    config = CropTrainingConfig.get_solo()
+    if request.method == "PUT":
+        config.collect_images = bool(parse_body(request).get("collectImages"))
+        config.save(update_fields=["collect_images", "updated_at"])
+        log_admin_activity(admin_user, "crop_training.update", "crop_training", config.id, f"collectImages={config.collect_images}")
+
+    everything = CropSample.objects.all()
+    week = everything.filter(created_at__gte=timezone.now() - timedelta(days=7))
+    with_images = everything.exclude(original_image="")
+    sizes = with_images.aggregate(o=Sum(Length("original_image")), r=Sum(Length("result_image")))
+    per_shop = (
+        everything.values("user_id", "user__email")
+        .annotate(total=Count("id"), accepted=Count("id", filter=Q(outcome=CropSample.OUTCOME_ACCEPTED)), adjusted=Count("id", filter=Q(outcome=CropSample.OUTCOME_ADJUSTED)), manual=Count("id", filter=Q(outcome=CropSample.OUTCOME_MANUAL)), notfound=Count("id", filter=Q(outcome=CropSample.OUTCOME_NOTFOUND)))
+        .order_by("-total")[:30]
+    )
+    return JsonResponse(
+        {
+            "collectImages": config.collect_images,
+            "counts": crop_outcome_counts(everything),
+            "countsLast7Days": crop_outcome_counts(week),
+            "filterChanged": everything.exclude(filter_values__isnull=True).count(),
+            "samplesWithImages": with_images.count(),
+            "imageBytes": (sizes["o"] or 0) + (sizes["r"] or 0),
+            "perShop": [
+                {"shopId": row["user_id"], "email": row["user__email"] or "(not logged in)", "total": row["total"], "accepted": row["accepted"], "adjusted": row["adjusted"], "manual": row["manual"], "notfound": row["notfound"]}
+                for row in per_shop
+            ],
+        }
+    )
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def admin_crop_samples(request):
+    """Samples that still hold photos (newest first), with the thumbnails inline."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    _, err = require_section(request, "tools_config")
+    if err:
+        return err
+
+    queryset = CropSample.objects.exclude(original_image="").select_related("user")
+    outcome = request.GET.get("outcome", "").strip()
+    if outcome in dict(CropSample.OUTCOME_CHOICES):
+        queryset = queryset.filter(outcome=outcome)
+    page_items, meta = paginate(queryset, request, default_size=12)
+    return JsonResponse(
+        {
+            **meta,
+            "samples": [
+                {
+                    "id": s.id,
+                    "side": s.side,
+                    "outcome": s.outcome,
+                    "email": s.user.email if s.user else "",
+                    "autoQuad": s.auto_quad,
+                    "finalQuad": s.final_quad,
+                    "filterValues": s.filter_values,
+                    "originalImage": s.original_image,
+                    "resultImage": s.result_image,
+                    "createdAt": s.created_at.isoformat(),
+                }
+                for s in page_items
+            ],
+        }
+    )
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def admin_crop_samples_delete(request):
+    """POST {ids: [..]} deletes those samples entirely; {all: true, scope: "images"|"everything"}
+    clears the stored photos of every sample (the outcome counts stay) or deletes every sample."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "tools_config")
+    if err:
+        return err
+
+    body = parse_body(request)
+    ids = body.get("ids")
+    if isinstance(ids, list) and ids:
+        try:
+            id_list = [int(v) for v in ids][:5000]
+        except (TypeError, ValueError):
+            return JsonResponse({"message": "Invalid ids."}, status=400)
+        # Single / selected: only the photos are removed, so the stats keep counting the outcome.
+        cleared = CropSample.objects.filter(id__in=id_list).update(original_image="", result_image="")
+        log_admin_activity(admin_user, "crop_training.delete", "crop_sample", "", f"cleared photos of {cleared} sample(s)")
+        return JsonResponse({"photosCleared": cleared, "deleted": 0})
+    if body.get("all") is True:
+        scope = str(body.get("scope", "images"))
+        if scope == "everything":
+            deleted = CropSample.objects.count()
+            CropSample.objects.all().delete()
+            log_admin_activity(admin_user, "crop_training.delete_all", "crop_sample", "", f"deleted {deleted} sample(s)")
+            return JsonResponse({"photosCleared": 0, "deleted": deleted})
+        cleared = CropSample.objects.exclude(original_image="").update(original_image="", result_image="")
+        log_admin_activity(admin_user, "crop_training.clear_images", "crop_sample", "", f"cleared photos of {cleared} sample(s)")
+        return JsonResponse({"photosCleared": cleared, "deleted": 0})
+    return JsonResponse({"message": "Select samples, or choose to clear everything."}, status=400)
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def admin_crop_samples_export(request):
+    """A ZIP for training with two folders - auto_crop_correct/ (the user accepted the auto crop as it
+    was) and auto_crop_wrong/ (the user fixed it or placed the corners by hand). Inside each, one
+    folder per sample: <id>_<side>/input.jpg (the uploaded photo) and output.jpg (the cropped card the
+    user approved). labels.json / labels.csv hold the corners as percent of the input photo.
+    ?outcome= limits it to one outcome."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "tools_config")
+    if err:
+        return err
+
+    queryset = CropSample.objects.exclude(original_image="").exclude(result_image="").order_by("id")
+    outcome = request.GET.get("outcome", "").strip()
+    if outcome in dict(CropSample.OUTCOME_CHOICES):
+        queryset = queryset.filter(outcome=outcome)
+
+    labels = []
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for sample in queryset.iterator(chunk_size=50):
+            group = "auto_crop_correct" if sample.outcome == CropSample.OUTCOME_ACCEPTED else "auto_crop_wrong"
+            folder = f"{group}/{sample.id}_{sample.side or 'front'}"
+            try:
+                archive.writestr(f"{folder}/input.jpg", data_uri_to_bytes(sample.original_image)[1])
+                archive.writestr(f"{folder}/output.jpg", data_uri_to_bytes(sample.result_image)[1])
+            except Exception:
+                continue
+            labels.append(
+                {
+                    "id": sample.id,
+                    "side": sample.side,
+                    "outcome": sample.outcome,
+                    "auto_crop_correct": sample.outcome == CropSample.OUTCOME_ACCEPTED,
+                    "input": f"{folder}/input.jpg",
+                    "output": f"{folder}/output.jpg",
+                    "auto_corners": sample.auto_quad,
+                    "final_corners": sample.final_quad,
+                    "user_filter": sample.filter_values,
+                    "created_at": sample.created_at.isoformat(),
+                }
+            )
+        archive.writestr("labels.json", json.dumps(labels, indent=2))
+        csv_buffer = io.StringIO()
+        writer = csv.writer(csv_buffer)
+        writer.writerow(["id", "side", "outcome", "auto_crop_correct", "input", "output", "auto_corners", "final_corners", "created_at"])
+        for row in labels:
+            writer.writerow([row["id"], row["side"], row["outcome"], row["auto_crop_correct"], row["input"], row["output"], json.dumps(row["auto_corners"]), json.dumps(row["final_corners"]), row["created_at"]])
+        archive.writestr("labels.csv", csv_buffer.getvalue())
+        readme = [
+            "auto_crop_correct/ - the auto crop was right (the customer applied it without moving a corner).",
+            "auto_crop_wrong/   - the auto crop was wrong (the customer moved the corners, or placed them by hand).",
+            "Inside each: one folder per sample, <id>_<front|back>/ with",
+            "  input.jpg  - the photo the customer uploaded (max 900 px)",
+            "  output.jpg - the cropped card the customer approved. This is the correct answer.",
+            "labels.json/csv - corners are {x,y} in percent (0-100) of the input photo, order: top-left, top-right, bottom-right, bottom-left.",
+            "auto_corners = what the auto-crop found (null if nothing); final_corners = what the user ended with.",
+            "auto_crop_correct is true when the user accepted the auto crop without moving a corner.",
+            "user_filter is what the user set in Filter & Light after the crop (null = they kept the default look).",
+            "  Customer page: brightness / contrast / saturation in % (100 = unchanged). Shop dashboard: brightness / contrast / black / red / yellow / blue tone sliders and saturation.",
+        ]
+        archive.writestr("README.txt", chr(10).join(readme) + chr(10))
+
+    log_admin_activity(admin_user, "crop_training.export", "crop_sample", "", f"exported {len(labels)} sample(s)")
+    response = HttpResponse(buffer.getvalue(), content_type="application/zip")
+    response["Content-Disposition"] = 'attachment; filename="id-card-crop-training.zip"'
+    return response
+
+
+# --- ID Card Maker training data ----------------------------------------------
+
+
+def card_maker_overview(config):
+    rows = CardMakerSample.objects.annotate(in_len=Length("input_pdf"), out_len=Length("output_pdf"))
+    totals = rows.aggregate(total=Count("id"), size=Sum("in_len") + Sum("out_len"))
+    by_type = list(rows.values("doc_type").annotate(n=Count("id")).order_by("-n"))
+    return {
+        "collect": config.collect_card_maker,
+        "total": totals["total"] or 0,
+        "bytes": totals["size"] or 0,
+        "byType": [{"docType": row["doc_type"] or "(unknown)", "count": row["n"]} for row in by_type],
+    }
+
+
+@csrf_exempt
+@require_http_methods(["GET", "PUT", "OPTIONS"])
+def admin_card_maker_data(request):
+    """GET: the on/off switch, how many runs are stored, per document type, and their size.
+    PUT {collect: bool}: turn keeping ID Card Maker PDFs on or off."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "tools_config")
+    if err:
+        return err
+
+    config = CropTrainingConfig.get_solo()
+    if request.method == "PUT":
+        config.collect_card_maker = bool(parse_body(request).get("collect"))
+        config.save(update_fields=["collect_card_maker", "updated_at"])
+        log_admin_activity(admin_user, "card_maker_data.update", "crop_training", config.id, f"collect={config.collect_card_maker}")
+    return JsonResponse(card_maker_overview(config))
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def admin_card_maker_samples(request):
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    _, err = require_section(request, "tools_config")
+    if err:
+        return err
+
+    queryset = CardMakerSample.objects.select_related("user").annotate(in_len=Length("input_pdf"), out_len=Length("output_pdf")).defer("input_pdf", "output_pdf")
+    doc_type = request.GET.get("docType", "").strip()
+    if doc_type:
+        queryset = queryset.filter(doc_type=doc_type)
+    page_items, meta = paginate(queryset, request, default_size=25)
+    return JsonResponse(
+        {
+            **meta,
+            "samples": [
+                {
+                    "id": s.id,
+                    "docType": s.doc_type,
+                    "mode": s.mode,
+                    "kind": s.output_kind,
+                    "email": s.user.email if s.user else "",
+                    "inputBytes": s.in_len or 0,
+                    "outputBytes": s.out_len or 0,
+                    "createdAt": s.created_at.isoformat(),
+                }
+                for s in page_items
+            ],
+        }
+    )
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def admin_card_maker_file(request, sample_id, which):
+    """One stored PDF (which = input | output) for review."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    _, err = require_section(request, "tools_config")
+    if err:
+        return err
+
+    sample = CardMakerSample.objects.filter(id=sample_id).first()
+    if not sample or which not in ("input", "output"):
+        return JsonResponse({"message": "Not found."}, status=404)
+    data = bytes(sample.input_pdf if which == "input" else sample.output_pdf)
+    response = HttpResponse(data, content_type="application/pdf")
+    response["Content-Disposition"] = f'attachment; filename="{sample.doc_type or "card"}-{sample.id}-{which}.pdf"'
+    return response
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def admin_card_maker_delete(request):
+    """POST {ids: [..]} or {all: true}: deletes those stored runs (the PDFs)."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "tools_config")
+    if err:
+        return err
+
+    body = parse_body(request)
+    ids = body.get("ids")
+    if isinstance(ids, list) and ids:
+        try:
+            id_list = [int(v) for v in ids][:5000]
+        except (TypeError, ValueError):
+            return JsonResponse({"message": "Invalid ids."}, status=400)
+        deleted = CardMakerSample.objects.filter(id__in=id_list).delete()[0]
+    elif body.get("all") is True:
+        deleted = CardMakerSample.objects.all().delete()[0]
+    else:
+        return JsonResponse({"message": "Select runs, or choose to delete all."}, status=400)
+    log_admin_activity(admin_user, "card_maker_data.delete", "card_maker_sample", "", f"deleted {deleted} stored run(s)")
+    return JsonResponse({"deleted": deleted})
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def admin_card_maker_export(request):
+    """A ZIP: <doc_type>/<id>/input.pdf + output.pdf for every stored run (?docType= limits it), plus
+    labels.json (document type, parsed mode, output kind and the settings used)."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "tools_config")
+    if err:
+        return err
+
+    queryset = CardMakerSample.objects.order_by("id")
+    doc_type = request.GET.get("docType", "").strip()
+    if doc_type:
+        queryset = queryset.filter(doc_type=doc_type)
+
+    labels = []
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for sample in queryset.iterator(chunk_size=20):
+            folder = f"{sample.doc_type or 'unknown'}/{sample.id}"
+            archive.writestr(f"{folder}/input.pdf", bytes(sample.input_pdf))
+            archive.writestr(f"{folder}/output.pdf", bytes(sample.output_pdf))
+            labels.append(
+                {
+                    "id": sample.id,
+                    "doc_type": sample.doc_type,
+                    "mode": sample.mode,
+                    "output_kind": sample.output_kind,
+                    "settings": sample.settings_json,
+                    "input": f"{folder}/input.pdf",
+                    "output": f"{folder}/output.pdf",
+                    "created_at": sample.created_at.isoformat(),
+                }
+            )
+        archive.writestr("labels.json", json.dumps(labels, indent=2))
+        readme = [
+            "One folder per document type (aadhaar, pan, voter, dl ...), then one folder per run:",
+            "  input.pdf  - the PDF the user opened (already unlocked if it had a password)",
+            "  output.pdf - the card PDF the tool produced from it",
+            "labels.json lists each run with the output kind (card / a4 / 4x6) and the settings used.",
+            "These files contain personal details - keep them private and delete them from the admin panel after exporting.",
+        ]
+        archive.writestr("README.txt", chr(10).join(readme) + chr(10))
+
+    log_admin_activity(admin_user, "card_maker_data.export", "card_maker_sample", "", f"exported {len(labels)} run(s)")
+    response = HttpResponse(buffer.getvalue(), content_type="application/zip")
+    response["Content-Disposition"] = 'attachment; filename="id-card-maker-training.zip"'
+    return response

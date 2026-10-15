@@ -18,7 +18,7 @@ export default function PhotoOrderModal({ orderId, onClose }: { orderId: number;
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={onClose}>
       <div className="w-full max-w-4xl rounded-xl bg-white p-5 shadow-lg" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-start justify-between mb-4">
-          <h2 className="text-sm font-semibold text-slate-900">{order?.orderNumber || "Passport photo order"}</h2>
+          <h2 className="text-sm font-semibold text-slate-900">{order?.orderNumber || "Photo order"}</h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-sm">
             Close
           </button>
@@ -32,11 +32,18 @@ export default function PhotoOrderModal({ orderId, onClose }: { orderId: number;
           <>
             <div className="grid grid-cols-2 gap-6">
               <div>
-                <p className="text-sm text-slate-500 mb-2">Input (uploaded photo)</p>
-                {order.hasRawPhoto && order.fileUrl && !order.documentDeleted ? (
+                <p className="text-sm text-slate-500 mb-2">{order.serviceKey === "family_passport_photo" ? "Input (uploaded member photos)" : "Input (uploaded photo)"}</p>
+                {order.familyInputs && order.familyInputs.length ? (
+                  <div className="grid grid-cols-3 gap-2">
+                    {order.familyInputs.map((src, index) => (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img key={index} src={src} alt={`Person ${index + 1}`} className="w-full rounded-md border border-slate-200" />
+                    ))}
+                  </div>
+                ) : order.hasRawPhoto && order.fileUrl && !order.documentDeleted ? (
                   <img src={order.fileUrl} alt="Input" className="w-full rounded-md border border-slate-200" />
                 ) : (
-                  <p className="text-sm text-slate-500">{order.documentDeleted ? "The file was deleted." : "No input file."}</p>
+                  <p className="text-sm text-slate-500">{order.documentDeleted ? "The uploaded photos were deleted (the customer's originals are removed once the photo is generated)." : "No input file."}</p>
                 )}
               </div>
               <div>

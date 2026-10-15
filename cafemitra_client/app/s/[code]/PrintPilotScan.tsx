@@ -2,14 +2,21 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CircleAlert, CircleCheck, Clock3, Copy, Crop, Download, Eye, EyeOff, FileText, IdCard, Image as ImageIcon, Info, LoaderCircle, LockKeyhole, Printer, RotateCw, ShieldCheck, Trash2, Undo2, Upload, Wallet, X } from "lucide-react";
+import { CircleAlert, CircleCheck, Clock3, Copy, Crop, Download, Eye, EyeOff, FileText, IdCard, Image as ImageIcon, Info, LoaderCircle, LockKeyhole, Pencil, Printer, RotateCw, ShieldCheck, Trash2, Undo2, Upload, Wallet, X } from "lucide-react";
 import { apiUrl } from "@/lib/api";
 import { calculatePriceItemRate, formatPriceItem, getAllowedPaymentModes, getDuplexRate, mergePricingDefaults, type PriceItem, type PricingService } from "@/lib/pricing";
 import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
+import { buildFamilyPhotoPrompt } from "@/lib/family-photo-prompt";
+import FamilyPhotoUpload from "./FamilyPhotoUpload";
+
+// Family Passport Photo: one photo per person, merged into one group photo.
+const FAMILY_MIN_PHOTOS = 2;
+const FAMILY_MAX_PHOTOS = 6;
 import { stashPhotoForPrintSheet } from "@/lib/printSheetHandoff";
 import { CropEditor, cropImage, rotateImageBlob, loadImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, warpPerspectiveCrop, type CropQuad, type CropRect } from "../../CropEditor";
 import PublicResumeBuilder from "./PublicResumeBuilder";
 import PublicBiodataMaker from "./PublicBiodataMaker";
+import { parsePhotoCount } from "../../passport-photo/printSheet";
 import IdCardPrintUpload from "./IdCardPrintUpload";
 import { applyCleanScanToFile, type CleanScanProgress } from "./cleanScan/cleanScanEngine";
 import { scanDocument } from "../../id-card-print/cardScan";
@@ -48,10 +55,12 @@ type PublicShop = {
 type PrintOrder = {
   id: number;
   orderNumber: string;
+  priceLabel?: string;
   tokenId: string;
   tokenNumber: number;
   serviceKey: string;
   paymentStatus: string;
+  agentMessage?: string;
   paymentGateway: string;
   status: string;
   totalAmount: number;
@@ -103,7 +112,7 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
   const [fileName, setFileName] = useState("");
   const [fileUrl, setFileUrl] = useState("");
   const [fileType, setFileType] = useState("");
-  const [passportSheetUrl, setPassportSheetUrl] = useState("");
+  const [familyFiles, setFamilyFiles] = useState<File[]>([]);
   const [attireCategory, setAttireCategory] = useState(passportAttireOptions[0].key);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isPageManagerOpen, setIsPageManagerOpen] = useState(false);
@@ -137,6 +146,10 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
   // the photo exactly as uploaded (original).
   const [autoScan, setAutoScan] = useState<{ status: "working" | "done" | "cleaned" | "original" | "error"; look: DocLook; original: File } | null>(null);
   const autoScanTokenRef = useRef(0);
+  // The ID Card editor stays mounted (hidden) after Continue, so "Edit cards" brings every card back as it was.
+  // A fresh editor (new key) is used whenever the upload is cleared any other way.
+  const idCardEditingRef = useRef(false);
+  const [idCardEditorKey, setIdCardEditorKey] = useState(0);
   // The exact file the customer uploaded, before any crop - never
   // reassigned after upload. autoScan.original is the re-scan source and
   // moves to the cropped version once a crop is applied (see
@@ -258,16 +271,20 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
   const standardPriceItems = priceItems.filter((item) => !item.profile);
   const profilePriceItems = priceItems.filter((item) => item.profile);
   const isPassportPhoto = selectedService === "passport_photo";
+  const isFamilyPhoto = selectedService === "family_passport_photo";
+  // Passport and family photos share the AI-photo flow: package price, no pages, generated photo shown on the order.
+  const isPhotoService = isPassportPhoto || isFamilyPhoto;
   const isIdCardPrint = selectedService === "id_card_print";
-  const hasUploadedFile = Boolean(fileUrl);
-  const totalUnits = isPassportPhoto ? copies : pages * copies;
+  const hasUploadedFile = isFamilyPhoto ? familyFiles.length >= FAMILY_MIN_PHOTOS : Boolean(fileUrl);
+  const hasReadyFile = isFamilyPhoto ? familyFiles.length >= FAMILY_MIN_PHOTOS : Boolean(finalFile);
+  const totalUnits = isPhotoService ? copies : pages * copies;
   const hasPdfFile = isPdfFile(fileType, fileName);
   const hasImageFile = isImageFile(fileType, fileName);
   // Double-side printing only makes sense for a multi-page PDF; the agent turns on the printer's two-sided setting when ticked.
-  const canDuplex = hasPdfFile && pages > 1 && !isPassportPhoto && !isIdCardPrint;
+  const canDuplex = hasPdfFile && pages > 1 && !isPhotoService && !isIdCardPrint;
   // Shop's per-page Duplex price for the selected B/W / Color item (0 = normal rate).
   const duplexRate = getDuplexRate(activeService?.settings, selectedItem?.id, totalUnits);
-  const selectedRate = canDuplex && duplex && duplexRate > 0 ? duplexRate : calculatePriceItemRate(selectedItem, isPassportPhoto ? 1 : totalUnits);
+  const selectedRate = canDuplex && duplex && duplexRate > 0 ? duplexRate : calculatePriceItemRate(selectedItem, isPhotoService ? 1 : totalUnits);
   const amount = hasUploadedFile ? Math.max(0, selectedRate * totalUnits) : 0;
   const canCropImage = (selectedService === "auto_document_print" || isPassportPhoto) && hasImageFile;
   // Document photos are scanned automatically; passport photos and ID cards have their own flows.
@@ -325,6 +342,8 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
   const progressPercent = Math.round((completedStepCount / customerSteps.length) * 100);
   const activeStepLabel = customerSteps[activeStep - 1]?.label || "Service";
   const canDeletePrintedDocument = order?.status === "printed" && !order.documentDeleted;
+  // The cafe owner turned down this cash-counter order from the agent popup (the uploads are removed with it).
+  const isCashRejectedOrder = order?.status === "failed" && order?.paymentStatus === "cash_counter" && (order?.agentMessage ?? "").startsWith("Cash counter print rejected");
   const isOnlinePaymentOrder = order?.paymentStatus === "pending" && paymentMode === "Online Payment";
   const isDirectUpiOrder = isOnlinePaymentOrder && order?.paymentGateway === "direct_upi";
   const isRazorpayOrder = isOnlinePaymentOrder && order?.paymentGateway === "razorpay";
@@ -339,27 +358,18 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
     }
   }, [allowedPaymentModes, paymentMode]);
 
+  // The photo that gets sent for the AI passport photo is the uploaded one, as it is (no printable sheet is built here).
   useEffect(() => {
-    if (!isPassportPhoto || !fileUrl || !hasImageFile) {
-      if (passportSheetUrl) {
-        URL.revokeObjectURL(passportSheetUrl);
-        setPassportSheetUrl("");
-      }
-      return;
-    }
+    if (!isPassportPhoto || !fileUrl || !hasImageFile) return;
 
     let cancelled = false;
     setFinalFile(null);
-    Promise.all([fetch(fileUrl).then((response) => response.blob()), generatePassportSheet(fileUrl)])
-      .then(([rawBlob, sheetBlob]) => {
+    fetch(fileUrl)
+      .then((response) => response.blob())
+      .then((rawBlob) => {
         if (cancelled) return;
-        // The tiled sheet is preview-only; the raw photo is what gets sent to the backend.
         setFinalFile(rawBlob);
         setPages(1);
-        setPassportSheetUrl((current) => {
-          if (current) URL.revokeObjectURL(current);
-          return URL.createObjectURL(sheetBlob);
-        });
       })
       .catch(() => setOrderError("Could not prepare the passport photo."));
 
@@ -411,7 +421,7 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
 
   useEffect(() => {
     if (!order || order.status === "printed" || order.status === "failed") return;
-    if (isPassportPhoto && order.geminiPhoto) return;
+    if (isPhotoService && order.geminiPhoto) return;
 
     const intervalId = window.setInterval(async () => {
       try {
@@ -439,6 +449,9 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
   // our servers, whether they deleted it themselves or it was auto-deleted.
   useEffect(() => {
     if (!order || !order.documentDeleted) return;
+    // Photo orders drop the customer's own uploads as soon as the result is made - that is not news, and
+    // closing the notice would wipe the generated photo from the page. Only a rejected order needs saying.
+    if (isPhotoService && !isCashRejectedOrder) return;
     if (deletedNoticeShownForOrderRef.current === order.id) return;
 
     deletedNoticeShownForOrderRef.current = order.id;
@@ -456,7 +469,7 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
     // forever regardless of how far along the AI generation is, so its
     // own completion signal (geminiPhoto present) drives progress instead.
     // Still animates up to 92% meanwhile so the wait doesn't look stalled.
-    if (isPassportPhoto) {
+    if (isPhotoService) {
       if (order.geminiPhoto) {
         setPrintProgress(100);
         return;
@@ -484,7 +497,7 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
     }, 650);
 
     return () => window.clearInterval(intervalId);
-  }, [order?.status, order?.id, isPassportPhoto, order?.geminiPhoto]);
+  }, [order?.status, order?.id, isPhotoService, order?.geminiPhoto]);
 
   function selectService(service: PricingService) {
     setSelectedService(service.serviceKey);
@@ -754,7 +767,6 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
     autoScanTokenRef.current++;
     setAutoScan(null);
     if (fileUrl) URL.revokeObjectURL(fileUrl);
-    if (passportSheetUrl) URL.revokeObjectURL(passportSheetUrl);
     const nextUrl = URL.createObjectURL(file);
     setFinalFile(isPassportPhoto ? null : file);
     setFileUrl(nextUrl);
@@ -771,7 +783,6 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
     setOrder(null);
     setOrderError("");
     setOptionsTouched(false);
-    setPassportSheetUrl("");
     resetPaymentFlow();
 
     const isPdfUpload = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
@@ -825,10 +836,8 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
     autoScanTokenRef.current++;
     setAutoScan(null);
     if (fileUrl) URL.revokeObjectURL(fileUrl);
-    if (passportSheetUrl) URL.revokeObjectURL(passportSheetUrl);
     setFinalFile(null);
     setFileUrl("");
-    setPassportSheetUrl("");
     setFileName("");
     setFileType("");
     setPages(0);
@@ -842,8 +851,20 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
     setCropQuad(DEFAULT_CROP_QUAD);
   }
 
+  useEffect(() => {
+    if (hasUploadedFile) return;
+    if (idCardEditingRef.current) idCardEditingRef.current = false;
+    else setIdCardEditorKey((key) => key + 1);
+  }, [hasUploadedFile]);
+
+  function editIdCards() {
+    idCardEditingRef.current = true;
+    clearUpload();
+  }
+
   function clearUpload() {
     clearUploadedFileState();
+    setFamilyFiles([]);
     setCopies(1);
     setDuplex(false);
     setDuplexEdge("long");
@@ -902,10 +923,6 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
       setCropQuad(DEFAULT_CROP_QUAD);
       setOrder(null);
       setOrderError("");
-      if (passportSheetUrl) {
-        URL.revokeObjectURL(passportSheetUrl);
-        setPassportSheetUrl("");
-      }
     } catch {
       alert("Could not crop the image. Please upload the image again and try.");
     }
@@ -939,10 +956,6 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
       setCropQuad(DEFAULT_CROP_QUAD);
       setOrder(null);
       setOrderError("");
-      if (passportSheetUrl) {
-        URL.revokeObjectURL(passportSheetUrl);
-        setPassportSheetUrl("");
-      }
     } catch {
       alert("Could not rotate the image. Please upload the image again and try.");
     } finally {
@@ -1170,7 +1183,7 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
   }
 
   async function createPrintOrder() {
-    if (!finalFile || !selectedItem || !activeService || autoScanWorking) return;
+    if (!hasReadyFile || !selectedItem || !activeService || autoScanWorking) return;
     if (!isCafeOpen) {
       setOrderError("This print shop is currently closed. Please try again when the service is open.");
       return;
@@ -1181,13 +1194,18 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
     setOrderError("");
     try {
       const formData = new FormData();
-      const uploadName = fileName || (isPassportPhoto ? "passport-photo.jpg" : "document");
-      formData.append("document", finalFile, uploadName);
+      if (isFamilyPhoto) {
+        // One file per family member - the shop's photo pooler merges them into a single group photo.
+        familyFiles.forEach((file) => formData.append("photos", file, file.name));
+      } else if (finalFile) {
+        const uploadName = fileName || (isPassportPhoto ? "passport-photo.jpg" : "document");
+        formData.append("document", finalFile, uploadName);
+      }
       formData.append("serviceKey", activeService.serviceKey);
       formData.append("priceItemId", selectedItem.id);
       formData.append("priceLabel", selectedItem.label);
       formData.append("rate", String(selectedRate));
-      formData.append("pages", String(isPassportPhoto ? 1 : pages));
+      formData.append("pages", String(isPhotoService ? 1 : pages));
       formData.append("copies", String(copies));
       if (canDuplex && duplex) {
         formData.append("duplex", "true");
@@ -1199,6 +1217,7 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
         formData.append("attireCategory", attireCategory);
         formData.append("prompt", buildPassportPrompt(attireCategory));
       }
+      if (isFamilyPhoto) formData.append("prompt", buildFamilyPhotoPrompt(familyFiles.length));
 
       const response = await fetch(apiUrl(`/api/public-shop/${data?.code || code}/orders/`), {
         method: "POST",
@@ -1497,20 +1516,38 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
         <article className={`customer-panel ${activeStep === (showServiceSelector ? 2 : 1) ? "is-guided" : ""}`}>
           <div className="customer-panel-head">
             <span>Step {showServiceSelector ? 2 : 1}</span>
-            <h2>{isIdCardPrint ? "Upload Your ID Card" : "Upload Document"}</h2>
+            <h2>{isFamilyPhoto ? "Upload Everyone's Photos" : isIdCardPrint ? "Upload Your ID Card" : "Upload Document"}</h2>
           </div>
-          {isIdCardPrint && !hasUploadedFile ? (
+          {isIdCardPrint && !isFamilyPhoto ? (
+            <div hidden={hasUploadedFile}>
             <IdCardPrintUpload
+              key={idCardEditorKey}
               prices={{
-                color: priceItems.find((item) => item.id === "color")?.rate,
-                bw: priceItems.find((item) => item.id === "black_white")?.rate,
+              color: priceItems.find((item) => item.id === "color")?.rate,
+              bw: priceItems.find((item) => item.id === "black_white")?.rate,
               }}
-              onComposed={(file, cardCount, colorMode) => {
-                const item = priceItems.find((entry) => entry.id === (colorMode === "bw" ? "black_white" : "color"));
+              colorMode={selectedItem?.id === "black_white" ? "bw" : "color"}
+              hasFile={hasUploadedFile}
+              onColorModeChange={(mode) => {
+                const item = priceItems.find((entry) => entry.id === (mode === "bw" ? "black_white" : "color"));
                 if (item) setSelectedItemId(item.id);
-                applyUploadedFile(file, cardCount);
               }}
+              onComposed={(file, pageCount) => applyUploadedFile(file, pageCount)}
               busy={isCombiningFiles}
+            />
+            </div>
+          ) : null}
+          {isFamilyPhoto ? (
+            <FamilyPhotoUpload
+              files={familyFiles}
+              min={FAMILY_MIN_PHOTOS}
+              max={FAMILY_MAX_PHOTOS}
+              disabled={Boolean(order) || isSubmittingOrder}
+              onChange={(next) => {
+                setFamilyFiles(next);
+                setOptionsTouched(false);
+                resetOrderDraft();
+              }}
             />
           ) : hasUploadedFile ? (
             <div className="customer-document-preview">
@@ -1522,10 +1559,10 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
               </div>
               <div>
                 <strong>{fileName}</strong>
-                <span>{isIdCardPrint ? `${pages} ID card${pages > 1 ? "s" : ""} in this order` : pages ? `${pages} page${pages > 1 ? "s" : ""} detected` : "Detecting pages..."}</span>
+                <span>{isIdCardPrint ? `${pages} page${pages > 1 ? "s" : ""} of ID cards in this order` : pages ? `${pages} page${pages > 1 ? "s" : ""} detected` : "Detecting pages..."}</span>
                 <p className="customer-inline-help">
                   {isIdCardPrint
-                    ? "To add, remove, or edit a card, use Remove below and upload again."
+                    ? "To add another ID, change a card, or switch Color / B&W, use Edit cards."
                     : hasPdfFile
                       ? "If there is a wrong page, use Remove Page. Preview the file before continuing."
                       : canCropImage
@@ -1561,6 +1598,11 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
                   {!isPassportPhoto && !isIdCardPrint ? (
                     <button type="button" onClick={runCleanScan} disabled title="Coming soon">
                       <ImageIcon size={16} /> Clean Scan <small className="coming-soon-tag">Coming Soon</small>
+                    </button>
+                  ) : null}
+                  {isIdCardPrint && !order ? (
+                    <button type="button" onClick={editIdCards} disabled={isCleanScanProcessing || isSubmittingOrder}>
+                      <Pencil size={16} /> Edit cards
                     </button>
                   ) : null}
                   <button type="button" onClick={clearUpload} disabled={isCleanScanProcessing}>
@@ -1626,7 +1668,7 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
                     </button>
                   </div>
                 ) : null}
-                {isPassportPhoto && passportSheetUrl ? (
+                {isPassportPhoto && Boolean(finalFile) ? (
                   <>
                     <div className="passport-attire-picker">
                       <span>Dress</span>
@@ -1648,10 +1690,6 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
                           );
                         })}
                       </div>
-                    </div>
-                    <div className="passport-sheet-mini">
-                      <img src={passportSheetUrl} alt="" />
-                      <span>6 pcs sheet ready</span>
                     </div>
                   </>
                 ) : null}
@@ -1691,10 +1729,9 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
             <Printer size={16} />
             <span>{hasUploadedFile ? "Now confirm the print type, pages, and copies." : "After upload, you can edit pages and copies."}</span>
           </div> */}
-          {/* ID Card Print: Color / B/W is picked on the upload toolbar (it decides how the cards are rendered), so no separate chooser here. */}
           {/* Dashboard: the print profile decides paper, colour and two-sided printing, so no charge types here. */}
-          <div className="print-type-control" hidden={isIdCardPrint || ownerMode}>
-            <span>{isPassportPhoto ? "Package" : "Charge Type"}</span>
+          <div className="print-type-control" hidden={ownerMode}>
+            <span>{isPhotoService ? "Package" : "Charge Type"}</span>
             <div className={`print-type-options ${canDuplex ? "has-duplex" : ""}`}>
               {standardPriceItems.map((item) => (
                 <label className={selectedItem?.id === item.id ? "active" : ""} key={item.id}>
@@ -1775,10 +1812,10 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
           </div>
           {isIdCardPrint && hasUploadedFile ? (
             <p className="customer-inline-help">
-              {pages} ID card{pages > 1 ? "s" : ""} ({selectedItem?.label}) × Rs. {selectedRate} each
+              {pages} page{pages > 1 ? "s" : ""} × {copies} cop{copies > 1 ? "ies" : "y"} = {pages * copies} total page{pages * copies > 1 ? "s" : ""} ({selectedItem?.label}) × Rs. {selectedRate} per page
             </p>
           ) : null}
-          {!isPassportPhoto && !isIdCardPrint ? (
+          {!isPhotoService && !isIdCardPrint ? (
             <label>
               <span>Pages</span>
               <input
@@ -1801,7 +1838,7 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
               />
             </label>
           ) : null}
-          <label className="copies-control">
+          <label className="copies-control" hidden={isPhotoService}>
             <span>{isPassportPhoto ? "Sets" : "Copies"}</span>
             <div className="copies-stepper">
               <button
@@ -1893,14 +1930,14 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
             </strong>
           </div>
           <div className="customer-summary-row">
-            <span>{isPassportPhoto ? "Package x Copies" : isIdCardPrint ? "Cards x Copies" : "Pages x Copies"}</span>
+            <span>{isFamilyPhoto ? "Family photo" : isPassportPhoto ? "Package" : "Pages x Copies"}</span>
             <strong>
               {hasUploadedFile
-                ? isPassportPhoto
-                  ? `${selectedItem?.label || "1"} x ${copies}`
-                  : isIdCardPrint
-                    ? `${pages} card${pages > 1 ? "s" : ""} x ${copies}`
-                    : `${pages} x ${copies}`
+                ? isFamilyPhoto
+                  ? `${familyFiles.length} people`
+                  : isPassportPhoto
+                  ? selectedItem?.label || "1"
+                  : `${pages} x ${copies}`
                 : "Upload pending"}
             </strong>
           </div>
@@ -1908,12 +1945,6 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
             <div className="customer-summary-row">
               <span>Dress</span>
               <strong>{passportAttireOptions.find((option) => option.key === attireCategory)?.label || passportAttireOptions[0].label}</strong>
-            </div>
-          ) : null}
-          {isPassportPhoto && passportSheetUrl ? (
-            <div className="passport-sheet-preview">
-              <img src={passportSheetUrl} alt="" />
-              <span>Final printable sheet preview</span>
             </div>
           ) : null}
           <div className="customer-total">
@@ -1938,14 +1969,14 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
                   <strong>{order.tokenId}</strong>
                 </div>
               ) : null}
-              {isPassportPhoto ? (
+              {isPhotoService ? (
                 <div className="customer-token-card">
-                  <small>Passport Photo Preview</small>
+                  <small>{isFamilyPhoto ? "Family Photo Preview" : "Passport Photo Preview"}</small>
                   {order.geminiPhoto ? (
                     <>
-                      <img src={apiUrl(order.geminiPhoto)} alt="Generated passport photo" className="gemini-photo-preview" />
+                      <img src={apiUrl(order.geminiPhoto)} alt={isFamilyPhoto ? "Generated family photo" : "Generated passport photo"} className="gemini-photo-preview" />
                       <div className="customer-photo-actions">
-                        <a className="customer-download-btn" href={apiUrl(order.geminiPhoto)} download="passport-photo.jpg">
+                        <a className="customer-download-btn" href={apiUrl(order.geminiPhoto)} download={isFamilyPhoto ? "family-passport-photo.jpg" : "passport-photo.jpg"}>
                           <Download size={16} /> Download photo
                         </a>
                         <button
@@ -1953,26 +1984,26 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
                           className="customer-download-btn"
                           onClick={() => {
                             if (!order.geminiPhoto) return;
-                            stashPhotoForPrintSheet(order.geminiPhoto, "passport-photo.jpg");
+                            stashPhotoForPrintSheet(order.geminiPhoto, isFamilyPhoto ? "family-passport-photo.jpg" : "passport-photo.jpg", isFamilyPhoto, parsePhotoCount(order.priceLabel));
                             router.push("/photo-print-sheet");
                           }}
                         >
                           <Printer size={16} /> Print
                         </button>
                       </div>
-                      <p className="customer-inline-help">Please collect your hardcopy passport photo from your cyber cafe shop.</p>
+                      <p className="customer-inline-help">Please collect your hardcopy {isFamilyPhoto ? "family" : "passport"} photo from your cyber cafe shop.</p>
                     </>
                   ) : order.status === "awaiting_approval" ? (
                     <span>Waiting for the cafe owner to confirm your cash counter payment before your photo is generated.</span>
                   ) : order.status === "failed" ? (
                     <span className="customer-photo-failed">
-                      {order.photoErrorMessage || "We couldn't generate your passport photo. Please contact the cafe owner."}
+                      {order.photoErrorMessage || `We couldn't generate your ${isFamilyPhoto ? "family" : "passport"} photo. Please contact the cafe owner.`}
                     </span>
                   ) : (
                     <div className="print-progress-box">
                       <div className="print-progress-head">
                         <LoaderCircle className="spin" size={16} />
-                        <span>Generating your passport photo…</span>
+                        <span>Generating your {isFamilyPhoto ? "family" : "passport"} photo…</span>
                         <strong>{printProgress}%</strong>
                       </div>
                       <progress value={printProgress} max={100} />
@@ -1981,7 +2012,7 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
                   )}
                 </div>
               ) : null}
-              {!isPassportPhoto ? (
+              {!isPhotoService ? (
                 order.status === "queued" || order.status === "printing" ? (
                   <div className="print-progress-box">
                     <div className="print-progress-head">
@@ -2044,7 +2075,7 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
               </button>
             </div>
           ) : (
-            <button type="button" onClick={createPrintOrder} disabled={!hasUploadedFile || !finalFile || isSubmittingOrder || Boolean(order) || autoScanWorking}>
+            <button type="button" onClick={createPrintOrder} disabled={!hasUploadedFile || !hasReadyFile || isSubmittingOrder || Boolean(order) || autoScanWorking}>
               <Wallet size={18} /> {isSubmittingOrder ? "Creating Order..." : order ? "Order Created" : "Continue to Payment"}
             </button>
           )}
@@ -2083,8 +2114,12 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
             <div className="confirm-dialog-icon confirm-dialog-icon-success">
               <ShieldCheck size={22} />
             </div>
-            <h2>Your document has been deleted</h2>
-            <p>The uploaded file is now permanently removed from our servers. Only your token record ({order?.tokenId}) is kept, so the cafe can confirm your order.</p>
+            <h2>{isCashRejectedOrder ? "The cyber cafe rejected your order" : "Your document has been deleted"}</h2>
+            <p>
+              {isCashRejectedOrder
+                ? `The cyber cafe shop has rejected your order (${order?.tokenId}). No payment was taken. Your uploaded photos have been permanently removed from our servers, and only your token record is kept. Please contact the shop if you have any questions.`
+                : `The uploaded file is now permanently removed from our servers. Only your token record (${order?.tokenId}) is kept, so the cafe can confirm your order.`}
+            </p>
             <div className="confirm-dialog-actions confirm-dialog-actions-single">
               <button type="button" className="confirm-dialog-primary" onClick={dismissDocumentDeletedNotice}>
                 OK, Got It
@@ -2424,43 +2459,6 @@ async function imageFileToPngBytes(file: Blob): Promise<Uint8Array> {
   } finally {
     URL.revokeObjectURL(objectUrl);
   }
-}
-
-async function generatePassportSheet(fileUrl: string) {
-  const image = await loadImage(fileUrl);
-  const canvas = document.createElement("canvas");
-  const context = canvas.getContext("2d");
-  const sheetWidth = 1800;
-  const sheetHeight = 1200;
-  const photoWidth = 360;
-  const photoHeight = 463;
-  const gapX = 180;
-  const gapY = 80;
-  const startX = (sheetWidth - photoWidth * 3 - gapX * 2) / 2;
-  const startY = (sheetHeight - photoHeight * 2 - gapY) / 2;
-
-  canvas.width = sheetWidth;
-  canvas.height = sheetHeight;
-  if (!context) throw new Error("Canvas not supported");
-
-  context.fillStyle = "#ffffff";
-  context.fillRect(0, 0, sheetWidth, sheetHeight);
-
-  for (let row = 0; row < 2; row += 1) {
-    for (let col = 0; col < 3; col += 1) {
-      const x = startX + col * (photoWidth + gapX);
-      const y = startY + row * (photoHeight + gapY);
-      drawPassportPhoto(context, image, x, y, photoWidth, photoHeight);
-    }
-  }
-
-  context.fillStyle = "#111a44";
-  context.font = "bold 28px Segoe UI, Arial";
-  context.fillText("RepetiGo Passport Photo", 56, sheetHeight - 44);
-
-  return new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Passport sheet failed"))), "image/png", 0.95);
-  });
 }
 
 function drawPassportPhoto(context: CanvasRenderingContext2D, image: HTMLImageElement, x: number, y: number, width: number, height: number) {

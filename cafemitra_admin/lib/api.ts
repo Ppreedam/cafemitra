@@ -533,6 +533,8 @@ export type AdminOrder = ShopOrder & {
   hasRawPhoto?: boolean;
   hasGeminiPhoto?: boolean;
   geminiPhoto?: string;
+  // Family orders only (single-order detail): the uploaded member photos, until the group photo exists.
+  familyInputs?: string[];
 };
 
 export type AdminOrderListResponse = {
@@ -560,6 +562,10 @@ export function fetchOrders(params: {
 
 export function fetchOrderDetail(id: number) {
   return request<{ order: AdminOrder }>(`/admin/orders/${id}/`);
+}
+
+export function deleteOrders(ids: number[]) {
+  return request<{ deleted: number }>("/admin/orders/delete/", { method: "POST", body: JSON.stringify({ ids }) });
 }
 
 export type StuckOrder = {
@@ -820,6 +826,134 @@ export function updateCoupon(
 
 export function deleteCoupon(id: number) {
   return request<{ message: string }>(`/admin/coupons/${id}/`, { method: "DELETE" });
+}
+
+// --- Stored photo data (base64 uploads / generated photos of passport + family orders) ---
+
+export type PhotoDataRow = {
+  id: number;
+  orderNumber: string;
+  serviceKey: string;
+  serviceName: string;
+  status: string;
+  photoStatus: string;
+  shopId: number;
+  shopName: string;
+  shopEmail: string;
+  uploadBytes: number;
+  outputBytes: number;
+  createdAt: string;
+};
+
+export type PhotoDataFilters = { service?: string; has?: string; olderThanDays?: number | string };
+
+export function fetchPhotoData(params: PhotoDataFilters & { page?: number; pageSize?: number }) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.set(key, String(value));
+  });
+  return request<{
+    count: number;
+    page: number;
+    pageSize: number;
+    totals: { orders: number; uploadBytes: number; outputBytes: number };
+    orders: PhotoDataRow[];
+  }>(`/admin/photo-data/?${query.toString()}`);
+}
+
+export type PhotoDataDeleteResult = { uploadsCleared: number; generatedCleared: number; generatedSkipped: number };
+
+export function deletePhotoData(body: { scope: "uploads" | "generated" | "all"; ids?: number[]; all?: boolean } & PhotoDataFilters) {
+  return request<PhotoDataDeleteResult>("/admin/photo-data/delete/", { method: "POST", body: JSON.stringify(body) });
+}
+
+// --- ID Card auto-crop training data ---
+
+export type CropCounts = { accepted: number; adjusted: number; manual: number; notfound: number };
+export type CropTrainingStats = {
+  collectImages: boolean;
+  counts: CropCounts;
+  countsLast7Days: CropCounts;
+  filterChanged: number;
+  samplesWithImages: number;
+  imageBytes: number;
+  perShop: { shopId: number | null; email: string; total: number; accepted: number; adjusted: number; manual: number; notfound: number }[];
+};
+export type CropSampleRow = {
+  id: number;
+  side: string;
+  outcome: string;
+  email: string;
+  filterValues: Record<string, number | string> | null;
+  originalImage: string;
+  resultImage: string;
+  createdAt: string;
+};
+
+export function fetchCropTraining() {
+  return request<CropTrainingStats>("/admin/crop-training/");
+}
+
+export function setCropCollect(collectImages: boolean) {
+  return request<CropTrainingStats>("/admin/crop-training/", { method: "PUT", body: JSON.stringify({ collectImages }) });
+}
+
+export function fetchCropSamples(params: { outcome?: string; page?: number }) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.set(key, String(value));
+  });
+  return request<{ count: number; page: number; pageSize: number; samples: CropSampleRow[] }>(`/admin/crop-training/samples/?${query.toString()}`);
+}
+
+export function exportCropTraining(outcome?: string) {
+  return downloadCsv(`/admin/crop-training/export/${outcome ? `?outcome=${outcome}` : ""}`, "id-card-crop-training.zip");
+}
+
+export function clearCropSamples(body: { ids?: number[]; all?: boolean; scope?: "images" | "everything" }) {
+  return request<{ photosCleared: number; deleted: number }>("/admin/crop-training/samples/delete/", { method: "POST", body: JSON.stringify(body) });
+}
+
+// --- ID Card Maker training data (source + built PDFs) ---
+
+export type CardMakerOverview = { collect: boolean; total: number; bytes: number; byType: { docType: string; count: number }[] };
+export type CardMakerRun = {
+  id: number;
+  docType: string;
+  mode: string;
+  kind: string;
+  email: string;
+  inputBytes: number;
+  outputBytes: number;
+  createdAt: string;
+};
+
+export function fetchCardMakerData() {
+  return request<CardMakerOverview>("/admin/card-maker-data/");
+}
+
+export function setCardMakerCollect(collect: boolean) {
+  return request<CardMakerOverview>("/admin/card-maker-data/", { method: "PUT", body: JSON.stringify({ collect }) });
+}
+
+export function fetchCardMakerRuns(params: { docType?: string; page?: number }) {
+  const query = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.set(key, String(value));
+  });
+  return request<{ count: number; page: number; pageSize: number; samples: CardMakerRun[] }>(`/admin/card-maker-data/samples/?${query.toString()}`);
+}
+
+export function deleteCardMakerRuns(body: { ids?: number[]; all?: boolean }) {
+  return request<{ deleted: number }>("/admin/card-maker-data/delete/", { method: "POST", body: JSON.stringify(body) });
+}
+
+export function exportCardMakerData(docType?: string) {
+  return downloadCsv(`/admin/card-maker-data/export/${docType ? `?docType=${encodeURIComponent(docType)}` : ""}`, "id-card-maker-training.zip");
+}
+
+export function downloadCardMakerFile(id: number, which: "input" | "output") {
+  return downloadCsv(`/admin/card-maker-data/${id}/${which}/`, `card-maker-${id}-${which}.pdf`);
 }
 
 // --- Waiting jokes (shown to customers while an AI photo is generated) ------

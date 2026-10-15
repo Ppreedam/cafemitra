@@ -23,6 +23,18 @@ urlpatterns = [
     re_path(r"^admin/shops/(?P<shop_id>[0-9]+)/reactivate/?$", admin_views.admin_shop_reactivate),  # POST reactivate a suspended shop account
     re_path(r"^admin/shops/(?P<shop_id>[0-9]+)/delete/?$", admin_views.admin_shop_delete),  # POST permanently delete a shop account and all its data (requires confirmEmail match)
     re_path(r"^admin/shops/(?P<shop_id>[0-9]+)/orders/?$", admin_views.admin_shop_orders),  # GET paginated order history for one shop, filterable by status
+    re_path(r"^admin/photo-data/?$", admin_views.admin_photo_data),  # GET passport/family orders that still store base64 photos (service, has=uploads|generated|any, olderThanDays) + sizes
+    re_path(r"^admin/photo-data/delete/?$", admin_views.admin_photo_data_delete),  # POST delete stored uploads / generated photos for {ids} or {all: true, filters}
+    re_path(r"^admin/orders/delete/?$", admin_views.admin_orders_delete),  # POST {ids:[..]} permanently delete orders (super admin only)
+    re_path(r"^admin/card-maker-data/?$", admin_views.admin_card_maker_data),  # GET switch + counts / PUT {collect} keep ID Card Maker PDFs
+    re_path(r"^admin/card-maker-data/samples/?$", admin_views.admin_card_maker_samples),  # GET stored runs (no files)
+    re_path(r"^admin/card-maker-data/export/?$", admin_views.admin_card_maker_export),  # GET ZIP of input/output PDFs per doc type
+    re_path(r"^admin/card-maker-data/delete/?$", admin_views.admin_card_maker_delete),  # POST {ids} / {all: true}
+    re_path(r"^admin/card-maker-data/(?P<sample_id>[0-9]+)/(?P<which>input|output)/?$", admin_views.admin_card_maker_file),  # GET one stored PDF
+    re_path(r"^admin/crop-training/?$", admin_views.admin_crop_training),  # GET on/off switch + auto-crop outcome stats / PUT {collectImages}
+    re_path(r"^admin/crop-training/samples/?$", admin_views.admin_crop_samples),  # GET samples that still hold photos
+    re_path(r"^admin/crop-training/export/?$", admin_views.admin_crop_samples_export),  # GET ZIP: input/ + output/ photos + labels.json/csv (optional ?outcome=)
+    re_path(r"^admin/crop-training/samples/delete/?$", admin_views.admin_crop_samples_delete),  # POST clear photos of {ids} / {all, scope: images|everything}
     re_path(r"^admin/orders/stuck/?$", admin_views.admin_stuck_orders),  # GET awaiting-approval / stuck photo jobs across all shops
     re_path(r"^admin/orders/?$", admin_views.admin_orders),  # GET paginated/filtered platform-wide order list (shop, service, paymentMode, status, from, to)
     re_path(r"^admin/orders/(?P<order_id>[0-9]+)/?$", admin_views.admin_order_detail),  # GET full order detail (any shop, admin-only)
@@ -143,6 +155,10 @@ urlpatterns = [
     re_path(r"^referrals/lookup/?$", views.referral_lookup),  # GET public: owner's short name for a referral code (signup page check)
     re_path(r"^referrals/?$", views.referrals),  # GET the shop's referral code + history of referred shops (registered / email verified / first top-up / bonus)
     re_path(r"^wallet/config/?$", views.wallet_config),  # GET public signup/referral bonus, grace limits, and billable tool prices
+    re_path(r"^crop-training/config/?$", views.crop_training_config),  # GET public: is ID Card Print keeping photos for auto-crop training
+    re_path(r"^card-maker/sample/?$", views.card_maker_sample),  # POST ID Card Maker source + built PDF (stored only while the admin switch is on)
+    re_path(r"^crop-training/sample/?$", views.crop_training_sample),
+    re_path(r"^crop-training/sample/(?P<sample_id>[0-9]+)/filter/?$", views.crop_training_filter),  # POST {token, values} the customer's Filter & Light choice for that crop  # POST one auto-crop result (outcome + corners; photos only if enabled)
     re_path(r"^waiting-jokes/?$", views.waiting_jokes),  # GET public list of active "while you wait" jokes for the photo makers ([] = use the built-in set)
     re_path(r"^tools/visibility/?$", views.tool_visibility),  # GET public map of {toolKey: isEnabled} for the Automation Tools nav (navbar + dashboard sidebar)
     re_path(r"^wallet/?$", views.wallet),  # GET balance, collection summary, limits, and paginated transaction ledger

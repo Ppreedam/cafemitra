@@ -9,3 +9,19 @@
 .photo-batch-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}.photo-batch-actions button{flex:1;min-width:180px;min-height:44px}.photo-batch-actions button:disabled{opacity:.45;cursor:not-allowed}
 .photo-batch-hint{margin:14px 0 0;color:#71809b;font-size:.68rem;line-height:1.6}
 @media(max-width:900px){.photo-actions-bar{flex-wrap:wrap}.photo-editor-body{grid-template-columns:1fr;height:auto}.photo-canvas-area{height:600px}.photo-editor-body>aside{min-height:500px;border-top:1px solid #dce4ef;border-left:0}}@media(max-width:600px){.photo-canvas-area{height:430px;padding:8px}.photo-toolbar button{min-width:76px}}
+/* Wide (landscape) photos - e.g. a family photo - must fit the canvas area instead of filling its full width and overflowing the height (which looked zoomed in). Width is capped to what the area height allows at the photo's own ratio; area height = viewport - 206px toolbar - 2x18px padding. */
+.photo-stage.landscape{width:min(100%,calc((100vh - 242px) * var(--ratio,1)))}
+@media(max-width:900px){.photo-stage.landscape{width:min(100%,calc(564px * var(--ratio,1)))}}
+@media(max-width:600px){.photo-stage.landscape{width:min(100%,calc(414px * var(--ratio,1)))}}
+/* Side tool panel: stay inside the sidebar at any width - fluid sidebar, grid columns that may shrink, full-width fields, wrapping text. */
+@media(min-width:901px){.photo-editor-body{grid-template-columns:minmax(0,1fr) clamp(260px,24vw,340px)}}
+.photo-editor-body>aside{overflow-x:hidden}
+.photo-panel>*,.photo-panel label,.photo-grid>*{min-width:0}
+.photo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.photo-panel input:not([type=checkbox]):not([type=radio]),.photo-panel select,.photo-panel textarea{width:100%;max-width:100%;min-width:0;box-sizing:border-box}
+.photo-panel>button{width:100%;box-sizing:border-box;padding:6px 10px;text-align:center;white-space:normal}
+.photo-caption-toggle{align-items:flex-start}
+.photo-caption-toggle input{margin-top:2px;flex-shrink:0}
+.photo-caption-toggle span{min-width:0;white-space:normal;overflow-wrap:anywhere}
+.photo-caption-hint{overflow-wrap:anywhere}
+@media(max-width:480px){.photo-grid{grid-template-columns:minmax(0,1fr)}}

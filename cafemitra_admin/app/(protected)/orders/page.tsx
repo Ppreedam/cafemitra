@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { Trash2 } from "lucide-react";
 import Pagination from "@/components/Pagination";
 import PhotoOrderModal from "@/components/PhotoOrderModal";
-import { exportOrdersCsv, fetchOrders, type AdminOrder } from "@/lib/api";
+import { deleteOrders, exportOrdersCsv, fetchOrders, type AdminOrder } from "@/lib/api";
 import { formatCurrency, orderResultMessage, orderStatusBadgeClass, orderEffectiveStatus } from "@/lib/format";
 
 const SERVICES = [
   { value: "", label: "All services" },
   { value: "auto_document_print", label: "Document Print" },
   { value: "passport_photo", label: "Passport Photo" },
+  { value: "family_passport_photo", label: "Family Passport Photo" },
 ];
 
 const STATUSES = ["", "awaiting_payment", "awaiting_approval", "queued", "printing", "printed", "failed"];
@@ -27,8 +29,11 @@ export default function OrdersPage() {
   const [to, setTo] = useState("");
   const [error, setError] = useState("");
   const [photoOrderId, setPhotoOrderId] = useState<number | null>(null);
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState("");
 
-  useEffect(() => {
+  const load = useCallback(() => {
     fetchOrders({ service, status, paymentMode, from, to, page })
       .then((res) => {
         setOrders(res.orders);
@@ -39,10 +44,50 @@ export default function OrdersPage() {
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load orders."));
   }, [service, status, paymentMode, from, to, page]);
 
+  useEffect(load, [load]);
+
+  function toggle(id: number) {
+    setSelected((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  const allOnPageSelected = orders.length > 0 && orders.every((order) => selected.has(order.id));
+
+  function togglePage() {
+    setSelected((current) => {
+      const next = new Set(current);
+      orders.forEach((order) => (allOnPageSelected ? next.delete(order.id) : next.add(order.id)));
+      return next;
+    });
+  }
+
+  async function removeOrders(ids: number[], label: string) {
+    if (!ids.length) return;
+    if (!window.confirm(`Permanently delete ${label}? This also removes the uploaded files and cannot be undone.`)) return;
+    setBusy(true);
+    setError("");
+    setMessage("");
+    try {
+      const result = await deleteOrders(ids);
+      setMessage(`${result.deleted} order(s) deleted.`);
+      setSelected(new Set());
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not delete the orders.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   function updateFilter(setter: (value: string) => void) {
     return (value: string) => {
       setter(value);
       setPage(1);
+      setSelected(new Set());
     };
   }
 
@@ -124,14 +169,26 @@ export default function OrdersPage() {
         >
           Export CSV
         </button>
+        <button
+          type="button"
+          disabled={busy || !selected.size}
+          onClick={() => removeOrders(Array.from(selected), `${selected.size} selected order(s)`)}
+          className="inline-flex items-center gap-1.5 rounded-md bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-40"
+        >
+          <Trash2 size={14} /> Delete selected ({selected.size})
+        </button>
       </div>
 
+      {message && <div className="mb-4 rounded-md bg-green-50 text-green-700 text-sm px-3 py-2">{message}</div>}
       {error && <div className="mb-4 rounded-md bg-red-50 text-red-700 text-sm px-3 py-2">{error}</div>}
 
       <div className="rounded-xl border border-slate-200 bg-white overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-left text-slate-500">
+              <th className="px-4 py-2 w-8">
+                <input type="checkbox" checked={allOnPageSelected} onChange={togglePage} aria-label="Select all orders on this page" />
+              </th>
               <th className="px-4 py-2 font-medium">Order</th>
               <th className="px-4 py-2 font-medium">Shop</th>
               <th className="px-4 py-2 font-medium">Service</th>
@@ -140,12 +197,13 @@ export default function OrdersPage() {
               <th className="px-4 py-2 font-medium">Status</th>
               <th className="px-4 py-2 font-medium">Result / Message</th>
               <th className="px-4 py-2 font-medium">Created</th>
+              <th className="px-4 py-2 font-medium">Delete</th>
             </tr>
           </thead>
           <tbody>
             {orders.length === 0 && (
               <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-slate-500">
+                <td colSpan={10} className="px-4 py-6 text-center text-slate-500">
                   No orders match these filters.
                 </td>
               </tr>
@@ -153,7 +211,10 @@ export default function OrdersPage() {
             {orders.map((order) => (
               <tr key={order.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
                 <td className="px-4 py-2">
-                  {order.serviceKey === "passport_photo" ? (
+                  <input type="checkbox" checked={selected.has(order.id)} onChange={() => toggle(order.id)} aria-label={`Select ${order.orderNumber}`} />
+                </td>
+                <td className="px-4 py-2">
+                  {order.serviceKey === "passport_photo" || order.serviceKey === "family_passport_photo" ? (
                     <button onClick={() => setPhotoOrderId(order.id)} className="text-indigo-700 hover:underline">
                       {order.orderNumber}
                     </button>
@@ -183,6 +244,17 @@ export default function OrdersPage() {
                   {orderResultMessage({ order })}
                 </td>
                 <td className="px-4 py-2 text-slate-500">{new Date(order.createdAt).toLocaleString("en-IN")}</td>
+                <td className="px-4 py-2">
+                  <button
+                    type="button"
+                    disabled={busy}
+                    onClick={() => removeOrders([order.id], `order ${order.orderNumber}`)}
+                    title="Delete this order"
+                    className="text-slate-400 hover:text-red-600 disabled:opacity-30"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>

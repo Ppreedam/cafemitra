@@ -13,7 +13,9 @@ export type SavedPrintSheetPhoto = {
   heightCm: number;
   count: number;
   sizeKey: string;
+  /** Older saves only have this flag (= one turn). */
   rotateOnPrint?: boolean;
+  sheetTurns?: number;
   savedAt: number;
 };
 

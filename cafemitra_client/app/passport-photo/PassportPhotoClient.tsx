@@ -459,7 +459,7 @@ export default function PassportPhotoClient() {
         setStepCursor(PROCESSING_ITEMS.length);
         setJobState("done");
         setFinalImageUrl(result.imageUrl);
-        stashPhotoForPrintSheet(result.imageUrl, file?.name || "passport-photo.jpg");
+        stashPhotoForPrintSheet(result.imageUrl, file?.name || "passport-photo.jpg", false, parsePhotoCount(selectedPackage?.label));
         router.push("/photo-print-sheet");
         return;
       }

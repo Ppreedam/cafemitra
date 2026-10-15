@@ -9,6 +9,7 @@ import Link from "next/link";
 import { apiFetch, apiUrl } from "@/lib/api";
 import { fetchPricingServiceByKey, type PriceItem } from "@/lib/pricing";
 import { buildFamilyPhotoPrompt } from "@/lib/family-photo-prompt";
+import { parsePhotoCount } from "../passport-photo/printSheet";
 import { stashPhotoForPrintSheet } from "@/lib/printSheetHandoff";
 import { ProcessingTimeline, useStepAnimation, WaitingJokeWidget, type ProcessingGroup } from "../ProcessingSteps";
 
@@ -29,7 +30,7 @@ const avoidPhotoExamples = [
 ];
 
 const MIN_PHOTOS = 2;
-const MAX_PHOTOS = 10;
+const MAX_PHOTOS = 6;
 const CHECK_INTERVAL_MS = 5_000;
 // ~4 min: covers the GPT Pooler's group-photo generation plus the server's
 // AI fallback if the pooler goes silent (FAMILY_PHOTO_STALE_JOB_SECONDS).
@@ -243,7 +244,7 @@ export default function FamilyPassportPhotoClient() {
         stopChecking();
         setJobState("done");
         setFinalImageUrl(result.imageUrl);
-        stashPhotoForPrintSheet(result.imageUrl, "family-passport-photo.jpg", true);
+        stashPhotoForPrintSheet(result.imageUrl, "family-passport-photo.jpg", true, parsePhotoCount(selectedPackage?.label));
         return;
       }
 

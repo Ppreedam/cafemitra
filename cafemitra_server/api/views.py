@@ -38,7 +38,7 @@ from .background_remover.passport_photo_processor import ProcessingError, enhanc
 from .background_remover.watermark_remover import remove_gemini_watermark
 from .models import Agent, AuthToken, BlogArticle, ContactMessage, Coupon, CouponRedemption, EmailVerificationToken, Influencer, PassportAIConfig, PasswordResetToken, PoolerNode, PrintOrder, Referral, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UpiPayee, UpiQrRecord, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from .models import Agent, AuthToken, BlogArticle, ContactMessage, Coupon, CouponRedemption, EmailVerificationToken, Influencer, PassportAIConfig, PasswordResetToken, PhoneOtp, PrintOrder, Referral, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UpiPayee, UpiQrRecord, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
-from .models import WaitingJoke
+from .models import shop_profile_price_items, CardMakerSample, CropSample, CropTrainingConfig, WaitingJoke
 from cafemitra_server.product_setting import PAYMENT_GATEWAYS, active_payment_gateway
 
 User = get_user_model()
@@ -103,9 +103,9 @@ DEFAULT_SERVICE_PRICING = {
         "serviceName": "ID Card Print",
         "settings": {
             "paymentMode": "Online Payment",
-            # Per-card pricing by the customer's Color / B/W choice - the
-            # customer uploads one existing ID (front + back, back optional),
-            # not a per-page document, so there's no page-count dimension.
+            # Priced per printed page by the customer's Color / B/W choice, like a
+            # document: pages x copies = total pages, and each item's page ranges
+            # (if any) are matched against that total.
             "priceItems": [
                 {"id": "color", "label": "Color", "rate": 20},
                 {"id": "black_white", "label": "Black & White", "rate": 20},
@@ -2019,7 +2019,7 @@ def ensure_service_pricing(user):
 
 
 def id_card_price_items(items):
-    """ID Card Print is priced per card as Color / Black & White. Accounts
+    """ID Card Print is priced per page as Color / Black & White. Accounts
     saved before that have one flat "single_card" item - both modes take its
     rate until the shop saves new prices."""
     items = items if isinstance(items, list) else []
@@ -2037,7 +2037,11 @@ def id_card_price_items(items):
 def effective_pricing_settings(pricing):
     settings = pricing.settings if isinstance(pricing.settings, dict) else {}
     if pricing.service_key == "id_card_print":
-        return {**settings, "priceItems": id_card_price_items(settings.get("priceItems"))}
+        items = id_card_price_items(settings.get("priceItems"))
+        # The shop's customer-facing print profiles (Special Print) are offered here too.
+        known = {str(item.get("id", "")) for item in items if isinstance(item, dict)}
+        items = [*items, *[item for item in shop_profile_price_items(pricing.user_id) if str(item.get("id", "")) not in known]]
+        return {**settings, "priceItems": items}
     return settings
 
 
@@ -2112,6 +2116,13 @@ def public_order(order, include_media=True):
         else:
             file_url = ""
             document_deleted = True
+        if order.service_key == "family_passport_photo":
+            # A family order keeps its member photos in family_photo_inputs (not
+            # original_filename / document), so the checks above cannot tell. They are
+            # deleted as soon as the group photo exists (purge_uploaded_photos), so
+            # "generated" means "uploads deleted"; until then they are still stored.
+            has_raw_photo = not has_gemini_photo
+            document_deleted = has_gemini_photo
         gemini_photo_value = order.gemini_photo if include_media else ""
     else:
         file_name = safe_file_name
@@ -2674,6 +2685,42 @@ def generate_family_photo_with_openai(prompt, images):
     return None, "OpenAI did not return an image."
 
 
+CASH_REJECTED_PREFIX = "Cash counter print rejected"
+
+
+def is_cash_rejected(order):
+    """The shop owner rejected this cash-counter order (reject_cash_order). Such a photo order
+    must never be generated: not by the GPT Pooler, not by the AI fallback, and a late
+    result must not revive it."""
+    return (
+        order.status == PrintOrder.STATUS_FAILED
+        and order.payment_status == PrintOrder.PAYMENT_CASH_COUNTER
+        and (order.agent_message or "").startswith(CASH_REJECTED_PREFIX)
+    )
+
+
+def purge_uploaded_photos(order):
+    """Deletes the customer's own uploaded photos from an order whose AI photo
+    now exists - they were only needed to generate it (privacy, and they are
+    base64 text that bloats the database). Only the generated photo is kept.
+    Mutates `order`; returns the field names that changed so the caller can
+    add them to its own save(update_fields=...). Manual passport photos keep
+    their original (the owner edited it by hand and may reopen it)."""
+    fields = []
+    if order.service_key == "family_passport_photo":
+        if order.family_photo_inputs:
+            order.family_photo_inputs = None
+            fields.append("family_photo_inputs")
+    elif order.service_key == "passport_photo" and order.attire_category != "manual":
+        if order.original_filename:
+            order.original_filename = ""
+            fields.append("original_filename")
+        if order.document:
+            delete_order_document(order)
+            fields.append("document")
+    return fields
+
+
 def _finalize_passport_photo(order, result_type, result_bytes, is_gemini_output, tool_key="passport_photo"):
     """Shared save path for a freshly generated passport photo, used by both
     apply_ai_fallback and the OpenAI-primary attempt in
@@ -2689,12 +2736,13 @@ def _finalize_passport_photo(order, result_type, result_bytes, is_gemini_output,
     order.photo_error_message = ""
     order.photo_updated_at = timezone.now()
     update_fields = ["gemini_photo", "photo_status", "photo_error_message", "photo_updated_at"]
-    if order.status == PrintOrder.STATUS_FAILED:
+    if order.status == PrintOrder.STATUS_FAILED and not is_cash_rejected(order):
         # A previous attempt had already given up and marked the order
         # failed - this retry succeeded after all, so put it back in the
         # normal queue instead of leaving it stuck as failed forever.
         order.status = PrintOrder.STATUS_QUEUED
         update_fields.append("status")
+    update_fields += purge_uploaded_photos(order)
     order.save(update_fields=update_fields)
     charge_wallet_for_tool(order.user, tool_key, quantity=1, order=order)
 
@@ -2710,6 +2758,8 @@ def apply_ai_fallback(order):
     no second provider configured to fall back to here. Mutates and saves
     `order` in place. Returns True if the configured backup produced a
     usable photo."""
+    if is_cash_rejected(order):
+        return False
     if order.status in (PrintOrder.STATUS_AWAITING_APPROVAL, PrintOrder.STATUS_AWAITING_PAYMENT):
         # Every current caller (resolve_passport_photo, complete_passport_job)
         # already excludes these statuses before getting here - this is a
@@ -3728,6 +3778,137 @@ def tool_visibility(request):
     return JsonResponse({item.tool_key: item.is_enabled for item in ToolVisibility.objects.all()})
 
 
+CROP_IMAGE_MAX_CHARS = 2_500_000  # a downscaled card photo as a base64 data URI is well under this
+
+
+def clean_quad(value):
+    """Four {x, y} corners in percent (0-100), or None."""
+    if not isinstance(value, list) or len(value) != 4:
+        return None
+    quad = []
+    for point in value:
+        try:
+            x, y = float(point["x"]), float(point["y"])
+        except (TypeError, KeyError, ValueError):
+            return None
+        quad.append({"x": round(max(0.0, min(100.0, x)), 3), "y": round(max(0.0, min(100.0, y)), 3)})
+    return quad
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def crop_training_config(request):
+    """Public: whether ID Card Print is currently keeping photos for auto-crop training. The page
+    shows a notice to the customer while this is on."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+    config = CropTrainingConfig.get_solo()
+    return JsonResponse({"collectImages": config.collect_images, "collectCardMaker": config.collect_card_maker})
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def crop_training_sample(request):
+    """The result of one auto-crop (see CropSample). The outcome and corners are always recorded;
+    the photos only while the admin switch is on, and only when they arrive in the request."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    outcome = str(request.POST.get("outcome", "")).strip()
+    if outcome not in dict(CropSample.OUTCOME_CHOICES):
+        return JsonResponse({"message": "Invalid outcome."}, status=400)
+    side = "back" if request.POST.get("side") == "back" else "front"
+
+    def parse_quad(name):
+        raw = request.POST.get(name, "")
+        try:
+            return clean_quad(json.loads(raw)) if raw else None
+        except ValueError:
+            return None
+
+    sample = CropSample(user=auth_user(request), side=side, outcome=outcome, auto_quad=parse_quad("autoQuad"), final_quad=parse_quad("finalQuad"))
+    if CropTrainingConfig.get_solo().collect_images:
+        for field, key in (("original_image", "original"), ("result_image", "result")):
+            upload = request.FILES.get(key)
+            if upload and upload.size <= 1_800_000 and (upload.content_type or "").startswith("image/"):
+                data_uri = file_to_data_uri(upload)
+                if len(data_uri) <= CROP_IMAGE_MAX_CHARS:
+                    setattr(sample, field, data_uri)
+    sample.token = secrets.token_hex(12)
+    sample.save()
+    return JsonResponse({"id": sample.id, "token": sample.token}, status=201)
+
+
+FILTER_KEYS = ("brightness", "contrast", "saturation", "black", "red", "yellow", "blue")
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def crop_training_filter(request, sample_id):
+    """POST {token, values: {brightness, contrast, saturation, ...} | null}: what the customer chose in
+    Filter & Light for this crop. values = null clears it (they went back to the default look)."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    body = parse_body(request)
+    sample = CropSample.objects.filter(id=sample_id).exclude(token="").first()
+    if not sample or not hmac.compare_digest(sample.token, str(body.get("token", ""))):
+        return JsonResponse({"message": "Not found."}, status=404)
+
+    values = body.get("values")
+    cleaned = None
+    if isinstance(values, dict):
+        cleaned = {}
+        for key in FILTER_KEYS:
+            try:
+                cleaned[key] = round(max(-1000.0, min(1000.0, float(values[key]))), 2)
+            except (KeyError, TypeError, ValueError):
+                continue
+        source = str(values.get("source", ""))[:16]
+        if source:
+            cleaned["source"] = source
+        cleaned = cleaned or None
+    sample.filter_values = cleaned
+    sample.save(update_fields=["filter_values"])
+    return JsonResponse({"ok": True})
+
+
+CARD_MAKER_PDF_MAX_BYTES = 8 * 1024 * 1024
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def card_maker_sample(request):
+    """ID Card Maker: the source PDF and the built card PDF of one run. Stored only while the admin
+    switch is on; otherwise acknowledged and dropped."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    if not CropTrainingConfig.get_solo().collect_card_maker:
+        return JsonResponse({"stored": False})
+
+    source = request.FILES.get("input")
+    built = request.FILES.get("output")
+    if not source or not built or source.size > CARD_MAKER_PDF_MAX_BYTES or built.size > CARD_MAKER_PDF_MAX_BYTES:
+        return JsonResponse({"message": "Both PDFs are required (8 MB each at most)."}, status=400)
+    settings_json = None
+    try:
+        parsed = json.loads(request.POST.get("settings", "") or "null")
+        settings_json = parsed if isinstance(parsed, dict) else None
+    except ValueError:
+        pass
+    sample = CardMakerSample.objects.create(
+        user=auth_user(request),
+        doc_type=str(request.POST.get("docType", ""))[:24],
+        mode=str(request.POST.get("mode", ""))[:16],
+        output_kind=str(request.POST.get("kind", ""))[:12],
+        input_pdf=source.read(),
+        output_pdf=built.read(),
+        settings_json=settings_json,
+    )
+    return JsonResponse({"stored": True, "id": sample.id}, status=201)
+
+
 @csrf_exempt
 @require_http_methods(["GET", "OPTIONS"])
 def waiting_jokes(request):
@@ -4095,12 +4276,22 @@ def public_print_order(request, code):
     if not user:
         return JsonResponse({"message": "Cafe not found."}, status=404)
 
+    service_key = str(request.POST.get("serviceKey", "")).strip()
     document = request.FILES.get("document")
-    if not document:
+    # Family Passport Photo sends one file per family member under "photos"
+    # instead of a single "document" (merged into one group photo later).
+    family_photos = request.FILES.getlist("photos") if service_key == "family_passport_photo" else []
+    if service_key == "family_passport_photo":
+        if len(family_photos) < MIN_FAMILY_PHOTOS:
+            return JsonResponse({"message": f"Upload at least {MIN_FAMILY_PHOTOS} photos to continue."}, status=400)
+        if len(family_photos) > PUBLIC_MAX_FAMILY_PHOTOS:
+            return JsonResponse({"message": f"Upload at most {PUBLIC_MAX_FAMILY_PHOTOS} photos at a time."}, status=400)
+        if any(photo.size > MAX_FAMILY_PHOTO_BYTES for photo in family_photos):
+            return JsonResponse({"message": "Each photo must be 8 MB or smaller."}, status=413)
+    elif not document:
         return JsonResponse({"message": "Upload final printable document."}, status=400)
 
     ensure_service_pricing(user)
-    service_key = str(request.POST.get("serviceKey", "")).strip()
     pricing = ServicePricing.objects.filter(user=user, service_key=service_key).first()
     if not pricing:
         return JsonResponse({"message": "Selected service is not available."}, status=400)
@@ -4109,6 +4300,9 @@ def public_print_order(request, code):
 
     pages = positive_int(request.POST.get("pages"), 1)
     copies = positive_int(request.POST.get("copies"), 1)
+    if service_key == "family_passport_photo":
+        pages = 1
+        copies = 1
     price_item_id = str(request.POST.get("priceItemId", "")).strip()
     # Page-range rates bracket on the total sheets printed (pages x copies),
     # not the source document's own page count - a 2-page PDF x 4 copies is
@@ -4155,18 +4349,26 @@ def public_print_order(request, code):
 
     gate_tool_key = resolve_print_tool_key(service_key, price_item_id)
     if gate_tool_key:
-        gate_quantity = 1 if service_key == "passport_photo" else max(pages, 1) * max(copies, 1)
+        gate_quantity = 1 if service_key in ("passport_photo", "family_passport_photo") else max(pages, 1) * max(copies, 1)
         allowed, gate_message = wallet_usage_gate(user, gate_tool_key, quantity=gate_quantity)
         if not allowed:
             return JsonResponse({"message": gate_message}, status=402)
 
-    passport_prompt = str(request.POST.get("prompt", "")).strip() if service_key == "passport_photo" else ""
+    passport_prompt = str(request.POST.get("prompt", "")).strip() if service_key in ("passport_photo", "family_passport_photo") else ""
+    if service_key == "family_passport_photo" and not passport_prompt:
+        return JsonResponse({"message": "A prompt is required."}, status=400)
 
     # Passport photos are stored as a base64 data URI directly in the DB
     # (no file on disk); every other service keeps using the FileField.
+    family_photo_inputs = []
     if service_key == "passport_photo":
         order_document = ""
         order_original_filename = file_to_data_uri(document)
+    elif service_key == "family_passport_photo":
+        # Every member photo is stored as a base64 data URI (see save_raw_family_photo).
+        order_document = ""
+        order_original_filename = ""
+        family_photo_inputs = [file_to_data_uri(photo) for photo in family_photos]
     else:
         order_document = document
         order_original_filename = document.name
@@ -4190,6 +4392,7 @@ def public_print_order(request, code):
         status=order_status,
         document=order_document,
         original_filename=order_original_filename,
+        family_photo_inputs=family_photo_inputs or None,
         customer_phone=str(request.POST.get("customerPhone", "")).strip(),
         payment_gateway=active_payment_gateway()[0] or "" if payment_status == PrintOrder.PAYMENT_PENDING else "",
         attire_category=str(request.POST.get("attireCategory", "")).strip(),
@@ -4874,9 +5077,24 @@ def reject_cash_order(request, order_id):
         return JsonResponse({"message": "Only cash counter orders can be rejected here."}, status=400)
 
     order.status = PrintOrder.STATUS_FAILED
-    order.agent_message = "Cash counter print rejected by cafe owner."
+    order.agent_message = f"{CASH_REJECTED_PREFIX} by cafe owner."
     delete_order_document(order)
-    order.save(update_fields=["status", "agent_message", "document"])
+    update_fields = ["status", "agent_message", "document"]
+    if order.service_key in POOLER_SERVICE_KEYS:
+        # A photo order is generated by the GPT Pooler / AI fallback, which pick up every order whose
+        # photo is still pending - so mark the photo itself as finished (failed), not only the order,
+        # and drop the customer's uploads: nothing will ever be generated from them.
+        order.photo_status = PrintOrder.PHOTO_STATUS_FAILED
+        order.photo_error_message = "The cash payment was rejected by the cafe owner."
+        order.photo_updated_at = timezone.now()
+        update_fields += ["photo_status", "photo_error_message", "photo_updated_at"]
+        if order.family_photo_inputs:
+            order.family_photo_inputs = None
+            update_fields.append("family_photo_inputs")
+        if order.service_key == "passport_photo" and order.original_filename:
+            order.original_filename = ""
+            update_fields.append("original_filename")
+    order.save(update_fields=update_fields)
     return JsonResponse({"order": public_order(order)})
 
 
@@ -5232,7 +5450,7 @@ def public_shop_by_code(request, code):
 PASSPORT_PHOTO_CHECK_MAX_RETRIES = 5
 PASSPORT_PHOTO_CHECK_RETRY_DELAY_SECONDS = 5
 PASSPORT_PHOTO_STALE_JOB_SECONDS = 80
-# A family photo uploads 2-10 images into one ChatGPT chat and asks it to
+# A family photo uploads 2-6 images into one ChatGPT chat and asks it to
 # compose a group shot, which takes noticeably longer than a single photo.
 FAMILY_PHOTO_STALE_JOB_SECONDS = 180
 PASSPORT_PHOTO_FALLBACK_RETRY_SECONDS = 20
@@ -5256,7 +5474,7 @@ def resolve_passport_photo(order):
     PASSPORT_PHOTO_STALE_JOB_SECONDS and trigger the paid fallback anyway,
     generating (and billing) the photo before it was ever approved or paid
     for."""
-    if order.service_key not in POOLER_SERVICE_KEYS or order.gemini_photo or order.status in (
+    if order.service_key not in POOLER_SERVICE_KEYS or order.gemini_photo or is_cash_rejected(order) or order.status in (
         PrintOrder.STATUS_AWAITING_APPROVAL, PrintOrder.STATUS_AWAITING_PAYMENT
     ):
         return
@@ -5446,7 +5664,7 @@ POOLER_ONLINE_WINDOW_SECONDS = 20
 # regardless of priority, in case the top pooler is heartbeating but stuck.
 POOLER_OVERFLOW_SECONDS = 25
 # Order types the GPT Pooler generates: a single passport photo (one input
-# image in original_filename) and a family passport photo (2-10 input
+# image in original_filename) and a family passport photo (2-6 input
 # images in family_photo_inputs, merged into one group photo).
 POOLER_SERVICE_KEYS = ("passport_photo", "family_passport_photo")
 
@@ -5647,7 +5865,9 @@ def check_passport_photo(request):
 
 
 MIN_FAMILY_PHOTOS = 2
-MAX_FAMILY_PHOTOS = 10
+MAX_FAMILY_PHOTOS = 6
+# Customers ordering through a shop's QR page are limited to this many (the shop owner's own Family Passport Photo page still allows MAX_FAMILY_PHOTOS).
+PUBLIC_MAX_FAMILY_PHOTOS = 6
 MAX_FAMILY_PHOTO_BYTES = 8 * 1024 * 1024
 
 # TEMPORARY TEST MODE - set back to False to restore real Gemini/OpenAI
@@ -5846,6 +6066,8 @@ def agent_passport_jobs(request):
         service_key__in=POOLER_SERVICE_KEYS, photo_status=PrintOrder.PHOTO_STATUS_PENDING,
     ).exclude(
         status__in=[PrintOrder.STATUS_AWAITING_APPROVAL, PrintOrder.STATUS_AWAITING_PAYMENT]
+    ).exclude(
+        status=PrintOrder.STATUS_FAILED, payment_status=PrintOrder.PAYMENT_CASH_COUNTER, agent_message__startswith=CASH_REJECTED_PREFIX
     )
     can_pull = pooler_may_pull(node)
     if not can_pull:
@@ -5883,6 +6105,8 @@ def claim_passport_job(request, job_id):
             return JsonResponse({"message": "This cash-counter order is still waiting for the shop owner's approval."}, status=409)
         if order.status == PrintOrder.STATUS_AWAITING_PAYMENT:
             return JsonResponse({"message": "This order is still waiting for online payment to be confirmed."}, status=409)
+        if is_cash_rejected(order):
+            return JsonResponse({"message": "The cafe owner rejected this order - nothing to generate."}, status=409)
         if not pooler_may_take_job(pooler_node_for_user(user), order):
             # Same priority rule as agent_passport_jobs - a lower-priority
             # pooler claiming by id can't jump ahead of an online one above it.
@@ -5917,6 +6141,9 @@ def complete_passport_job(request, job_id):
         return JsonResponse({"message": "This cash-counter order is still waiting for the shop owner's approval."}, status=409)
     if order.status == PrintOrder.STATUS_AWAITING_PAYMENT:
         return JsonResponse({"message": "This order is still waiting for online payment to be confirmed."}, status=409)
+    if is_cash_rejected(order):
+        # Rejected after the pooler had already started: drop its result (and its bill).
+        return JsonResponse({"message": "The cafe owner rejected this order - result discarded."}, status=409)
     caller_email = pooler_email(user)
     if order.photo_status == PrintOrder.PHOTO_STATUS_PENDING or (
         order.photo_claimed_by_email and order.photo_claimed_by_email != caller_email
@@ -5951,7 +6178,7 @@ def complete_passport_job(request, job_id):
     order.photo_error_message = ""
     order.photo_updated_at = timezone.now()
     update_fields = ["gemini_photo", "photo_status", "photo_error_message", "photo_updated_at"]
-    if order.status == PrintOrder.STATUS_FAILED:
+    if order.status == PrintOrder.STATUS_FAILED and not is_cash_rejected(order):
         # The agent was slow: resolve_passport_photo had already timed the job
         # out and apply_ai_fallback gave up (marking the order failed), but the
         # agent's photo arrived after all - same recovery as
@@ -5959,6 +6186,7 @@ def complete_passport_job(request, job_id):
         # finished photo attached.
         order.status = PrintOrder.STATUS_QUEUED
         update_fields.append("status")
+    update_fields += purge_uploaded_photos(order)
     order.save(update_fields=update_fields)
     # Bill the order's own owner even when the bulk agent (a different
     # account) is the one completing the job on their behalf.

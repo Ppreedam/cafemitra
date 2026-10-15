@@ -398,6 +398,14 @@ class PrintOrder(models.Model):
         super().save(*args, **kwargs)
 
 
+def shop_profile_price_items(user_id):
+    """The print profiles a shop shows to customers (PrintPilot Setup > "show on customer page") -
+    the PrintPilot service's price items that carry a profile. ID Card Print offers the same ones."""
+    settings = ServicePricing.objects.filter(user_id=user_id, service_key="auto_document_print").values_list("settings", flat=True).first()
+    items = settings.get("priceItems") if isinstance(settings, dict) else None
+    return [item for item in items if isinstance(item, dict) and str(item.get("profile", "") or "").strip()] if isinstance(items, list) else []
+
+
 def resolve_print_profile(user_id, service_key, price_item_id):
     """Profile name the shop assigned to this print type: the price item's own
     "profile" (a profile shown to customers from Printer Setup), else
@@ -413,6 +421,10 @@ def resolve_print_profile(user_id, service_key, price_item_id):
             if linked:
                 return linked
             break
+    if service_key == "id_card_print":
+        for item in shop_profile_price_items(user_id):
+            if str(item.get("id", "")) == str(price_item_id):
+                return str(item.get("profile")).strip()[:120]
     profiles = settings.get("printProfiles") if isinstance(settings, dict) else None
     name = str((profiles or {}).get(str(price_item_id), "") or "").strip() if isinstance(profiles, dict) else ""
     return name or None
@@ -818,6 +830,76 @@ class LeadAgent(models.Model):
 
     def __str__(self) -> str:
         return f"{self.agent_name} ({self.pincode})"
+
+
+class CropTrainingConfig(models.Model):
+    """Singleton (id=1) switch, edited from the admin panel: while `collect_images` is on, ID Card
+    Print keeps the customer's uploaded card photo and the cut-out result of every auto-crop, so
+    they can be used to train the auto-crop model. The outcome of each crop (accepted / adjusted /
+    manual / not found) is always counted - that needs no photo. Off by default."""
+
+    collect_images = models.BooleanField(default=False)
+    # ID Card Maker: keep the customer's source PDF and the card PDF the tool built from it.
+    collect_card_maker = models.BooleanField(default=False)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    @classmethod
+    def get_solo(cls):
+        obj, _ = cls.objects.get_or_create(id=1)
+        return obj
+
+
+class CropSample(models.Model):
+    """One auto-crop of an ID card photo: what the model found, what the user ended up with, and
+    (only while CropTrainingConfig.collect_images was on) the two images as base64 data URIs."""
+
+    OUTCOME_ACCEPTED = "accepted"  # auto crop applied without moving a corner
+    OUTCOME_ADJUSTED = "adjusted"  # user moved the corners, then applied
+    OUTCOME_MANUAL = "manual"  # nothing was detected, user placed the corners
+    OUTCOME_NOTFOUND = "notfound"  # nothing detected, user gave up
+    OUTCOME_CHOICES = [(o, o) for o in (OUTCOME_ACCEPTED, OUTCOME_ADJUSTED, OUTCOME_MANUAL, OUTCOME_NOTFOUND)]
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="crop_samples")
+    side = models.CharField(max_length=8, blank=True)
+    outcome = models.CharField(max_length=12, choices=OUTCOME_CHOICES, db_index=True)
+    auto_quad = models.JSONField(null=True, blank=True)
+    final_quad = models.JSONField(null=True, blank=True)
+    original_image = models.TextField(blank=True)
+    result_image = models.TextField(blank=True)
+    # Secret the browser got when this sample was created - needed to attach the user's Filter & Light
+    # choice to it later (the id alone is guessable).
+    token = models.CharField(max_length=32, blank=True)
+    # What the customer set in Filter & Light after the crop (brightness / contrast / saturation ...),
+    # only when it differs from the starting values - i.e. the default look was not good enough.
+    filter_values = models.JSONField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-id"]
+
+    def __str__(self) -> str:
+        return f"{self.outcome} crop #{self.id}"
+
+
+class CardMakerSample(models.Model):
+    """One ID Card Maker run kept for training (only while CropTrainingConfig.collect_card_maker is
+    on): the PDF the user opened (decrypted when it was locked) and the card PDF the tool produced.
+    These contain full personal details (Aadhaar / PAN / voter / DL) - delete once exported."""
+
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="card_maker_samples")
+    doc_type = models.CharField(max_length=24, blank=True, db_index=True)
+    mode = models.CharField(max_length=16, blank=True)
+    output_kind = models.CharField(max_length=12, blank=True)
+    input_pdf = models.BinaryField(blank=True, default=b"")
+    output_pdf = models.BinaryField(blank=True, default=b"")
+    settings_json = models.JSONField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-id"]
+
+    def __str__(self) -> str:
+        return f"{self.doc_type} card maker sample #{self.id}"
 
 
 class WaitingJoke(models.Model):

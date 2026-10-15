@@ -32,7 +32,8 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
     return <p className="text-sm text-slate-500">Loading order...</p>;
   }
 
-  const isPhotoJob = order.serviceKey === "passport_photo" || order.hasGeminiPhoto || Boolean(order.photoStatus);
+  const isFamily = order.serviceKey === "family_passport_photo";
+  const isPhotoJob = order.serviceKey === "passport_photo" || isFamily || order.hasGeminiPhoto || Boolean(order.photoStatus);
 
   const rows: [string, string][] = [
     ["Order number", order.orderNumber],
@@ -74,11 +75,18 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         <div className="rounded-xl border border-slate-200 bg-white p-4 mt-4 max-w-3xl">
           <div className="flex flex-wrap gap-6">
             <div>
-              <p className="text-sm text-slate-500 mb-2">Input (uploaded photo)</p>
-              {order.hasRawPhoto && order.fileUrl && !order.documentDeleted ? (
+              <p className="text-sm text-slate-500 mb-2">{isFamily ? "Input (uploaded member photos)" : "Input (uploaded photo)"}</p>
+              {isFamily && order.familyInputs && order.familyInputs.length ? (
+                <div className="flex flex-wrap gap-2">
+                  {order.familyInputs.map((src, index) => (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img key={index} src={src} alt={`Person ${index + 1}`} className="h-32 rounded-md border border-slate-200" />
+                  ))}
+                </div>
+              ) : order.hasRawPhoto && order.fileUrl && !order.documentDeleted ? (
                 <img src={order.fileUrl} alt="Input" className="max-w-xs rounded-md border border-slate-200" />
               ) : (
-                <p className="text-sm text-slate-500">{order.documentDeleted ? "The file was deleted." : "No input file."}</p>
+                <p className="text-sm text-slate-500">{order.documentDeleted ? "The uploaded photos were deleted." : "No input file."}</p>
               )}
             </div>
             <div>

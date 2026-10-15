@@ -18,6 +18,7 @@ import {
   Inbox,
   Landmark,
   LayoutGrid,
+  Loader2,
   MessageCircle,
   Printer,
   RefreshCw,
@@ -30,6 +31,7 @@ import {
 } from "lucide-react";
 import { apiFetch, apiUrl, hasStoredSession } from "@/lib/api";
 import { passportAttireLabels } from "@/lib/passport-attire";
+import { parsePhotoCount } from "../passport-photo/printSheet";
 import { stashPhotoForPrintSheet } from "@/lib/printSheetHandoff";
 import { DashboardShell } from "../DashboardShell";
 import { SkeletonBlock, UiState } from "../UiState";
@@ -120,13 +122,14 @@ export default function OrdersClient() {
   const [dateTo, setDateTo] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [markingPaidId, setMarkingPaidId] = useState<number | null>(null);
-  const [cashActionId, setCashActionId] = useState<number | null>(null);
+  // The order whose photo is being loaded for the print sheet (shows a spinner and blocks double clicks).
+  const [openingPrintId, setOpeningPrintId] = useState<number | null>(null);
   const [actionError, setActionError] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [compareOrder, setCompareOrder] = useState<Order | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
-  const cashApprovalOrders = orders.filter((order) => order.paymentStatus === "cash_counter" && order.status === "awaiting_approval");
-  const passportQueuedCount = orders.filter((order) => order.serviceKey === "passport_photo" && order.status === "queued").length;
+  const isPhotoOrder = (order: Order) => order.serviceKey === "passport_photo" || order.serviceKey === "family_passport_photo";
+  const passportQueuedCount = orders.filter((order) => isPhotoOrder(order) && order.status === "queued").length;
   const filteredOrders = useMemo(
     () =>
       orders.filter((order) => {
@@ -134,7 +137,7 @@ export default function OrdersClient() {
           printFilter === "all" ||
           (printFilter === "pass" && order.status === "printed") ||
           (printFilter === "fail" && order.status === "failed") ||
-          (printFilter === "passport_queue" && order.serviceKey === "passport_photo" && order.status === "queued");
+          (printFilter === "passport_queue" && isPhotoOrder(order) && order.status === "queued");
         const orderDate = getLocalDateInputValue(order.createdAt);
         const matchesDate = (!dateFrom || orderDate >= dateFrom) && (!dateTo || orderDate <= dateTo);
         return matchesPrint && matchesDate;
@@ -150,6 +153,11 @@ export default function OrdersClient() {
   useEffect(() => {
     setCurrentPage(1);
   }, [dateFrom, dateTo, printFilter]);
+
+  // Load the print sheet's code ahead of the click so only the photo fetch is left to wait for.
+  useEffect(() => {
+    router.prefetch("/photo-print-sheet");
+  }, [router]);
 
   async function loadOrders(options: { silent?: boolean } = {}) {
     if (!hasStoredSession()) {
@@ -187,21 +195,6 @@ export default function OrdersClient() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function respondToCashOrder(orderId: number, approve: boolean) {
-    setCashActionId(orderId);
-    setActionError("");
-    try {
-      const response = await apiFetch(`/api/orders/${orderId}/${approve ? "approve-cash" : "reject-cash"}/`, { method: "POST" });
-      const result = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(result.message || `Could not ${approve ? "approve" : "reject"} this order.`);
-      setOrders((current) => current.map((order) => (order.id === orderId ? { ...order, ...result.order } : order)));
-    } catch (error) {
-      setActionError(error instanceof Error ? error.message : `Could not ${approve ? "approve" : "reject"} this order.`);
-    } finally {
-      setCashActionId(null);
-    }
-  }
-
   async function markToolOrderPaid(orderId: number, endpoint: string) {
     setMarkingPaidId(orderId);
     setActionError("");
@@ -237,6 +230,8 @@ export default function OrdersClient() {
   }
 
   async function printOrderToPrintSheet(order: Order) {
+    if (openingPrintId !== null) return;
+    setOpeningPrintId(order.id);
     // The list response omits the base64 photo payload - fetch the single
     // order first so the print sheet page receives the actual image data.
     try {
@@ -244,7 +239,7 @@ export default function OrdersClient() {
       const result = await response.json().catch(() => ({}));
       const fullOrder = response.ok && result.order ? result.order : order;
       if (fullOrder.geminiPhoto) {
-        stashPhotoForPrintSheet(fullOrder.geminiPhoto, fullOrder.fileName || "passport-photo.jpg", order.serviceKey === "family_passport_photo");
+        stashPhotoForPrintSheet(fullOrder.geminiPhoto, fullOrder.fileName || "passport-photo.jpg", order.serviceKey === "family_passport_photo", parsePhotoCount(fullOrder.priceLabel || order.priceLabel));
         markOrderPrinted(order.id);
         router.push("/photo-print-sheet");
         return;
@@ -252,6 +247,7 @@ export default function OrdersClient() {
     } catch {
       // fall through to the per-order tool page below
     }
+    setOpeningPrintId(null);
     if (order.serviceKey === "family_passport_photo") {
       router.push("/family-passport-photo");
       return;
@@ -297,48 +293,6 @@ export default function OrdersClient() {
               <span className="status-pill">{orders.length} Orders</span>
             </div>
           </div>
-
-          {cashApprovalOrders.length ? (
-            <section className="cash-approval-panel">
-              <div>
-                <strong>Cash Counter Approval</strong>
-                <p>
-                  Confirm you&apos;ve collected cash for these before they&apos;re processed - for document print, the desktop Print
-                  Agent also asks for this; passport photo can only be approved here.
-                </p>
-              </div>
-              <div className="cash-approval-list">
-                {cashApprovalOrders.map((order) => (
-                  <article className="cash-approval-card" key={order.id}>
-                    <div>
-                      <span className="token-pill">{order.tokenId}</span>
-                      <strong>{order.fileName || order.serviceName || order.orderNumber}</strong>
-                      <small>
-                        {order.pages} x {order.copies} pages | Rs. {order.totalAmount}
-                      </small>
-                    </div>
-                    <div className="cash-approval-actions">
-                      <button
-                        type="button"
-                        disabled={cashActionId === order.id}
-                        onClick={() => respondToCashOrder(order.id, true)}
-                      >
-                        {cashActionId === order.id ? "..." : "Approve"}
-                      </button>
-                      <button
-                        type="button"
-                        className="danger"
-                        disabled={cashActionId === order.id}
-                        onClick={() => respondToCashOrder(order.id, false)}
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </section>
-          ) : null}
 
           <section className="panel orders-panel">
             {!message && orders.length ? (
@@ -437,7 +391,7 @@ export default function OrdersClient() {
                         </td>
                         <td>
                           {order.serviceKey === "passport_photo" ? (
-                            order.hasRawPhoto ? (
+                            order.hasRawPhoto || order.hasGeminiPhoto ? (
                               <button type="button" className="orders-file-link" onClick={() => openCompare(order)}>
                                 {order.fileName || "Document"}
                               </button>
@@ -495,8 +449,8 @@ export default function OrdersClient() {
                         <td>
                           <span className={`order-status ${order.status}`}>{formatStatus(order.status)}</span>
                           {(order.serviceKey === "passport_photo" || order.serviceKey === "family_passport_photo") && (order.status === "queued" || order.status === "printed" || order.status === "failed") && order.hasGeminiPhoto ? (
-                            <button type="button" className="orders-print-link" onClick={() => printOrderToPrintSheet(order)}>
-                              <Printer size={14} /> Print
+                            <button type="button" className="orders-print-link" disabled={openingPrintId !== null} onClick={() => printOrderToPrintSheet(order)}>
+                              {openingPrintId === order.id ? <Loader2 size={14} className="passport-step-spin" /> : <Printer size={14} />} {openingPrintId === order.id ? "Opening..." : "Print"}
                             </button>
                           ) : null}
                         </td>
@@ -549,7 +503,7 @@ export default function OrdersClient() {
                 ) : compareOrder.fileUrl ? (
                   <img src={apiUrl(compareOrder.fileUrl)} alt="Raw upload" />
                 ) : (
-                  <p>Not available</p>
+                  <p>Original upload was deleted after your photo was generated.</p>
                 )}
               </div>
               ) : null}
@@ -575,7 +529,7 @@ export default function OrdersClient() {
                   className="btn btn-primary"
                   onClick={() => {
                     if (!compareOrder.geminiPhoto) return;
-                    stashPhotoForPrintSheet(compareOrder.geminiPhoto, compareOrder.fileName || "passport-photo.jpg", compareOrder.serviceKey === "family_passport_photo");
+                    stashPhotoForPrintSheet(compareOrder.geminiPhoto, compareOrder.fileName || "passport-photo.jpg", compareOrder.serviceKey === "family_passport_photo", parsePhotoCount(compareOrder.priceLabel));
                     markOrderPrinted(compareOrder.id);
                     router.push("/photo-print-sheet");
                   }}

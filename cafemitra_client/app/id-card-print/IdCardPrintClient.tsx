@@ -1,18 +1,21 @@
 "use client";
 
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { CircleAlert, CircleCheck, Contrast, Crop, FlipVertical2, LoaderCircle, LogIn, MessageSquareWarning, Palette, Plus, Printer, RotateCcw, RotateCw, ScanLine, SlidersHorizontal, Trash2, Undo2, Upload, Wallet, Wand2, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
 import { WalletLimitBanner } from "../WalletLimitBanner";
 import { CropEditor, cropImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, warpPerspectiveCrop, type CropQuad, type CropRect } from "../CropEditor";
-import { apiFetch, hasStoredSession } from "@/lib/api";
+import { apiFetch, apiUrl, hasStoredSession } from "@/lib/api";
 import { useToolPrice } from "@/lib/useToolPrice";
 import { trackToolEvent } from "@/lib/analytics";
 import { BUSINESS } from "@/lib/businessInfo";
 import IdCardPrintSeoContent from "./IdCardPrintSeoContent";
+import { ACCEPT_TOLERANCE_PCT, quadDistance, reportCrop, reportFilter, type CropOutcome, type CropSampleRef, type CropTrack } from "./cropTraining";
+import SheetOptionsControl from "./SheetOptionsControl";
+import { buildSheetHtml, CARD_H_MM, CARD_W_MM, DEFAULT_PAPER, PAPER_CHOICES, paperFromSummary, planSheet, type SheetOptions, type PaperChoice, type PositionOverrides, type SheetLayout } from "./sheetLayout";
 import { onScannerEngineLoading, scanCard, type ScanMode } from "./cardScan";
 import { bakeTone, isNeutralTone, NEUTRAL_TONE, TonedImage, ToneControl, type Tone } from "./ToneControl";
 import { PrintProfileSelect, useAgentPrint } from "@/app/PrintProfileSelect";
@@ -30,7 +33,6 @@ async function chargeIdCardPrint(cardCount: number) {
 
 type Side = "front" | "back";
 type ColorMode = "color" | "bw";
-type SheetLayout = "side" | "stack";
 // Cropped / auto-straightened cards start with this contrast so the print is
 // crisp; a tone the user already set (even back to neutral) is never overridden.
 const CROPPED_CARD_TONE: Tone = { ...NEUTRAL_TONE, contrast: 55 };
@@ -48,6 +50,10 @@ type SideState = {
   scan?: ScanStatus;
   // Manual brightness / contrast, shown live and applied when printing.
   tone?: Tone;
+  // Saturation is baked into the photo; this is the photo before that (so the slider can be reopened
+  // and changed again without stacking effects) and the saturation that was applied.
+  filterBase?: { file: File; url: string };
+  saturation?: number;
 };
 
 type CropMode = "straight" | "perspective";
@@ -89,6 +95,19 @@ export default function IdCardPrintClient() {
   const [cards, setCards] = useState<CardEntry[]>(() => [newCard()]);
   const [active, setActive] = useState<SlotRef | null>(null);
   const [cropTarget, setCropTarget] = useState<SlotRef | null>(null);
+  // A fresh upload whose auto-detected crop is waiting for the user to confirm it in the crop window.
+  const [reviewKey, setReviewKey] = useState("");
+  const cropTrackRef = useRef<Record<string, CropTrack>>({});
+  const sampleRef = useRef<Record<string, CropSampleRef>>({});
+  // True while the admin has turned on keeping photos for auto-crop training (a notice is shown then).
+  const [collectCropPhotos, setCollectCropPhotos] = useState(false);
+
+  useEffect(() => {
+    fetch(apiUrl("/api/crop-training/config/"))
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => setCollectCropPhotos(Boolean(data?.collectImages)))
+      .catch(() => {});
+  }, []);
   const [cropMode, setCropMode] = useState<CropMode>("perspective");
   const [filterTarget, setFilterTarget] = useState<SlotRef | null>(null);
   const [filterValues, setFilterValues] = useState<FilterValues>(DEFAULT_FILTER);
@@ -98,6 +117,12 @@ export default function IdCardPrintClient() {
   const [applyFilterToBothSides, setApplyFilterToBothSides] = useState(false);
   const [colorMode, setColorMode] = useState<ColorMode>("color");
   const [sheetLayout, setSheetLayout] = useState<SheetLayout>("side");
+  const [previewMode, setPreviewMode] = useState(false);
+  const [separatePages, setSeparatePages] = useState(false);
+  const [sheetOptions, setSheetOptions] = useState<SheetOptions>({});
+  const [previewEntries, setPreviewEntries] = useState<{ id: string; frontUrl: string; backUrl: string }[]>([]);
+  const [positionOverrides, setPositionOverrides] = useState<PositionOverrides>({});
+  const [paperOverride, setPaperOverride] = useState<PaperChoice | null>(null);
   const [printBusy, setPrintBusy] = useState(false);
   const agentPrint = useAgentPrint("id-card-print");
   const [error, setError] = useState("");
@@ -160,6 +185,7 @@ export default function IdCardPrintClient() {
   function releaseSide(state: SideState) {
     if (state.url) URL.revokeObjectURL(state.url);
     if (state.original && state.original.url !== state.url) URL.revokeObjectURL(state.original.url);
+    if (state.filterBase && state.filterBase.url !== state.url) URL.revokeObjectURL(state.filterBase.url);
   }
 
   // Updates one side only if it still shows the same uploaded photo - a scan
@@ -175,21 +201,45 @@ export default function IdCardPrintClient() {
 
   // Finds the card in the photo, straightens it to card size and cleans it.
   // quad = null detects the corners; a quad re-uses corners the user set.
-  async function runScan(cardId: string, side: Side, original: { file: File; url: string }, quad: CropQuad | null, mode: ScanMode) {
+  async function runScan(cardId: string, side: Side, original: { file: File; url: string }, quad: CropQuad | null, mode: ScanMode, review = false, track?: CropTrack) {
     updateIfSame(cardId, side, original.url, (state) => ({ ...state, scan: "scanning" }));
     try {
       const result = await scanCard(original.file, mode, quad);
       setEngineLoading(false);
       if (!result.found) {
         updateIfSame(cardId, side, original.url, (state) => ({ ...state, scan: "notfound" }));
+        // No card found on a fresh upload: let the user place the corners by hand right away.
+        if (review) {
+          cropTrackRef.current[`${cardId}:${side}`] = { autoQuad: null, undetected: true };
+          setCropTarget({ cardId, side });
+        }
+        return;
+      }
+      if (review) {
+        // Show the detected corners in the crop window first; the card is only cut out once the
+        // user confirms (Apply Crop) - or closes the window to accept the detected crop.
+        updateIfSame(cardId, side, original.url, (state) => ({ ...state, cropQuad: result.quad, scan: "idle" }));
+        setCropMode("perspective");
+        cropTrackRef.current[`${cardId}:${side}`] = { autoQuad: result.quad, undetected: false };
+        setReviewKey(`${cardId}:${side}`);
+        setCropTarget({ cardId, side });
         return;
       }
       const file = new File([result.blob], original.file.name.replace(/(\.[^.]+)?$/, "-card.jpg"), { type: "image/jpeg" });
       updateIfSame(cardId, side, original.url, (state) => {
         if (state.url && state.url !== original.url) URL.revokeObjectURL(state.url);
-        return { ...state, file, url: URL.createObjectURL(file), cropQuad: result.quad, cropRect: DEFAULT_CROP_RECT, scan: "done", tone: state.tone ?? CROPPED_CARD_TONE };
+        if (state.filterBase && state.filterBase.url !== state.url && state.filterBase.url !== original.url) URL.revokeObjectURL(state.filterBase.url);
+        return { ...state, file, url: URL.createObjectURL(file), cropQuad: result.quad, cropRect: DEFAULT_CROP_RECT, scan: "done", tone: state.tone ?? CROPPED_CARD_TONE, filterBase: undefined, saturation: undefined };
       });
       trackToolEvent("id_card_print", quad ? "manual_perspective_scan" : "auto_scan", { mode });
+      if (track) {
+        const outcome: CropOutcome = track.undetected ? "manual" : track.autoQuad && quadDistance(track.autoQuad, result.quad) <= ACCEPT_TOLERANCE_PCT ? "accepted" : "adjusted";
+        void reportCrop(outcome, side, track.autoQuad, result.quad, { original: original.file, result: result.blob }).then((sample) => {
+          if (sample) sampleRef.current[`${cardId}:${side}`] = sample;
+        });
+        // A freshly cropped card goes straight to Filter & Light so brightness / contrast can be set.
+        openFilter({ cardId, side }, CROPPED_CARD_TONE);
+      }
     } catch (reason) {
       console.error(reason);
       setEngineLoading(false);
@@ -205,7 +255,7 @@ export default function IdCardPrintClient() {
     const auto = scanMode !== "off";
     setSide(cardId, side, { file: selected, url, cropRect: DEFAULT_CROP_RECT, cropQuad: DEFAULT_CROP_QUAD, original, scan: auto ? "scanning" : "idle" });
     setActive({ cardId, side });
-    if (auto) void runScan(cardId, side, original, null, scanMode as ScanMode);
+    if (auto) void runScan(cardId, side, original, null, scanMode as ScanMode, true);
   }
 
   function autoFix(target: SlotRef) {
@@ -267,6 +317,24 @@ export default function IdCardPrintClient() {
     setSide(cardId, side, { ...getSide(cardId, side), cropQuad: quad });
   }
 
+  // Closing the crop window on a fresh upload keeps the detected crop; otherwise it just closes.
+  function closeCrop() {
+    const target = cropTarget;
+    const key = target ? `${target.cardId}:${target.side}` : "";
+    const waiting = target && reviewKey === key;
+    const track = cropTrackRef.current[key];
+    delete cropTrackRef.current[key];
+    setReviewKey("");
+    setCropTarget(null);
+    if (waiting && target) {
+      const current = getSide(target.cardId, target.side);
+      if (current.original && scanMode !== "off") void runScan(target.cardId, target.side, current.original, current.cropQuad, scanMode as ScanMode, false, track);
+    } else if (track?.undetected && target) {
+      // Nothing was detected and the user left without placing the corners.
+      void reportCrop("notfound", target.side, null, null, null);
+    }
+  }
+
   async function applyCrop() {
     if (!cropTarget) return;
     const current = getSide(cropTarget.cardId, cropTarget.side);
@@ -275,8 +343,12 @@ export default function IdCardPrintClient() {
     // with the corners as placed, and clean it the same way as Auto.
     if (cropMode === "perspective" && current.original && scanMode !== "off") {
       const target = cropTarget;
+      const key = `${target.cardId}:${target.side}`;
+      const track = cropTrackRef.current[key];
+      delete cropTrackRef.current[key];
+      setReviewKey("");
       setCropTarget(null);
-      await runScan(target.cardId, target.side, current.original, current.cropQuad, scanMode);
+      await runScan(target.cardId, target.side, current.original, current.cropQuad, scanMode, false, track);
       return;
     }
     try {
@@ -290,9 +362,10 @@ export default function IdCardPrintClient() {
     }
   }
 
-  function openFilter(target: SlotRef) {
-    setFilterValues(DEFAULT_FILTER);
-    setFilterTone({ ...NEUTRAL_TONE, ...getSide(target.cardId, target.side).tone });
+  function openFilter(target: SlotRef, initialTone?: Tone) {
+    // Reopen with the values that were applied last time, not back at 100%.
+    setFilterValues({ saturation: getSide(target.cardId, target.side).saturation ?? DEFAULT_FILTER.saturation });
+    setFilterTone({ ...NEUTRAL_TONE, ...(initialTone ?? getSide(target.cardId, target.side).tone) });
     setApplyFilterToBothSides(false);
     setFilterTarget(target);
   }
@@ -306,16 +379,33 @@ export default function IdCardPrintClient() {
       for (const side of sides) {
         const current = getSide(filterTarget.cardId, side);
         if (!current.url) continue;
-        // The tone stays a setting (shown live, applied at print); only
-        // saturation is baked into the photo.
+        // Tell training what was changed from the starting look (contrast 55, saturation 100) - or that it was put back.
+        const changed = filterValues.saturation !== DEFAULT_FILTER.saturation || (Object.keys(CROPPED_CARD_TONE) as (keyof Tone)[]).some((key) => Number(filterTone[key] ?? 0) !== CROPPED_CARD_TONE[key]);
+        void reportFilter(sampleRef.current[`${filterTarget.cardId}:${side}`], changed ? { source: "dashboard", saturation: filterValues.saturation, ...filterTone } : null);
+        // The tone stays a setting (shown live, applied at print); only saturation is baked into the
+        // photo - always from the photo before any saturation, so changing it again never stacks.
+        const base = current.filterBase ?? (current.file ? { file: current.file, url: current.url } : null);
+        if (!base) continue;
         if (filterValues.saturation === DEFAULT_FILTER.saturation) {
-          setSide(filterTarget.cardId, side, { ...current, tone: filterTone });
+          if (current.filterBase) {
+            if (current.url !== base.url) URL.revokeObjectURL(current.url);
+            setSide(filterTarget.cardId, side, { ...current, file: base.file, url: base.url, filterBase: undefined, saturation: undefined, tone: filterTone });
+          } else {
+            setSide(filterTarget.cardId, side, { ...current, tone: filterTone });
+          }
           continue;
         }
-        const adjustedBlob = await applyFilterAdjustments(current.url, filterValues);
-        const adjustedFile = new File([adjustedBlob], (current.file?.name || "photo").replace(/(\.[^.]+)?$/, "-adjusted.png"), { type: "image/png" });
-        URL.revokeObjectURL(current.url);
-        setSide(filterTarget.cardId, side, { file: adjustedFile, url: URL.createObjectURL(adjustedFile), cropRect: current.cropRect, cropQuad: current.cropQuad, tone: filterTone });
+        const adjustedBlob = await applyFilterAdjustments(base.url, filterValues);
+        const adjustedFile = new File([adjustedBlob], (base.file.name || "photo").replace(/(-adjusted)*(\.[^.]+)?$/, "-adjusted.png"), { type: "image/png" });
+        if (current.filterBase && current.url !== base.url) URL.revokeObjectURL(current.url);
+        setSide(filterTarget.cardId, side, {
+          ...current,
+          file: adjustedFile,
+          url: URL.createObjectURL(adjustedFile),
+          filterBase: base,
+          saturation: filterValues.saturation,
+          tone: filterTone,
+        });
       }
       setFilterTarget(null);
     } catch {
@@ -354,12 +444,12 @@ export default function IdCardPrintClient() {
         baked.push(url);
         return url;
       };
-      const printable = await Promise.all(withFront.map(async (card) => ({ frontUrl: await printUrl(card.front), backUrl: await printUrl(card.back) })));
+      const printable = await Promise.all(withFront.map(async (card) => ({ id: card.id, frontUrl: await printUrl(card.front), backUrl: await printUrl(card.back) })));
       // The print window / agent render has loaded them by then.
       if (baked.length) window.setTimeout(() => baked.forEach((url) => URL.revokeObjectURL(url)), 120000);
-      const printHtml = buildCardPrintSheetHtml(printable, colorMode, sheetLayout);
+      const printHtml = buildSheetHtml(planSheet(printable, paper, sheetLayout, positionOverrides, separatePages, sheetOptions), colorMode, true);
       await agentPrint.printHtml(() => printHtml, {
-        fileName: "id-card-a4-sheet.pdf",
+        fileName: `id-card-${paper.name.toLowerCase()}-sheet.pdf`,
         fallback: () => {
           const printWindow = window.open("", "_blank");
           if (!printWindow) return;
@@ -376,7 +466,69 @@ export default function IdCardPrintClient() {
     }
   }
 
+  // The sheet is laid out for the paper of the selected print profile ("4x6 · Color · ..."); with no
+  // profile (browser print) the paper can be chosen in the preview, A4 by default.
+  const selectedProfile = agentPrint.profiles.find((item) => item.name === agentPrint.profile);
+  const profilePaper = paperFromSummary(selectedProfile?.summary);
+  const paper = profilePaper ?? paperOverride ?? DEFAULT_PAPER;
+  const previewPlan = useMemo(() => planSheet(previewEntries, paper, sheetLayout, positionOverrides, separatePages, sheetOptions), [previewEntries, paper, sheetLayout, positionOverrides, separatePages, sheetOptions]);
+
+  // Hand-placed cards belong to one layout; a new layout or paper starts from the automatic one again.
+  useEffect(() => {
+    setPositionOverrides({});
+  }, [sheetLayout, paper, previewMode, separatePages, sheetOptions]);
+
+  // Drag a card on the preview page to wherever it should print.
+  function startCardDrag(event: React.PointerEvent<HTMLDivElement>, key: string, startX: number, startY: number) {
+    const pageEl = event.currentTarget.parentElement;
+    if (!pageEl) return;
+    event.preventDefault();
+    const rect = pageEl.getBoundingClientRect();
+    const mmPerPx = paper.widthMm / rect.width;
+    const originX = event.clientX;
+    const originY = event.clientY;
+    function onMove(move: PointerEvent) {
+      const xMm = Math.max(0, Math.min(paper.widthMm - CARD_W_MM, startX + (move.clientX - originX) * mmPerPx));
+      const yMm = Math.max(0, Math.min(paper.heightMm - CARD_H_MM, startY + (move.clientY - originY) * mmPerPx));
+      setPositionOverrides((current) => ({ ...current, [key]: { xMm, yMm } }));
+    }
+    function onUp() {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    }
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }
+
+  // Opening the preview prepares the cards the same way printing does (colour/tone applied).
+  useEffect(() => {
+    if (!previewMode) return;
+    let cancelled = false;
+    const baked: string[] = [];
+    (async () => {
+      const withFront = cards.filter((card) => card.front.url);
+      const urlFor = async (state: SideState) => {
+        if (!state.url || isNeutralTone(state.tone)) return state.url;
+        const url = await bakeTone(state.url, state.tone as Tone);
+        baked.push(url);
+        return url;
+      };
+      const entries = await Promise.all(withFront.map(async (card) => ({ id: card.id, frontUrl: await urlFor(card.front), backUrl: await urlFor(card.back) })));
+      if (!cancelled) setPreviewEntries(entries);
+    })();
+    return () => {
+      cancelled = true;
+      baked.forEach((url) => URL.revokeObjectURL(url));
+      setPreviewEntries([]);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [previewMode]);
+
   const readyCount = cards.filter((card) => card.front.url).length;
+
+  useEffect(() => {
+    if (previewMode && !readyCount) setPreviewMode(false);
+  }, [previewMode, readyCount]);
   const activeState = active ? getSide(active.cardId, active.side) : null;
   // Auto Fix (or a manual crop/filter) has changed the photo from what was
   // uploaded - flag the way back to it so a bad auto-straighten isn't a
@@ -408,11 +560,12 @@ export default function IdCardPrintClient() {
 
         <article className="customer-panel">
           <div className="customer-panel-head">
-            <span>Step 1</span>
-            <h2>Upload Front &amp; Back</h2>
+            <span>{previewMode ? "Preview" : "Step 1"}</span>
+            <h2>{previewMode ? "Print Preview" : "Upload Front & Back"}</h2>
           </div>
 
           <div className="idcard-toolbar-bar">
+            {!previewMode ? (
             <div className="idcard-toolbar">
               <button type="button" disabled={!active} onClick={() => active && openFilter(active)} title="Adjust brightness, colour and saturation by hand">
                 <SlidersHorizontal size={17} />
@@ -453,7 +606,10 @@ export default function IdCardPrintClient() {
                 <span>Report Issue</span>
               </a>
             </div>
+            ) : null}
             <div className="idcard-toolbar-actions">
+              {!previewMode ? (
+                <>
               <label className="idcard-scan-mode" title="What happens to a photo right after upload">
                 <ScanLine size={15} />
                 <select value={scanMode} onChange={(event) => changeScanMode(event.target.value as ScanMode | "off")}>
@@ -465,6 +621,8 @@ export default function IdCardPrintClient() {
                 </select>
               </label>
               <div className="idcard-toolbar-divider" />
+                </>
+              ) : null}
               <div className="idcard-toggle-group">
                 <button type="button" className={colorMode === "color" ? "active" : ""} onClick={() => setColorMode("color")}>
                   <Palette size={14} /> Color
@@ -482,14 +640,37 @@ export default function IdCardPrintClient() {
                   Top / Bottom
                 </button>
               </div>
-              <div className="idcard-toolbar-divider" />
-              <PrintProfileSelect print={agentPrint} />
-              <button className="idcard-print-cta" type="button" disabled={!readyCount || printBusy || scanning} onClick={() => void printSheet()}>
-                <Printer size={16} /> {printBusy ? "Preparing…" : "Print A4 Sheet"}
+              <div className="idcard-toggle-group" title="Print every ID card on its own page instead of fitting several on one page">
+                <button type="button" className={separatePages ? "active" : ""} onClick={() => setSeparatePages((current) => !current)}>
+                  One ID per page
+                </button>
+              </div>
+              <SheetOptionsControl value={sheetOptions} onChange={setSheetOptions} />
+              {/* The print profile is only chosen on the preview, right before the final print. */}
+              {previewMode ? (
+                <>
+                  <div className="idcard-toolbar-divider" />
+                  <PrintProfileSelect print={agentPrint} />
+                </>
+              ) : null}
+              {previewMode ? (
+                <button className="idcard-edit-btn" type="button" onClick={() => setPreviewMode(false)}>
+                  <Undo2 size={16} /> Edit cards
+                </button>
+              ) : null}
+              <button
+                className="idcard-print-cta"
+                type="button"
+                disabled={!readyCount || printBusy || scanning || (previewMode && !previewEntries.length)}
+                onClick={() => (previewMode ? void printSheet() : setPreviewMode(true))}
+              >
+                <Printer size={16} /> {printBusy ? "Preparing…" : previewMode ? "Print" : "Print / Preview"}
               </button>
             </div>
           </div>
 
+          {!previewMode ? (
+            <>
           <div className="idcard-card-rows">
             {cards.map((card, index) => (
               <div key={card.id} className="idcard-card-row">
@@ -559,23 +740,116 @@ export default function IdCardPrintClient() {
               ? "Photos are straightened and cleaned automatically. Click a card to select it, then use Auto Fix / Crop / Rotate / Remove above. Back is optional - upload only a front for cards like PAN."
               : "Each card slot above is the upload target itself - upload a front photo, even one taken at an angle: the card is found, straightened and cleaned for printing."}
           </p>
+            </>
+          ) : (
+            <div className="idcard-preview-view">
+              <div className="idcard-preview-info">
+                <strong>
+                  {paper.name} ({paper.widthMm} × {paper.heightMm} mm)
+                </strong>
+                <span>
+                  {readyCount} card{readyCount === 1 ? "" : "s"} · {previewPlan.pages.length} page{previewPlan.pages.length === 1 ? "" : "s"} · {sheetLayout === "stack" ? "Top / Bottom" : "Left / Right"}{separatePages ? " · One ID per page" : ""}{(sheetOptions.copies ?? 1) > 1 ? ` · ${sheetOptions.copies} copies each` : ""} ·{" "}
+                  {colorMode === "bw" ? "B/W" : "Color"}
+                </span>
+                {profilePaper ? (
+                  <span>Paper from print profile</span>
+                ) : (
+                  <label>
+                    <span>Paper</span>
+                    <select value={paper.name} onChange={(event) => setPaperOverride(PAPER_CHOICES.find((choice) => choice.name === event.target.value) ?? null)}>
+                      {PAPER_CHOICES.map((choice) => (
+                        <option key={choice.name} value={choice.name}>
+                          {choice.name} ({choice.widthMm} × {choice.heightMm} mm)
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                {!previewPlan.fits ? <em>These cards are larger than this paper - pick a bigger paper.</em> : null}
+                <span className="idcard-preview-hint">Drag any card on the sheet to place it where you want it printed.</span>
+                {Object.keys(positionOverrides).length ? (
+                  <button type="button" className="idcard-reset-positions" onClick={() => setPositionOverrides({})}>
+                    <RotateCcw size={14} /> Reset positions
+                  </button>
+                ) : null}
+              </div>
+              {!previewEntries.length ? (
+                <p className="idcard-preview-loading">Preparing preview…</p>
+              ) : (
+                <div className="idcard-preview-pages">
+                  {previewPlan.pages.map((placed, pageIndex) => (
+                    <figure key={pageIndex}>
+                      <div className="idcard-preview-page" style={{ aspectRatio: `${paper.widthMm} / ${paper.heightMm}`, filter: colorMode === "bw" ? "grayscale(1)" : undefined }}>
+                        {placed.map((card, cardIndex) => (
+                          <div
+                            className="idcard-preview-card"
+                            key={card.key}
+                            title="Drag to move this card"
+                            onPointerDown={(event) => startCardDrag(event, card.key, card.xMm, card.yMm)}
+                            style={{
+                              left: `${(card.xMm / paper.widthMm) * 100}%`,
+                              top: `${(card.yMm / paper.heightMm) * 100}%`,
+                              width: `${(CARD_W_MM / paper.widthMm) * 100}%`,
+                              height: `${(CARD_H_MM / paper.heightMm) * 100}%`,
+                            }}
+                          >
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={card.url} alt="" />
+                          </div>
+                        ))}
+                      </div>
+                      <figcaption>
+                        Page {pageIndex + 1} of {previewPlan.pages.length} - {paper.name}
+                      </figcaption>
+                    </figure>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {collectCropPhotos ? (
+            <p className="customer-inline-help">
+              To improve the automatic card detection, the photo you upload and its cropped result may be kept for training. Do not upload a card you do not want kept.
+            </p>
+          ) : null}
           {error ? <div className="profile-alert error">{error}</div> : null}
         </article>
       </div>
 
       {cropTarget && cropState?.url && cropImageUrl ? (
         <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Crop photo">
-          <div className="crop-window">
+          <div className="crop-window idcrop-window">
             <div className="document-preview-head">
               <div>
-                <strong>Crop {cropTarget.side === "front" ? "Front" : "Back"} Photo</strong>
-                <span>{cropState.file?.name}</span>
+                <strong>Crop {cropTarget.side === "front" ? "Front" : "Back"} of the card</strong>
+                <span>{cropState.original?.file.name || cropState.file?.name}</span>
               </div>
-              <button type="button" onClick={() => setCropTarget(null)} aria-label="Close crop">
+              <button type="button" onClick={closeCrop} aria-label="Close crop">
                 <X size={18} />
               </button>
             </div>
-            <div className="crop-body">
+            <div className="crop-body idcrop-body">
+              {reviewKey === `${cropTarget.cardId}:${cropTarget.side}` ? (
+                <div className="idcrop-note ok">
+                  <CircleCheck size={20} />
+                  <div>
+                    <strong>Card detected automatically</strong>
+                    <span>
+                      The four blue corners were placed on your card for you. If they sit on the card&apos;s corners, press <b>Apply Crop</b> and the card is added. If any corner is off, drag it onto the
+                      correct corner first.
+                    </span>
+                  </div>
+                </div>
+              ) : cropState.scan === "notfound" ? (
+                <div className="idcrop-note warn">
+                  <CircleAlert size={20} />
+                  <div>
+                    <strong>We could not find the card automatically</strong>
+                    <span>Drag each blue corner onto a corner of the card, then press Apply Crop.</span>
+                  </div>
+                </div>
+              ) : null}
               <div className="crop-mode-toggle">
                 <button type="button" className={cropMode === "perspective" ? "active" : ""} onClick={() => setCropMode("perspective")}>
                   Perspective crop
@@ -602,7 +876,7 @@ export default function IdCardPrintClient() {
                 <p>
                   {cropMode === "straight"
                     ? "Drag a corner or edge to resize the crop area. Drag inside the box to move it."
-                    : "Drag each corner onto the card's actual corner - useful when the photo was taken at an angle. Click anywhere on an edge to move its nearest corner there."}
+                    : "Tip: move each corner onto the card's real corner - this also straightens a card photographed at an angle. Clicking on an edge moves its nearest corner there."}
                 </p>
                 <button
                   type="button"
@@ -613,6 +887,7 @@ export default function IdCardPrintClient() {
                 <button type="button" onClick={applyCrop}>
                   <Crop size={17} /> Apply Crop
                 </button>
+                <small>Closing this window keeps the automatic crop.</small>
               </div>
             </div>
           </div>
@@ -638,11 +913,11 @@ export default function IdCardPrintClient() {
             <div className="crop-body">
               <div className={bothSelected ? "idcard-filter-preview idcard-filter-preview-pair" : "idcard-filter-preview"}>
                 <span className="idcard-filter-preview-img" style={{ filter: `saturate(${filterValues.saturation}%)` }}>
-                  <TonedImage url={filterState.url} tone={filterTone} alt="Preview with adjustments" />
+                  <TonedImage url={filterState.filterBase?.url ?? filterState.url} tone={filterTone} alt="Preview with adjustments" />
                 </span>
                 {bothSelected ? (
                   <span className="idcard-filter-preview-img" style={{ filter: `saturate(${filterValues.saturation}%)` }}>
-                    <TonedImage url={otherSideState.url} tone={filterTone} alt="Preview with adjustments (other side)" />
+                    <TonedImage url={otherSideState.filterBase?.url ?? otherSideState.url} tone={filterTone} alt="Preview with adjustments (other side)" />
                   </span>
                 ) : null}
               </div>
@@ -752,52 +1027,4 @@ async function applyFilterAdjustments(url: string, values: FilterValues): Promis
   context.filter = `saturate(${values.saturation}%)`;
   context.drawImage(image, 0, 0);
   return new Promise((resolve, reject) => canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Filter apply failed"))), "image/png", 0.95));
-}
-
-function buildCardPrintSheetHtml(entries: { frontUrl: string; backUrl: string }[], colorMode: ColorMode, layout: SheetLayout) {
-  const cardHtml = (url: string) => `<div class="card"><img src="${url}" /></div>`;
-  const rowsHtml = entries.map((entry) => `<div class="pair">${cardHtml(entry.frontUrl)}${entry.backUrl ? cardHtml(entry.backUrl) : ""}</div>`).join("");
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>ID Card Print Sheet</title>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;}
-body{background:#f2f2f2;font-family:Arial, Helvetica, sans-serif;${colorMode === "bw" ? "filter:grayscale(1);" : ""}}
-.page{width:210mm;min-height:297mm;background:#fff;margin:20px auto;padding:10mm;display:flex;flex-wrap:wrap;align-content:flex-start;gap:6mm;}
-${layout === "stack" ? ".pair{display:flex;flex-direction:column;gap:6mm;}" : ".pair{display:flex;gap:6mm;width:100%;}"}
-.card{width:85.6mm;height:53.98mm;border:1px solid #999;border-radius:3mm;overflow:hidden;background:#fff;}
-.card img{width:100%;height:100%;object-fit:cover;}
-@media print{
-  body{background:white;}
-  /* min-height:297mm (set above, for the on-screen preview to look like a
-     full A4 sheet) sized the printable box to EXACTLY one page's height
-     with zero slack - any sub-millimeter rounding in the browser's mm-to-
-     print-unit conversion then overflowed it, forcing a near-blank 2nd
-     page for even a single card. Sizing to content here removes that risk
-     entirely; it only ever mattered for the screen preview anyway. */
-  .page{margin:0;min-height:0;box-shadow:none;}
-  @page{size:A4;margin:0;}
-  /* Browser extensions (ad blockers, "analyze this page" tools, etc.) often
-     inject their own floating button straight onto <body> via a content
-     script, completely outside this page's own markup - nothing here can
-     prevent that injection, but this hides anything that isn't our own
-     .page content specifically from the PRINTED output, regardless of what
-     it is or which extension added it. */
-  body > :not(.page){display:none !important;}
-}
-</style>
-</head>
-<body>
-<div class="page">${rowsHtml}</div>
-<script>
-  window.onload = function () {
-    window.focus();
-    window.print();
-  };
-</script>
-</body>
-</html>`;
 }

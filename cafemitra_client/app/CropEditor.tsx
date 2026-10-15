@@ -147,7 +147,7 @@ export async function rotateImageBlob(source: Blob, degrees: number) {
     const canvas = document.createElement("canvas");
     canvas.width = swap ? image.naturalHeight : image.naturalWidth;
     canvas.height = swap ? image.naturalWidth : image.naturalHeight;
-    const context = canvas.getContext("2d");
+    const context = canvas.getContext("2d", { willReadFrequently: true });
     if (!context) throw new Error("Canvas not supported");
     context.fillStyle = "#fff";
     context.fillRect(0, 0, canvas.width, canvas.height);
@@ -170,7 +170,7 @@ export async function cropImage(fileUrl: string, rect: CropRect) {
   const sourceWidth = (rect.width / 100) * image.naturalWidth;
   const sourceHeight = (rect.height / 100) * image.naturalHeight;
   const canvas = document.createElement("canvas");
-  const context = canvas.getContext("2d");
+  const context = canvas.getContext("2d", { willReadFrequently: true });
 
   canvas.width = Math.max(1, Math.round(sourceWidth));
   canvas.height = Math.max(1, Math.round(sourceHeight));
@@ -292,7 +292,7 @@ export function PerspectiveCropEditor({ fileUrl, quad, onQuadChange }: { fileUrl
     // (a portrait phone photo) - without this frame containing it by both
     // width and height, a tall photo pushed the bottom corners out of the
     // modal with no way to reach them.
-    <div className="crop-stage-perspective-frame">
+    <div className="crop-stage-perspective-frame" style={naturalRatio ? ({ "--stage-ratio": String(naturalRatio) } as React.CSSProperties) : undefined}>
       <div
         className="crop-stage crop-stage-perspective"
         ref={stageRef}
@@ -471,7 +471,7 @@ export function warpQuadToCanvas(image: HTMLImageElement, quad: CropQuad, outWid
   const outCanvas = document.createElement("canvas");
   outCanvas.width = outWidth;
   outCanvas.height = outHeight;
-  const outContext = outCanvas.getContext("2d");
+  const outContext = outCanvas.getContext("2d", { willReadFrequently: true });
   if (!outContext) throw new Error("Canvas not supported");
   const outImage = outContext.createImageData(outWidth, outHeight);
   const pixel: [number, number, number, number] = [255, 255, 255, 255];
