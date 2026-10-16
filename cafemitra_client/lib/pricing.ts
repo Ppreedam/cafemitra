@@ -176,6 +176,36 @@ export function calculatePriceItemRate(item: PriceItem | undefined, pages: numbe
   return Number((matchedRange || item).rate || 0);
 }
 
+/** Photos a passport package holds, from its name ("6 pcs" -> 6, "4pics" -> 4); 1 when there is no number. */
+export function photoPackageCount(label?: string) {
+  const match = /(\d+)/.exec(label || "");
+  const value = match ? parseInt(match[1], 10) : NaN;
+  return Number.isFinite(value) && value > 0 ? value : 1;
+}
+
+/**
+ * Price of a passport / family photo order: the package price x copies - unless the total photos
+ * (package size x copies, e.g. 4 x 2 = 8) falls in a price range: the package's own ranges first, then the
+ * ranges of the shop's other packages. That range's price is the price of the whole order. Same rule as the
+ * server's photo_order_total.
+ */
+export function calculatePhotoOrderTotal(item: PriceItem | undefined, copies: number, allItems: PriceItem[] = []) {
+  if (!item) return 0;
+  const count = Math.max(1, Math.floor(Number(copies) || 1));
+  const units = photoPackageCount(item.label) * count;
+  const candidates = [item, ...allItems.filter((entry) => entry.id !== item.id && !entry.profile)];
+  let matched: PriceRange | undefined;
+  for (const candidate of candidates) {
+    matched = (candidate.ranges || []).find((range) => {
+      const min = Math.max(1, Number(range.minPages || 1));
+      const max = range.maxPages === undefined || range.maxPages === null || Number(range.maxPages) <= 0 ? Infinity : Number(range.maxPages);
+      return units >= min && units <= max;
+    });
+    if (matched) break;
+  }
+  return matched ? Number(matched.rate || 0) : Number(item.rate || 0) * count;
+}
+
 export function normalizePaymentMode(value: string) {
   return value === "Both" || value === "Cash Counter" ? value : "Online Payment";
 }

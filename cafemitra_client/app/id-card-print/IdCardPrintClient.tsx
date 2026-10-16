@@ -7,7 +7,7 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { CircleAlert, CircleCheck, Contrast, Crop, FlipVertical2, LoaderCircle, LogIn, MessageSquareWarning, Palette, Plus, Printer, RotateCcw, RotateCw, ScanLine, SlidersHorizontal, Trash2, Undo2, Upload, Wallet, Wand2, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
 import { WalletLimitBanner } from "../WalletLimitBanner";
-import { CropEditor, cropImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, warpPerspectiveCrop, type CropQuad, type CropRect } from "../CropEditor";
+import { CropEditor, cropImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, rotateQuad, warpPerspectiveCrop, type CropQuad, type CropRect } from "../CropEditor";
 import { apiFetch, apiUrl, hasStoredSession } from "@/lib/api";
 import { useToolPrice } from "@/lib/useToolPrice";
 import { trackToolEvent } from "@/lib/analytics";
@@ -15,7 +15,8 @@ import { BUSINESS } from "@/lib/businessInfo";
 import IdCardPrintSeoContent from "./IdCardPrintSeoContent";
 import { ACCEPT_TOLERANCE_PCT, quadDistance, reportCrop, reportFilter, type CropOutcome, type CropSampleRef, type CropTrack } from "./cropTraining";
 import SheetOptionsControl from "./SheetOptionsControl";
-import { buildSheetHtml, CARD_H_MM, CARD_W_MM, DEFAULT_PAPER, PAPER_CHOICES, paperFromSummary, planSheet, type SheetOptions, type PaperChoice, type PositionOverrides, type SheetLayout } from "./sheetLayout";
+import { loadSheetPrefs, saveSheetPrefs } from "./sheetPrefs";
+import { buildSheetHtml, DEFAULT_PAPER, MAX_COPIES, PAPER_CHOICES, paperFromSummary, planSheet, type SheetOptions, type PaperChoice, type PositionOverrides, type SheetLayout } from "./sheetLayout";
 import { onScannerEngineLoading, scanCard, type ScanMode } from "./cardScan";
 import { bakeTone, isNeutralTone, NEUTRAL_TONE, TonedImage, ToneControl, type Tone } from "./ToneControl";
 import { PrintProfileSelect, useAgentPrint } from "@/app/PrintProfileSelect";
@@ -62,6 +63,8 @@ type CardEntry = {
   id: string;
   front: SideState;
   back: SideState;
+  /** Times this ID card is printed (default 1). */
+  copies?: number;
 };
 
 type SlotRef = { cardId: string; side: Side };
@@ -120,7 +123,12 @@ export default function IdCardPrintClient() {
   const [previewMode, setPreviewMode] = useState(false);
   const [separatePages, setSeparatePages] = useState(false);
   const [sheetOptions, setSheetOptions] = useState<SheetOptions>({});
-  const [previewEntries, setPreviewEntries] = useState<{ id: string; frontUrl: string; backUrl: string }[]>([]);
+  // The margin and size last printed with for this layout are applied again when it is used.
+  useEffect(() => {
+    const saved = loadSheetPrefs(sheetLayout);
+    if (saved) setSheetOptions((current) => ({ ...current, marginMm: saved.marginMm, sizePercent: saved.sizePercent }));
+  }, [sheetLayout]);
+  const [previewEntries, setPreviewEntries] = useState<{ id: string; frontUrl: string; backUrl: string; copies?: number }[]>([]);
   const [positionOverrides, setPositionOverrides] = useState<PositionOverrides>({});
   const [paperOverride, setPaperOverride] = useState<PaperChoice | null>(null);
   const [printBusy, setPrintBusy] = useState(false);
@@ -317,6 +325,35 @@ export default function IdCardPrintClient() {
     setSide(cardId, side, { ...getSide(cardId, side), cropQuad: quad });
   }
 
+  // Turns the photo being cropped (the uploaded original while placing corners, else the shown photo) and
+  // turns the corners with it. A rotated photo no longer matches what auto-crop saw, so it is not recorded for training.
+  async function rotateCropSource(turns: 1 | -1) {
+    if (!cropTarget) return;
+    const { cardId, side } = cropTarget;
+    const current = getSide(cardId, side);
+    const useOriginal = cropMode === "perspective" && !!current.original && scanMode !== "off";
+    const source = useOriginal ? current.original : current.file ? { file: current.file, url: current.url } : null;
+    if (!source) return;
+    try {
+      const rotatedBlob = await rotateImage(source.url, turns);
+      const rotatedFile = new File([rotatedBlob], source.file.name.replace(/\.[^.]+$/, ".png"), { type: "image/png" });
+      const rotated = { file: rotatedFile, url: URL.createObjectURL(rotatedFile) };
+      delete cropTrackRef.current[`${cardId}:${side}`];
+      const cropQuad = rotateQuad(current.cropQuad, turns);
+      const wasShown = current.url === source.url;
+      if (wasShown) URL.revokeObjectURL(source.url);
+      else if (useOriginal) URL.revokeObjectURL(source.url);
+      if (useOriginal) {
+        setSide(cardId, side, { ...current, original: rotated, ...(wasShown ? rotated : {}), cropQuad });
+      } else {
+        const originalIsShown = current.original?.url === current.url;
+        setSide(cardId, side, { ...current, ...rotated, ...(originalIsShown ? { original: rotated } : {}), cropRect: DEFAULT_CROP_RECT, cropQuad });
+      }
+    } catch {
+      // Leave the photo as it is if rotating fails.
+    }
+  }
+
   // Closing the crop window on a fresh upload keeps the detected crop; otherwise it just closes.
   function closeCrop() {
     const target = cropTarget;
@@ -417,6 +454,19 @@ export default function IdCardPrintClient() {
     setCards((prev) => [...prev, newCard()]);
   }
 
+  function setCardCopies(cardId: string, copies: number) {
+    setCards((prev) => prev.map((card) => (card.id === cardId ? { ...card, copies } : card)));
+  }
+
+  function setAllCopies(copies: number) {
+    setCards((prev) => prev.map((card) => ({ ...card, copies })));
+  }
+
+  const allCopies = (() => {
+    const counts = new Set(cards.filter((card) => card.front.url).map((card) => card.copies ?? 1));
+    return counts.size === 1 ? Array.from(counts)[0] : counts.size === 0 ? 1 : null;
+  })();
+
   function removeCard(cardId: string) {
     setCards((prev) => {
       const card = prev.find((entry) => entry.id === cardId);
@@ -433,6 +483,7 @@ export default function IdCardPrintClient() {
     if (!withFront.length || printBusy) return;
     if (!requireLogin()) return;
     if (!(await requestChargeConfirm())) return;
+    saveSheetPrefs(sheetLayout, sheetOptions);
     setPrintBusy(true);
     setError("");
     try {
@@ -444,7 +495,7 @@ export default function IdCardPrintClient() {
         baked.push(url);
         return url;
       };
-      const printable = await Promise.all(withFront.map(async (card) => ({ id: card.id, frontUrl: await printUrl(card.front), backUrl: await printUrl(card.back) })));
+      const printable = await Promise.all(withFront.map(async (card) => ({ id: card.id, copies: card.copies, frontUrl: await printUrl(card.front), backUrl: await printUrl(card.back) })));
       // The print window / agent render has loaded them by then.
       if (baked.length) window.setTimeout(() => baked.forEach((url) => URL.revokeObjectURL(url)), 120000);
       const printHtml = buildSheetHtml(planSheet(printable, paper, sheetLayout, positionOverrides, separatePages, sheetOptions), colorMode, true);
@@ -471,6 +522,7 @@ export default function IdCardPrintClient() {
   const selectedProfile = agentPrint.profiles.find((item) => item.name === agentPrint.profile);
   const profilePaper = paperFromSummary(selectedProfile?.summary);
   const paper = profilePaper ?? paperOverride ?? DEFAULT_PAPER;
+  const printCount = cards.filter((card) => card.front.url).reduce((sum, card) => sum + (card.copies ?? 1), 0);
   const previewPlan = useMemo(() => planSheet(previewEntries, paper, sheetLayout, positionOverrides, separatePages, sheetOptions), [previewEntries, paper, sheetLayout, positionOverrides, separatePages, sheetOptions]);
 
   // Hand-placed cards belong to one layout; a new layout or paper starts from the automatic one again.
@@ -488,8 +540,8 @@ export default function IdCardPrintClient() {
     const originX = event.clientX;
     const originY = event.clientY;
     function onMove(move: PointerEvent) {
-      const xMm = Math.max(0, Math.min(paper.widthMm - CARD_W_MM, startX + (move.clientX - originX) * mmPerPx));
-      const yMm = Math.max(0, Math.min(paper.heightMm - CARD_H_MM, startY + (move.clientY - originY) * mmPerPx));
+      const xMm = Math.max(0, Math.min(paper.widthMm - previewPlan.cardWMm, startX + (move.clientX - originX) * mmPerPx));
+      const yMm = Math.max(0, Math.min(paper.heightMm - previewPlan.cardHMm, startY + (move.clientY - originY) * mmPerPx));
       setPositionOverrides((current) => ({ ...current, [key]: { xMm, yMm } }));
     }
     function onUp() {
@@ -513,7 +565,7 @@ export default function IdCardPrintClient() {
         baked.push(url);
         return url;
       };
-      const entries = await Promise.all(withFront.map(async (card) => ({ id: card.id, frontUrl: await urlFor(card.front), backUrl: await urlFor(card.back) })));
+      const entries = await Promise.all(withFront.map(async (card) => ({ id: card.id, copies: card.copies, frontUrl: await urlFor(card.front), backUrl: await urlFor(card.back) })));
       if (!cancelled) setPreviewEntries(entries);
     })();
     return () => {
@@ -645,7 +697,7 @@ export default function IdCardPrintClient() {
                   One ID per page
                 </button>
               </div>
-              <SheetOptionsControl value={sheetOptions} onChange={setSheetOptions} />
+              <SheetOptionsControl value={sheetOptions} onChange={setSheetOptions} paper={paper} allCopies={allCopies} onAllCopies={setAllCopies} />
               {/* The print profile is only chosen on the preview, right before the final print. */}
               {previewMode ? (
                 <>
@@ -676,6 +728,16 @@ export default function IdCardPrintClient() {
               <div key={card.id} className="idcard-card-row">
                 <div className="idcard-card-row-head">
                   <span>ID Card {index + 1}</span>
+                  <label className="idcard-row-copies" title="How many times this ID card is printed">
+                    <span>Copies</span>
+                    <select value={card.copies ?? 1} onChange={(event) => setCardCopies(card.id, Number(event.target.value))}>
+                      {Array.from({ length: MAX_COPIES }, (_, i) => i + 1).map((n) => (
+                        <option key={n} value={n}>
+                          {n}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   {cards.length > 1 ? (
                     <button type="button" className="idcard-card-row-remove" onClick={() => removeCard(card.id)}>
                       <Trash2 size={13} /> Remove card
@@ -748,7 +810,7 @@ export default function IdCardPrintClient() {
                   {paper.name} ({paper.widthMm} × {paper.heightMm} mm)
                 </strong>
                 <span>
-                  {readyCount} card{readyCount === 1 ? "" : "s"} · {previewPlan.pages.length} page{previewPlan.pages.length === 1 ? "" : "s"} · {sheetLayout === "stack" ? "Top / Bottom" : "Left / Right"}{separatePages ? " · One ID per page" : ""}{(sheetOptions.copies ?? 1) > 1 ? ` · ${sheetOptions.copies} copies each` : ""} ·{" "}
+                  {readyCount} card{readyCount === 1 ? "" : "s"} · {previewPlan.pages.length} page{previewPlan.pages.length === 1 ? "" : "s"} · {sheetLayout === "stack" ? "Top / Bottom" : "Left / Right"}{separatePages ? " · One ID per page" : ""}{printCount !== readyCount ? ` · ${printCount} prints` : ""} ·{" "}
                   {colorMode === "bw" ? "B/W" : "Color"}
                 </span>
                 {profilePaper ? (
@@ -789,8 +851,8 @@ export default function IdCardPrintClient() {
                             style={{
                               left: `${(card.xMm / paper.widthMm) * 100}%`,
                               top: `${(card.yMm / paper.heightMm) * 100}%`,
-                              width: `${(CARD_W_MM / paper.widthMm) * 100}%`,
-                              height: `${(CARD_H_MM / paper.heightMm) * 100}%`,
+                              width: `${(previewPlan.cardWMm / paper.widthMm) * 100}%`,
+                              height: `${(previewPlan.cardHMm / paper.heightMm) * 100}%`,
                             }}
                           >
                             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -873,6 +935,15 @@ export default function IdCardPrintClient() {
                 />
               )}
               <div className="crop-controls">
+                <div className="idcrop-rotate" role="group" aria-label="Rotate photo">
+                  <span className="idcrop-rotate-label">Rotate photo</span>
+                  <button type="button" onClick={() => void rotateCropSource(-1)} title="Turn the photo a quarter turn to the left">
+                    <RotateCcw size={16} /> Left
+                  </button>
+                  <button type="button" onClick={() => void rotateCropSource(1)} title="Turn the photo a quarter turn to the right">
+                    <RotateCw size={16} /> Right
+                  </button>
+                </div>
                 <p>
                   {cropMode === "straight"
                     ? "Drag a corner or edge to resize the crop area. Drag inside the box to move it."

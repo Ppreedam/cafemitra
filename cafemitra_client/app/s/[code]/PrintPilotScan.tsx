@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { CircleAlert, CircleCheck, Clock3, Copy, Crop, Download, Eye, EyeOff, FileText, IdCard, Image as ImageIcon, Info, LoaderCircle, LockKeyhole, Pencil, Printer, RotateCw, ShieldCheck, Trash2, Undo2, Upload, Wallet, X } from "lucide-react";
 import { apiUrl } from "@/lib/api";
-import { calculatePriceItemRate, formatPriceItem, getAllowedPaymentModes, getDuplexRate, mergePricingDefaults, type PriceItem, type PricingService } from "@/lib/pricing";
+import { calculatePhotoOrderTotal, calculatePriceItemRate, formatPriceItem, getAllowedPaymentModes, getDuplexRate, mergePricingDefaults, photoPackageCount, type PriceItem, type PricingService } from "@/lib/pricing";
 import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
 import { buildFamilyPhotoPrompt } from "@/lib/family-photo-prompt";
 import FamilyPhotoUpload from "./FamilyPhotoUpload";
@@ -56,6 +56,7 @@ type PrintOrder = {
   id: number;
   orderNumber: string;
   priceLabel?: string;
+  copies?: number;
   tokenId: string;
   tokenNumber: number;
   serviceKey: string;
@@ -284,8 +285,9 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
   const canDuplex = hasPdfFile && pages > 1 && !isPhotoService && !isIdCardPrint;
   // Shop's per-page Duplex price for the selected B/W / Color item (0 = normal rate).
   const duplexRate = getDuplexRate(activeService?.settings, selectedItem?.id, totalUnits);
-  const selectedRate = canDuplex && duplex && duplexRate > 0 ? duplexRate : calculatePriceItemRate(selectedItem, isPhotoService ? 1 : totalUnits);
-  const amount = hasUploadedFile ? Math.max(0, selectedRate * totalUnits) : 0;
+  const selectedRate = canDuplex && duplex && duplexRate > 0 ? duplexRate : isPhotoService ? Number(selectedItem?.rate || 0) : calculatePriceItemRate(selectedItem, totalUnits);
+  // Passport / family photos: package price x copies, or the range price for the total photos (6 x 2 = 12).
+  const amount = hasUploadedFile ? Math.max(0, isPhotoService ? calculatePhotoOrderTotal(selectedItem, copies, priceItems) : selectedRate * totalUnits) : 0;
   const canCropImage = (selectedService === "auto_document_print" || isPassportPhoto) && hasImageFile;
   // Document photos are scanned automatically; passport photos and ID cards have their own flows.
   const autoScansImages = !isPassportPhoto && !isIdCardPrint;
@@ -1838,8 +1840,8 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
               />
             </label>
           ) : null}
-          <label className="copies-control" hidden={isPhotoService}>
-            <span>{isPassportPhoto ? "Sets" : "Copies"}</span>
+          <label className="copies-control">
+            <span>Copies</span>
             <div className="copies-stepper">
               <button
                 aria-label="Decrease copies"
@@ -1934,9 +1936,9 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
             <strong>
               {hasUploadedFile
                 ? isFamilyPhoto
-                  ? `${familyFiles.length} people`
+                  ? `${familyFiles.length} people${copies > 1 ? ` × ${copies} copies` : ""}`
                   : isPassportPhoto
-                  ? selectedItem?.label || "1"
+                  ? `${selectedItem?.label || "1"}${copies > 1 ? ` × ${copies} copies (${photoPackageCount(selectedItem?.label) * copies} photos)` : ""}`
                   : `${pages} x ${copies}`
                 : "Upload pending"}
             </strong>
@@ -1984,7 +1986,7 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
                           className="customer-download-btn"
                           onClick={() => {
                             if (!order.geminiPhoto) return;
-                            stashPhotoForPrintSheet(order.geminiPhoto, isFamilyPhoto ? "family-passport-photo.jpg" : "passport-photo.jpg", isFamilyPhoto, parsePhotoCount(order.priceLabel));
+                            stashPhotoForPrintSheet(order.geminiPhoto, isFamilyPhoto ? "family-passport-photo.jpg" : "passport-photo.jpg", isFamilyPhoto, parsePhotoCount(order.priceLabel, isFamilyPhoto ? 1 : 6) * Math.max(1, order.copies ?? 1));
                             router.push("/photo-print-sheet");
                           }}
                         >

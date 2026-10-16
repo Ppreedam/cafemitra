@@ -244,7 +244,7 @@ export default function FamilyPassportPhotoClient() {
         stopChecking();
         setJobState("done");
         setFinalImageUrl(result.imageUrl);
-        stashPhotoForPrintSheet(result.imageUrl, "family-passport-photo.jpg", true, parsePhotoCount(selectedPackage?.label));
+        stashPhotoForPrintSheet(result.imageUrl, "family-passport-photo.jpg", true, parsePhotoCount(selectedPackage?.label, 1));
         return;
       }
 

@@ -3,13 +3,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
 import { CircleAlert, CircleCheck, Contrast, Crop, LoaderCircle, Palette, Plus, Printer, RotateCcw, RotateCw, SlidersHorizontal, Trash2, Undo2, Upload, Wand2, X } from "lucide-react";
-import { CropEditor, cropImage, loadImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, warpPerspectiveCrop, type CropQuad, type CropRect } from "../../CropEditor";
+import { CropEditor, cropImage, loadImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, rotateQuad, warpPerspectiveCrop, type CropQuad, type CropRect } from "../../CropEditor";
 import { onScannerEngineLoading, scanCard } from "../../id-card-print/cardScan";
 import { ACCEPT_TOLERANCE_PCT, quadDistance, reportCrop, reportFilter, type CropOutcome, type CropSampleRef, type CropTrack } from "../../id-card-print/cropTraining";
 import { bakeTone, isNeutralTone, TonedImage, type Tone } from "../../id-card-print/ToneControl";
 import { apiUrl } from "@/lib/api";
 import SheetOptionsControl from "../../id-card-print/SheetOptionsControl";
-import { CARD_H_MM, CARD_W_MM, PAPER_CHOICES, planSheet, type SheetEntry, type SheetOptions, type SheetLayout } from "../../id-card-print/sheetLayout";
+import { loadSheetPrefs, saveSheetPrefs } from "../../id-card-print/sheetPrefs";
+import { MAX_COPIES, PAPER_CHOICES, planSheet, type SheetEntry, type SheetOptions, type SheetLayout } from "../../id-card-print/sheetLayout";
 
 type Side = "front" | "back";
 type ColorMode = "color" | "bw";
@@ -17,7 +18,8 @@ type ScanStatus = "idle" | "scanning" | "done" | "notfound" | "error";
 // original = the photo as uploaded, kept so the card can be found again
 // (Auto Fix) or its corners re-placed on it (Perspective crop).
 type SideState = { file: File | null; url: string; cropRect: CropRect; cropQuad: CropQuad; original?: { file: File; url: string }; scan?: ScanStatus; tone?: Tone; filterBase?: { file: File; url: string }; filter?: FilterValues };
-type CardEntry = { id: string; front: SideState; back: SideState };
+/** copies: times this ID card is printed (default 1). */
+type CardEntry = { id: string; front: SideState; back: SideState; copies?: number };
 type SlotRef = { cardId: string; side: Side };
 type FilterValues = { brightness: number; contrast: number; saturation: number };
 
@@ -45,7 +47,7 @@ function drawCover(context: CanvasRenderingContext2D, image: HTMLImageElement, x
   context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, x, y, width, height);
 }
 
-async function rotateImage90(url: string): Promise<Blob> {
+async function rotateImage90(url: string, turns: 1 | -1 = 1): Promise<Blob> {
   const image = await loadImage(url);
   const canvas = document.createElement("canvas");
   canvas.width = image.naturalHeight;
@@ -53,7 +55,7 @@ async function rotateImage90(url: string): Promise<Blob> {
   const context = canvas.getContext("2d");
   if (!context) throw new Error("Canvas unavailable");
   context.translate(canvas.width / 2, canvas.height / 2);
-  context.rotate(Math.PI / 2);
+  context.rotate((Math.PI / 2) * turns);
   context.drawImage(image, -image.naturalWidth / 2, -image.naturalHeight / 2);
   return new Promise((resolve, reject) => canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Rotation failed"))), "image/png", 0.95));
 }
@@ -103,15 +105,15 @@ async function composeIdCardsToPdf(entries: SheetEntry[], colorMode: ColorMode, 
   const dpi = 150;
   const mmPx = (mm: number) => Math.round((mm / 25.4) * dpi);
   const plan = planSheet(entries, A4, layout, {}, separatePages, options);
-  const cardWidthPx = mmPx(CARD_W_MM);
-  const cardHeightPx = mmPx(CARD_H_MM);
+  const cardWidthPx = mmPx(plan.cardWMm);
+  const cardHeightPx = mmPx(plan.cardHMm);
 
   for (const placed of plan.pages) {
     const page = pdfDoc.addPage([mmPt(A4.widthMm), mmPt(A4.heightMm)]);
     for (const card of placed) {
       const bytes = await renderCardCell(card.url, colorMode, cardWidthPx, cardHeightPx);
       const image = await pdfDoc.embedPng(bytes);
-      page.drawImage(image, { x: mmPt(card.xMm), y: mmPt(A4.heightMm - card.yMm - CARD_H_MM), width: mmPt(CARD_W_MM), height: mmPt(CARD_H_MM) });
+      page.drawImage(image, { x: mmPt(card.xMm), y: mmPt(A4.heightMm - card.yMm - plan.cardHMm), width: mmPt(plan.cardWMm), height: mmPt(plan.cardHMm) });
     }
   }
 
@@ -156,6 +158,11 @@ export default function IdCardPrintUpload({
   const [sheetLayout, setSheetLayout] = useState<SheetLayout>("side");
   const [separatePages, setSeparatePages] = useState(false);
   const [sheetOptions, setSheetOptions] = useState<SheetOptions>({});
+  // The margin and size last printed with for this layout are applied again when it is used.
+  useEffect(() => {
+    const saved = loadSheetPrefs(sheetLayout);
+    if (saved) setSheetOptions((current) => ({ ...current, marginMm: saved.marginMm, sizePercent: saved.sizePercent }));
+  }, [sheetLayout]);
   const [previewMode, setPreviewMode] = useState(false);
   const [previewEntries, setPreviewEntries] = useState<SheetEntry[]>([]);
   // A fresh upload whose detected crop is waiting for the customer to confirm it in the crop window.
@@ -302,6 +309,34 @@ export default function IdCardPrintUpload({
   }
 
   // Closing the crop window on a fresh upload keeps the detected crop; otherwise it just closes.
+  // Turns the photo being cropped (the uploaded original while placing corners, else the shown photo) and
+  // turns the corners with it. A rotated photo no longer matches what auto-crop saw, so it is not recorded for training.
+  async function rotateCropSource(turns: 1 | -1) {
+    if (!cropTarget) return;
+    const { cardId, side } = cropTarget;
+    const current = getSide(cardId, side);
+    const useOriginal = cropMode === "perspective" && !!current.original;
+    const source = useOriginal ? current.original : current.file ? { file: current.file, url: current.url } : null;
+    if (!source) return;
+    try {
+      const rotatedBlob = await rotateImage90(source.url, turns);
+      const rotatedFile = new File([rotatedBlob], source.file.name.replace(/\.[^.]+$/, ".png"), { type: "image/png" });
+      const rotated = { file: rotatedFile, url: URL.createObjectURL(rotatedFile) };
+      delete cropTrackRef.current[`${cardId}:${side}`];
+      const cropQuad = rotateQuad(current.cropQuad, turns);
+      const wasShown = current.url === source.url;
+      if (wasShown || useOriginal) URL.revokeObjectURL(source.url);
+      if (useOriginal) {
+        setSide(cardId, side, { ...current, original: rotated, ...(wasShown ? rotated : {}), cropQuad });
+      } else {
+        const originalIsShown = current.original?.url === current.url;
+        setSide(cardId, side, { ...current, ...rotated, ...(originalIsShown ? { original: rotated } : {}), cropRect: DEFAULT_CROP_RECT, cropQuad });
+      }
+    } catch {
+      // Leave the photo as it is if rotating fails.
+    }
+  }
+
   function closeCrop() {
     const target = cropTarget;
     const key = target ? `${target.cardId}:${target.side}` : "";
@@ -389,6 +424,19 @@ export default function IdCardPrintUpload({
     setCards((prev) => [...prev, newCard()]);
   }
 
+  function setCardCopies(cardId: string, copies: number) {
+    setCards((prev) => prev.map((card) => (card.id === cardId ? { ...card, copies } : card)));
+  }
+
+  function setAllCopies(copies: number) {
+    setCards((prev) => prev.map((card) => ({ ...card, copies })));
+  }
+
+  const allCopies = (() => {
+    const counts = new Set(cards.filter((card) => card.front.url).map((card) => card.copies ?? 1));
+    return counts.size === 1 ? Array.from(counts)[0] : counts.size === 0 ? 1 : null;
+  })();
+
   function removeCard(cardId: string) {
     setCards((prev) => {
       const card = prev.find((entry) => entry.id === cardId);
@@ -410,11 +458,12 @@ export default function IdCardPrintUpload({
       baked.push(url);
       return url;
     };
-    return Promise.all(cards.filter((card) => card.front.url).map(async (card) => ({ id: card.id, frontUrl: await urlFor(card.front), backUrl: await urlFor(card.back) })));
+    return Promise.all(cards.filter((card) => card.front.url).map(async (card) => ({ id: card.id, copies: card.copies, frontUrl: await urlFor(card.front), backUrl: await urlFor(card.back) })));
   }
 
   async function composeAndContinue() {
     if (!readyCount || composing || busy || scanning) return;
+    saveSheetPrefs(sheetLayout, sheetOptions);
     setComposing(true);
     setError("");
     const baked: string[] = [];
@@ -455,6 +504,7 @@ export default function IdCardPrintUpload({
   }, [previewMode]);
 
   const readyCount = cards.filter((card) => card.front.url).length;
+  const printCount = cards.filter((card) => card.front.url).reduce((sum, card) => sum + (card.copies ?? 1), 0);
   const previewPlan = useMemo(() => planSheet(previewEntries, A4, sheetLayout, {}, separatePages, sheetOptions), [previewEntries, sheetLayout, separatePages, sheetOptions]);
 
   useEffect(() => {
@@ -517,7 +567,7 @@ export default function IdCardPrintUpload({
               One ID per page
             </button>
           </div>
-          <SheetOptionsControl value={sheetOptions} onChange={setSheetOptions} />
+          <SheetOptionsControl value={sheetOptions} onChange={setSheetOptions} paper={A4} allCopies={allCopies} onAllCopies={setAllCopies} />
           <div className="idcard-toolbar-divider" />
           {previewMode ? (
             <>
@@ -543,6 +593,16 @@ export default function IdCardPrintUpload({
           <div key={card.id} className="idcard-card-row">
             <div className="idcard-card-row-head">
               <span>ID Card {index + 1}</span>
+              <label className="idcard-row-copies" title="How many times this ID card is printed">
+                <span>Copies</span>
+                <select value={card.copies ?? 1} onChange={(event) => setCardCopies(card.id, Number(event.target.value))}>
+                  {Array.from({ length: MAX_COPIES }, (_, i) => i + 1).map((n) => (
+                    <option key={n} value={n}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </label>
               {cards.length > 1 ? (
                 <button type="button" className="idcard-card-row-remove" onClick={() => removeCard(card.id)}>
                   <Trash2 size={13} /> Remove card
@@ -608,7 +668,7 @@ export default function IdCardPrintUpload({
             {A4.name} ({A4.widthMm} × {A4.heightMm} mm)
           </strong>
           <span>
-            {readyCount} card{readyCount === 1 ? "" : "s"} · {previewPlan.pages.length} page{previewPlan.pages.length === 1 ? "" : "s"} · {sheetLayout === "stack" ? "Top / Bottom" : "Left / Right"}{separatePages ? " · One ID per page" : ""}{(sheetOptions.copies ?? 1) > 1 ? ` · ${sheetOptions.copies} copies each` : ""} · {colorMode === "bw" ? "B/W" : "Color"}
+            {readyCount} card{readyCount === 1 ? "" : "s"} · {previewPlan.pages.length} page{previewPlan.pages.length === 1 ? "" : "s"} · {sheetLayout === "stack" ? "Top / Bottom" : "Left / Right"}{separatePages ? " · One ID per page" : ""}{printCount !== readyCount ? ` · ${printCount} prints` : ""} · {colorMode === "bw" ? "B/W" : "Color"}
           </span>
           <span className="idcard-preview-hint">This is how your cards will be printed. Press Continue to place the order.</span>
         </div>
@@ -623,7 +683,7 @@ export default function IdCardPrintUpload({
                     <div
                       className="idcard-preview-card"
                       key={card.key}
-                      style={{ left: `${(card.xMm / A4.widthMm) * 100}%`, top: `${(card.yMm / A4.heightMm) * 100}%`, width: `${(CARD_W_MM / A4.widthMm) * 100}%`, height: `${(CARD_H_MM / A4.heightMm) * 100}%`, cursor: "default" }}
+                      style={{ left: `${(card.xMm / A4.widthMm) * 100}%`, top: `${(card.yMm / A4.heightMm) * 100}%`, width: `${(previewPlan.cardWMm / A4.widthMm) * 100}%`, height: `${(previewPlan.cardHMm / A4.heightMm) * 100}%`, cursor: "default" }}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={card.url} alt="" />
@@ -709,6 +769,15 @@ export default function IdCardPrintUpload({
                 />
               )}
               <div className="crop-controls">
+                <div className="idcrop-rotate" role="group" aria-label="Rotate photo">
+                  <span className="idcrop-rotate-label">Rotate photo</span>
+                  <button type="button" onClick={() => void rotateCropSource(-1)} title="Turn the photo a quarter turn to the left">
+                    <RotateCcw size={16} /> Left
+                  </button>
+                  <button type="button" onClick={() => void rotateCropSource(1)} title="Turn the photo a quarter turn to the right">
+                    <RotateCw size={16} /> Right
+                  </button>
+                </div>
                 <p>
                   {cropMode === "straight"
                     ? "Drag a corner or edge to resize the crop area. Drag inside the box to move it."

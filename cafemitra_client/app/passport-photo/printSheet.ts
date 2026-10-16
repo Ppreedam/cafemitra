@@ -5,10 +5,11 @@ const GAP_MM = 2;
 const DEFAULT_TILE_WIDTH_IN = 1.2;
 const DEFAULT_TILE_HEIGHT_IN = 1.6;
 
-export function parsePhotoCount(label?: string) {
+/** fallback: photos when the name has no number (6 for a passport package; family packages pass 1 - one group photo). */
+export function parsePhotoCount(label?: string, fallback = 6) {
   const match = /(\d+)/.exec(label || "");
   const value = match ? parseInt(match[1], 10) : NaN;
-  return Number.isFinite(value) && value > 0 ? value : 6;
+  return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
 function printableAreaIn(size: PaperSize) {

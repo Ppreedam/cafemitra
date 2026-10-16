@@ -206,6 +206,17 @@ export const DEFAULT_CROP_QUAD: CropQuad = [
   { x: 12, y: 88 },
 ];
 
+/** The corners after the photo is turned a quarter: 1 = clockwise, -1 = anticlockwise. Keeps TL, TR, BR, BL order. */
+export function rotateQuad(quad: CropQuad, turns: 1 | -1): CropQuad {
+  const [tl, tr, br, bl] = quad;
+  if (turns === 1) {
+    const move = (p: CropPoint): CropPoint => ({ x: 100 - p.y, y: p.x });
+    return [move(bl), move(tl), move(tr), move(br)];
+  }
+  const move = (p: CropPoint): CropPoint => ({ x: p.y, y: 100 - p.x });
+  return [move(tr), move(br), move(bl), move(tl)];
+}
+
 type QuadDrag = { corner: number; rect: DOMRect };
 
 function distance(a: CropPoint, b: CropPoint) {

@@ -35,7 +35,8 @@ from django.views.decorators.http import require_http_methods
 
 from .background_remover.remove_background import BackgroundRemovalError, remove_background_bytes
 from .background_remover.passport_photo_processor import ProcessingError, enhance_transparent_bytes
-from .background_remover.watermark_remover import remove_gemini_watermark
+# Watermark patch is switched off (see _finalize_passport_photo and the agent upload); the helper still lives in background_remover/watermark_remover.py.
+# from .background_remover.watermark_remover import remove_gemini_watermark
 from .models import Agent, AuthToken, BlogArticle, ContactMessage, Coupon, CouponRedemption, EmailVerificationToken, Influencer, PassportAIConfig, PasswordResetToken, PoolerNode, PrintOrder, Referral, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UpiPayee, UpiQrRecord, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from .models import Agent, AuthToken, BlogArticle, ContactMessage, Coupon, CouponRedemption, EmailVerificationToken, Influencer, PassportAIConfig, PasswordResetToken, PhoneOtp, PrintOrder, Referral, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UpiPayee, UpiQrRecord, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from .models import shop_profile_price_items, CardMakerSample, CropSample, CropTrainingConfig, WaitingJoke
@@ -2384,6 +2385,35 @@ def agent_order(order, request):
     return payload
 
 
+PHOTO_COPIES_MAX = 20
+
+
+def photo_package_count(label):
+    """How many photos a passport package holds, from its name ("6 pcs" -> 6, "4pics" -> 4); 1 when no number."""
+    match = re.search(r"\d+", str(label or ""))
+    return max(int(match.group(0)), 1) if match else 1
+
+
+def photo_order_total(settings, price_item_id, copies, fallback_rate):
+    """Price of a passport / family photo order: the package price x copies, unless the total photos
+    (package size x copies, e.g. 4 x 2 = 8) falls in a price range - then that range's price is the price of
+    the whole order. The package's own ranges are checked first, then the ranges of the shop's other packages
+    (e.g. "7pics: 7-10 photos Rs. 27" also prices 4 pics x 2 copies)."""
+    items = settings.get("priceItems", []) if isinstance(settings, dict) else []
+    item = next((entry for entry in items if str(entry.get("id", "")) == str(price_item_id)), None)
+    if not item:
+        return (fallback_rate * copies).quantize(Decimal("0.01"))
+    units = photo_package_count(item.get("label")) * copies
+    for candidate in [item, *[entry for entry in items if entry is not item and not entry.get("profile")]]:
+        for page_range in candidate.get("ranges", []) or []:
+            min_units = positive_int(page_range.get("minPages"), 1)
+            max_value = page_range.get("maxPages")
+            max_units = None if max_value in ("", None) else positive_int(max_value, min_units)
+            if units >= min_units and (max_units is None or units <= max_units):
+                return money(page_range.get("rate"))
+    return (money(item.get("rate")) * copies).quantize(Decimal("0.01"))
+
+
 def positive_int(value, default=1):
     try:
       return max(int(value), 1)
@@ -2728,7 +2758,9 @@ def _finalize_passport_photo(order, result_type, result_bytes, is_gemini_output,
     bottom-right box on the assumption a Gemini sparkle watermark is there -
     it must only run on Gemini's own output, never on OpenAI's, or it would
     stamp over a clean image for no reason."""
-    cleaned_bytes = remove_gemini_watermark(result_bytes, result_type) if is_gemini_output else result_bytes
+    # Watermark patch switched off: the generated photo is stored exactly as the AI returned it.
+    # (Was: cleaned_bytes = remove_gemini_watermark(result_bytes, result_type) if is_gemini_output else result_bytes)
+    cleaned_bytes = result_bytes
     encoded = base64.b64encode(cleaned_bytes).decode("ascii")
 
     order.gemini_photo = f"data:{result_type};base64,{encoded}"
@@ -4300,9 +4332,10 @@ def public_print_order(request, code):
 
     pages = positive_int(request.POST.get("pages"), 1)
     copies = positive_int(request.POST.get("copies"), 1)
-    if service_key == "family_passport_photo":
+    is_photo_order = service_key in ("passport_photo", "family_passport_photo")
+    if is_photo_order:
         pages = 1
-        copies = 1
+        copies = min(copies, PHOTO_COPIES_MAX)
     price_item_id = str(request.POST.get("priceItemId", "")).strip()
     # Page-range rates bracket on the total sheets printed (pages x copies),
     # not the source document's own page count - a 2-page PDF x 4 copies is
@@ -4328,6 +4361,10 @@ def public_print_order(request, code):
             rate = duplex_rate
     total = money(request.POST.get("totalAmount"))
     calculated_total = (rate * pages * copies).quantize(Decimal("0.01"))
+    if is_photo_order:
+        # Package price x copies, or the page-range price for the total photos (see photo_order_total).
+        calculated_total = photo_order_total(effective_pricing_settings(pricing), price_item_id, copies, rate)
+        rate = (calculated_total / copies).quantize(Decimal("0.01"))
     if total != calculated_total:
         total = calculated_total
 
@@ -6170,7 +6207,9 @@ def complete_passport_job(request, job_id):
     # content-type, so guess from the real filename extension first -
     # falling back to the upload's own content-type only if that fails.
     content_type = mimetypes.guess_type(final_image.name)[0] or getattr(final_image, "content_type", None) or "image/jpeg"
-    cleaned_bytes = remove_gemini_watermark(final_image.read(), content_type)
+    # Watermark patch switched off (agent / pooler upload): store the photo exactly as it arrived.
+    # (Was: cleaned_bytes = remove_gemini_watermark(final_image.read(), content_type))
+    cleaned_bytes = final_image.read()
     encoded = base64.b64encode(cleaned_bytes).decode("ascii")
 
     order.gemini_photo = f"data:{content_type};base64,{encoded}"

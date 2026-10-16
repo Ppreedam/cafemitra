@@ -23306,3 +23306,24 @@ body:has(.resbuild-confirm-overlay) .wa-float-btn {
 .pps-marks { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 .pps-cutmarks { display: inline-flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; font-weight: 600; color: #334155; cursor: pointer; }
 .pps-cutmarks input { width: 16px; height: 16px; accent-color: #4f46e5; }
+
+.idcrop-rotate { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.idcrop-rotate-label { grid-column: 1 / -1; color: #59658c; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.02em; }
+.idcrop-rotate button {
+  border: 1px solid var(--line);
+  color: var(--dash-navy);
+  background: #fff;
+  box-shadow: none;
+}
+.idcrop-rotate button { white-space: nowrap; padding: 0 10px; font-size: 0.9rem; min-height: 40px; }
+@media (max-width: 640px) {
+  .idcrop-rotate { grid-template-columns: 1fr 1fr; }
+  .idcrop-rotate button { min-height: 44px; }
+}
+
+.idcard-spacing input[type="number"] { width: 64px; border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 6px; font-size: 12px; background: #fff; }
+.idcard-spacing small { color: #64748b; font-size: 11px; }
+.idcard-spacing-reset { border: 0; background: transparent; color: #4f46e5; font-size: 11px; font-weight: 700; cursor: pointer; padding: 0 2px; }
+
+.idcard-row-copies { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; margin-right: 12px; font-size: 12px; font-weight: 700; color: #475569; }
+.idcard-row-copies select { border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 6px; font-size: 12px; background: #fff; }

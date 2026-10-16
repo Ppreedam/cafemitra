@@ -7,7 +7,18 @@ export const CARD_H_MM = 53.98;
 const DEFAULT_GAP_MM = 6;
 
 /** Spacing / copies the user can choose. null margin = automatic (centred on the paper). */
-export type SheetOptions = { gapMm?: number; marginMm?: number | null; copies?: number };
+export type SheetOptions = { gapMm?: number; marginMm?: number | null; copies?: number; sizePercent?: number };
+/** Card size as a percent of the real card (85.6 x 53.98 mm); 100 is the default. Same shape at any size. */
+export const SIZE_MIN_PERCENT = 20;
+export const SIZE_MAX_PERCENT = 300;
+export const MARGIN_MAX_MM = 50;
+
+/** The biggest size (percent) a card can have on this paper with this margin (null = Auto margin) - more would not fit. */
+export function maxSizePercent(paper: { widthMm: number; heightMm: number }, marginMm: number | null | undefined): number {
+  const margin = marginMm != null ? Math.max(0, Math.min(MARGIN_MAX_MM, marginMm, Math.min(paper.widthMm, paper.heightMm) / 2 - 5)) : 2;
+  const fit = Math.min((paper.widthMm - margin * 2) / CARD_W_MM, (paper.heightMm - margin * 2) / CARD_H_MM);
+  return Math.max(SIZE_MIN_PERCENT, Math.min(SIZE_MAX_PERCENT, Math.floor(fit * 100)));
+}
 export const GAP_CHOICES = [0, 2, 4, 6, 8, 10];
 export const MARGIN_CHOICES = [0, 3, 5, 8, 10, 15];
 export const MAX_COPIES = 10;
@@ -36,11 +47,13 @@ export function paperFromSummary(summary?: string): PaperChoice | null {
   return PAPER_CHOICES.find((paper) => paper.name.toLowerCase() === first) ?? null;
 }
 
-export type SheetEntry = { id: string; frontUrl: string; backUrl: string };
+/** copies: how many times this ID card is printed (default 1); each card has its own. */
+export type SheetEntry = { id: string; frontUrl: string; backUrl: string; copies?: number };
 export type PlacedCard = { key: string; url: string; xMm: number; yMm: number };
 /** A card the user dragged to its own spot (mm from the page's top-left), keyed by PlacedCard.key. */
 export type PositionOverrides = Record<string, { xMm: number; yMm: number }>;
-export type SheetPlan = { paper: PaperChoice; pages: PlacedCard[][]; marginMm: number; fits: boolean };
+/** cardWMm / cardHMm: the size every card is drawn at (the chosen size, shrunk only if it would not fit the paper). */
+export type SheetPlan = { paper: PaperChoice; pages: PlacedCard[][]; marginMm: number; fits: boolean; cardWMm: number; cardHMm: number; sizeLimited: boolean };
 
 /**
  * Lays the cards out left to right, row by row, starting a new page when the
@@ -50,12 +63,25 @@ export type SheetPlan = { paper: PaperChoice; pages: PlacedCard[][]; marginMm: n
  */
 export function planSheet(entries: SheetEntry[], paper: PaperChoice, layout: SheetLayout, overrides: PositionOverrides = {}, separatePages = false, options: SheetOptions = {}): SheetPlan {
   const GAP_MM = options.gapMm ?? DEFAULT_GAP_MM;
-  const copies = Math.max(1, Math.min(MAX_COPIES, Math.round(options.copies ?? 1)));
-  if (copies > 1) entries = entries.flatMap((entry) => Array.from({ length: copies }, (_, i) => (i === 0 ? entry : { ...entry, id: `${entry.id}~${i + 1}` })));
-  const marginMm = options.marginMm != null ? Math.max(0, options.marginMm) : Math.max(2, Math.min(10, (paper.widthMm - CARD_W_MM) / 2));
+  // Every ID card is repeated by its own copies (the options' copies is only the fallback for a card without one).
+  entries = entries.flatMap((entry) => {
+    const copies = Math.max(1, Math.min(MAX_COPIES, Math.round(entry.copies ?? options.copies ?? 1)));
+    return Array.from({ length: copies }, (_, i) => (i === 0 ? entry : { ...entry, id: `${entry.id}~${i + 1}` }));
+  });
+  const wantedScale = Math.max(SIZE_MIN_PERCENT, Math.min(SIZE_MAX_PERCENT, options.sizePercent ?? 100)) / 100;
+  const marginMm =
+    options.marginMm != null
+      ? Math.max(0, Math.min(MARGIN_MAX_MM, options.marginMm, Math.min(paper.widthMm, paper.heightMm) / 2 - 5))
+      : Math.max(2, Math.min(10, (paper.widthMm - CARD_W_MM * wantedScale) / 2));
   const usableW = paper.widthMm - marginMm * 2;
   const usableH = paper.heightMm - marginMm * 2;
-  const fits = CARD_W_MM <= usableW + 0.01 && CARD_H_MM <= usableH + 0.01;
+  // A card bigger than the paper's usable area is brought down to fit (same shape), never cut off.
+  const fitScale = Math.min(usableW / CARD_W_MM, usableH / CARD_H_MM);
+  const scale = Math.min(wantedScale, fitScale);
+  const sizeLimited = scale < wantedScale - 0.0001;
+  const CARD_W = CARD_W_MM * scale;
+  const CARD_H = CARD_H_MM * scale;
+  const fits = CARD_W <= usableW + 0.01 && CARD_H <= usableH + 0.01;
 
   const pages: PlacedCard[][] = [[]];
   let x = 0;
@@ -74,10 +100,10 @@ export function planSheet(entries: SheetEntry[], paper: PaperChoice, layout: She
 
   for (const entry of entries) {
     const hasBack = Boolean(entry.backUrl);
-    const sideW = hasBack ? CARD_W_MM * 2 + GAP_MM : CARD_W_MM;
+    const sideW = hasBack ? CARD_W * 2 + GAP_MM : CARD_W;
     const stacked = layout === "stack" || sideW > usableW + 0.01;
-    const unitW = stacked ? CARD_W_MM : sideW;
-    const unitH = stacked && hasBack ? CARD_H_MM * 2 + GAP_MM : CARD_H_MM;
+    const unitW = stacked ? CARD_W : sideW;
+    const unitH = stacked && hasBack ? CARD_H * 2 + GAP_MM : CARD_H;
 
     // Top / Bottom: every ID card is its own front-over-back pair, one under the other
     // (never two pairs side by side, which would read as Left / Right).
@@ -113,8 +139,8 @@ export function planSheet(entries: SheetEntry[], paper: PaperChoice, layout: She
     if (hasBack) {
       page.push(
         stacked
-          ? { key: `${entry.id}:back`, url: entry.backUrl, xMm: left, yMm: top + CARD_H_MM + GAP_MM }
-          : { key: `${entry.id}:back`, url: entry.backUrl, xMm: left + CARD_W_MM + GAP_MM, yMm: top },
+          ? { key: `${entry.id}:back`, url: entry.backUrl, xMm: left, yMm: top + CARD_H + GAP_MM }
+          : { key: `${entry.id}:back`, url: entry.backUrl, xMm: left + CARD_W + GAP_MM, yMm: top },
       );
     }
     x += unitW + GAP_MM;
@@ -126,11 +152,11 @@ export function planSheet(entries: SheetEntry[], paper: PaperChoice, layout: She
     for (const card of placedCards) {
       const moved = overrides[card.key];
       if (!moved) continue;
-      card.xMm = Math.max(0, Math.min(paper.widthMm - CARD_W_MM, moved.xMm));
-      card.yMm = Math.max(0, Math.min(paper.heightMm - CARD_H_MM, moved.yMm));
+      card.xMm = Math.max(0, Math.min(paper.widthMm - CARD_W, moved.xMm));
+      card.yMm = Math.max(0, Math.min(paper.heightMm - CARD_H, moved.yMm));
     }
   }
-  return { paper, pages, marginMm, fits };
+  return { paper, pages, marginMm, fits, cardWMm: CARD_W, cardHMm: CARD_H, sizeLimited };
 }
 
 /** The print-ready HTML: one exact-size .page per sheet, cards placed in mm (no script - printing is triggered by the caller or the browser window). */
@@ -153,7 +179,7 @@ export function buildSheetHtml(plan: SheetPlan, colorMode: "color" | "bw", autoP
 *{margin:0;padding:0;box-sizing:border-box;}
 body{background:#f2f2f2;font-family:Arial, Helvetica, sans-serif;${colorMode === "bw" ? "filter:grayscale(1);" : ""}}
 .page{position:relative;width:${paper.widthMm}mm;height:${paper.heightMm}mm;background:#fff;margin:20px auto;overflow:hidden;}
-.card{position:absolute;width:85.6mm;height:53.98mm;border:1px solid #999;border-radius:3mm;overflow:hidden;background:#fff;}
+.card{position:absolute;width:${plan.cardWMm}mm;height:${plan.cardHMm}mm;border:1px solid #999;border-radius:3mm;overflow:hidden;background:#fff;}
 .card img{width:100%;height:100%;object-fit:cover;}
 @page{size:${paper.widthMm}mm ${paper.heightMm}mm;margin:0;}
 @media print{
