@@ -23327,3 +23327,96 @@ body:has(.resbuild-confirm-overlay) .wa-float-btn {
 
 .idcard-row-copies { display: inline-flex; align-items: center; gap: 6px; margin-left: auto; margin-right: 12px; font-size: 12px; font-weight: 700; color: #475569; }
 .idcard-row-copies select { border: 1px solid #cbd5e1; border-radius: 6px; padding: 3px 6px; font-size: 12px; background: #fff; }
+
+.printer-advanced-head { display: grid; gap: 2px; margin-top: 28px; padding-top: 20px; border-top: 1px solid #e6e9f5; color: #18214d; }
+.printer-advanced-head strong { font-size: 1rem; font-weight: 800; }
+.printer-advanced-head span { color: #64709a; font-size: 0.84rem; font-weight: 600; }
+.printer-advanced-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 14px; }
+.printer-advanced-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 14px;
+  border: 1px solid #dfe4f5;
+  border-radius: 10px;
+  background: #fff;
+  color: #27337a;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+.printer-advanced-cta:hover { border-color: #aab4e6; }
+.printer-advanced-cta svg { margin-bottom: 6px; color: #4f46e5; }
+.printer-advanced-cta strong { font-size: 0.9rem; font-weight: 800; }
+.printer-advanced-cta small { color: #64709a; font-size: 0.76rem; font-weight: 600; line-height: 1.35; }
+.printer-advanced-cta.active { border-color: #4f46e5; background: #f1f2ff; box-shadow: 0 0 0 1px #4f46e5 inset; }
+
+.printer-advanced-panel { display: grid; gap: 14px; margin-top: 14px; padding: 18px; border: 1px solid #e6e9f5; border-radius: 12px; background: #fbfcff; }
+.printer-advanced-panel > * { margin: 0; }
+.printer-advanced-panel .panel-title-row.compact h2 { font-size: 1rem; }
+.printer-advanced-panel .panel-title-row.compact p { font-size: 0.82rem; }
+.printer-advanced-panel .printer-preset-title { margin-top: 8px; padding-top: 18px; border-top: 1px solid #e6e9f5; }
+.printer-advanced-panel .printer-preset-list { margin-top: 0; }
+.printer-advanced-panel .profile-subhead { margin: 6px 0 -4px; font-size: 0.8rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #64709a; }
+.profile-hint { padding: 2px 0 2px 14px; border-left: 3px solid #4f46e5; color: #27337a; }
+.profile-hint strong { font-size: 0.95rem; font-weight: 800; }
+.profile-hint ol { margin: 6px 0 0; padding-left: 18px; font-size: 0.84rem; font-weight: 600; line-height: 1.55; color: #3d4a7e; }
+
+.pricing-advanced-cta { width: 100%; margin-top: 4px; }
+
+.pricing-example-group-title { padding: 10px 16px 4px; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: #64709a; background: #f8f9fe; }
+
+/* Each message pops in with a small bounce, a light sweeps across the bar and the button keeps a soft pulse,
+   so the eye goes to the bar and the text can be read. */
+.notice-bar { overflow: hidden; }
+.notice-bar-inner { position: relative; z-index: 1; }
+.notice-bar-slide { animation: noticeSlideIn 750ms cubic-bezier(0.2, 1.1, 0.3, 1) both; }
+.notice-bar-slide > span { animation: noticeTextGlow 1800ms ease-out both; }
+.notice-bar-slide .notice-bar-cta { animation: noticeCtaPulse 1800ms ease-in-out 700ms infinite; }
+.notice-bar-shine {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 38%;
+  pointer-events: none;
+  background: linear-gradient(100deg, transparent 0%, rgba(255, 255, 255, 0.38) 50%, transparent 100%);
+  transform: translateX(-120%) skewX(-18deg);
+  animation: noticeShine 1500ms ease-out 150ms both;
+}
+@keyframes noticeSlideIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes noticeTextGlow {
+  0% { text-shadow: 0 0 0 rgba(255, 255, 255, 0); }
+  35% { text-shadow: 0 0 14px rgba(255, 255, 255, 0.85); }
+  100% { text-shadow: 0 0 0 rgba(255, 255, 255, 0); }
+}
+@keyframes noticeCtaPulse {
+  0%, 100% { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 0 0 0 rgba(255, 255, 255, 0.55); }
+  50% { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16), 0 0 0 7px rgba(255, 255, 255, 0); }
+}
+@keyframes noticeShine {
+  from { transform: translateX(-120%) skewX(-18deg); }
+  to { transform: translateX(380%) skewX(-18deg); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .notice-bar-slide, .notice-bar-slide > span, .notice-bar-slide .notice-bar-cta, .notice-bar-shine { animation: none; }
+  .notice-bar-shine { display: none; }
+}
+
+.hero-video-copy {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding: 7px 12px;
+  border: 1px solid #dfe4f5;
+  border-radius: 999px;
+  background: #fff;
+  color: #27337a;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.hero-video-copy:hover { border-color: #4f46e5; color: #4f46e5; }

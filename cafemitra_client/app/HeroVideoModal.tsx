@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Play, X } from "lucide-react";
+import { Check, Link2, Play, X } from "lucide-react";
 
 const videos = [
   { key: "demo", label: "Product Demo", title: "RepetiGo Product Demo", id: "hUspj2vx-wA" },
@@ -12,6 +12,36 @@ export default function HeroVideoModal() {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState<(typeof videos)[number]["key"]>("demo");
   const video = videos.find((item) => item.key === active) ?? videos[0];
+  const [copied, setCopied] = useState(false);
+
+  // A shared link (https://repetigo.com/?video=demo or ?video=setup) opens this popup on that video by itself.
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get("video");
+    const match = videos.find((item) => item.key === wanted);
+    if (match) {
+      setActive(match.key);
+      setOpen(true);
+    }
+  }, []);
+
+  // The address bar always holds the link of the video that is open, so it can be copied straight from there too.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (open) url.searchParams.set("video", active);
+    else url.searchParams.delete("video");
+    window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+  }, [open, active]);
+
+  async function copyLink() {
+    const link = `${window.location.origin}/?video=${active}`;
+    try {
+      await navigator.clipboard.writeText(link);
+    } catch {
+      window.prompt("Copy this link", link);
+    }
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 2000);
+  }
 
   useEffect(() => {
     if (!open) return;
@@ -43,6 +73,9 @@ export default function HeroVideoModal() {
                   </button>
                 ))}
               </div>
+              <button className="hero-video-copy" type="button" onClick={() => void copyLink()} title="Copy a link that opens this video">
+                {copied ? <Check size={15} /> : <Link2 size={15} />} {copied ? "Link copied" : "Copy link"}
+              </button>
               <button className="hero-video-close" type="button" aria-label="Close" onClick={() => setOpen(false)}>
                 <X size={20} />
               </button>

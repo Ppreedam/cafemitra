@@ -224,9 +224,30 @@ export function Brand() {
   );
 }
 
+const NOTICES = [
+  { text: "RepetiGo is free to use - no monthly charges.", cta: "Get Started Free", href: "/register", showMs: 8000 },
+  {
+    text: "Need software for your cyber cafe, or a tool built for your shop? Tell us what you need - we will build it or update it for you.",
+    cta: "Tell us what you need",
+    href: "/contact-us",
+    showMs: 14000,
+  },
+  {
+    // The same message in Hindi.
+    text: "क्या आपके साइबर कैफ़े के लिए कोई सॉफ़्टवेयर चाहिए, या अपनी दुकान के लिए कोई टूल बनवाना है? हमें बताइए - हम उसे बना देंगे या आपके लिए अपडेट कर देंगे।",
+    cta: "हमें बताइए",
+    href: "/contact-us",
+    showMs: 14000,
+    lang: "hi",
+  },
+];
+
 export function LandingNavbar() {
   const pathname = usePathname();
   const [showNotice, setShowNotice] = useState(true);
+  // The top bar slides between its messages every few seconds (paused while the pointer is on it).
+  const [noticeIndex, setNoticeIndex] = useState(0);
+  const [noticePaused, setNoticePaused] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -264,6 +285,13 @@ export function LandingNavbar() {
   }, [pathname]);
 
   useEffect(() => {
+    if (!showNotice || noticePaused) return;
+    // Each message stays long enough to read (the longer one stays longer).
+    const timer = window.setTimeout(() => setNoticeIndex((current) => (current + 1) % NOTICES.length), NOTICES[noticeIndex].showMs);
+    return () => window.clearTimeout(timer);
+  }, [showNotice, noticePaused, noticeIndex]);
+
+  useEffect(() => {
     if (!isSearchOpen) return;
     function handleClickOutside(event: MouseEvent) {
       if (searchWrapRef.current && !searchWrapRef.current.contains(event.target as Node)) {
@@ -277,11 +305,12 @@ export function LandingNavbar() {
   return (
     <header className="site-header">
       {showNotice ? (
-        <div className="notice-bar" role="region" aria-label="Free to use">
-          <div className="notice-bar-inner">
-            <span>RepetiGo is free to use - No credits or monthly charge required.</span>
-            <Link className="notice-bar-cta" href="/register">
-              Get Started Free <ArrowRight size={14} aria-hidden />
+        <div className="notice-bar" role="region" aria-label="Announcements" onMouseEnter={() => setNoticePaused(true)} onMouseLeave={() => setNoticePaused(false)}>
+          <span className="notice-bar-shine" key={`shine-${noticeIndex}`} aria-hidden />
+          <div className="notice-bar-inner notice-bar-slide" key={noticeIndex} aria-live="polite" lang={"lang" in NOTICES[noticeIndex] ? NOTICES[noticeIndex].lang : "en"}>
+            <span>{NOTICES[noticeIndex].text}</span>
+            <Link className="notice-bar-cta" href={NOTICES[noticeIndex].href}>
+              {NOTICES[noticeIndex].cta} <ArrowRight size={14} aria-hidden />
             </Link>
           </div>
           <button className="notice-bar-close" type="button" aria-label="Dismiss notice" onClick={() => setShowNotice(false)}>

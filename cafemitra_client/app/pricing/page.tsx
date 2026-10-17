@@ -41,7 +41,8 @@ type WalletConfig = {
   referralBonus: number;
   creditLimit: number;
   dailyGraceLimit: number;
-  tools: { toolKey: string; label: string; unit: string; price: number }[];
+  tools: { toolKey: string; label: string; unit: string; price: number; priceB2b?: number; priceB2c?: number }[];
+  freeTools?: { toolKey: string; label: string }[];
 };
 
 // Falls back to these numbers if the API is unreachable at render time, so
@@ -60,7 +61,7 @@ const FALLBACK_CONFIG: WalletConfig = {
 
 async function getWalletConfig(): Promise<WalletConfig> {
   try {
-    const response = await fetch(apiUrl("/api/wallet/config/"), { next: { revalidate: 300 } });
+    const response = await fetch(apiUrl("/api/wallet/config/"), { next: { revalidate: 60 } });
     if (!response.ok) return FALLBACK_CONFIG;
     const data = await response.json();
     if (!Array.isArray(data.tools) || !data.tools.length) return FALLBACK_CONFIG;
@@ -74,8 +75,47 @@ function formatRupees(value: number) {
   return Number.isInteger(value) ? `Rs. ${value}` : `Rs. ${value.toFixed(2)}`;
 }
 
-function toolPrice(config: WalletConfig, toolKey: string) {
-  return config.tools.find((tool) => tool.toolKey === toolKey) || FALLBACK_CONFIG.tools.find((tool) => tool.toolKey === toolKey)!;
+type ToolRow = WalletConfig["tools"][number];
+
+function unitLabel(unit: string) {
+  return unit.replace(/^per\s+/i, "").trim() || "use";
+}
+
+function priceLabel(tool: ToolRow) {
+  const b2b = tool.priceB2b ?? tool.price;
+  const b2c = tool.priceB2c ?? tool.price;
+  const one = (value: number) => (value > 0 ? `${formatRupees(value)} / ${unitLabel(tool.unit)}` : "Free");
+  // Different price when the shop uses the tool itself and when a customer order triggers it.
+  return b2b === b2c ? one(b2b) : `${one(b2c)} per customer order, ${one(b2b)} own use`;
+}
+
+// "PrintPilot - Color Page" -> group "PrintPilot", name "Color Page"; a label without " - " is its own group.
+// Tools that are not billable are free; each group (a template family counts once) is listed as "Free",
+// unless that group already has paid rows above.
+function freeToolNames(config: WalletConfig) {
+  const paidGroups = new Set(config.tools.map((tool) => tool.label.split(" - ")[0]));
+  const names: string[] = [];
+  for (const tool of config.freeTools ?? []) {
+    const group = tool.label.split(" - ")[0];
+    if (!paidGroups.has(group) && !names.includes(group)) names.push(group);
+  }
+  return names;
+}
+
+function groupTools(tools: ToolRow[]) {
+  const groups: { group: string; rows: { name: string; fee: string; key: string }[] }[] = [];
+  for (const tool of tools) {
+    const [head, ...rest] = tool.label.split(" - ");
+    const group = rest.length ? head : tool.label;
+    const name = rest.length ? rest.join(" - ") : tool.label;
+    let entry = groups.find((item) => item.group === group);
+    if (!entry) {
+      entry = { group, rows: [] };
+      groups.push(entry);
+    }
+    entry.rows.push({ name, fee: priceLabel(tool), key: tool.toolKey });
+  }
+  return groups;
 }
 
 const freeTools = [
@@ -89,16 +129,12 @@ const freeTools = [
 
 export default async function PricingPage() {
   const config = await getWalletConfig();
-  const bwPage = toolPrice(config, "print_bw_page");
-  const colorPage = toolPrice(config, "print_color_page");
-  const passportPhoto = toolPrice(config, "passport_photo");
   const signupBonus = formatRupees(config.signupBonus);
 
-  const feeExamples = [
-    [bwPage.label, `${formatRupees(bwPage.price)} / page`],
-    [colorPage.label, `${formatRupees(colorPage.price)} / page`],
-    [passportPhoto.label, `${formatRupees(passportPhoto.price)} / request`],
-  ];
+  // Every billable tool the admin has switched on, with its live price - new tools and price changes show up here by themselves.
+  const toolGroups = groupTools(config.tools);
+  const freeToolRows = freeToolNames(config);
+  const toolSentence = config.tools.map((tool) => `${tool.label} ${formatRupees(tool.price)} ${tool.unit}`).join(", ");
 
   const walletSteps = [
     ["1", "Your 14-day trial starts free", `The moment you sign up, RepetiGo credits ${signupBonus} to your service credits balance for 14 days so you can try PrintPilot on real customer orders, risk free.`],
@@ -120,7 +156,7 @@ export default async function PricingPage() {
     ],
     [
       "How much commission does RepetiGo charge per job?",
-      `Every black & white page printed through PrintPilot costs ${formatRupees(bwPage.price)}, every color page costs ${formatRupees(colorPage.price)}, and every passport size photo request costs ${formatRupees(passportPhoto.price)}. These small amounts are deducted automatically from your service credits - you are always free to charge your own customers whatever counter price you prefer.`,
+      `The current charges are: ${toolSentence}. These small amounts are deducted automatically from your service credits - you are always free to charge your own customers whatever counter price you prefer.`,
     ],
     [
       "What happens after my 14-day trial ends?",
@@ -213,10 +249,21 @@ export default async function PricingPage() {
               <span>Service</span>
               <span>RepetiGo Commission</span>
             </div>
-            {feeExamples.map(([label, fee]) => (
-              <div className="pricing-example-row" key={label}>
-                <span>{label}</span>
-                <strong>{fee}</strong>
+            {toolGroups.map((group) => (
+              <div className="pricing-example-group" key={group.group}>
+                {group.rows.length > 1 ? <div className="pricing-example-group-title">{group.group}</div> : null}
+                {group.rows.map((row) => (
+                  <div className="pricing-example-row" key={row.key}>
+                    <span>{group.rows.length > 1 ? row.name : group.group}</span>
+                    <strong>{row.fee}</strong>
+                  </div>
+                ))}
+              </div>
+            ))}
+            {freeToolRows.map((name) => (
+              <div className="pricing-example-row" key={`free-${name}`}>
+                <span>{name}</span>
+                <strong>Free</strong>
               </div>
             ))}
           </div>
@@ -294,7 +341,7 @@ export default async function PricingPage() {
           <h2>Simple, fair pricing built around a shop that wants to grow without fixed software pressure.</h2>
           <div className="pricing-why-grid">
             {[
-              `You always know exactly what a job costs you - ${formatRupees(bwPage.price)} a black & white page, ${formatRupees(colorPage.price)} a color page, ${formatRupees(passportPhoto.price)} a passport photo request.`,
+              `You always know exactly what a job costs you - ${toolSentence}.`,
               `Your 14-day trial and ${signupBonus} service credit let you try PrintPilot on real orders before you ever recharge.`,
               "No fixed monthly software bill - you only pay the small per-job commission, straight from your prepaid service credits.",
             ].map((item) => (

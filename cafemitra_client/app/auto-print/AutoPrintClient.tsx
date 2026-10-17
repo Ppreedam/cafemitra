@@ -4,7 +4,8 @@ import Link from "next/link";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import PrinterProfileSetup from "./PrinterProfileSetup";
+import PrinterProfileSetup, { type ProfileHint } from "./PrinterProfileSetup";
+import SimplePrinterSetup from "./SimplePrinterSetup";
 import { BROWSER_PRINT, PrintProfileSelect, useAgentPrint } from "../PrintProfileSelect";
 import { sendPdfToAgent } from "@/lib/agent-print";
 import {
@@ -36,6 +37,7 @@ import {
   Settings,
   Share2,
   ShieldCheck,
+  SlidersHorizontal,
   Trash2,
   UserRound,
   Users,
@@ -108,7 +110,7 @@ const navGroups: NavGroup[] = [
 const setupSteps: SetupStep[] = [
   { key: "download", title: "Download Agent", helper: "Install the PrintPilot desktop app", icon: Download },
   { key: "verify", title: "Verify Agent", helper: "Check agent connection", icon: ShieldCheck },
-  { key: "printer", title: "Printer Profiles", helper: "Create profiles, map paper & color", icon: Printer },
+  { key: "printer", title: "Select Printer", helper: "Choose default PrintPilot printer", icon: Printer },
   { key: "pricing", title: "Pricing", helper: "Set BW, color, and minimum order", icon: Wallet },
   { key: "qr", title: "QR Setup", helper: "Generate PrintPilot customer QR", icon: QrCode },
   { key: "test", title: "Test Print", helper: "Send a demo page to printer", icon: Play },
@@ -130,6 +132,73 @@ function SetupTutorialVideo() {
     </div>
   );
 }
+
+const ADVANCED_PRINT_OPTIONS: Array<{ key: string; title: string; description: string; icon: LucideIcon; hint: ProfileHint }> = [
+  {
+    key: "duplex",
+    title: "Both-side printing",
+    description: "Duplex - print on both sides",
+    icon: Copy,
+    hint: {
+      key: "duplex",
+      title: "Set up both-side printing with a profile",
+      suggestedName: "both-side-print",
+      steps: [
+        "Pick the printer below and click Set Preferences.",
+        "In the printer's Preferences window turn on Print on Both Sides / Duplex (flip on the long edge), then press OK.",
+        "Click Save Profile, then link it to a paper size in Printer Settings.",
+      ],
+    },
+  },
+  {
+    key: "tray",
+    title: "Paper tray",
+    description: "Tray 2, double tray or bypass",
+    icon: Printer,
+    hint: {
+      key: "tray",
+      title: "Print from a particular paper tray with a profile",
+      suggestedName: "tray-2-print",
+      steps: [
+        "Pick the printer below and click Set Preferences.",
+        "In the Preferences window choose the Paper Source / Input Tray (for example Tray 2 or Bypass), then press OK.",
+        "Click Save Profile, then link it to a paper size in Printer Settings.",
+      ],
+    },
+  },
+  {
+    key: "paper",
+    title: "Paper type & quality",
+    description: "Glossy, photo, best quality",
+    icon: SlidersHorizontal,
+    hint: {
+      key: "paper",
+      title: "Set the paper type and quality with a profile",
+      suggestedName: "glossy-photo-print",
+      steps: [
+        "Pick the printer below and click Set Preferences.",
+        "Choose the paper size, paper type (plain, glossy, photo) and print quality, then press OK.",
+        "Click Save Profile. Tick Show to customers if customers should be able to choose it (set its price in Step 4).",
+      ],
+    },
+  },
+  {
+    key: "printer",
+    title: "Another printer",
+    description: "e.g. a photo printer for 4x6",
+    icon: Settings,
+    hint: {
+      key: "printer",
+      title: "Use another printer for some jobs with a profile",
+      suggestedName: "photo-printer-4x6",
+      steps: [
+        "Pick the other printer below and click Set Preferences, then press OK.",
+        "Click Save Profile.",
+        "In Printer Settings pick this profile for the paper size and color it should print (for example 4x6 · Color).",
+      ],
+    },
+  },
+];
 
 const setupStepGuides: Record<SetupStep["key"], { title: string; videoUrl?: string; youtubeId?: string; bullets: string[] }> = {
   download: {
@@ -153,13 +222,14 @@ const setupStepGuides: Record<SetupStep["key"], { title: string; videoUrl?: stri
     ],
   },
   printer: {
-    title: "Set up print profiles",
+    title: "Choose the default printer",
     videoUrl: "https://newsbuilder.in/wp-content/uploads/2026/09/Agent-Guide-3.mp4",
     youtubeId: "GhFBF4ZY-Bc",
     bullets: [
-      "Create a profile: enter a name, pick the printer and click Set Preferences.",
-      "In the printer's Preferences window choose paper size, paper type and quality, press OK, then Save Profile.",
-      "Under Printer Settings, pick the profile for each paper size + color/grayscale and Save.",
+      "Select the printer that should receive customer print jobs.",
+      "Use Microsoft Print to PDF only for testing.",
+      "Save the printer after selection, then save a paper size + color/grayscale for it.",
+      "Need paper type or print quality control? Open Advanced below to create print profiles.",
     ],
   },
   pricing: {
@@ -238,6 +308,9 @@ export default function AutoPrintClient() {
   const [availablePrinters, setAvailablePrinters] = useState<string[]>(fallbackPrinters);
   const [selectedPrinter, setSelectedPrinter] = useState(fallbackPrinters[0] ?? "");
   const [printerSaved, setPrinterSaved] = useState(false);
+  // Print profiles (paper type, quality...) are the Advanced part of Step 3; the plain printer + paper + color setup comes first.
+  // Which Advanced printing option is open (all of them are set up with a Print Profile), or null.
+  const [advancedTopic, setAdvancedTopic] = useState<string | null>(null);
   const [priceItems, setPriceItems] = useState<PriceItem[]>([
     { id: "black_white", label: "Black & White", rate: 2 },
     { id: "color", label: "Color", rate: 10 },
@@ -245,8 +318,8 @@ export default function AutoPrintClient() {
   const [paymentMode, setPaymentMode] = useState("Online Payment");
   // Price when the customer ticks Duplex (print both sides), B/W and Color, with page ranges; 0 = normal rate.
   const [duplexPriceItems, setDuplexPriceItems] = useState<PriceItem[]>(() => getDuplexPriceItems(undefined));
-  // Pricing step shows one category at a time, picked from a dropdown: "category:<id>" or "duplex:<id>".
-  const [selectedPriceKey, setSelectedPriceKey] = useState("");
+  // Both-side (duplex) prices are the Advanced part of the Pricing step.
+  const [showDuplexPricing, setShowDuplexPricing] = useState(false);
   // ID Card Print (customer QR flow): per-card Color / B/W price + its own payment mode.
   const [idCardPriceItems, setIdCardPriceItems] = useState<PriceItem[]>([
     { id: "color", label: "Color", rate: 20 },
@@ -531,6 +604,28 @@ export default function AutoPrintClient() {
     }
   }
 
+  // A shop that already uses print profiles (shown to customers) keeps seeing them: Advanced opens by itself, once.
+  const advancedAutoOpened = useRef(false);
+  useEffect(() => {
+    if (advancedAutoOpened.current || !priceItems.some((item) => item.profile)) return;
+    advancedAutoOpened.current = true;
+    setAdvancedTopic("profiles");
+  }, [priceItems]);
+
+  // Saves the default printer (agent + server) and returns the message to show.
+  async function saveDefaultPrinter(printer: string) {
+    const result = await saveAgentPrinter(printer);
+    const scannedPrinters = Array.isArray(result.printers) && result.printers.length ? result.printers : availablePrinters;
+    const savedPrinter = result.printer || printer;
+    await saveServicePrinter("auto_document_print", savedPrinter);
+    setAvailablePrinters(scannedPrinters);
+    setSelectedPrinter(savedPrinter);
+    setPrinterSaved(true);
+    await verifyAgent({ silent: true });
+    window.dispatchEvent(new Event("cafemitra:printers-updated"));
+    return `Printer saved: ${savedPrinter}${result.mockMode ? " (Mock Test Mode)" : ""}`;
+  }
+
   // Step 3 is done once a Printer Settings row is saved. Its printer also
   // becomes the shop's default printer (test print, server selectedPrinter)
   // if none was saved yet.
@@ -709,6 +804,12 @@ export default function AutoPrintClient() {
     );
   }
 
+  function addPriceItem() {
+    setPricingSaved(false);
+    const nextIndex = priceItems.length + 1;
+    setPriceItems((current) => [...current, { id: `${Date.now()}-${nextIndex}`, label: `Charge ${nextIndex}`, rate: 0 }]);
+  }
+
   function removePriceItem(itemId: string) {
     setPricingSaved(false);
     setPriceItems((current) => (current.length > 1 ? current.filter((item) => item.id !== itemId) : current));
@@ -884,12 +985,46 @@ export default function AutoPrintClient() {
 
               {currentStep.key === "printer" ? (
                 <div className="wizard-action-content">
-                  <PrinterProfileSetup
+                  <SimplePrinterSetup
                     agentConnected={agentConnected}
+                    printers={availablePrinters}
+                    selectedPrinter={selectedPrinter}
+                    onSelectPrinter={(printer) => {
+                      setSelectedPrinter(printer);
+                      setPrinterSaved(false);
+                    }}
+                    onSavePrinter={saveDefaultPrinter}
                     onPresetSaved={handlePresetSaved}
-                    priceItems={priceItems}
-                    onUpdatePriceItems={updateProfilePriceItems}
                   />
+                  <div className="printer-advanced-head">
+                    <strong>Advanced printing options</strong>
+                    <span>Each option below is set up with a print profile - a printer plus its own settings.</span>
+                  </div>
+                  <div className="printer-advanced-grid" role="group" aria-label="Advanced printing options">
+                    {ADVANCED_PRINT_OPTIONS.map((option) => (
+                      <button
+                        key={option.key}
+                        className={`printer-advanced-cta ${advancedTopic === option.key ? "active" : ""}`}
+                        type="button"
+                        aria-expanded={advancedTopic === option.key}
+                        onClick={() => setAdvancedTopic((open) => (open === option.key ? null : option.key))}
+                      >
+                        <option.icon size={16} /> <strong>{option.title}</strong>
+                        <small>{option.description}</small>
+                      </button>
+                    ))}
+                  </div>
+                  {advancedTopic ? (
+                    <div className="printer-advanced-panel">
+                      <PrinterProfileSetup
+                        agentConnected={agentConnected}
+                        hint={ADVANCED_PRINT_OPTIONS.find((option) => option.key === advancedTopic)?.hint ?? null}
+                        onPresetSaved={handlePresetSaved}
+                        priceItems={priceItems}
+                        onUpdatePriceItems={updateProfilePriceItems}
+                      />
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
 
@@ -898,77 +1033,62 @@ export default function AutoPrintClient() {
                   <div className="panel-title-row compact">
                     <div>
                       <h2>Print Categories</h2>
-                      <p>Set the price for each category and add page ranges inside it. New categories come from Step 3: Printer Profiles (&quot;Show to customers&quot;).</p>
+                      <p>Create a category, then add page ranges inside it.</p>
                     </div>
+                    <button className="icon-action-btn" type="button" onClick={addPriceItem} aria-label="Add price item">
+                      <Plus size={18} />
+                    </button>
                   </div>
-                  {(() => {
-                    // One dropdown instead of a long list: only the picked category's editor is shown.
-                    const selectedCategory = priceItems.find((item) => `category:${item.id}` === selectedPriceKey);
-                    const selectedDuplex = duplexPriceItems.find((item) => `duplex:${item.id}` === selectedPriceKey);
-                    const activeCategory = !selectedCategory && !selectedDuplex ? priceItems[0] : selectedCategory;
-                    const activeKey = activeCategory ? `category:${activeCategory.id}` : selectedPriceKey;
-                    const activeIndex = activeCategory ? priceItems.indexOf(activeCategory) : -1;
-
-                    return (
-                      <>
-                        <label className="auto-field">
-                          <span>Select Category</span>
-                          <select value={activeKey} onChange={(event) => setSelectedPriceKey(event.target.value)}>
-                            {priceItems.map((item) => (
-                              <option key={item.id} value={`category:${item.id}`}>
-                                {(item.label || "New print category") + (item.profile ? ` (Profile: ${item.profile})` : "")} - Rs. {item.rate}/page
-                              </option>
-                            ))}
-                            {duplexPriceItems.map((item) => (
-                              <option key={`duplex-${item.id}`} value={`duplex:${item.id}`}>
-                                Duplex: {item.label} - {item.rate ? `Rs. ${item.rate}/page` : "normal rate"}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        {activeCategory ? (
-                          <div className="price-item-row" key={activeCategory.id}>
-                            <div className="price-item-header">
-                              <span>Category {activeIndex + 1}</span>
-                              {activeCategory.profile ? <span className="price-item-profile-badge">Profile: {activeCategory.profile}</span> : null}
-                              <strong>{activeCategory.label || "New print category"}</strong>
-                            </div>
-                            <div className="price-item-main">
-                              <label className="auto-field">
-                                <span>Category Name</span>
-                                <input value={activeCategory.label} onChange={(event) => updatePriceItem(activeCategory.id, "label", event.target.value)} />
-                              </label>
-                              <label className="auto-field">
-                                <span>Default Per Page</span>
-                                <input min="0" type="number" value={activeCategory.rate} onChange={(event) => updatePriceItem(activeCategory.id, "rate", event.target.value)} />
-                              </label>
-                              <button className="icon-action-btn danger" type="button" onClick={() => removePriceItem(activeCategory.id)} aria-label="Remove price item">
-                                <Trash2 size={17} />
-                              </button>
-                            </div>
-                            {renderPriceRanges(activeCategory, setPriceItems)}
+                  <div className="price-item-list">
+                    {priceItems.map((item, itemIndex) => (
+                      <div className="price-item-row" key={item.id}>
+                        <div className="price-item-header">
+                          <span>Category {itemIndex + 1}</span>
+                          {item.profile ? <span className="price-item-profile-badge">Profile: {item.profile}</span> : null}
+                          <strong>{item.label || "New print category"}</strong>
+                        </div>
+                        <div className="price-item-main">
+                          <label className="auto-field">
+                            <span>Category Name</span>
+                            <input value={item.label} onChange={(event) => updatePriceItem(item.id, "label", event.target.value)} />
+                          </label>
+                          <label className="auto-field">
+                            <span>Default Per Page</span>
+                            <input min="0" type="number" value={item.rate} onChange={(event) => updatePriceItem(item.id, "rate", event.target.value)} />
+                          </label>
+                          <button className="icon-action-btn danger" type="button" onClick={() => removePriceItem(item.id)} aria-label="Remove price item">
+                            <Trash2 size={17} />
+                          </button>
+                        </div>
+                        {renderPriceRanges(item, setPriceItems)}
+                      </div>
+                    ))}
+                  </div>
+                  {/* Advanced: its own B/W and Color price for both-side (duplex) printing, used instead of the normal rate when the customer ticks Duplex. */}
+                  <button className={`printer-advanced-cta pricing-advanced-cta ${showDuplexPricing ? "active" : ""}`} type="button" aria-expanded={showDuplexPricing} onClick={() => setShowDuplexPricing((open) => !open)}>
+                    <Copy size={16} /> <strong>Advanced: both-side (duplex) prices</strong>
+                    <small>A separate price when the customer prints on both sides. Leave it at 0 to use the normal rate.</small>
+                  </button>
+                  {showDuplexPricing ? (
+                    <div className="price-item-list">
+                      {duplexPriceItems.map((item) => (
+                        <div className="price-item-row" key={`duplex-${item.id}`}>
+                          <div className="price-item-header">
+                            <span>Duplex</span>
+                            <strong>{item.label}</strong>
                           </div>
-                        ) : null}
-                        {/* Duplex: its own B/W and Color price (default + page ranges), used instead of the normal rate when the customer ticks Duplex. */}
-                        {selectedDuplex ? (
-                          <div className="price-item-row" key={`duplex-${selectedDuplex.id}`}>
-                            <div className="price-item-header">
-                              <span>Duplex</span>
-                              <strong>{selectedDuplex.label}</strong>
-                            </div>
-                            <div className="idcard-pricing-grid">
-                              <label className="auto-field">
-                                <span>Default Per Page (both sides)</span>
-                                <input min="0" type="number" value={selectedDuplex.rate} onChange={(event) => updatePriceItem(selectedDuplex.id, "rate", event.target.value, setDuplexPriceItems)} />
-                              </label>
-                              <p className="payment-mode-note">0 with no ranges = same as the normal {selectedDuplex.id === "color" ? "Color" : "B&W"} rate.</p>
-                            </div>
-                            {renderPriceRanges(selectedDuplex, setDuplexPriceItems)}
+                          <div className="idcard-pricing-grid">
+                            <label className="auto-field">
+                              <span>Default Per Page (both sides)</span>
+                              <input min="0" type="number" value={item.rate} onChange={(event) => updatePriceItem(item.id, "rate", event.target.value, setDuplexPriceItems)} />
+                            </label>
+                            <p className="payment-mode-note">0 with no ranges = same as the normal {item.id === "color" ? "Color" : "B&W"} rate.</p>
                           </div>
-                        ) : null}
-                      </>
-                    );
-                  })()}
+                          {renderPriceRanges(item, setDuplexPriceItems)}
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
                   {renderPaymentModes(paymentMode, setPaymentMode)}
                   <p className="payment-mode-note">Online Payment is available to customers by default. Turn on "Online Payment + Cash Counter" to also let customers pay at your counter, or pick "Only Cash Counter" to accept counter payment only.</p>
                   {!cashCounterAvailable ? <p className="payment-mode-note payment-mode-locked">{cashCounterReason}</p> : null}

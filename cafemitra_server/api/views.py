@@ -1628,8 +1628,21 @@ def public_wallet_config():
         "creditLimit": float(get_wallet_setting("credit_limit")),
         "dailyGraceLimit": float(get_wallet_setting("daily_grace_limit")),
         "tools": [
-            {"toolKey": tool.tool_key, "label": tool.label, "unit": tool.unit, "price": float(tool.price)}
+            {
+                "toolKey": tool.tool_key,
+                "label": tool.label,
+                "unit": tool.unit,
+                "price": float(tool.price),
+                # What a shop pays when it uses the tool itself (B2B) / when a customer order triggers it (B2C).
+                "priceB2b": float(tool.price_b2b if tool.price_b2b is not None else tool.price),
+                "priceB2c": float(tool.price_b2c if tool.price_b2c is not None else tool.price),
+            }
             for tool in tools
+        ],
+        # Tools the admin has not made billable: free to use, listed on the pricing page as "Free".
+        "freeTools": [
+            {"toolKey": tool.tool_key, "label": tool.label}
+            for tool in ToolPricing.objects.filter(is_billable=False).order_by("tool_key")
         ],
     }
 
@@ -4340,27 +4353,29 @@ def public_print_order(request, code):
     # Page-range rates bracket on the total sheets printed (pages x copies),
     # not the source document's own page count - a 2-page PDF x 4 copies is
     # 8 printed sheets, which can fall in a different range than 2 pages alone.
-    rate = pricing_rate(effective_pricing_settings(pricing), price_item_id, pages * copies, money(request.POST.get("rate")))
     # Double-side only for a multi-page PrintPilot document; the shop's own
     # Duplex price for this B/W / Color item (default or page range) replaces
-    # the normal rate when set (0 = normal rate).
+    # the normal rate when set (0 = normal rate). Front + back of one sheet count as ONE page, so
+    # a 3-page document printed on both sides is 2 sheets - the rate range and the total use that.
     duplex_requested = (
         service_key == "auto_document_print"
         and pages > 1
         and str(request.POST.get("duplex", "")).strip().lower() in ("1", "true", "yes", "on")
     )
+    billed_pages = (pages + 1) // 2 if duplex_requested else pages
+    rate = pricing_rate(effective_pricing_settings(pricing), price_item_id, billed_pages * copies, money(request.POST.get("rate")))
     if duplex_requested:
         duplex_items = (pricing.settings or {}).get("duplexPriceItems")
         duplex_rate = pricing_rate(
             {"priceItems": duplex_items if isinstance(duplex_items, list) else []},
             price_item_id,
-            pages * copies,
+            billed_pages * copies,
             Decimal("0.00"),
         )
         if duplex_rate > 0:
             rate = duplex_rate
     total = money(request.POST.get("totalAmount"))
-    calculated_total = (rate * pages * copies).quantize(Decimal("0.01"))
+    calculated_total = (rate * billed_pages * copies).quantize(Decimal("0.01"))
     if is_photo_order:
         # Package price x copies, or the page-range price for the total photos (see photo_order_total).
         calculated_total = photo_order_total(effective_pricing_settings(pricing), price_item_id, copies, rate)

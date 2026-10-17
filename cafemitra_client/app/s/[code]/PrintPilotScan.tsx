@@ -164,6 +164,9 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
   const [copyCountInput, setCopyCountInput] = useState("1");
   // Black & white darkness, 0 (light) .. 100 (dark).
   const [docDarkness, setDocDarkness] = useState(DEFAULT_DOC_DARKNESS);
+  // The files of a multi-file upload and the look their photos were made with, so the look can be changed
+  // (the PDF is built again from the originals). Photos stay as they are (Original) until the customer picks another look.
+  const [multiSource, setMultiSource] = useState<{ files: File[]; look: DocLook } | null>(null);
   const darknessTimerRef = useRef<number | null>(null);
   const [combineStatus, setCombineStatus] = useState("");
   const [isSubmittingOrder, setIsSubmittingOrder] = useState(false);
@@ -278,11 +281,14 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
   const isIdCardPrint = selectedService === "id_card_print";
   const hasUploadedFile = isFamilyPhoto ? familyFiles.length >= FAMILY_MIN_PHOTOS : Boolean(fileUrl);
   const hasReadyFile = isFamilyPhoto ? familyFiles.length >= FAMILY_MIN_PHOTOS : Boolean(finalFile);
-  const totalUnits = isPhotoService ? copies : pages * copies;
   const hasPdfFile = isPdfFile(fileType, fileName);
   const hasImageFile = isImageFile(fileType, fileName);
   // Double-side printing only makes sense for a multi-page PDF; the agent turns on the printer's two-sided setting when ticked.
   const canDuplex = hasPdfFile && pages > 1 && !isPhotoService && !isIdCardPrint;
+  // Both sides: front + back of one sheet count as ONE page, so 3 pages print on 2 sheets and are charged as 2.
+  const bothSides = canDuplex && duplex;
+  const billedPages = bothSides ? Math.ceil(pages / 2) : pages;
+  const totalUnits = isPhotoService ? copies : billedPages * copies;
   // Shop's per-page Duplex price for the selected B/W / Color item (0 = normal rate).
   const duplexRate = getDuplexRate(activeService?.settings, selectedItem?.id, totalUnits);
   const selectedRate = canDuplex && duplex && duplexRate > 0 ? duplexRate : isPhotoService ? Number(selectedItem?.rate || 0) : calculatePriceItemRate(selectedItem, totalUnits);
@@ -592,6 +598,7 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
   }
 
   async function handleSingleUpload(file: File) {
+    setMultiSource(null);
     const isImageUpload = file.type.startsWith("image/") || /\.(jpg|jpeg|png)$/i.test(file.name);
     if (isPassportPhoto && !isImageUpload) {
       alert("Please upload only JPG, PNG, or JPEG images for passport photos.");
@@ -675,6 +682,11 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
   function changeDocDarkness(value: number) {
     setDocDarkness(value);
     if (darknessTimerRef.current) window.clearTimeout(darknessTimerRef.current);
+    if (multiSource && multiSource.look === "bw") {
+      const files = multiSource.files;
+      darknessTimerRef.current = window.setTimeout(() => void handleMultipleUpload(files, "bw", value), 400);
+      return;
+    }
     const original = autoScan?.original;
     if (!original) return;
     darknessTimerRef.current = window.setTimeout(() => void autoScanImage(original, "bw", value), 400);
@@ -682,9 +694,10 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
 
   // For a photo in a multi-file upload: the scanned page, or the photo as it
   // is if scanning fails.
-  async function scannedOrOriginal(file: File) {
+  async function scannedOrOriginal(file: File, look: DocLook = "original", darkness = docDarkness) {
+    if (look === "original") return file;
     try {
-      const result = await scanDocument(file, "photocopy", null, docDarkness);
+      const result = await scanDocument(file, look === "bw" ? "photocopy" : "clean", null, darkness);
       return result.found ? result.blob : file;
     } catch {
       return file;
@@ -695,7 +708,12 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
   // scans) so the rest of the flow - page/price calculation, order creation,
   // and the single-document print job the agent picks up - needs no changes
   // at all to handle "multiple documents" as one bigger document.
-  async function handleMultipleUpload(files: File[]) {
+  function rebuildMultiUpload(look: DocLook) {
+    if (!multiSource) return Promise.resolve();
+    return handleMultipleUpload(multiSource.files, look);
+  }
+
+  async function handleMultipleUpload(files: File[], look: DocLook = "original", darkness = docDarkness) {
     const invalidFile = files.find((file) => {
       const isImage = file.type.startsWith("image/") || /\.(jpg|jpeg|png)$/i.test(file.name);
       const isPdf = file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
@@ -736,8 +754,8 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
           let source: Blob = file;
           if (autoScansImages) {
             imageIndex += 1;
-            setCombineStatus(`Cleaning photo ${imageIndex}/${imageCount}…`);
-            source = await scannedOrOriginal(file);
+            if (look !== "original") setCombineStatus(`Cleaning photo ${imageIndex}/${imageCount}…`);
+            source = await scannedOrOriginal(file, look, darkness);
             setCombineStatus("");
           }
           const pngBytes = await imageFileToPngBytes(source);
@@ -756,6 +774,7 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
       const mergedBytes = await mergedDoc.save();
       const mergedFile = new File([mergedBytes], `${files.length} files combined.pdf`, { type: "application/pdf" });
       await applyUploadedFile(mergedFile, totalPages);
+      setMultiSource({ files, look });
     } catch {
       alert("Could not combine the selected files. Please try uploading them one at a time.");
     } finally {
@@ -835,6 +854,7 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
   }
 
   function clearUploadedFileState() {
+    setMultiSource(null);
     autoScanTokenRef.current++;
     setAutoScan(null);
     if (fileUrl) URL.revokeObjectURL(fileUrl);
@@ -1611,6 +1631,41 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
                     <X size={16} /> Remove
                   </button>
                 </div>
+                {multiSource && autoScansImages ? (
+                  <div className="doc-autoscan done">
+                    <span>
+                      {isCombiningFiles ? (
+                        <>
+                          <LoaderCircle size={15} className="spin" /> {combineStatus || "Combining your files…"}
+                        </>
+                      ) : (
+                        "Photos in this PDF"
+                      )}
+                    </span>
+                    <div className="doc-autoscan-looks" role="group" aria-label="Photo look">
+                      {DOC_LOOKS.map((option) => (
+                        <button
+                          key={option.value}
+                          type="button"
+                          className={multiSource.look === option.value ? "active" : ""}
+                          disabled={isCombiningFiles || isPdfEdited}
+                          title={isPdfEdited ? "Pages were edited - upload the files again to change the look" : undefined}
+                          onClick={() => void rebuildMultiUpload(option.value)}
+                        >
+                          {option.label}
+                        </button>
+                      ))}
+                    </div>
+                    {multiSource.look === "bw" ? (
+                      <label className="doc-autoscan-darkness">
+                        <span>Light</span>
+                        <input type="range" min={0} max={100} value={docDarkness} disabled={isPdfEdited} onChange={(event) => changeDocDarkness(Number(event.target.value))} aria-label="Black and white darkness" />
+                        <span>Dark</span>
+                        <b>{docDarkness}</b>
+                      </label>
+                    ) : null}
+                  </div>
+                ) : null}
                 {autoScan ? (
                   <div className={`doc-autoscan ${autoScan.status}`}>
                     {autoScan.status === "working" ? (
@@ -1767,7 +1822,7 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
                   />
                   <span>
                     <strong>Duplex</strong>
-                    <small>{duplexRate > 0 ? `Both sides · Rs. ${duplexRate}` : "Print both sides"}</small>
+                    <small>{duplexRate > 0 ? `Both sides · Rs. ${duplexRate} per sheet` : "Print both sides · front + back = 1 page"}</small>
                   </span>
                 </label>
               ) : null}
@@ -1939,6 +1994,8 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
                   ? `${familyFiles.length} people${copies > 1 ? ` × ${copies} copies` : ""}`
                   : isPassportPhoto
                   ? `${selectedItem?.label || "1"}${copies > 1 ? ` × ${copies} copies (${photoPackageCount(selectedItem?.label) * copies} photos)` : ""}`
+                  : bothSides
+                  ? `${billedPages} sheet${billedPages > 1 ? "s" : ""} (${pages} pages, both sides) x ${copies}`
                   : `${pages} x ${copies}`
                 : "Upload pending"}
             </strong>

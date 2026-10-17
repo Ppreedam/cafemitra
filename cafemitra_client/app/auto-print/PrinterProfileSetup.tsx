@@ -1,7 +1,7 @@
 "use client";
 
 import { Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   deleteAgentPrintProfile,
   deleteAgentPrinterPreset,
@@ -19,8 +19,12 @@ import {
 } from "@/lib/printpilot-agent";
 import type { PriceItem } from "@/lib/pricing";
 
+/** What the shop came here to solve (an Advanced option on Step 3): a short guide and a suggested profile name. */
+export type ProfileHint = { key: string; title: string; steps: string[]; suggestedName: string };
+
 type Props = {
   agentConnected: boolean;
+  hint?: ProfileHint | null;
   /** Called with the printer of every saved Printer Settings row. */
   onPresetSaved?: (printer: string) => void;
   /** PrintPilot pricing categories; one with `profile` set = that profile is shown to customers. */
@@ -33,7 +37,7 @@ type Props = {
 // printer's own Preferences (paper size, glossy paper, quality...), opened on
 // this PC by the desktop agent. (2) Printer Settings: which profile prints
 // each paper size + color/grayscale order.
-export default function PrinterProfileSetup({ agentConnected, onPresetSaved, priceItems, onUpdatePriceItems }: Props) {
+export default function PrinterProfileSetup({ agentConnected, hint, onPresetSaved, priceItems, onUpdatePriceItems }: Props) {
   const [profiles, setProfiles] = useState<PrintProfile[]>([]);
   const [printers, setPrinters] = useState<string[]>([]);
   const [unsupported, setUnsupported] = useState(false);
@@ -94,6 +98,16 @@ export default function PrinterProfileSetup({ agentConnected, onPresetSaved, pri
       cancelled = true;
     };
   }, [agentConnected]);
+
+  // Coming from an Advanced option: suggest a name for the profile. Switching to another option replaces the
+  // previous suggestion, but never a name the shop typed itself.
+  const lastSuggestedName = useRef("");
+  useEffect(() => {
+    if (!hint || editingName) return;
+    setName((current) => (!current.trim() || current === lastSuggestedName.current ? hint.suggestedName : current));
+    lastSuggestedName.current = hint.suggestedName;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hint?.key]);
 
   // ── Profiles ───────────────────────────────────────────────────────
   const editingProfile = profiles.find((profile) => profile.name === editingName);
@@ -288,16 +302,28 @@ export default function PrinterProfileSetup({ agentConnected, onPresetSaved, pri
 
   return (
     <>
-      <div className="panel-title-row compact printer-preset-title">
-        <div>
-          <h2>Print Profiles</h2>
-          <p>
-            Name a profile, pick its printer and click Set Preferences - the printer&apos;s own Preferences window opens on this PC (paper size, glossy/plain paper,
-            print quality...). Press OK there, then Save Profile. Double-side orders print on the same printer - PrintPilot turns two-sided printing on
-            automatically when the customer ticks &quot;Print on both sides&quot;.
-          </p>
+      {!hint ? (
+        <div className="panel-title-row compact printer-preset-title">
+          <div>
+            <h2>Print Profiles</h2>
+            <p>
+              Name a profile, pick its printer and click Set Preferences - the printer&apos;s own Preferences window opens on this PC (paper size, glossy/plain paper,
+              print quality...). Press OK there, then Save Profile. Double-side orders print on the same printer - PrintPilot turns two-sided printing on
+              automatically when the customer ticks &quot;Print on both sides&quot;.
+            </p>
+          </div>
         </div>
-      </div>
+      ) : null}
+      {hint ? (
+        <div className="profile-hint">
+          <strong>{hint.title}</strong>
+          <ol>
+            {hint.steps.map((step) => (
+              <li key={step}>{step}</li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
       <div className="printer-preset-form">
         <label className="auto-field">
           <span>Profile Name</span>
@@ -342,6 +368,7 @@ export default function PrinterProfileSetup({ agentConnected, onPresetSaved, pri
       {profileMessage ? <div className="profile-alert success">{profileMessage}</div> : null}
       {profileError ? <div className="profile-alert error">{profileError}</div> : null}
 
+      {profiles.length ? <h3 className="profile-subhead">Saved profiles</h3> : null}
       <div className="printer-preset-list">
         {profiles.map((profile) => (
           <div className="printer-preset-row" key={profile.name}>
