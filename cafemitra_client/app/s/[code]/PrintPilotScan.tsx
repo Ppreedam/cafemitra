@@ -18,6 +18,7 @@ import PublicResumeBuilder from "./PublicResumeBuilder";
 import PublicBiodataMaker from "./PublicBiodataMaker";
 import { parsePhotoCount } from "../../passport-photo/printSheet";
 import IdCardPrintUpload from "./IdCardPrintUpload";
+import MergePrepareModal from "./MergePrepareModal";
 import { applyCleanScanToFile, type CleanScanProgress } from "./cleanScan/cleanScanEngine";
 import { scanDocument } from "../../id-card-print/cardScan";
 import { PrintProfileSelect, useAgentPrint } from "../../PrintProfileSelect";
@@ -166,6 +167,8 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
   const [docDarkness, setDocDarkness] = useState(DEFAULT_DOC_DARKNESS);
   // The files of a multi-file upload and the look their photos were made with, so the look can be changed
   // (the PDF is built again from the originals). Photos stay as they are (Original) until the customer picks another look.
+  // Several files picked with at least one photo: shown for cropping / rotating before they are merged into one PDF.
+  const [prepareFiles, setPrepareFiles] = useState<File[] | null>(null);
   const [multiSource, setMultiSource] = useState<{ files: File[]; look: DocLook } | null>(null);
   const darknessTimerRef = useRef<number | null>(null);
   const [combineStatus, setCombineStatus] = useState("");
@@ -594,6 +597,12 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
       return;
     }
 
+    // Photos among several files are cropped / rotated first; only PDFs (or a bad file type) go straight to merging.
+    const allSupported = files.every((file) => isImageFile(file.type, file.name) || isPdfFile(file.type, file.name));
+    if (allSupported && files.some((file) => isImageFile(file.type, file.name))) {
+      setPrepareFiles(files);
+      return;
+    }
     await handleMultipleUpload(files);
   }
 
@@ -1752,7 +1761,7 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
                 ) : null}
               </div>
             </div>
-          ) : (
+          ) : isIdCardPrint ? null : (
             <label className={`customer-upload ${isUploadBusy ? "is-busy" : ""}`}>
               {isReadingUpload ? <LoaderCircle size={24} className="spin" /> : <Upload size={24} />}
               <strong>{isReadingUpload ? "Reading your document…" : isPassportPhoto ? "Upload Passport Photo" : "Upload PDF, JPG, PNG, JPEG"}</strong>
@@ -2371,6 +2380,17 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
             </div>
           </div>
         </div>
+      ) : null}
+
+      {prepareFiles ? (
+        <MergePrepareModal
+          files={prepareFiles}
+          onCancel={() => setPrepareFiles(null)}
+          onConfirm={(edited) => {
+            setPrepareFiles(null);
+            void handleMultipleUpload(edited);
+          }}
+        />
       ) : null}
 
       {isCropOpen ? (

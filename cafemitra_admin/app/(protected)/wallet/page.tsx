@@ -622,6 +622,20 @@ function WalletSettingsTab() {
     }
   }
 
+  const signupOtp = settings.find((s) => s.key === "signup_phone_otp");
+
+  async function saveSignupOtp(on: boolean) {
+    setSavingKey("signup_phone_otp");
+    try {
+      await updateWalletSetting("signup_phone_otp", { isActive: on });
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed.");
+    } finally {
+      setSavingKey(null);
+    }
+  }
+
   const trigger = settings.find((s) => s.key === "referral_trigger");
   const isTopupTrigger = Boolean(trigger?.isActive);
 
@@ -643,6 +657,29 @@ function WalletSettingsTab() {
   return (
     <div className="rounded-xl border border-slate-200 bg-white overflow-x-auto">
       {error && <div className="m-3 rounded-md bg-red-50 text-red-700 text-sm px-3 py-2">{error}</div>}
+      {signupOtp && (
+        <div className="m-3 rounded-lg border border-slate-200 bg-slate-50 p-4 flex items-center justify-between gap-4">
+          <div>
+            <div className="font-medium text-slate-800">WhatsApp OTP at signup</div>
+            <div className="text-xs text-slate-500">
+              On: a new account can only be created after the WhatsApp number is verified with an OTP. Off: the register page does not ask for the OTP and the account opens without it.
+            </div>
+          </div>
+          <button
+            type="button"
+            role="switch"
+            aria-checked={signupOtp.isActive}
+            disabled={savingKey === "signup_phone_otp"}
+            onClick={() => saveSignupOtp(!signupOtp.isActive)}
+            className="inline-flex items-center gap-2 disabled:opacity-50 shrink-0"
+          >
+            <span className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${signupOtp.isActive ? "bg-green-500" : "bg-slate-300"}`}>
+              <span className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${signupOtp.isActive ? "translate-x-4" : "translate-x-0.5"}`} />
+            </span>
+            <span className={`text-xs font-medium ${signupOtp.isActive ? "text-green-700" : "text-slate-500"}`}>{signupOtp.isActive ? "On" : "Off"}</span>
+          </button>
+        </div>
+      )}
       {trigger && (
         <div className="m-3 rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-3">
           <div>
@@ -703,7 +740,7 @@ function WalletSettingsTab() {
           </tr>
         </thead>
         <tbody>
-          {settings.filter((s) => s.key !== "referral_trigger").map((s) => (
+          {settings.filter((s) => s.key !== "referral_trigger" && s.key !== "signup_phone_otp").map((s) => (
             <tr key={s.key} className="border-b border-slate-100 last:border-0">
               <td className="px-4 py-2 text-slate-700">
                 <div className="font-medium">{s.label}</div>

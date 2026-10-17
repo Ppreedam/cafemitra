@@ -10,7 +10,7 @@ import { bakeTone, isNeutralTone, TonedImage, type Tone } from "../../id-card-pr
 import { apiUrl } from "@/lib/api";
 import SheetOptionsControl from "../../id-card-print/SheetOptionsControl";
 import { loadSheetPrefs, saveSheetPrefs } from "../../id-card-print/sheetPrefs";
-import { MAX_COPIES, PAPER_CHOICES, planSheet, type SheetEntry, type SheetOptions, type SheetLayout } from "../../id-card-print/sheetLayout";
+import { alignCard, MAX_COPIES, orientedPaper, PAPER_CHOICES, planSheet, type PositionOverrides, type SheetEntry, type SheetOptions, type SheetLayout } from "../../id-card-print/sheetLayout";
 
 type Side = "front" | "back";
 type ColorMode = "color" | "bw";
@@ -95,7 +95,7 @@ async function renderCardCell(url: string, colorMode: ColorMode, cellWidthPx: nu
 // Top / Bottom, centred) since PrintOrder only supports one uploaded document per order. `pages` on
 // the resulting order is priced per PDF page (pages x copies x the shop's Color / B&W rate), so
 // `pageCount` is what the order's `pages` is set to - see IdCardPrintUpload's onComposed contract.
-async function composeIdCardsToPdf(entries: SheetEntry[], colorMode: ColorMode, layout: SheetLayout, separatePages: boolean, options: SheetOptions): Promise<{ file: File; pageCount: number }> {
+async function composeIdCardsToPdf(entries: SheetEntry[], colorMode: ColorMode, layout: SheetLayout, separatePages: boolean, options: SheetOptions, overrides: PositionOverrides = {}): Promise<{ file: File; pageCount: number }> {
   if (!entries.length) throw new Error("No cards to print");
 
   const { PDFDocument } = await import("pdf-lib");
@@ -104,16 +104,17 @@ async function composeIdCardsToPdf(entries: SheetEntry[], colorMode: ColorMode, 
   const mmPt = (mm: number) => mm * 2.834645669;
   const dpi = 150;
   const mmPx = (mm: number) => Math.round((mm / 25.4) * dpi);
-  const plan = planSheet(entries, A4, layout, {}, separatePages, options);
+  const sheetPaper = orientedPaper(A4, options.landscape);
+  const plan = planSheet(entries, sheetPaper, layout, overrides, separatePages, options);
   const cardWidthPx = mmPx(plan.cardWMm);
   const cardHeightPx = mmPx(plan.cardHMm);
 
   for (const placed of plan.pages) {
-    const page = pdfDoc.addPage([mmPt(A4.widthMm), mmPt(A4.heightMm)]);
+    const page = pdfDoc.addPage([mmPt(sheetPaper.widthMm), mmPt(sheetPaper.heightMm)]);
     for (const card of placed) {
       const bytes = await renderCardCell(card.url, colorMode, cardWidthPx, cardHeightPx);
       const image = await pdfDoc.embedPng(bytes);
-      page.drawImage(image, { x: mmPt(card.xMm), y: mmPt(A4.heightMm - card.yMm - plan.cardHMm), width: mmPt(plan.cardWMm), height: mmPt(plan.cardHMm) });
+      page.drawImage(image, { x: mmPt(card.xMm), y: mmPt(sheetPaper.heightMm - card.yMm - plan.cardHMm), width: mmPt(plan.cardWMm), height: mmPt(plan.cardHMm) });
     }
   }
 
@@ -161,7 +162,7 @@ export default function IdCardPrintUpload({
   // The margin and size last printed with for this layout are applied again when it is used.
   useEffect(() => {
     const saved = loadSheetPrefs(sheetLayout);
-    if (saved) setSheetOptions((current) => ({ ...current, marginMm: saved.marginMm, sizePercent: saved.sizePercent }));
+    if (saved) setSheetOptions((current) => ({ ...current, marginMm: saved.marginMm, sizePercent: saved.sizePercent, landscape: saved.landscape }));
   }, [sheetLayout]);
   const [previewMode, setPreviewMode] = useState(false);
   const [previewEntries, setPreviewEntries] = useState<SheetEntry[]>([]);
@@ -428,14 +429,6 @@ export default function IdCardPrintUpload({
     setCards((prev) => prev.map((card) => (card.id === cardId ? { ...card, copies } : card)));
   }
 
-  function setAllCopies(copies: number) {
-    setCards((prev) => prev.map((card) => ({ ...card, copies })));
-  }
-
-  const allCopies = (() => {
-    const counts = new Set(cards.filter((card) => card.front.url).map((card) => card.copies ?? 1));
-    return counts.size === 1 ? Array.from(counts)[0] : counts.size === 0 ? 1 : null;
-  })();
 
   function removeCard(cardId: string) {
     setCards((prev) => {
@@ -468,7 +461,7 @@ export default function IdCardPrintUpload({
     setError("");
     const baked: string[] = [];
     try {
-      const { file, pageCount } = await composeIdCardsToPdf(await printableEntries(baked), colorMode, sheetLayout, separatePages, sheetOptions);
+      const { file, pageCount } = await composeIdCardsToPdf(await printableEntries(baked), colorMode, sheetLayout, separatePages, sheetOptions, positionOverrides);
       onComposed(file, pageCount, colorMode);
     } catch {
       setError("Could not prepare your ID cards for upload. Please try again.");
@@ -505,7 +498,45 @@ export default function IdCardPrintUpload({
 
   const readyCount = cards.filter((card) => card.front.url).length;
   const printCount = cards.filter((card) => card.front.url).reduce((sum, card) => sum + (card.copies ?? 1), 0);
-  const previewPlan = useMemo(() => planSheet(previewEntries, A4, sheetLayout, {}, separatePages, sheetOptions), [previewEntries, sheetLayout, separatePages, sheetOptions]);
+  // Portrait / Landscape turns the A4 sheet; the plan, the preview and the PDF all use the turned one.
+  const sheetPaper = useMemo(() => orientedPaper(A4, sheetOptions.landscape), [sheetOptions.landscape]);
+  // Cards the customer dragged to their own spot on the preview (mm from the page's top-left, keyed by card side).
+  const [positionOverrides, setPositionOverrides] = useState<PositionOverrides>({});
+  // Alignment lines drawn on the page while a card is dragged (mm), and which page they belong to.
+  const [dragGuides, setDragGuides] = useState<{ page: number; x: number[]; y: number[] } | null>(null);
+  useEffect(() => {
+    setPositionOverrides({});
+  }, [sheetLayout, sheetPaper, previewMode, separatePages, sheetOptions]);
+
+  const previewPlan = useMemo(() => planSheet(previewEntries, sheetPaper, sheetLayout, positionOverrides, separatePages, sheetOptions), [previewEntries, sheetPaper, sheetLayout, positionOverrides, separatePages, sheetOptions]);
+
+  function startCardDrag(event: React.PointerEvent<HTMLDivElement>, key: string, startX: number, startY: number) {
+    const pageEl = event.currentTarget.parentElement;
+    if (!pageEl) return;
+    event.preventDefault();
+    const rect = pageEl.getBoundingClientRect();
+    const mmPerPx = sheetPaper.widthMm / rect.width;
+    const originX = event.clientX;
+    const originY = event.clientY;
+    const pageIndex = Math.max(0, previewPlan.pages.findIndex((page) => page.some((card) => card.key === key)));
+    const others = (previewPlan.pages[pageIndex] ?? []).filter((card) => card.key !== key).map((card) => ({ x: card.xMm, y: card.yMm, w: previewPlan.cardWMm, h: previewPlan.cardHMm }));
+    function onMove(move: PointerEvent) {
+      const rawX = Math.max(0, Math.min(sheetPaper.widthMm - previewPlan.cardWMm, startX + (move.clientX - originX) * mmPerPx));
+      const rawY = Math.max(0, Math.min(sheetPaper.heightMm - previewPlan.cardHMm, startY + (move.clientY - originY) * mmPerPx));
+      const aligned = alignCard({ x: rawX, y: rawY, w: previewPlan.cardWMm, h: previewPlan.cardHMm }, others, sheetPaper);
+      const xMm = Math.max(0, Math.min(sheetPaper.widthMm - previewPlan.cardWMm, aligned.x));
+      const yMm = Math.max(0, Math.min(sheetPaper.heightMm - previewPlan.cardHMm, aligned.y));
+      setPositionOverrides((current) => ({ ...current, [key]: { xMm, yMm } }));
+      setDragGuides({ page: pageIndex, x: aligned.guidesX, y: aligned.guidesY });
+    }
+    function onUp() {
+      setDragGuides(null);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    }
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+  }
 
   useEffect(() => {
     if (previewMode && !readyCount) setPreviewMode(false);
@@ -547,27 +578,47 @@ export default function IdCardPrintUpload({
         <div className="idcard-toolbar-actions">
           <div className="idcard-toggle-group">
             <button type="button" className={colorMode === "color" ? "active" : ""} onClick={() => setColorMode("color")}>
-              <Palette size={14} /> Color{prices?.color !== undefined ? ` · Rs. ${prices.color}/page` : ""}
+              <Palette size={14} /> Color
             </button>
             <button type="button" className={colorMode === "bw" ? "active" : ""} onClick={() => setColorMode("bw")}>
-              <Contrast size={14} /> B/W{prices?.bw !== undefined ? ` · Rs. ${prices.bw}/page` : ""}
+              <Contrast size={14} /> B/W
             </button>
           </div>
-          <div className="idcard-toolbar-divider" />
-          <div className="idcard-toggle-group" title="How front and back are placed on the sheet">
-            <button type="button" className={sheetLayout === "side" ? "active" : ""} onClick={() => setSheetLayout("side")}>
-              Left / Right
-            </button>
-            <button type="button" className={sheetLayout === "stack" ? "active" : ""} onClick={() => setSheetLayout("stack")}>
-              Top / Bottom
-            </button>
-          </div>
-          <div className="idcard-toggle-group" title="Print every ID card on its own page instead of fitting several on one page">
-            <button type="button" className={separatePages ? "active" : ""} onClick={() => setSeparatePages((current) => !current)}>
-              One ID per page
-            </button>
-          </div>
-          <SheetOptionsControl value={sheetOptions} onChange={setSheetOptions} paper={A4} allCopies={allCopies} onAllCopies={setAllCopies} />
+          {/* Editing needs only Color / B&W; how front and back sit on the sheet is chosen on the preview page. */}
+          {previewMode ? (
+            <>
+              <div className="idcard-toolbar-divider" />
+              <div className="idcard-toggle-group" title="How front and back are placed on the sheet">
+                <button type="button" className={sheetLayout === "side" ? "active" : ""} onClick={() => setSheetLayout("side")}>
+                  Left / Right
+                </button>
+                <button type="button" className={sheetLayout === "stack" ? "active" : ""} onClick={() => setSheetLayout("stack")}>
+                  Top / Bottom
+                </button>
+              </div>
+            </>
+          ) : null}
+          {/* One ID per page is a print-sheet choice: it is shown only on the preview page. */}
+          {previewMode ? (
+            <div className="idcard-toggle-group" title="Print every ID card on its own page instead of fitting several on one page">
+              <button type="button" className={separatePages ? "active" : ""} onClick={() => setSeparatePages((current) => !current)}>
+                One ID per page
+              </button>
+            </div>
+          ) : null}
+          {previewMode ? (
+            <>
+              <div className="idcard-toggle-group" title="Paper direction">
+                <button type="button" className={!sheetOptions.landscape ? "active" : ""} onClick={() => setSheetOptions((current) => ({ ...current, landscape: false }))}>
+                  Portrait
+                </button>
+                <button type="button" className={sheetOptions.landscape ? "active" : ""} onClick={() => setSheetOptions((current) => ({ ...current, landscape: true }))}>
+                  Landscape
+                </button>
+              </div>
+            </>
+          ) : null}
+          {previewMode ? <SheetOptionsControl value={sheetOptions} onChange={setSheetOptions} paper={sheetPaper} /> : null}
           <div className="idcard-toolbar-divider" />
           {previewMode ? (
             <>
@@ -580,7 +631,7 @@ export default function IdCardPrintUpload({
             </>
           ) : (
             <button className="idcard-print-cta" type="button" disabled={!readyCount || composing || busy || scanning} onClick={() => setPreviewMode(true)}>
-              <Printer size={16} /> Preview
+              <Printer size={16} /> Continue
             </button>
           )}
         </div>
@@ -588,7 +639,7 @@ export default function IdCardPrintUpload({
 
       {!previewMode ? (
       <>
-      <div className="idcard-card-rows">
+      <div className={`idcard-card-rows${colorMode === "bw" ? " is-bw" : ""}`}>
         {cards.map((card, index) => (
           <div key={card.id} className="idcard-card-row">
             <div className="idcard-card-row-head">
@@ -609,7 +660,7 @@ export default function IdCardPrintUpload({
                 </button>
               ) : null}
             </div>
-            <div className="idcard-photo-pair">
+            <div className={`idcard-photo-pair${sheetLayout === "stack" ? " is-stack" : ""}`}>
               {(["front", "back"] as Side[]).map((side) => {
                 const state = side === "front" ? card.front : card.back;
                 const isActive = sameSlot(active, { cardId: card.id, side });
@@ -665,12 +716,17 @@ export default function IdCardPrintUpload({
       <div className="idcard-preview-view">
         <div className="idcard-preview-info">
           <strong>
-            {A4.name} ({A4.widthMm} × {A4.heightMm} mm)
+            {sheetPaper.name} ({sheetPaper.widthMm} × {sheetPaper.heightMm} mm)
           </strong>
           <span>
             {readyCount} card{readyCount === 1 ? "" : "s"} · {previewPlan.pages.length} page{previewPlan.pages.length === 1 ? "" : "s"} · {sheetLayout === "stack" ? "Top / Bottom" : "Left / Right"}{separatePages ? " · One ID per page" : ""}{printCount !== readyCount ? ` · ${printCount} prints` : ""} · {colorMode === "bw" ? "B/W" : "Color"}
           </span>
-          <span className="idcard-preview-hint">This is how your cards will be printed. Press Continue to place the order.</span>
+          <span className="idcard-preview-hint">This is how your cards will be printed. Drag any card to place it where you want, then press Continue to place the order.</span>
+          {Object.keys(positionOverrides).length ? (
+            <button type="button" className="idcard-reset-positions" onClick={() => setPositionOverrides({})}>
+              <RotateCcw size={14} /> Reset positions
+            </button>
+          ) : null}
         </div>
         {!previewEntries.length ? (
           <p className="idcard-preview-loading">Preparing preview…</p>
@@ -678,17 +734,29 @@ export default function IdCardPrintUpload({
           <div className="idcard-preview-pages">
             {previewPlan.pages.map((placed, pageIndex) => (
               <figure key={pageIndex}>
-                <div className="idcard-preview-page" style={{ aspectRatio: `${A4.widthMm} / ${A4.heightMm}`, filter: colorMode === "bw" ? "grayscale(1)" : undefined }}>
+                <div className="idcard-preview-page" style={{ aspectRatio: `${sheetPaper.widthMm} / ${sheetPaper.heightMm}`, filter: colorMode === "bw" ? "grayscale(1)" : undefined }}>
                   {placed.map((card) => (
                     <div
                       className="idcard-preview-card"
                       key={card.key}
-                      style={{ left: `${(card.xMm / A4.widthMm) * 100}%`, top: `${(card.yMm / A4.heightMm) * 100}%`, width: `${(previewPlan.cardWMm / A4.widthMm) * 100}%`, height: `${(previewPlan.cardHMm / A4.heightMm) * 100}%`, cursor: "default" }}
+                      title="Drag to move this card"
+                      onPointerDown={(event) => startCardDrag(event, card.key, card.xMm, card.yMm)}
+                      style={{ left: `${(card.xMm / sheetPaper.widthMm) * 100}%`, top: `${(card.yMm / sheetPaper.heightMm) * 100}%`, width: `${(previewPlan.cardWMm / sheetPaper.widthMm) * 100}%`, height: `${(previewPlan.cardHMm / sheetPaper.heightMm) * 100}%` }}
                     >
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={card.url} alt="" />
                     </div>
                   ))}
+                  {dragGuides && dragGuides.page === pageIndex ? (
+                    <>
+                      {dragGuides.x.map((value) => (
+                        <span key={`gx-${value}`} className="idcard-guide idcard-guide-v" style={{ left: `${(value / sheetPaper.widthMm) * 100}%` }} />
+                      ))}
+                      {dragGuides.y.map((value) => (
+                        <span key={`gy-${value}`} className="idcard-guide idcard-guide-h" style={{ top: `${(value / sheetPaper.heightMm) * 100}%` }} />
+                      ))}
+                    </>
+                  ) : null}
                 </div>
                 <figcaption>
                   Page {pageIndex + 1} of {previewPlan.pages.length}
@@ -707,11 +775,11 @@ export default function IdCardPrintUpload({
       ) : null}
       {error ? <p className="customer-inline-help" style={{ color: "#c7354d" }}>{error}</p> : null}
 
-      <p className="customer-inline-help">
-        {readyCount
-          ? "Photos are straightened and cleaned automatically. Click a card to select it, then use Auto Fix / Crop / Rotate / Remove above. Back is optional - upload only a front for cards like PAN."
-          : "Each card slot above is the upload target itself - upload a front photo, even one taken at an angle: the card is found, straightened and cleaned for printing."}
-      </p>
+      {readyCount ? (
+        <p className="customer-inline-help">
+          Photos are straightened and cleaned automatically. Click a card to select it, then use Auto Fix / Crop / Rotate / Remove above. Back is optional - upload only a front for cards like PAN.
+        </p>
+      ) : null}
 
       {cropTarget && cropState?.url ? (
         <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Crop photo">

@@ -7,7 +7,7 @@ export const CARD_H_MM = 53.98;
 const DEFAULT_GAP_MM = 6;
 
 /** Spacing / copies the user can choose. null margin = automatic (centred on the paper). */
-export type SheetOptions = { gapMm?: number; marginMm?: number | null; copies?: number; sizePercent?: number };
+export type SheetOptions = { gapMm?: number; marginMm?: number | null; copies?: number; sizePercent?: number; landscape?: boolean };
 /** Card size as a percent of the real card (85.6 x 53.98 mm); 100 is the default. Same shape at any size. */
 export const SIZE_MIN_PERCENT = 20;
 export const SIZE_MAX_PERCENT = 300;
@@ -39,6 +39,55 @@ export const PAPER_CHOICES: PaperChoice[] = [
 ];
 
 export const DEFAULT_PAPER = PAPER_CHOICES[0];
+
+export type CardBox = { x: number; y: number; w: number; h: number };
+
+/**
+ * While a card is dragged: lines up its edges / centre with the other cards on the page and with the middle of
+ * the paper. Within `threshold` mm it snaps onto the line, and the lines it now sits on are returned so the
+ * preview can draw them (guidesX = vertical lines at those x, guidesY = horizontal lines at those y).
+ */
+export function alignCard(moving: CardBox, others: CardBox[], paper: { widthMm: number; heightMm: number }, threshold = 1.5) {
+  const targetsX = [paper.widthMm / 2, ...others.flatMap((box) => [box.x, box.x + box.w / 2, box.x + box.w])];
+  const targetsY = [paper.heightMm / 2, ...others.flatMap((box) => [box.y, box.y + box.h / 2, box.y + box.h])];
+
+  function snap(start: number, size: number, targets: number[]) {
+    let best = 0;
+    let bestAbs = Infinity;
+    for (const edge of [start, start + size / 2, start + size]) {
+      for (const target of targets) {
+        const diff = target - edge;
+        if (Math.abs(diff) < bestAbs) {
+          bestAbs = Math.abs(diff);
+          best = diff;
+        }
+      }
+    }
+    return bestAbs <= threshold ? best : 0;
+  }
+
+  const x = moving.x + snap(moving.x, moving.w, targetsX);
+  const y = moving.y + snap(moving.y, moving.h, targetsY);
+
+  function lines(start: number, size: number, targets: number[]) {
+    const found: number[] = [];
+    for (const edge of [start, start + size / 2, start + size]) {
+      for (const target of targets) {
+        if (Math.abs(target - edge) < 0.05 && !found.some((value) => Math.abs(value - target) < 0.05)) found.push(target);
+      }
+    }
+    return found;
+  }
+
+  return { x, y, guidesX: lines(x, moving.w, targetsX), guidesY: lines(y, moving.h, targetsY) };
+}
+
+/** The paper the sheet is drawn on: portrait = the long side up, landscape = the long side across. */
+export function orientedPaper(paper: PaperChoice, landscape?: boolean): PaperChoice {
+  const short = Math.min(paper.widthMm, paper.heightMm);
+  const long = Math.max(paper.widthMm, paper.heightMm);
+  return landscape ? { ...paper, widthMm: long, heightMm: short } : { ...paper, widthMm: short, heightMm: long };
+}
 
 /** A print profile's summary reads like "4x6 · Color · High quality" - the paper is the first part. */
 export function paperFromSummary(summary?: string): PaperChoice | null {

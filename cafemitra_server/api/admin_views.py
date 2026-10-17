@@ -29,6 +29,7 @@ from .admin_activity import log_admin_activity
 from .admin_auth import get_admin_role, require_admin, require_section
 from .models import CardMakerSample, CropSample, CropTrainingConfig, WaitingJoke, AdminActivityLog, AdminRole, Agent, BlogArticle, BlogRevision, ContactMessage, Coupon, CouponRedemption, CustomerNote, CustomerTag, Influencer, LeadAgent, LeadTag, PassportAIConfig, PoolerNode, PrintOrder, ServicePricing, ShopProfile, ToolPricing, ToolVisibility, UserProfile, WalletSetting, WalletTopup, WalletTransaction, WithdrawalRequest
 from .views import (
+    signup_phone_otp_setting,
     credit_pending_referral_bonuses,
     ORDER_LIST_DEFERRED_FIELDS,
     cafe_code_for_user,
@@ -1432,6 +1433,7 @@ def admin_wallet_settings(request):
     if err:
         return err
 
+    signup_phone_otp_setting()  # makes sure the signup OTP switch row exists, so it shows up below
     settings_qs = WalletSetting.objects.order_by("key")
     return JsonResponse(
         {

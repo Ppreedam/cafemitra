@@ -23420,3 +23420,43 @@ body:has(.resbuild-confirm-overlay) .wa-float-btn {
   cursor: pointer;
 }
 .hero-video-copy:hover { border-color: #4f46e5; color: #4f46e5; }
+
+/* B/W: the cards in the edit view are shown the way they will print. */
+.idcard-card-rows.is-bw img { filter: grayscale(1); }
+.idcard-sheet-summary { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; background: #eef0ff; color: #27337a; font-size: 12px; font-weight: 700; }
+
+/* Top / Bottom: the front sits above the back in the edit view too, as it will on the sheet. */
+.idcard-photo-pair.is-stack { flex-direction: column; flex-wrap: nowrap; align-items: center; gap: 16px; }
+
+/* Alignment lines while a card is dragged on the preview. */
+.idcard-guide { position: absolute; z-index: 6; pointer-events: none; background: var(--brand-blue); }
+.idcard-guide-v { top: 0; bottom: 0; width: 1px; }
+.idcard-guide-h { left: 0; right: 0; height: 1px; }
+
+/* Prepare files (crop / rotate each photo before they are merged into one PDF). */
+.merge-prepare-window { align-self: center; display: flex; flex-direction: column; width: min(760px, calc(100vw - 24px)); max-height: calc(100vh - 32px); border-radius: 16px; background: #fff; box-shadow: 0 30px 80px rgba(15, 23, 42, 0.35); overflow: hidden; }
+.merge-prepare-list { display: grid; gap: 10px; padding: 14px 18px; overflow-y: auto; }
+.merge-prepare-item { display: grid; grid-template-columns: 76px 1fr auto; align-items: center; gap: 14px; padding: 10px; border: 1px solid #e3e7f5; border-radius: 12px; background: #fbfcff; }
+.merge-prepare-thumb { position: relative; display: grid; place-items: center; width: 76px; height: 76px; border-radius: 8px; background: #eef0ff; color: #4f46e5; overflow: hidden; }
+.merge-prepare-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.merge-prepare-busy { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(255, 255, 255, 0.7); }
+.merge-prepare-name { min-width: 0; display: grid; gap: 2px; }
+.merge-prepare-name strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.92rem; color: #18214d; }
+.merge-prepare-name small { color: #64709a; font-weight: 600; }
+.merge-prepare-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+.merge-prepare-actions button { display: inline-flex; align-items: center; gap: 5px; padding: 7px 10px; border: 1px solid #d5dbf0; border-radius: 8px; background: #fff; color: #27337a; font-size: 0.82rem; font-weight: 700; cursor: pointer; }
+.merge-prepare-actions button.icon { padding: 7px 8px; }
+.merge-prepare-actions button.danger { color: #c7354d; }
+.merge-prepare-actions button:disabled { opacity: 0.4; cursor: not-allowed; }
+.merge-prepare-empty, .merge-prepare-error { margin: 0; padding: 0 18px 8px; color: #64709a; font-weight: 600; }
+.merge-prepare-error { color: #c7354d; }
+.merge-prepare-footer { display: flex; justify-content: flex-end; gap: 10px; padding: 14px 18px; border-top: 1px solid #e6e9f5; }
+.merge-prepare-cancel { padding: 10px 16px; border: 1px solid #d5dbf0; border-radius: 10px; background: #fff; color: #27337a; font-weight: 700; cursor: pointer; }
+.merge-prepare-go { padding: 10px 18px; border: 0; border-radius: 10px; background: var(--brand-hero-gradient); color: #fff; font-weight: 800; cursor: pointer; }
+.merge-prepare-go:disabled { opacity: 0.5; cursor: not-allowed; }
+.merge-prepare-crop { z-index: 2; }
+@media (max-width: 560px) {
+  .merge-prepare-item { grid-template-columns: 60px 1fr; }
+  .merge-prepare-thumb { width: 60px; height: 60px; }
+  .merge-prepare-actions { grid-column: 1 / -1; justify-content: flex-start; }
+}

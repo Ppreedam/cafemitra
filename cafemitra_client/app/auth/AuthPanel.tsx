@@ -73,6 +73,17 @@ export function AuthPanel({ mode }: AuthPanelProps) {
   const [isResending, setIsResending] = useState(false);
   // WhatsApp OTP verification (register only). phoneToken is the server's
   // proof that `verifiedPhone` was confirmed; it is sent along with register.
+  // Admin switch: with the WhatsApp OTP off, the number is not verified and the account opens without it.
+  const [otpRequired, setOtpRequired] = useState(true);
+  useEffect(() => {
+    if (!isRegister) return;
+    fetch(apiUrl("/api/auth/signup-config/"))
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (data && typeof data.phoneOtpRequired === "boolean") setOtpRequired(data.phoneOtpRequired);
+      })
+      .catch(() => undefined);
+  }, [isRegister]);
   const [otpSent, setOtpSent] = useState(false);
   const [otpCode, setOtpCode] = useState("");
   const [otpBusy, setOtpBusy] = useState(false);
@@ -165,7 +176,7 @@ export function AuthPanel({ mode }: AuthPanelProps) {
         nextErrors.confirmPassword = "Passwords must match.";
       }
 
-      if (!phoneVerified) {
+      if (otpRequired && !phoneVerified) {
         nextErrors.phone = nextErrors.phone ?? "Verify your WhatsApp number with the OTP.";
       }
 
@@ -177,7 +188,7 @@ export function AuthPanel({ mode }: AuthPanelProps) {
     }
 
     return nextErrors;
-  }, [isRegister, values, phoneVerified, countryCode]);
+  }, [isRegister, values, phoneVerified, countryCode, otpRequired]);
 
   const isFormValid = Object.keys(errors).length === 0;
   const hasAnyInput = isRegister
@@ -418,7 +429,7 @@ export function AuthPanel({ mode }: AuthPanelProps) {
                   }}
                   onChange={(value) => updateValue("phone", value)}
                 />
-                {isValidPhone(countryCode, values.phone) && !phoneVerified ? (
+                {otpRequired && isValidPhone(countryCode, values.phone) && !phoneVerified ? (
                   <div className="auth-otp">
                     {otpSent ? (
                       <>

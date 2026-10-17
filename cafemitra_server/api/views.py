@@ -3467,6 +3467,37 @@ def hash_phone_otp(phone, code):
     return hmac.new(settings.SECRET_KEY.encode(), f"{phone}:{code}".encode(), hashlib.sha256).hexdigest()
 
 
+SIGNUP_OTP_KEY = "signup_phone_otp"
+
+
+def signup_phone_otp_setting():
+    """The admin switch for the WhatsApp OTP at signup (a WalletSetting row used as an On/Off flag, like
+    the referral trigger). On by default - turning it off lets people open an account without the OTP."""
+    setting = WalletSetting.objects.filter(key=SIGNUP_OTP_KEY).first()
+    if not setting:
+        setting = WalletSetting.objects.create(
+            key=SIGNUP_OTP_KEY,
+            label="WhatsApp OTP at signup",
+            value=Decimal("1.00"),
+            description="On: a new account needs its WhatsApp number verified with an OTP. Off: accounts open without the OTP.",
+            is_active=True,
+        )
+    return setting
+
+
+def signup_phone_otp_required():
+    return signup_phone_otp_setting().is_active
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def signup_config(request):
+    """Public - whether the register page must ask for the WhatsApp OTP."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+    return JsonResponse({"phoneOtpRequired": signup_phone_otp_required()})
+
+
 def is_phone_verified(token, phone):
     try:
         data = signing.loads(token, salt=PHONE_VERIFIED_SALT, max_age=PHONE_VERIFIED_MAX_AGE_SECONDS)
@@ -3578,7 +3609,7 @@ def register_user(request):
         return JsonResponse({"message": "Account already exists. Please login."}, status=409)
     if phone_already_registered(phone):
         return JsonResponse({"message": PHONE_ALREADY_REGISTERED_MESSAGE}, status=409)
-    if not is_phone_verified(str(body.get("phoneVerificationToken", "")), phone):
+    if signup_phone_otp_required() and not is_phone_verified(str(body.get("phoneVerificationToken", "")), phone):
         return JsonResponse({"message": "Verify your WhatsApp number with the OTP before creating the account."}, status=400)
 
     # An unknown/inactive code is silently ignored rather than rejected - a

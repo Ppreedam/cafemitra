@@ -1151,17 +1151,29 @@ namespace Print_Agent
                 if (cmbColorType.SelectedItem?.ToString() == "Grayscale")
                     toPrint = ConvertToGrayscale(new Bitmap(bmp));
 
-                float ratioX = (float)bounds.Width / toPrint.Width;
-                float ratioY = (float)bounds.Height / toPrint.Height;
+                // A landscape page (e.g. an ID card sheet laid out sideways) on portrait paper - or the other way
+                // round - is turned a quarter instead of being shrunk to fit the other direction, so it prints at
+                // its real size (the same rule the print-profile path already follows).
+                Bitmap turned = null;
+                if ((toPrint.Width > toPrint.Height) != (bounds.Width > bounds.Height))
+                {
+                    turned = (Bitmap)toPrint.Clone();
+                    turned.RotateFlip(RotateFlipType.Rotate90FlipNone);
+                }
+                Bitmap source = turned ?? toPrint;
+
+                float ratioX = (float)bounds.Width / source.Width;
+                float ratioY = (float)bounds.Height / source.Height;
                 float ratio = Math.Min(ratioX, ratioY);
 
-                int w = (int)(toPrint.Width * ratio);
-                int h = (int)(toPrint.Height * ratio);
+                int w = (int)(source.Width * ratio);
+                int h = (int)(source.Height * ratio);
                 int x = bounds.X + (bounds.Width - w) / 2;
                 int y = bounds.Y + (bounds.Height - h) / 2;
 
-                e.Graphics.DrawImage(toPrint, x, y, w, h);
+                e.Graphics.DrawImage(source, x, y, w, h);
 
+                turned?.Dispose();
                 if (toPrint != bmp)
                     toPrint.Dispose();
             }
