@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import type React from "react";
+import { createPortal } from "react-dom";
 import { CircleAlert, CircleCheck, Contrast, Crop, LoaderCircle, Palette, Plus, Printer, RotateCcw, RotateCw, SlidersHorizontal, Trash2, Undo2, Upload, Wand2, X } from "lucide-react";
 import { CropEditor, cropImage, loadImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, rotateQuad, warpPerspectiveCrop, type CropQuad, type CropRect } from "../../CropEditor";
 import { onScannerEngineLoading, scanCard } from "../../id-card-print/cardScan";
@@ -781,7 +782,7 @@ export default function IdCardPrintUpload({
         </p>
       ) : null}
 
-      {cropTarget && cropState?.url ? (
+      {cropTarget && cropState?.url && typeof document !== "undefined" ? createPortal(
         <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Crop photo">
           <div className="crop-window idcrop-window">
             <div className="document-preview-head">
@@ -864,16 +865,17 @@ export default function IdCardPrintUpload({
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
       ) : null}
 
-      {filterTarget && filterState?.url ? (() => {
+      {filterTarget && filterState?.url && typeof document !== "undefined" ? (() => {
         const otherSide: Side = filterTarget.side === "front" ? "back" : "front";
         const otherSideState = getSide(filterTarget.cardId, otherSide);
         const bothSelected = applyFilterToBothSides && !!otherSideState.url;
-        return (
+        return createPortal(
         <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Filter and light">
-          <div className="crop-window">
+          <div className="crop-window idfilter-window">
             <div className="document-preview-head">
               <div>
                 <strong>Filter &amp; Light - {bothSelected ? "Front & Back Photo" : filterTarget.side === "front" ? "Front" : "Back"} Photo</strong>
@@ -930,7 +932,8 @@ export default function IdCardPrintUpload({
               </div>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body,
         );
       })() : null}
     </>

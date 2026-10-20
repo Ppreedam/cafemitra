@@ -217,7 +217,7 @@ export function rotateQuad(quad: CropQuad, turns: 1 | -1): CropQuad {
   return [move(tr), move(br), move(bl), move(tl)];
 }
 
-type QuadDrag = { corner: number; rect: DOMRect };
+type QuadDrag = { corner: number; rect: DOMRect; /** Moving the whole crop shape: where the pointer started (percent) and the corners at that moment. */ body?: { start: CropPoint; quad: CropQuad } };
 
 function distance(a: CropPoint, b: CropPoint) {
   return Math.hypot(a.x - b.x, a.y - b.y);
@@ -259,8 +259,26 @@ export function PerspectiveCropEditor({ fileUrl, quad, onQuadChange }: { fileUrl
     const drag = dragRef.current;
     if (!drag) return;
     const point = pointFromEvent(event, drag.rect);
+    if (drag.body) {
+      // The whole shape follows the pointer, kept inside the photo (it never changes shape).
+      const xs = drag.body.quad.map((corner) => corner.x);
+      const ys = drag.body.quad.map((corner) => corner.y);
+      const dx = Math.max(-Math.min(...xs), Math.min(100 - Math.max(...xs), point.x - drag.body.start.x));
+      const dy = Math.max(-Math.min(...ys), Math.min(100 - Math.max(...ys), point.y - drag.body.start.y));
+      onQuadChange(drag.body.quad.map((corner) => ({ x: corner.x + dx, y: corner.y + dy })) as CropQuad);
+      return;
+    }
     const next = quad.map((corner, index) => (index === drag.corner ? point : corner)) as CropQuad;
     onQuadChange(next);
+  }
+
+  // Dragging inside the crop shape moves all four corners together.
+  function startBodyDrag(event: React.PointerEvent<SVGPolygonElement>) {
+    event.preventDefault();
+    event.stopPropagation();
+    const bounds = stageRef.current!.getBoundingClientRect();
+    event.currentTarget.setPointerCapture(event.pointerId);
+    dragRef.current = { corner: -1, rect: bounds, body: { start: pointFromEvent(event, bounds), quad } };
   }
 
   function startCornerDrag(event: React.PointerEvent<HTMLElement>, corner: number) {
@@ -315,7 +333,16 @@ export function PerspectiveCropEditor({ fileUrl, quad, onQuadChange }: { fileUrl
       <img src={fileUrl} alt="" draggable={false} onLoad={(event) => setNaturalRatio(event.currentTarget.naturalWidth / event.currentTarget.naturalHeight)} />
       <svg className="crop-perspective-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
         <path d={dimPath} fillRule="evenodd" fill="rgba(10, 14, 30, 0.5)" />
-        <polygon points={polygonPoints} fill="none" stroke="#2563eb" strokeWidth={0.6} vectorEffect="non-scaling-stroke" />
+        <polygon
+          points={polygonPoints}
+          fill="transparent"
+          stroke="#2563eb"
+          strokeWidth={0.6}
+          vectorEffect="non-scaling-stroke"
+          pointerEvents="fill"
+          style={{ cursor: "move" }}
+          onPointerDown={startBodyDrag}
+        />
         {edges.map(([a, b]) => (
           <line
             key={`${a}-${b}`}

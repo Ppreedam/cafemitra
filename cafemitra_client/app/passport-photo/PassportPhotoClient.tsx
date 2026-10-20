@@ -45,33 +45,40 @@ type ProcessingGroup = {
   items: ProcessingStepItem[];
 };
 
+// How long each step is shown (ms), by how hard the work is (face detection takes the longest): Preparing 11s +
+// Cropping 27s + Background removing 11s + Resizing 6s = 55s to reach the last step (Analyzing), which stays up
+// until the photo is ready.
+// An early result: the steps left run through at this pace, then Analyzing is shown for this long before the photo.
+const FAST_FORWARD_STEP_MS = 450;
+const ANALYZING_HOLD_MS = 2000;
+
 const PROCESSING_GROUPS: ProcessingGroup[] = [
   {
     id: "preparing",
     title: "Preparing",
     items: [
-      { title: "Preparing image...", desc: "Analyzing upload for AI processing", duration: 1300 },
-      { title: "Optimizing for AI processing...", desc: "Creating an efficient working copy", duration: 1600 },
+      { title: "Preparing image...", desc: "Analyzing upload for AI processing", duration: 5000 },
+      { title: "Optimizing for AI processing...", desc: "Creating an efficient working copy", duration: 6000 },
     ],
   },
   {
     id: "cropping",
     title: "Cropping",
     items: [
-      { title: "Face detection", desc: "Locating eyes, chin, and head position", duration: 1700 },
-      { title: "ICAO auto-framing", desc: "Computing eye line, chin, and top spacing", duration: 2000 },
-      { title: "Tilt correction", desc: "Straightening head angle automatically", duration: 1700 },
+      { title: "Face detection", desc: "Locating eyes, chin, and head position", duration: 13000 },
+      { title: "ICAO auto-framing", desc: "Computing eye line, chin, and top spacing", duration: 8000 },
+      { title: "Tilt correction", desc: "Straightening head angle automatically", duration: 6000 },
     ],
   },
   {
     id: "background",
     title: "Background removing",
-    items: [{ title: "Background processed", desc: "Removing the original backdrop", duration: 2200 }],
+    items: [{ title: "Background processed", desc: "Removing the original backdrop", duration: 11000 }],
   },
   {
     id: "resizing",
     title: "Resizing",
-    items: [{ title: "Finalizing", desc: "Generating print-ready passport preview", duration: 1800 }],
+    items: [{ title: "Finalizing", desc: "Generating print-ready passport preview", duration: 6000 }],
   },
   {
     id: "analyzing",
@@ -146,6 +153,32 @@ export default function PassportPhotoClient() {
   const jokeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const jokeTriggeredRef = useRef(false);
 
+  // When the photo is ready before the animation has finished, the remaining steps are run through quickly, the
+  // last one (Analyzing) stays up for a moment, and only then does the result show.
+  const stepCursorRef = useRef(0);
+  const analyzingSinceRef = useRef<number | null>(null);
+  const finishTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function revealResult(onReady: () => void) {
+    const last = PROCESSING_ITEMS.length - 1;
+    const hold = () => {
+      const since = analyzingSinceRef.current ?? Date.now();
+      finishTimerRef.current = setTimeout(onReady, Math.max(0, ANALYZING_HOLD_MS - (Date.now() - since)));
+    };
+    const advance = () => {
+      if (stepCursorRef.current >= last) {
+        hold();
+        return;
+      }
+      const next = stepCursorRef.current + 1;
+      stepCursorRef.current = next;
+      if (next >= last) analyzingSinceRef.current = Date.now();
+      setStepCursor(next);
+      finishTimerRef.current = setTimeout(advance, FAST_FORWARD_STEP_MS);
+    };
+    advance();
+  }
+
   function stopStepAnimation() {
     if (stepTimeoutRef.current) {
       clearTimeout(stepTimeoutRef.current);
@@ -155,10 +188,18 @@ export default function PassportPhotoClient() {
 
   function startStepAnimation() {
     stopStepAnimation();
+    if (finishTimerRef.current) {
+      clearTimeout(finishTimerRef.current);
+      finishTimerRef.current = null;
+    }
+    analyzingSinceRef.current = null;
+    stepCursorRef.current = 0;
     setStepCursor(0);
     const scheduleNext = (doneCount: number) => {
       if (doneCount >= PROCESSING_ITEMS.length - 1) return;
       stepTimeoutRef.current = setTimeout(() => {
+        stepCursorRef.current = doneCount + 1;
+        if (doneCount + 1 >= PROCESSING_ITEMS.length - 1) analyzingSinceRef.current = Date.now();
         setStepCursor(doneCount + 1);
         scheduleNext(doneCount + 1);
       }, PROCESSING_ITEMS[doneCount].duration);
@@ -195,6 +236,7 @@ export default function PassportPhotoClient() {
   useEffect(() => {
     return () => {
       if (jokeTimeoutRef.current) clearTimeout(jokeTimeoutRef.current);
+      if (finishTimerRef.current) clearTimeout(finishTimerRef.current);
     };
   }, []);
 
@@ -456,11 +498,14 @@ export default function PassportPhotoClient() {
       if (response.ok && result.found && result.imageUrl) {
         stopChecking();
         stopStepAnimation();
-        setStepCursor(PROCESSING_ITEMS.length);
-        setJobState("done");
-        setFinalImageUrl(result.imageUrl);
-        stashPhotoForPrintSheet(result.imageUrl, file?.name || "passport-photo.jpg", false, parsePhotoCount(selectedPackage?.label));
-        router.push("/photo-print-sheet");
+        const readyUrl = result.imageUrl as string;
+        revealResult(() => {
+          setStepCursor(PROCESSING_ITEMS.length);
+          setJobState("done");
+          setFinalImageUrl(readyUrl);
+          stashPhotoForPrintSheet(readyUrl, file?.name || "passport-photo.jpg", false, parsePhotoCount(selectedPackage?.label));
+          router.push("/photo-print-sheet");
+        });
         return;
       }
 
