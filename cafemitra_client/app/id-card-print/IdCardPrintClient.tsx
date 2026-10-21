@@ -16,7 +16,7 @@ import IdCardPrintSeoContent from "./IdCardPrintSeoContent";
 import { ACCEPT_TOLERANCE_PCT, quadDistance, reportCrop, reportFilter, type CropOutcome, type CropSampleRef, type CropTrack } from "./cropTraining";
 import SheetOptionsControl from "./SheetOptionsControl";
 import { loadSheetPrefs, saveSheetPrefs } from "./sheetPrefs";
-import { alignCard, buildSheetHtml, DEFAULT_PAPER, MAX_COPIES, orientedPaper, PAPER_CHOICES, paperFromSummary, planSheet, type SheetOptions, type PaperChoice, type PositionOverrides, type SheetLayout } from "./sheetLayout";
+import { alignCard, buildSheetHtml, DEFAULT_PAPER, MAX_COPIES, orientedPaper, PAPER_CHOICES, paperFromProfileName, paperFromSummary, planSheet, type SheetOptions, type PaperChoice, type PositionOverrides, type SheetLayout } from "./sheetLayout";
 import { onScannerEngineLoading, scanCard, type ScanMode } from "./cardScan";
 import { bakeTone, isNeutralTone, NEUTRAL_TONE, TonedImage, ToneControl, type Tone } from "./ToneControl";
 import { PrintProfileSelect, useAgentPrint } from "@/app/PrintProfileSelect";
@@ -36,7 +36,7 @@ type Side = "front" | "back";
 type ColorMode = "color" | "bw";
 // Cropped / auto-straightened cards start with this contrast so the print is
 // crisp; a tone the user already set (even back to neutral) is never overridden.
-const CROPPED_CARD_TONE: Tone = { ...NEUTRAL_TONE, contrast: 55 };
+const CROPPED_CARD_TONE: Tone = { ...NEUTRAL_TONE, contrast: 40 };
 
 type ScanStatus = "idle" | "scanning" | "done" | "notfound" | "error";
 
@@ -418,7 +418,7 @@ export default function IdCardPrintClient() {
       for (const side of sides) {
         const current = getSide(filterTarget.cardId, side);
         if (!current.url) continue;
-        // Tell training what was changed from the starting look (contrast 55, saturation 100) - or that it was put back.
+        // Tell training what was changed from the starting look (contrast 40, saturation 100) - or that it was put back.
         const changed = filterValues.saturation !== DEFAULT_FILTER.saturation || (Object.keys(CROPPED_CARD_TONE) as (keyof Tone)[]).some((key) => Number(filterTone[key] ?? 0) !== CROPPED_CARD_TONE[key]);
         void reportFilter(sampleRef.current[`${filterTarget.cardId}:${side}`], changed ? { source: "dashboard", saturation: filterValues.saturation, ...filterTone } : null);
         // The tone stays a setting (shown live, applied at print); only saturation is baked into the
@@ -455,6 +455,33 @@ export default function IdCardPrintClient() {
   function addCard() {
     setCards((prev) => [...prev, newCard()]);
   }
+
+  // Ctrl+V with an image on the clipboard (a screenshot or a copied photo) fills the first empty card slot.
+  function handlePasteImage(event: ClipboardEvent) {
+    if (previewMode || cropTarget || filterTarget) return;
+    const item = Array.from(event.clipboardData?.items ?? []).find((entry) => entry.kind === "file" && entry.type.startsWith("image/"));
+    const blob = item?.getAsFile();
+    if (!blob) return;
+    event.preventDefault();
+    const file = new File([blob], `pasted-${Date.now()}.${blob.type.split("/")[1]?.replace("jpeg", "jpg") || "png"}`, { type: blob.type });
+    for (const card of cards) {
+      const side: Side | null = !card.front.url ? "front" : !card.back.url ? "back" : null;
+      if (side) {
+        handleFileChange(card.id, side, file);
+        return;
+      }
+    }
+    const extra = newCard();
+    setCards((prev) => [...prev, extra]);
+    setTimeout(() => handleFileChange(extra.id, "front", file), 0);
+  }
+  const pasteHandlerRef = useRef(handlePasteImage);
+  pasteHandlerRef.current = handlePasteImage;
+  useEffect(() => {
+    const listener = (event: ClipboardEvent) => pasteHandlerRef.current(event);
+    window.addEventListener("paste", listener);
+    return () => window.removeEventListener("paste", listener);
+  }, []);
 
   function setCardCopies(cardId: string, copies: number) {
     setCards((prev) => prev.map((card) => (card.id === cardId ? { ...card, copies } : card)));
@@ -514,7 +541,7 @@ export default function IdCardPrintClient() {
   // The sheet is laid out for the paper of the selected print profile ("4x6 · Color · ..."); with no
   // profile (browser print) the paper can be chosen in the preview, A4 by default.
   const selectedProfile = agentPrint.profiles.find((item) => item.name === agentPrint.profile);
-  const profilePaper = paperFromSummary(selectedProfile?.summary);
+  const profilePaper = selectedProfile ? paperFromSummary(selectedProfile.summary) ?? paperFromProfileName(selectedProfile.name) : null;
   // Portrait / Landscape turns the chosen paper; everything below (plan, preview, print) uses the turned one.
   const basePaper = profilePaper ?? paperOverride ?? DEFAULT_PAPER;
   const paper = useMemo(() => orientedPaper(basePaper, sheetOptions.landscape), [basePaper, sheetOptions.landscape]);
@@ -851,7 +878,9 @@ export default function IdCardPrintClient() {
                   {colorMode === "bw" ? "B/W" : "Color"}
                 </span>
                 {profilePaper ? (
-                  <span>Paper from print profile</span>
+                  <span>
+                    Paper {profilePaper.name} - from print profile &quot;{selectedProfile?.name}&quot;
+                  </span>
                 ) : (
                   <label>
                     <span>Paper</span>
@@ -1018,7 +1047,7 @@ export default function IdCardPrintClient() {
         const bothSelected = applyFilterToBothSides && !!otherSideState.url;
         return (
         <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Filter and light">
-          <div className="crop-window">
+          <div className="crop-window idfilter-window">
             <div className="document-preview-head">
               <div>
                 <strong>Filter &amp; Light - {bothSelected ? "Front & Back" : filterTarget.side === "front" ? "Front" : "Back"} Photo</strong>

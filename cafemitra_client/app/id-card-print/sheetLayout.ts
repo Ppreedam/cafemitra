@@ -92,8 +92,21 @@ export function orientedPaper(paper: PaperChoice, landscape?: boolean): PaperCho
 /** A print profile's summary reads like "4x6 · Color · High quality" - the paper is the first part. */
 export function paperFromSummary(summary?: string): PaperChoice | null {
   if (!summary) return null;
-  const first = summary.split(/[·|,]/)[0].trim().toLowerCase().replace(/\s+/g, "");
-  return PAPER_CHOICES.find((paper) => paper.name.toLowerCase() === first) ?? null;
+  const tokens = summary.split(/[·|,]/).map((part) => part.trim().toLowerCase().replace(/\s+/g, ""));
+  // The paper is normally the first part ("4x6 · Color"), but any part that is a paper name counts.
+  for (const token of tokens) {
+    const found = PAPER_CHOICES.find((paper) => paper.name.toLowerCase() === token);
+    if (found) return found;
+  }
+  return null;
+}
+
+/** The paper named at the start of a profile's name ("A4color", "4x6 photo", "A5-bw"), when its summary does not tell. */
+export function paperFromProfileName(name?: string): PaperChoice | null {
+  if (!name) return null;
+  const text = name.trim().toLowerCase().replace(/\s+/g, "");
+  // Longest names first so "a4" is not taken for a longer name that merely starts with it.
+  return [...PAPER_CHOICES].sort((a, b) => b.name.length - a.name.length).find((paper) => text.startsWith(paper.name.toLowerCase())) ?? null;
 }
 
 /** copies: how many times this ID card is printed (default 1); each card has its own. */

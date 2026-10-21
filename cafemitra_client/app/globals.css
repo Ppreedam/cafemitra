@@ -19859,7 +19859,10 @@ img.profile-photo {
   }
 
   .idcard-toolbar-actions .print-profile-select label span {
-    display: none;
+    color: #59658c;
+    font-size: 0.76rem;
+    font-weight: 800;
+    white-space: nowrap;
   }
 
   .idcard-toolbar-actions .print-profile-select select {
@@ -24004,4 +24007,39 @@ body:has(.resbuild-confirm-overlay) .wa-float-btn {
     width: 60px;
     height: 34px;
   }
+}
+
+/* Filter & Light popup (all screens): the body scrolls inside the window and Reset | Apply stay pinned at the bottom, so Apply is never cut off. */
+.idfilter-window {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.idfilter-window .crop-body {
+  min-height: 0;
+  overflow-y: auto;
+  align-content: start;
+}
+
+.idfilter-window .idcard-filter-controls {
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 8px;
+}
+
+.idfilter-window .idcard-filter-controls > :not(button) {
+  grid-column: 1 / -1;
+}
+
+.idfilter-window .idcard-filter-controls > button {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin-top: 0;
+}
+
+.idfilter-window .idcard-filter-controls > button:first-of-type {
+  box-shadow: 0 0 0 6px #f7f8fc;
+}
+
+@media (max-width: 720px) {
+  .idfilter-window .idcard-filter-controls > button { bottom: -2px; }
 }

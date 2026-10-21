@@ -426,6 +426,33 @@ export default function IdCardPrintUpload({
     setCards((prev) => [...prev, newCard()]);
   }
 
+  // Ctrl+V with an image on the clipboard (a screenshot or a copied photo) fills the first empty card slot.
+  function handlePasteImage(event: ClipboardEvent) {
+    if (previewMode || cropTarget || filterTarget) return;
+    const item = Array.from(event.clipboardData?.items ?? []).find((entry) => entry.kind === "file" && entry.type.startsWith("image/"));
+    const blob = item?.getAsFile();
+    if (!blob) return;
+    event.preventDefault();
+    const file = new File([blob], `pasted-${Date.now()}.${blob.type.split("/")[1]?.replace("jpeg", "jpg") || "png"}`, { type: blob.type });
+    for (const card of cards) {
+      const side: Side | null = !card.front.url ? "front" : !card.back.url ? "back" : null;
+      if (side) {
+        handleFileChange(card.id, side, file);
+        return;
+      }
+    }
+    const extra = newCard();
+    setCards((prev) => [...prev, extra]);
+    setTimeout(() => handleFileChange(extra.id, "front", file), 0);
+  }
+  const pasteHandlerRef = useRef(handlePasteImage);
+  pasteHandlerRef.current = handlePasteImage;
+  useEffect(() => {
+    const listener = (event: ClipboardEvent) => pasteHandlerRef.current(event);
+    window.addEventListener("paste", listener);
+    return () => window.removeEventListener("paste", listener);
+  }, []);
+
   function setCardCopies(cardId: string, copies: number) {
     setCards((prev) => prev.map((card) => (card.id === cardId ? { ...card, copies } : card)));
   }
