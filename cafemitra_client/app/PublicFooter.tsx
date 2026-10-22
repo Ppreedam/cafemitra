@@ -12,6 +12,18 @@ const footerColumns = [
     ],
   },
   {
+    title: "Solutions Hub",
+    links: [
+      ["Cyber Cafes Solution", "/solutions/cyber-cafes"],
+      ["Print Shops Solution", "/solutions/print-shops"],
+      ["Xerox Shops Solution", "/solutions/xerox-shops"],
+      ["CSC Centres Solution", "/solutions/csc-centres"],
+      ["Schools Solution", "/solutions/schools"],
+      ["Colleges Solution", "/solutions/colleges"],
+      ["Universities Solution", "/solutions/universities"],
+    ],
+  },
+  {
     title: "Support",
     links: [
       ["Help & Support", "/help-support"],

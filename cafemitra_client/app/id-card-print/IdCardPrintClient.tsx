@@ -36,7 +36,7 @@ type Side = "front" | "back";
 type ColorMode = "color" | "bw";
 // Cropped / auto-straightened cards start with this contrast so the print is
 // crisp; a tone the user already set (even back to neutral) is never overridden.
-const CROPPED_CARD_TONE: Tone = { ...NEUTRAL_TONE, contrast: 40 };
+const CROPPED_CARD_TONE: Tone = { ...NEUTRAL_TONE, contrast: 10 };
 
 type ScanStatus = "idle" | "scanning" | "done" | "notfound" | "error";
 
@@ -418,7 +418,7 @@ export default function IdCardPrintClient() {
       for (const side of sides) {
         const current = getSide(filterTarget.cardId, side);
         if (!current.url) continue;
-        // Tell training what was changed from the starting look (contrast 40, saturation 100) - or that it was put back.
+        // Tell training what was changed from the starting look (contrast 10, saturation 100) - or that it was put back.
         const changed = filterValues.saturation !== DEFAULT_FILTER.saturation || (Object.keys(CROPPED_CARD_TONE) as (keyof Tone)[]).some((key) => Number(filterTone[key] ?? 0) !== CROPPED_CARD_TONE[key]);
         void reportFilter(sampleRef.current[`${filterTarget.cardId}:${side}`], changed ? { source: "dashboard", saturation: filterValues.saturation, ...filterTone } : null);
         // The tone stays a setting (shown live, applied at print); only saturation is baked into the
@@ -542,6 +542,15 @@ export default function IdCardPrintClient() {
   // profile (browser print) the paper can be chosen in the preview, A4 by default.
   const selectedProfile = agentPrint.profiles.find((item) => item.name === agentPrint.profile);
   const profilePaper = selectedProfile ? paperFromSummary(selectedProfile.summary) ?? paperFromProfileName(selectedProfile.name) : null;
+  // The print profile decides how the printer prints (Color / Grayscale in its driver settings), so it wins over the Color / B/W toggle.
+  const profileColor: ColorMode | null = /\bcolou?r\b/i.test(selectedProfile?.summary ?? "") ? "color" : /gr[ae]y\s?scale|black/i.test(selectedProfile?.summary ?? "") ? "bw" : null;
+  const [colorSwitchedBy, setColorSwitchedBy] = useState("");
+  useEffect(() => {
+    if (!selectedProfile || !profileColor || profileColor === colorMode) return;
+    setColorMode(profileColor);
+    setColorSwitchedBy(selectedProfile.name);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedProfile?.name, profileColor, colorMode]);
   // Portrait / Landscape turns the chosen paper; everything below (plan, preview, print) uses the turned one.
   const basePaper = profilePaper ?? paperOverride ?? DEFAULT_PAPER;
   const paper = useMemo(() => orientedPaper(basePaper, sheetOptions.landscape), [basePaper, sheetOptions.landscape]);
@@ -720,10 +729,10 @@ export default function IdCardPrintClient() {
                 </>
               ) : null}
               <div className="idcard-toggle-group">
-                <button type="button" className={colorMode === "color" ? "active" : ""} onClick={() => setColorMode("color")}>
+                <button type="button" className={colorMode === "color" ? "active" : ""} disabled={profileColor === "bw"} title={profileColor === "bw" ? `Profile "${selectedProfile?.name}" prints in Grayscale` : undefined} onClick={() => setColorMode("color")}>
                   <Palette size={14} /> Color
                 </button>
-                <button type="button" className={colorMode === "bw" ? "active" : ""} onClick={() => setColorMode("bw")}>
+                <button type="button" className={colorMode === "bw" ? "active" : ""} disabled={profileColor === "color"} title={profileColor === "color" ? `Profile "${selectedProfile?.name}" prints in Color` : undefined} onClick={() => setColorMode("bw")}>
                   <Contrast size={14} /> B/W
                 </button>
               </div>
@@ -893,6 +902,11 @@ export default function IdCardPrintClient() {
                     </select>
                   </label>
                 )}
+                {profileColor && colorSwitchedBy === selectedProfile?.name ? (
+                  <span>
+                    {profileColor === "bw" ? "Grayscale" : "Color"} - set by print profile &quot;{selectedProfile?.name}&quot;
+                  </span>
+                ) : null}
                 {!previewPlan.fits ? <em>These cards are larger than this paper - pick a bigger paper.</em> : null}
                 <span className="idcard-preview-hint">Drag any card on the sheet to place it where you want it printed.</span>
                 {Object.keys(positionOverrides).length ? (
