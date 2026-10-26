@@ -542,8 +542,9 @@ export default function IdCardPrintClient() {
   // profile (browser print) the paper can be chosen in the preview, A4 by default.
   const selectedProfile = agentPrint.profiles.find((item) => item.name === agentPrint.profile);
   const profilePaper = selectedProfile ? paperFromSummary(selectedProfile.summary) ?? paperFromProfileName(selectedProfile.name) : null;
-  // The print profile decides how the printer prints (Color / Grayscale in its driver settings), so it wins over the Color / B/W toggle.
-  const profileColor: ColorMode | null = /\bcolou?r\b/i.test(selectedProfile?.summary ?? "") ? "color" : /gr[ae]y\s?scale|black/i.test(selectedProfile?.summary ?? "") ? "bw" : null;
+  // The print profile decides how the printer prints (Color / Grayscale in its driver settings), so it wins over the Color / B/W toggle
+  // - but only on the preview, where the profile is chosen. Back on the Upload step the toggle is free again.
+  const profileColor: ColorMode | null = !previewMode ? null : /\bcolou?r\b/i.test(selectedProfile?.summary ?? "") ? "color" : /gr[ae]y\s?scale|black/i.test(selectedProfile?.summary ?? "") ? "bw" : null;
   const [colorSwitchedBy, setColorSwitchedBy] = useState("");
   useEffect(() => {
     if (!selectedProfile || !profileColor || profileColor === colorMode) return;

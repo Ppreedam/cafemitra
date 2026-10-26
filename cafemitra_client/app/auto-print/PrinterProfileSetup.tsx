@@ -66,6 +66,7 @@ export default function PrinterProfileSetup({ agentConnected, hint, onPresetSave
   const [isSavingPreset, setIsSavingPreset] = useState(false);
   const [presetMessage, setPresetMessage] = useState("");
   const [presetError, setPresetError] = useState("");
+  const [showPresetSettings, setShowPresetSettings] = useState(false);
 
   function applyProfiles(result: PrintProfilesResult) {
     setProfiles(result.profiles ?? []);
@@ -401,73 +402,83 @@ export default function PrinterProfileSetup({ agentConnected, hint, onPresetSave
       </div>
 
       <div className="panel-title-row compact printer-preset-title">
-        <div>
-          <h2>Printer Settings</h2>
-          <p>Pick which profile prints each paper size + color/grayscale order. The order prints on that profile&apos;s printer with its saved preferences. Save more than one for the same paper size + color and the PrintPilot app asks which one to use for each order.</p>
-        </div>
-      </div>
-      <div className="printer-preset-form printer-preset-form-wide">
-        <label className="auto-field">
-          <span>Paper Size</span>
-          <select value={paperSize} onChange={(event) => setPaperSize(event.target.value)} disabled={!agentConnected}>
-            {paperSizes.map((size) => (
-              <option key={size} value={size}>
-                {size}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="auto-field">
-          <span>Color / Grayscale</span>
-          <select value={colorMode} onChange={(event) => setColorMode(event.target.value)} disabled={!agentConnected}>
-            {colorModes.map((mode) => (
-              <option key={mode} value={mode}>
-                {mode}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="auto-field">
-          <span>Profile</span>
-          <select value={presetProfile} onChange={(event) => setPresetProfile(event.target.value)} disabled={!agentConnected}>
-            <option value="">Select a profile</option>
-            {profiles.map((profile) => (
-              <option key={profile.name} value={profile.name}>
-                {profile.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button className="btn btn-primary" type="button" onClick={savePreset} disabled={!agentConnected || !presetProfile || isSavingPreset}>
-          {isSavingPreset ? "Saving..." : editingPreset ? "Update" : "Save"}
+        {/* Collapsed: just the More button; the heading and help text show with the settings. */}
+        {showPresetSettings ? (
+          <div>
+            <h2>Printer Settings</h2>
+            <p>Pick which profile prints each paper size + color/grayscale order. The order prints on that profile&apos;s printer with its saved preferences. Save more than one for the same paper size + color and the PrintPilot app asks which one to use for each order.</p>
+          </div>
+        ) : null}
+        <button className="printer-preset-edit" type="button" aria-expanded={showPresetSettings} onClick={() => setShowPresetSettings((open) => !open)}>
+          {showPresetSettings ? "Less" : "More"}
         </button>
       </div>
-      {presetMessage ? <div className="profile-alert success">{presetMessage}</div> : null}
-      {presetError ? <div className="profile-alert error">{presetError}</div> : null}
-
-      <div className="printer-preset-list">
-        {presets.map((preset) => (
-          <div className="printer-preset-row" key={`${preset.paperSize}-${preset.colorMode}-${preset.printer}-${preset.profile ?? ""}`}>
-            <div>
-              <strong>
-                {preset.paperSize} · {preset.colorMode}
-              </strong>
-              <small>
-                {preset.profile
-                  ? `${preset.profile}${profileNames.has(preset.profile) ? "" : " (profile missing)"} · ${preset.printer}`
-                  : `${preset.printer} (no profile - edit to pick one)`}
-              </small>
-            </div>
-            <button className="printer-preset-edit" type="button" onClick={() => editPreset(preset)}>
-              Edit
-            </button>
-            <button className="icon-action-btn danger" type="button" onClick={() => removePreset(preset)} aria-label="Delete printer setting">
-              <Trash2 size={17} />
+      {showPresetSettings ? (
+        <>
+          <div className="printer-preset-form printer-preset-form-wide">
+            <label className="auto-field">
+              <span>Paper Size</span>
+              <select value={paperSize} onChange={(event) => setPaperSize(event.target.value)} disabled={!agentConnected}>
+                {paperSizes.map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="auto-field">
+              <span>Color / Grayscale</span>
+              <select value={colorMode} onChange={(event) => setColorMode(event.target.value)} disabled={!agentConnected}>
+                {colorModes.map((mode) => (
+                  <option key={mode} value={mode}>
+                    {mode}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="auto-field">
+              <span>Profile</span>
+              <select value={presetProfile} onChange={(event) => setPresetProfile(event.target.value)} disabled={!agentConnected}>
+                <option value="">Select a profile</option>
+                {profiles.map((profile) => (
+                  <option key={profile.name} value={profile.name}>
+                    {profile.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button className="btn btn-primary" type="button" onClick={savePreset} disabled={!agentConnected || !presetProfile || isSavingPreset}>
+              {isSavingPreset ? "Saving..." : editingPreset ? "Update" : "Save"}
             </button>
           </div>
-        ))}
-        {!presets.length ? <p className="printer-preset-empty">No printer settings yet.</p> : null}
-      </div>
+          {presetMessage ? <div className="profile-alert success">{presetMessage}</div> : null}
+          {presetError ? <div className="profile-alert error">{presetError}</div> : null}
+
+          <div className="printer-preset-list">
+            {presets.map((preset) => (
+              <div className="printer-preset-row" key={`${preset.paperSize}-${preset.colorMode}-${preset.printer}-${preset.profile ?? ""}`}>
+                <div>
+                  <strong>
+                    {preset.paperSize} · {preset.colorMode}
+                  </strong>
+                  <small>
+                    {preset.profile
+                      ? `${preset.profile}${profileNames.has(preset.profile) ? "" : " (profile missing)"} · ${preset.printer}`
+                      : `${preset.printer} (no profile - edit to pick one)`}
+                  </small>
+                </div>
+                <button className="printer-preset-edit" type="button" onClick={() => editPreset(preset)}>
+                  Edit
+                </button>
+                <button className="icon-action-btn danger" type="button" onClick={() => removePreset(preset)} aria-label="Delete printer setting">
+                  <Trash2 size={17} />
+                </button>
+              </div>
+            ))}
+            {!presets.length ? <p className="printer-preset-empty">No printer settings yet.</p> : null}
+          </div>
+        </>
+      ) : null}
     </>
   );
 }
