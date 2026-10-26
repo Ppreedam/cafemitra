@@ -198,7 +198,7 @@ export default function SimplePrinterSetup({ agentConnected, printers, selectedP
               </small>
             </div>
             <button className="printer-preset-edit" type="button" onClick={() => setRowPreferences(preset)} disabled={!agentConnected || Boolean(openingPreferencesFor)}>
-              {openingPreferencesFor === presetKey(preset) ? "Waiting for preferences..." : "Printer Preferences"}
+              {openingPreferencesFor === presetKey(preset) ? "Waiting for preferences..." : preset.profile ? "✓ Preferences Saved" : "Printer Preferences"}
             </button>
             <button className="icon-action-btn danger" type="button" onClick={() => removePreset(preset)} disabled={Boolean(openingPreferencesFor)} aria-label="Delete printer setting">
               <Trash2 size={17} />
@@ -216,7 +216,8 @@ function presetKey(preset: PrinterPreset) {
   return `${preset.printer}-${preset.paperSize}-${preset.colorMode}`;
 }
 
-/** The print profile that holds a row's own Printer Preferences. */
+/** The print profile that holds a row's own Printer Preferences. Plain ASCII separators: older agents
+ * read a request body as Content-Length characters, so a multi-byte character hangs the request. */
 function rowProfileName(preset: PrinterPreset) {
-  return `${preset.printer} · ${preset.paperSize} · ${preset.colorMode}`;
+  return `${preset.printer} - ${preset.paperSize} - ${preset.colorMode}`;
 }

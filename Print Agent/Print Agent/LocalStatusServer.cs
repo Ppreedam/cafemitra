@@ -208,9 +208,19 @@ internal sealed class LocalStatusServer(
             return default;
         }
 
-        var buffer = new char[contentLength];
-        await reader.ReadBlockAsync(buffer, token);
-        return JsonSerializer.Deserialize<T>(new string(buffer), JsonDefaults.Options);
+        // Content-Length counts UTF-8 bytes, not chars: reading that many chars
+        // waits forever on a body with non-ASCII text (e.g. "·" in a name).
+        var body = new StringBuilder();
+        var buffer = new char[4096];
+        var bytesRead = 0;
+        while (bytesRead < contentLength)
+        {
+            var read = await reader.ReadAsync(buffer.AsMemory(0, Math.Min(buffer.Length, contentLength - bytesRead)), token);
+            if (read == 0) break;
+            body.Append(buffer, 0, read);
+            bytesRead += Encoding.UTF8.GetByteCount(buffer, 0, read);
+        }
+        return JsonSerializer.Deserialize<T>(body.ToString(), JsonDefaults.Options);
     }
 
     private static Task WriteJson(NetworkStream stream, object payload, CancellationToken token)
