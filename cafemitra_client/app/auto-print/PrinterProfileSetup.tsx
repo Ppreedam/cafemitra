@@ -402,10 +402,13 @@ export default function PrinterProfileSetup({ agentConnected, hint, onPresetSave
       </div>
 
       <div className="panel-title-row compact printer-preset-title">
-        <div>
-          <h2>Printer Settings</h2>
-          <p>Pick which profile prints each paper size + color/grayscale order. The order prints on that profile&apos;s printer with its saved preferences. Save more than one for the same paper size + color and the PrintPilot app asks which one to use for each order.</p>
-        </div>
+        {/* Collapsed: just the More button; the heading and help text show with the settings. */}
+        {showPresetSettings ? (
+          <div>
+            <h2>Printer Settings</h2>
+            <p>Pick which profile prints each paper size + color/grayscale order. The order prints on that profile&apos;s printer with its saved preferences. Save more than one for the same paper size + color and the PrintPilot app asks which one to use for each order.</p>
+          </div>
+        ) : null}
         <button className="printer-preset-edit" type="button" aria-expanded={showPresetSettings} onClick={() => setShowPresetSettings((open) => !open)}>
           {showPresetSettings ? "Less" : "More"}
         </button>
