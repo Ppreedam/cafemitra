@@ -12,6 +12,84 @@ import { apiUrl } from "@/lib/api";
 export type ProcessingStepItem = { title: string; desc: string; duration: number };
 export type ProcessingGroup = { id: string; title: string; items: ProcessingStepItem[] };
 
+// The step durations of each photo maker add up to the server's stale-job timeout (PASSPORT_PHOTO_STALE_JOB_SECONDS =
+// 80s, FAMILY_PHOTO_STALE_JOB_SECONDS = 90s in cafemitra_server/api/views.py), so the animation lines up with when an
+// unanswered job is failed. The last step stays up until the photo is ready. Keep these in sync with the server.
+export const PASSPORT_PROCESSING_GROUPS: ProcessingGroup[] = [
+  {
+    id: "preparing",
+    title: "Preparing",
+    items: [
+      { title: "Preparing image...", desc: "Analyzing upload for AI processing", duration: 7000 },
+      { title: "Optimizing for AI processing...", desc: "Creating an efficient working copy", duration: 8000 },
+    ],
+  },
+  {
+    id: "cropping",
+    title: "Cropping",
+    items: [
+      { title: "Face detection", desc: "Locating eyes, chin, and head position", duration: 18000 },
+      { title: "ICAO auto-framing", desc: "Computing eye line, chin, and top spacing", duration: 11000 },
+      { title: "Tilt correction", desc: "Straightening head angle automatically", duration: 8000 },
+    ],
+  },
+  {
+    id: "background",
+    title: "Background removing",
+    items: [{ title: "Background processed", desc: "Removing the original backdrop", duration: 15000 }],
+  },
+  {
+    id: "resizing",
+    title: "Resizing",
+    items: [{ title: "Finalizing", desc: "Generating print-ready passport preview", duration: 8000 }],
+  },
+  {
+    id: "analyzing",
+    title: "Analyzing",
+    items: [{ title: "Compliance check", desc: "Validating against country standards", duration: 5000 }],
+  },
+];
+
+export function buildFamilyProcessingGroups(count: number): ProcessingGroup[] {
+  return [
+    {
+      id: "preparing",
+      title: "Preparing",
+      items: [
+        { title: "Reading photos...", desc: `Checking all ${count} uploaded photos`, duration: 5000 },
+        { title: "Optimizing for AI processing...", desc: "Creating an efficient working copy of each photo", duration: 7000 },
+      ],
+    },
+    {
+      id: "faces",
+      title: "Faces",
+      items: [
+        { title: "Face detection", desc: "Locating every family member's face", duration: 9000 },
+        { title: "Head-size matching", desc: "Bringing all faces to the same size and eye line", duration: 11000 },
+        { title: "Tilt correction", desc: "Straightening each person's head angle", duration: 9000 },
+      ],
+    },
+    {
+      id: "background",
+      title: "Background removing",
+      items: [{ title: "Backgrounds processed", desc: "Removing each person's original backdrop", duration: 12000 }],
+    },
+    {
+      id: "arranging",
+      title: "Arranging the family",
+      items: [
+        { title: "Group arrangement", desc: `Placing ${count} people side by side in one frame`, duration: 14000 },
+        { title: "Blending", desc: "Matching light, skin tone and background across everyone", duration: 16000 },
+      ],
+    },
+    {
+      id: "finishing",
+      title: "Finishing",
+      items: [{ title: "Final quality check", desc: "Making sure the family photo is sharp and print-ready", duration: 7000 }],
+    },
+  ];
+}
+
 // Built-in fallback. The live list is managed from the admin panel (Waiting
 // Jokes) and fetched by useWaitingJokes(); this set is only used while that
 // loads, if it fails, or if the admin has no active jokes.
@@ -107,6 +185,34 @@ export function useStepAnimation(groups: ProcessingGroup[], active: boolean) {
 
   const overallProgress = Math.min(92, Math.round(((stepCursor + 0.5) / items.length) * 100));
   return { stepCursor, overallProgress, ranges, totalSteps: items.length };
+}
+
+/**
+ * Like useStepAnimation, but the position comes from the wall clock instead of a timer started on mount: pass the
+ * moment the work began (`startedAtMs`) and a page opened or refreshed halfway through resumes at the matching step
+ * and percentage rather than restarting from 0. Used by the public scan page, where the customer may reload.
+ */
+export function useElapsedStepProgress(groups: ProcessingGroup[], active: boolean, startedAtMs: number | null) {
+  const { items, ranges } = useMemo(() => indexProcessingGroups(groups), [groups]);
+  const [now, setNow] = useState(() => Date.now());
+
+  useEffect(() => {
+    if (!active) return;
+    setNow(Date.now());
+    const id = window.setInterval(() => setNow(Date.now()), 500);
+    return () => window.clearInterval(id);
+  }, [active]);
+
+  const totalMs = items.reduce((sum, item) => sum + item.duration, 0);
+  const elapsed = active && startedAtMs !== null ? Math.max(0, now - startedAtMs) : 0;
+  let stepCursor = 0;
+  let stepEnd = items[0]?.duration ?? 0;
+  while (stepCursor < items.length - 1 && elapsed >= stepEnd) {
+    stepCursor += 1;
+    stepEnd += items[stepCursor].duration;
+  }
+  const overallProgress = Math.min(92, Math.round((elapsed / totalMs) * 92));
+  return { stepCursor, overallProgress, ranges };
 }
 
 export function ProcessingTimeline({

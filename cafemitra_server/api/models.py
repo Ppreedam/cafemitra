@@ -686,13 +686,15 @@ class WithdrawalRequest(models.Model):
     STATUS_REJECTED = "rejected"
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="withdrawal_requests")
-    # Net amount actually requested/debited from the wallet - the shop owner
-    # typed a larger figure (up to their withdrawable balance) and this is
-    # that figure minus the transaction fee below, frozen at request time so
-    # a later change to WalletSetting "withdrawal_fee_percent" doesn't alter
-    # past requests.
+    # Net amount paid out - the shop owner typed a larger figure (up to their
+    # withdrawable balance) and this is that figure minus the transaction fee
+    # below, frozen at request time so a later change to WalletSetting
+    # "withdrawal_fee_percent" doesn't alter past requests.
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     fee_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    # True when the wallet was debited the full typed figure (amount + fee_amount). Requests made before the fee was
+    # debited only took `amount` off the wallet, so a rejection must refund just that much for them.
+    fee_debited = models.BooleanField(default=False)
     method = models.CharField(max_length=40)
     account_detail = models.CharField(max_length=180)
     note = models.CharField(max_length=255, blank=True)

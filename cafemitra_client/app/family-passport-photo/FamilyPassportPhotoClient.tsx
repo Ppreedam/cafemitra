@@ -11,7 +11,7 @@ import { fetchPricingServiceByKey, type PriceItem } from "@/lib/pricing";
 import { buildFamilyPhotoPrompt } from "@/lib/family-photo-prompt";
 import { parsePhotoCount } from "../passport-photo/printSheet";
 import { stashPhotoForPrintSheet } from "@/lib/printSheetHandoff";
-import { ProcessingTimeline, useStepAnimation, WaitingJokeWidget, type ProcessingGroup } from "../ProcessingSteps";
+import { buildFamilyProcessingGroups, ProcessingTimeline, useStepAnimation, WaitingJokeWidget } from "../ProcessingSteps";
 
 type JobState = "idle" | "submitting" | "processing" | "done" | "not_found" | "failed";
 
@@ -35,49 +35,6 @@ const CHECK_INTERVAL_MS = 5_000;
 // ~4 min: covers the GPT Pooler's group-photo generation plus the server's
 // AI fallback if the pooler goes silent (FAMILY_PHOTO_STALE_JOB_SECONDS).
 const MAX_CHECK_ATTEMPTS = 48;
-
-// The step-by-step animation shown while the family portrait is generated
-// (cosmetic - the real merge runs on the server; the last step stays active
-// until the result arrives).
-function buildFamilyProcessingGroups(count: number): ProcessingGroup[] {
-  return [
-    {
-      id: "preparing",
-      title: "Preparing",
-      items: [
-        { title: "Reading photos...", desc: `Checking all ${count} uploaded photos`, duration: 1500 },
-        { title: "Optimizing for AI processing...", desc: "Creating an efficient working copy of each photo", duration: 2200 },
-      ],
-    },
-    {
-      id: "faces",
-      title: "Faces",
-      items: [
-        { title: "Face detection", desc: "Locating every family member's face", duration: 2600 },
-        { title: "Head-size matching", desc: "Bringing all faces to the same size and eye line", duration: 3200 },
-        { title: "Tilt correction", desc: "Straightening each person's head angle", duration: 2600 },
-      ],
-    },
-    {
-      id: "background",
-      title: "Background removing",
-      items: [{ title: "Backgrounds processed", desc: "Removing each person's original backdrop", duration: 3600 }],
-    },
-    {
-      id: "arranging",
-      title: "Arranging the family",
-      items: [
-        { title: "Group arrangement", desc: `Placing ${count} people side by side in one frame`, duration: 4200 },
-        { title: "Blending", desc: "Matching light, skin tone and background across everyone", duration: 4800 },
-      ],
-    },
-    {
-      id: "finishing",
-      title: "Finishing",
-      items: [{ title: "Final quality check", desc: "Making sure the family photo is sharp and print-ready", duration: 6000 }],
-    },
-  ];
-}
 
 type FamilySlot = { id: string; file: File | null; previewUrl: string };
 

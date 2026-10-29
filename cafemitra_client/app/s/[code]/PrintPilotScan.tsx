@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CircleAlert, CircleCheck, Clock3, Copy, Crop, Download, Eye, EyeOff, FileText, IdCard, Image as ImageIcon, Info, LoaderCircle, LockKeyhole, Pencil, Printer, RotateCw, ShieldCheck, Trash2, Undo2, Upload, Wallet, X } from "lucide-react";
+import { CircleAlert, CircleCheck, Clock3, Copy, Crop, Download, Eye, EyeOff, FileText, IdCard, Image as ImageIcon, Info, LoaderCircle, LockKeyhole, Pencil, Plus, Printer, RotateCw, ShieldCheck, Trash2, Undo2, Upload, Wallet, X } from "lucide-react";
 import { apiUrl } from "@/lib/api";
 import { calculatePhotoOrderTotal, calculatePriceItemRate, formatPriceItem, getAllowedPaymentModes, getDuplexRate, mergePricingDefaults, photoPackageCount, type PriceItem, type PricingService } from "@/lib/pricing";
 import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
@@ -22,6 +22,7 @@ import MergePrepareModal from "./MergePrepareModal";
 import { applyCleanScanToFile, type CleanScanProgress } from "./cleanScan/cleanScanEngine";
 import { scanDocument } from "../../id-card-print/cardScan";
 import { PrintProfileSelect, useAgentPrint } from "../../PrintProfileSelect";
+import { buildFamilyProcessingGroups, PASSPORT_PROCESSING_GROUPS, ProcessingTimeline, useElapsedStepProgress } from "../../ProcessingSteps";
 
 type DocLook = "bw" | "color" | "original";
 
@@ -69,6 +70,8 @@ type PrintOrder = {
   documentDeleted?: boolean;
   geminiPhoto?: string;
   photoErrorMessage?: string;
+  createdAt?: string;
+  paidAt?: string;
 };
 
 const serviceIcons: Record<string, typeof FileText> = {
@@ -169,6 +172,7 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
   // (the PDF is built again from the originals). Photos stay as they are (Original) until the customer picks another look.
   // Several files picked with at least one photo: shown for cropping / rotating before they are merged into one PDF.
   const [prepareFiles, setPrepareFiles] = useState<File[] | null>(null);
+  const addFilesInputRef = useRef<HTMLInputElement>(null);
   const [multiSource, setMultiSource] = useState<{ files: File[]; look: DocLook } | null>(null);
   const darknessTimerRef = useRef<number | null>(null);
   const [combineStatus, setCombineStatus] = useState("");
@@ -479,19 +483,10 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
     // agent excludes that service entirely) - `status` stays "queued"
     // forever regardless of how far along the AI generation is, so its
     // own completion signal (geminiPhoto present) drives progress instead.
-    // Still animates up to 92% meanwhile so the wait doesn't look stalled.
+    // The wait itself is shown by useElapsedStepProgress below.
     if (isPhotoService) {
-      if (order.geminiPhoto) {
-        setPrintProgress(100);
-        return;
-      }
-      // Generation hasn't started yet while a cash-counter order is waiting
-      // on the shop owner's approval, or an online-payment order is still
-      // waiting on the gateway - animating toward 92% here would read as
-      // "in progress" when nothing is actually happening. Same for "failed" -
-      // both the agent and the Gemini fallback have given up, so there is no
-      // "in progress" left to animate toward.
-      if (order.status === "awaiting_approval" || order.status === "awaiting_payment" || order.status === "failed") return;
+      if (order.geminiPhoto) setPrintProgress(100);
+      return;
     } else if (order.status === "printed") {
       setPrintProgress(100);
       return;
@@ -509,6 +504,19 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
 
     return () => window.clearInterval(intervalId);
   }, [order?.status, order?.id, isPhotoService, order?.geminiPhoto]);
+
+  // The step animation for a passport / family photo being generated. Nothing is "in progress" while a cash-counter
+  // order waits on the owner's approval or an online payment waits on the gateway, and a failed order has given up -
+  // animating there would read as work happening when it is not. It follows the wall clock from when the work began
+  // (payment time if there is one, else order time), so reopening the page mid-way resumes instead of restarting.
+  const isPhotoGenerating =
+    isPhotoService && !!order && !order.geminiPhoto && order.status !== "awaiting_approval" && order.status !== "awaiting_payment" && order.status !== "failed";
+  const photoStartedAt = order?.paidAt || order?.createdAt;
+  const photoGroups = useMemo(
+    () => (isFamilyPhoto ? buildFamilyProcessingGroups(Math.max(familyFiles.length, 2)) : PASSPORT_PROCESSING_GROUPS),
+    [isFamilyPhoto, familyFiles.length],
+  );
+  const photoSteps = useElapsedStepProgress(photoGroups, isPhotoGenerating, photoStartedAt ? new Date(photoStartedAt).getTime() : null);
 
   function selectService(service: PricingService) {
     setSelectedService(service.serviceKey);
@@ -604,6 +612,18 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
       return;
     }
     await handleMultipleUpload(files);
+  }
+
+  // "Add more files": the current document plus the newly picked PDFs / photos become one combined PDF, same as
+  // selecting several files up front. Untouched multi-file uploads are rebuilt from their originals; once pages
+  // were edited the edited PDF is kept as is and the new files are appended to it.
+  async function handleAddFiles(fileList?: FileList | null) {
+    const added = fileList ? Array.from(fileList) : [];
+    if (addFilesInputRef.current) addFilesInputRef.current.value = "";
+    if (!added.length || !finalFile) return;
+    const current = finalFile instanceof File ? finalFile : new File([finalFile], fileName || "document.pdf", { type: finalFile.type });
+    const base = multiSource && !isPdfEdited ? multiSource.files : [current];
+    await handleMultipleUpload([...base, ...added], multiSource && !isPdfEdited ? multiSource.look : "original");
   }
 
   async function handleSingleUpload(file: File) {
@@ -1636,6 +1656,21 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
                       <Pencil size={16} /> Edit cards
                     </button>
                   ) : null}
+                  {!isPassportPhoto && !isIdCardPrint && !isFamilyPhoto && !order ? (
+                    <>
+                      <button type="button" onClick={() => addFilesInputRef.current?.click()} disabled={isCleanScanProcessing || isCombiningFiles || isProcessingPdf || isUploadBusy}>
+                        <Plus size={16} /> Add more files
+                      </button>
+                      <input
+                        ref={addFilesInputRef}
+                        hidden
+                        type="file"
+                        multiple
+                        accept="application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png"
+                        onChange={(event) => void handleAddFiles(event.target.files)}
+                      />
+                    </>
+                  ) : null}
                   <button type="button" onClick={clearUpload} disabled={isCleanScanProcessing}>
                     <X size={16} /> Remove
                   </button>
@@ -2069,13 +2104,12 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
                     </span>
                   ) : (
                     <div className="print-progress-box">
-                      <div className="print-progress-head">
-                        <LoaderCircle className="spin" size={16} />
-                        <span>Generating your {isFamilyPhoto ? "family" : "passport"} photo…</span>
-                        <strong>{printProgress}%</strong>
-                      </div>
-                      <progress value={printProgress} max={100} />
-                      <p>This page checks every few seconds - your photo and download link will appear here.</p>
+                      <ProcessingTimeline
+                        intro={`Generating your ${isFamilyPhoto ? "family" : "passport"} photo. Keep this page open - your photo and download link will appear here.`}
+                        ranges={photoSteps.ranges}
+                        stepCursor={photoSteps.stepCursor}
+                        overallProgress={photoSteps.overallProgress}
+                      />
                     </div>
                   )}
                 </div>

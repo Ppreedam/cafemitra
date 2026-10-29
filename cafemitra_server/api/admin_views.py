@@ -1339,7 +1339,7 @@ def admin_withdrawals(request):
             WalletTransaction.objects.filter(
                 user_id=withdrawal.user_id,
                 kind=WalletTransaction.KIND_WITHDRAWAL,
-                amount=withdrawal.amount,
+                amount=withdrawal.amount + (withdrawal.fee_amount if withdrawal.fee_debited else Decimal("0.00")),
                 created_at__gte=withdrawal.created_at,
             )
             .order_by("created_at")
@@ -1413,7 +1413,9 @@ def admin_withdrawal_reject(request, withdrawal_id):
         create_wallet_transaction(
             withdrawal.user,
             WalletTransaction.KIND_WITHDRAWAL_REVERSAL,
-            withdrawal.amount,
+            # Hand back exactly what request_withdrawal took: the full typed amount (payout + fee) for requests that
+            # debited the fee, just the payout for older ones.
+            withdrawal.amount + (withdrawal.fee_amount if withdrawal.fee_debited else Decimal("0.00")),
             WalletTransaction.DIRECTION_CREDIT,
             True,
             note=note,

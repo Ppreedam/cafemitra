@@ -54,6 +54,7 @@ type Order = {
   attireCategory?: string;
   geminiPhoto?: string;
   hasRawPhoto?: boolean;
+  familyInputs?: string[];
   hasGeminiPhoto?: boolean;
   photoStatus?: string;
   photoErrorMessage?: string;
@@ -397,7 +398,7 @@ export default function OrdersClient() {
                               </button>
                             ) : null
                           ) : order.serviceKey === "family_passport_photo" ? (
-                            // Family orders have no single raw upload - the file is just the generated group photo.
+                            // The file is the generated group photo; the member uploads show in its preview while kept.
                             order.hasGeminiPhoto ? (
                               <button type="button" className="orders-file-link" onClick={() => openCompare(order)}>
                                 {order.fileName || "Family photo"}
@@ -495,18 +496,29 @@ export default function OrdersClient() {
               </button>
             </div>
             <div className="passport-compare-body">
-              {compareOrder.serviceKey !== "family_passport_photo" ? (
               <div className="passport-compare-pane">
-                <span>Raw Photo</span>
+                <span>{compareOrder.serviceKey === "family_passport_photo" ? "Uploaded Photos" : "Raw Photo"}</span>
                 {compareLoading ? (
                   <div className="passport-compare-spinner"><span className="passport-compare-spinner-ring" /></div>
-                ) : compareOrder.fileUrl ? (
-                  <img src={apiUrl(compareOrder.fileUrl)} alt="Raw upload" />
+                ) : compareOrder.serviceKey === "family_passport_photo" && compareOrder.familyInputs?.length ? (
+                  <>
+                    <div className="passport-compare-inputs">
+                      {compareOrder.familyInputs.map((src, index) => (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img key={index} src={src} alt={`Person ${index + 1}`} />
+                      ))}
+                    </div>
+                    <small className="passport-compare-note">Uploads are kept for 24 hours after your photo is generated, then deleted.</small>
+                  </>
+                ) : compareOrder.serviceKey !== "family_passport_photo" && compareOrder.fileUrl ? (
+                  <>
+                    <img src={apiUrl(compareOrder.fileUrl)} alt="Raw upload" />
+                    <small className="passport-compare-note">The original is kept for 24 hours after your photo is generated, then deleted.</small>
+                  </>
                 ) : (
-                  <p>Original upload was deleted after your photo was generated.</p>
+                  <p>The original upload was deleted. Uploads are kept for 24 hours after your photo is generated.</p>
                 )}
               </div>
-              ) : null}
               <div className="passport-compare-pane">
                 <span>{compareOrder.serviceKey === "family_passport_photo" ? "Family Photo (output)" : "Your Passport Photo"}</span>
                 {compareLoading ? (

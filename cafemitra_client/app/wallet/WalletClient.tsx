@@ -37,10 +37,15 @@ type WalletData = {
     totalCollected: number;
     signupBonusCredited: number;
     couponCreditReceived: number;
+    topupCredited: number;
     toolUsageDebited: number;
     netWithdrawable: number;
     pendingWithdrawal: number;
     paidWithdrawal: number;
+    settledCount: number;
+    settledAmount: number;
+    settledPaidOut: number;
+    settledFees: number;
     withdrawalFeePercent: number;
   };
   limits: {
@@ -68,10 +73,15 @@ const emptyWallet: WalletData = {
     totalCollected: 0,
     signupBonusCredited: 0,
     couponCreditReceived: 0,
+    topupCredited: 0,
     toolUsageDebited: 0,
     netWithdrawable: 0,
     pendingWithdrawal: 0,
     paidWithdrawal: 0,
+    settledCount: 0,
+    settledAmount: 0,
+    settledPaidOut: 0,
+    settledFees: 0,
     withdrawalFeePercent: 0,
   },
   limits: {
@@ -360,13 +370,14 @@ export default function WalletClient() {
   const upiError = method === "UPI" && trimmedAccountDetail && !upiIdPattern.test(trimmedAccountDetail)
     ? "Enter a valid UPI ID like name@bank or mobile@upi."
     : "";
-  const promoCredit = wallet.summary.signupBonusCredited + wallet.summary.couponCreditReceived;
-  const promoCreditLabel =
-    wallet.summary.signupBonusCredited > 0 && wallet.summary.couponCreditReceived > 0
-      ? `Rs. ${promoCredit} signup bonus + coupon credit`
-      : wallet.summary.couponCreditReceived > 0
-        ? `Rs. ${wallet.summary.couponCreditReceived} coupon credit`
-        : `Rs. ${wallet.summary.signupBonusCredited} signup bonus`;
+  const promoCredit = wallet.summary.signupBonusCredited + wallet.summary.couponCreditReceived + wallet.summary.topupCredited;
+  const promoCreditLabel = [
+    wallet.summary.signupBonusCredited > 0 ? `Rs. ${wallet.summary.signupBonusCredited} signup bonus` : "",
+    wallet.summary.couponCreditReceived > 0 ? `Rs. ${wallet.summary.couponCreditReceived} coupon credit` : "",
+    wallet.summary.topupCredited > 0 ? `Rs. ${wallet.summary.topupCredited} wallet top-up` : "",
+  ]
+    .filter(Boolean)
+    .join(" + ");
   const amountError =
     Number(amount) > wallet.summary.netWithdrawable
       ? wallet.summary.netWithdrawable <= 0 && promoCredit > 0
@@ -439,7 +450,7 @@ export default function WalletClient() {
                   <div className="metric-content">
                     <div className="metric-label">{card.label}</div>
                     <div className="metric-value">{card.value}</div>
-                    <div className="metric-meta">{metricMeta(card.label, wallet.summary.signupBonusCredited, wallet.summary.couponCreditReceived)}</div>
+                    <div className="metric-meta">{metricMeta(card.label, wallet.summary.signupBonusCredited, wallet.summary.couponCreditReceived, wallet.summary.topupCredited)}</div>
                   </div>
                 </article>
               );
@@ -498,6 +509,38 @@ export default function WalletClient() {
                 </div>
                 <ArrowDownToLine size={20} />
               </div>
+              {wallet.summary.onlineCollected > 0 || wallet.summary.settledCount > 0 ? (
+                <dl className="wallet-settlement" aria-label="Settlement summary">
+                  <div>
+                    <dt>Collected online</dt>
+                    <dd>{formatCurrency(wallet.summary.onlineCollected)}</dd>
+                  </div>
+                  {wallet.summary.settledCount > 0 ? (
+                    <div>
+                      <dt>
+                        Already settled ({wallet.summary.settledCount} {wallet.summary.settledCount === 1 ? "withdrawal" : "withdrawals"})
+                      </dt>
+                      <dd>
+                        {formatCurrency(wallet.summary.settledAmount)}
+                        <small>
+                          Received {formatCurrency(wallet.summary.settledPaidOut)}, fee {formatCurrency(wallet.summary.settledFees)}
+                        </small>
+                      </dd>
+                    </div>
+                  ) : null}
+                  <div>
+                    <dt>{wallet.summary.settledCount > 0 ? "Next settlement" : "Available to settle"}</dt>
+                    <dd>
+                      {formatCurrency(wallet.summary.netWithdrawable)}
+                      {withdrawFeePercent > 0 && wallet.summary.netWithdrawable > 0 ? (
+                        <small>
+                          You receive {formatCurrency(Math.round(wallet.summary.netWithdrawable * (1 - withdrawFeePercent / 100) * 100) / 100)} after the {withdrawFeePercent}% fee
+                        </small>
+                      ) : null}
+                    </dd>
+                  </div>
+                </dl>
+              ) : null}
               <label className="auto-field">
                 <span>Amount</span>
                 <input
@@ -636,11 +679,12 @@ function formatAmountInput(value: number) {
   return amount > 0 ? amount.toFixed(2).replace(/\.00$/, "") : "";
 }
 
-function metricMeta(label: string, signupBonusCredited: number, couponCreditReceived = 0) {
+function metricMeta(label: string, signupBonusCredited: number, couponCreditReceived = 0, topupCredited = 0) {
   if (label === "Withdrawable Balance") {
     const excluded = [
       signupBonusCredited > 0 ? `${formatCurrency(signupBonusCredited)} signup bonus` : "",
       couponCreditReceived > 0 ? `${formatCurrency(couponCreditReceived)} coupon credit` : "",
+      topupCredited > 0 ? `${formatCurrency(topupCredited)} wallet top-up` : "",
     ].filter(Boolean);
     return excluded.length ? `Excludes ${excluded.join(" and ")} (promotional, not withdrawable)` : "Ready to withdraw";
   }

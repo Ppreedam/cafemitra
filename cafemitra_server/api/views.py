@@ -1670,6 +1670,9 @@ def wallet_collection_summary(user):
         tool_usage=Sum("amount", filter=Q(kind=WalletTransaction.KIND_TOOL_USAGE, direction=WalletTransaction.DIRECTION_DEBIT)),
         # Referral bonus is promotional like the signup bonus - spendable, not withdrawable.
         referral=Sum("amount", filter=Q(kind=WalletTransaction.KIND_REFERRAL_BONUS, direction=WalletTransaction.DIRECTION_CREDIT)),
+        # Money the owner paid in themselves is service credit for the tools, not an earning - it is spendable but
+        # must not come back out as a withdrawal (only what customers paid through online orders can).
+        topup=Sum("amount", filter=Q(kind=WalletTransaction.KIND_TOPUP, direction=WalletTransaction.DIRECTION_CREDIT)),
     )
     online_collected = totals["online"] or Decimal("0.00")
     cash_collected = totals["cash"] or Decimal("0.00")
@@ -1679,13 +1682,17 @@ def wallet_collection_summary(user):
     total_collected = (online_collected + cash_collected).quantize(Decimal("0.01"))
     balance = wallet_balance(user)
     referral_bonus_credited = totals["referral"] or Decimal("0.00")
-    net_withdrawable = max(balance - signup_bonus_credited - coupon_credit_received - referral_bonus_credited, Decimal("0.00")).quantize(Decimal("0.01"))
+    topup_credited = totals["topup"] or Decimal("0.00")
+    net_withdrawable = max(
+        balance - signup_bonus_credited - coupon_credit_received - referral_bonus_credited - topup_credited, Decimal("0.00")
+    ).quantize(Decimal("0.01"))
     return {
         "onlineCollected": online_collected.quantize(Decimal("0.01")),
         "cashCounterCollected": cash_collected.quantize(Decimal("0.01")),
         "totalCollected": total_collected,
         "signupBonusCredited": signup_bonus_credited.quantize(Decimal("0.01")),
         "couponCreditReceived": coupon_credit_received.quantize(Decimal("0.01")),
+        "topupCredited": topup_credited.quantize(Decimal("0.01")),
         "toolUsageDebited": tool_usage_debited.quantize(Decimal("0.01")),
         "netWithdrawable": net_withdrawable,
     }
@@ -2182,6 +2189,9 @@ def public_order(order, include_media=True):
             else order.photo_error_message
         ),
         "passportPrompt": order.passport_prompt if include_media else "",
+        # A family order's member photos, kept until purge_expired_photo_inputs removes them. Only in the single-order
+        # response: the list queries defer this (base64) column.
+        "familyInputs": list(order.family_photo_inputs or []) if include_media and order.service_key == "family_passport_photo" else [],
         "duplex": order.duplex,
         "duplexEdge": order.duplex_edge or "long",
         "profileName": order.profile_name,
@@ -2764,6 +2774,37 @@ def purge_uploaded_photos(order):
     return fields
 
 
+# The customer's uploads are kept this long after the photo is generated so the admin can compare input and output,
+# then purged (privacy, and they are base64 text that bloats the database).
+PHOTO_INPUT_RETENTION_HOURS = 24
+
+
+def purge_expired_photo_inputs(limit=25):
+    """Purges the uploads of generated photo orders older than PHOTO_INPUT_RETENTION_HOURS. Called whenever another
+    photo finishes (so it keeps itself tidy with no scheduler) and by the purge_photo_inputs command (for a cron
+    sweep that clears any backlog). `limit` bounds the work done inside a request. Returns the number purged."""
+    cutoff = timezone.now() - timedelta(hours=PHOTO_INPUT_RETENTION_HOURS)
+    expired = (
+        PrintOrder.objects.filter(
+            service_key__in=("passport_photo", "family_passport_photo"),
+            photo_status=PrintOrder.PHOTO_STATUS_DONE,
+            photo_updated_at__lt=cutoff,
+        )
+        .exclude(attire_category="manual")
+        .filter(Q(family_photo_inputs__isnull=False) | ~Q(original_filename="") | ~Q(document=""))
+        .defer("gemini_photo", "passport_prompt")
+    )
+    if limit:
+        expired = expired[:limit]
+    purged = 0
+    for order in expired:
+        fields = purge_uploaded_photos(order)
+        if fields:
+            order.save(update_fields=fields)
+            purged += 1
+    return purged
+
+
 def _finalize_passport_photo(order, result_type, result_bytes, is_gemini_output, tool_key="passport_photo"):
     """Shared save path for a freshly generated passport photo, used by both
     apply_ai_fallback and the OpenAI-primary attempt in
@@ -2787,9 +2828,12 @@ def _finalize_passport_photo(order, result_type, result_bytes, is_gemini_output,
         # normal queue instead of leaving it stuck as failed forever.
         order.status = PrintOrder.STATUS_QUEUED
         update_fields.append("status")
-    update_fields += purge_uploaded_photos(order)
     order.save(update_fields=update_fields)
     charge_wallet_for_tool(order.user, tool_key, quantity=1, order=order)
+    try:
+        purge_expired_photo_inputs()
+    except Exception:
+        logger.exception("Could not purge expired photo uploads")
 
 
 def apply_ai_fallback(order):
@@ -4040,6 +4084,14 @@ def wallet(request):
         or Decimal("0.00")
     )
 
+    # Earlier settlements (pending or paid, not rejected ones): what was settled out of the wallet, what actually
+    # reached the owner, and the fee kept - so the next withdrawal can be shown on top of them.
+    settled = WithdrawalRequest.objects.filter(user=user).exclude(status=WithdrawalRequest.STATUS_REJECTED).aggregate(
+        paid_out=Sum("amount"), fees=Sum("fee_amount"), count=Count("id")
+    )
+    settled_paid_out = settled["paid_out"] or Decimal("0.00")
+    settled_fees = settled["fees"] or Decimal("0.00")
+
     balance = wallet_balance(user)
     credit_limit = effective_credit_limit(user)
     daily_grace_limit = get_wallet_setting("daily_grace_limit")
@@ -4064,10 +4116,15 @@ def wallet(request):
                 "totalCollected": float(collection_summary["totalCollected"]),
                 "signupBonusCredited": float(collection_summary["signupBonusCredited"]),
                 "couponCreditReceived": float(collection_summary["couponCreditReceived"]),
+                "topupCredited": float(collection_summary["topupCredited"]),
                 "toolUsageDebited": float(collection_summary["toolUsageDebited"]),
                 "netWithdrawable": float(collection_summary["netWithdrawable"]),
                 "pendingWithdrawal": float(pending_withdrawal),
                 "paidWithdrawal": float(paid_withdrawal),
+                "settledCount": settled["count"] or 0,
+                "settledAmount": float(settled_paid_out + settled_fees),
+                "settledPaidOut": float(settled_paid_out),
+                "settledFees": float(settled_fees),
                 "withdrawalFeePercent": float(get_wallet_setting("withdrawal_fee_percent")),
             },
             "limits": {
@@ -4123,25 +4180,26 @@ def request_withdrawal(request):
             return JsonResponse({"message": "Amount is higher than your withdrawable wallet balance."}, status=400)
 
         # `amount` is what the shop owner typed (capped by their withdrawable
-        # balance) - the fee is subtracted from it before it becomes the
-        # actual withdrawal request/wallet debit, so only the net figure
-        # ever leaves the wallet. The fee percentage is frozen into
-        # fee_amount at request time so a later WalletSetting change doesn't
-        # retroactively alter this request.
+        # balance). The wallet is debited all of it; the fee is subtracted
+        # only from what is paid out. (Debiting just the net figure used to
+        # leave the fee in the wallet, where it could be withdrawn again, so
+        # the fee was never really charged.) The fee percentage is frozen
+        # into fee_amount at request time so a later WalletSetting change
+        # doesn't retroactively alter this request.
         fee_percent = get_wallet_setting("withdrawal_fee_percent")
         fee_amount = (amount * fee_percent / Decimal("100")).quantize(Decimal("0.01"))
         net_amount = (amount - fee_amount).quantize(Decimal("0.01"))
 
         withdrawal = WithdrawalRequest.objects.create(
-            user=user, amount=net_amount, fee_amount=fee_amount, method=method, account_detail=account_detail, note=note
+            user=user, amount=net_amount, fee_amount=fee_amount, fee_debited=True, method=method, account_detail=account_detail, note=note
         )
         create_wallet_transaction(
             user,
             WalletTransaction.KIND_WITHDRAWAL,
-            net_amount,
+            amount,
             WalletTransaction.DIRECTION_DEBIT,
             True,
-            note=f"Withdrawal requested via {method} ({fee_percent}% fee of Rs. {fee_amount} deducted from Rs. {amount}).",
+            note=f"Withdrawal requested via {method}: Rs. {amount} settled, {fee_percent}% fee of Rs. {fee_amount} deducted, Rs. {net_amount} paid out.",
         )
 
     return JsonResponse({"withdrawal": public_withdrawal(withdrawal), "balance": float(wallet_balance(user))}, status=201)
@@ -5534,8 +5592,9 @@ PASSPORT_PHOTO_CHECK_MAX_RETRIES = 5
 PASSPORT_PHOTO_CHECK_RETRY_DELAY_SECONDS = 5
 PASSPORT_PHOTO_STALE_JOB_SECONDS = 80
 # A family photo uploads 2-6 images into one ChatGPT chat and asks it to
-# compose a group shot, which takes noticeably longer than a single photo.
-FAMILY_PHOTO_STALE_JOB_SECONDS = 180
+# compose a group shot, which takes a little longer than a single photo.
+# Keep in sync with the step durations in FamilyPassportPhotoClient.tsx.
+FAMILY_PHOTO_STALE_JOB_SECONDS = 90
 PASSPORT_PHOTO_FALLBACK_RETRY_SECONDS = 20
 
 
@@ -6271,8 +6330,11 @@ def complete_passport_job(request, job_id):
         # finished photo attached.
         order.status = PrintOrder.STATUS_QUEUED
         update_fields.append("status")
-    update_fields += purge_uploaded_photos(order)
     order.save(update_fields=update_fields)
+    try:
+        purge_expired_photo_inputs()
+    except Exception:
+        logger.exception("Could not purge expired photo uploads")
     # Bill the order's own owner even when the bulk agent (a different
     # account) is the one completing the job on their behalf.
     charge_wallet_for_tool(order.user, order.service_key, quantity=1, order=order)

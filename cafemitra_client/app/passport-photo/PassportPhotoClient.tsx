@@ -13,7 +13,7 @@ import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attir
 import { stashPhotoForPrintSheet } from "@/lib/printSheetHandoff";
 import { CropEditor, cropImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, warpPerspectiveCrop, type CropQuad, type CropRect } from "../CropEditor";
 import { PrintProfileSelect, useAgentPrint } from "../PrintProfileSelect";
-import { useWaitingJokes } from "../ProcessingSteps";
+import { PASSPORT_PROCESSING_GROUPS, useWaitingJokes } from "../ProcessingSteps";
 import { buildPrintSheetHtml, maxTilesForPaper, openPrintSheet as openManualPrintSheet, parsePhotoCount, type PaperSize } from "./printSheet";
 
 type JobState = "idle" | "submitting" | "processing" | "done" | "not_found" | "failed";
@@ -33,59 +33,12 @@ const avoidPhotoExamples = [
   { src: "/Good_bad_image/avoid4.jpg", caption: "Angled or side pose" },
 ];
 
-type ProcessingStepItem = {
-  title: string;
-  desc: string;
-  duration: number;
-};
-
-type ProcessingGroup = {
-  id: string;
-  title: string;
-  items: ProcessingStepItem[];
-};
-
-// How long each step is shown (ms), by how hard the work is (face detection takes the longest): Preparing 11s +
-// Cropping 27s + Background removing 11s + Resizing 6s = 55s to reach the last step (Analyzing), which stays up
-// until the photo is ready.
+// The step list (and its 80s total) lives in ProcessingSteps.tsx so the public scan page shows the same animation.
 // An early result: the steps left run through at this pace, then Analyzing is shown for this long before the photo.
 const FAST_FORWARD_STEP_MS = 450;
 const ANALYZING_HOLD_MS = 2000;
 
-const PROCESSING_GROUPS: ProcessingGroup[] = [
-  {
-    id: "preparing",
-    title: "Preparing",
-    items: [
-      { title: "Preparing image...", desc: "Analyzing upload for AI processing", duration: 5000 },
-      { title: "Optimizing for AI processing...", desc: "Creating an efficient working copy", duration: 6000 },
-    ],
-  },
-  {
-    id: "cropping",
-    title: "Cropping",
-    items: [
-      { title: "Face detection", desc: "Locating eyes, chin, and head position", duration: 13000 },
-      { title: "ICAO auto-framing", desc: "Computing eye line, chin, and top spacing", duration: 8000 },
-      { title: "Tilt correction", desc: "Straightening head angle automatically", duration: 6000 },
-    ],
-  },
-  {
-    id: "background",
-    title: "Background removing",
-    items: [{ title: "Background processed", desc: "Removing the original backdrop", duration: 11000 }],
-  },
-  {
-    id: "resizing",
-    title: "Resizing",
-    items: [{ title: "Finalizing", desc: "Generating print-ready passport preview", duration: 6000 }],
-  },
-  {
-    id: "analyzing",
-    title: "Analyzing",
-    items: [{ title: "Compliance check", desc: "Validating against country standards", duration: 2600 }],
-  },
-];
+const PROCESSING_GROUPS = PASSPORT_PROCESSING_GROUPS;
 
 const PROCESSING_ITEMS = PROCESSING_GROUPS.flatMap((group) => group.items.map((item) => ({ ...item, groupId: group.id })));
 
