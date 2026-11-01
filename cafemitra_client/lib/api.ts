@@ -117,7 +117,9 @@ export async function refreshSession() {
       });
 
       if (!response.ok) {
-        logoutToLogin();
+        // Only a definite rejection of the refresh token ends the session; a
+        // 5xx/proxy blip must not sign the user out.
+        if (response.status === 401 || response.status === 403) logoutToLogin();
         return false;
       }
 
@@ -125,7 +127,7 @@ export async function refreshSession() {
       storeSession(data);
       return Boolean(data.token);
     } catch {
-      logoutToLogin();
+      // Network error / timeout: keep the session, the next call retries.
       return false;
     } finally {
       refreshInFlight = null;

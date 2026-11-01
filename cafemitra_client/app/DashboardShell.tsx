@@ -19,6 +19,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { ProfileTopbar } from "./profile/ProfileTopbar";
+import { ReadyPhotoWatcher } from "./ReadyPhotoWatcher";
 import { recordServiceVisit } from "@/lib/recentServices";
 import { apiUrl, getAuthToken, hasStoredSession, wsUrl } from "@/lib/api";
 import { fetchPricingServiceByKey } from "@/lib/pricing";
@@ -168,6 +169,8 @@ export function DashboardShell({ activePath, children }: { activePath: string; c
         />
         {children}
       </section>
+
+      <ReadyPhotoWatcher />
 
       {virtualPrinterAlert && (
         <div

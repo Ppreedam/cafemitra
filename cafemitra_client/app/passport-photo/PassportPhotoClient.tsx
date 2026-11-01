@@ -11,6 +11,7 @@ import { apiFetch, apiUrl, dataUriToBlob } from "@/lib/api";
 import { fetchPricingServiceByKey, type PriceItem } from "@/lib/pricing";
 import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
 import { stashPhotoForPrintSheet } from "@/lib/printSheetHandoff";
+import { clearPhotoWatch, startPhotoWatch } from "@/lib/pendingPhotoWatch";
 import { CropEditor, cropImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, warpPerspectiveCrop, type CropQuad, type CropRect } from "../CropEditor";
 import { PrintProfileSelect, useAgentPrint } from "../PrintProfileSelect";
 import { PASSPORT_PROCESSING_GROUPS, useWaitingJokes } from "../ProcessingSteps";
@@ -398,6 +399,7 @@ export default function PassportPhotoClient() {
     setIsSubmitting(true);
     setJobState("submitting");
     setError("");
+    clearPhotoWatch();
     startStepAnimation();
     try {
       const prompt = buildPassportPrompt(photoVariation);
@@ -438,6 +440,14 @@ export default function PassportPhotoClient() {
     checkStatus(jobId);
   }
 
+  // The photo may still finish after this page gave up on it: let the dashboard shell keep checking for a few
+  // minutes on any page and pop up once it is ready (ReadyPhotoWatcher). The owner is sent to Orders, where this
+  // order shows a countdown and opens by itself when the photo arrives.
+  function watchLateResult(id: number) {
+    startPhotoWatch(id, file?.name || "passport-photo.jpg", parsePhotoCount(selectedPackage?.label));
+    router.push("/orders");
+  }
+
   async function checkStatus(id: number) {
     attemptsRef.current += 1;
     try {
@@ -451,6 +461,7 @@ export default function PassportPhotoClient() {
       if (response.ok && result.found && result.imageUrl) {
         stopChecking();
         stopStepAnimation();
+        clearPhotoWatch();
         const readyUrl = result.imageUrl as string;
         revealResult(() => {
           setStepCursor(PROCESSING_ITEMS.length);
@@ -467,6 +478,7 @@ export default function PassportPhotoClient() {
         stopStepAnimation();
         setJobState("failed");
         setError(result.message || "Photo generation failed. Please try again.");
+        watchLateResult(id);
         return;
       }
 
@@ -474,6 +486,7 @@ export default function PassportPhotoClient() {
         stopStepAnimation();
         setJobState("not_found");
         setError("We could not find your processed image yet. Please try again.");
+        watchLateResult(id);
         return;
       }
 
@@ -483,6 +496,7 @@ export default function PassportPhotoClient() {
         stopStepAnimation();
         setJobState("not_found");
         setError("We could not find your processed image yet. Please try again.");
+        watchLateResult(id);
         return;
       }
       timeoutRef.current = setTimeout(() => checkStatus(id), CHECK_INTERVAL_MS);
@@ -777,6 +791,19 @@ export default function PassportPhotoClient() {
             ) : null}
 
             {error ? <div className="profile-alert error">{error}</div> : null}
+
+            {isBusy && file ? (
+              <div className="photo-scan-panel" role="status" aria-live="polite" aria-label="Scanning your photo">
+                <div className="photo-scan-frame">
+                  <div className="photo-scan-stage">
+                    <img src={previewUrl} alt="" />
+                    <span className="photo-scan-glow" />
+                    <span className="photo-scan-line" />
+                  </div>
+                </div>
+                <p className="photo-scan-caption">Scanning your photo...</p>
+              </div>
+            ) : null}
           </article>
 
           <article className="customer-panel">

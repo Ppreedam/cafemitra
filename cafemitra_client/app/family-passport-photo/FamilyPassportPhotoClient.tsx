@@ -11,6 +11,7 @@ import { fetchPricingServiceByKey, type PriceItem } from "@/lib/pricing";
 import { buildFamilyPhotoPrompt } from "@/lib/family-photo-prompt";
 import { parsePhotoCount } from "../passport-photo/printSheet";
 import { stashPhotoForPrintSheet } from "@/lib/printSheetHandoff";
+import { clearPhotoWatch, startPhotoWatch } from "@/lib/pendingPhotoWatch";
 import { buildFamilyProcessingGroups, ProcessingTimeline, useStepAnimation, WaitingJokeWidget } from "../ProcessingSteps";
 
 type JobState = "idle" | "submitting" | "processing" | "done" | "not_found" | "failed";
@@ -150,6 +151,7 @@ export default function FamilyPassportPhotoClient() {
     setIsSubmitting(true);
     setJobState("submitting");
     setError("");
+    clearPhotoWatch();
     try {
       const formData = new FormData();
       filledSlots.forEach((slot) => {
@@ -187,6 +189,14 @@ export default function FamilyPassportPhotoClient() {
     checkStatus(jobId);
   }
 
+  // The photo may still finish after this page gave up on it: let the dashboard shell keep checking for a few
+  // minutes on any page and pop up once it is ready (ReadyPhotoWatcher). The owner is sent to Orders, where this
+  // order shows a countdown and opens by itself when the photo arrives.
+  function watchLateResult(id: number) {
+    startPhotoWatch(id, "family-passport-photo.jpg", parsePhotoCount(selectedPackage?.label, 1), "family");
+    router.push("/orders");
+  }
+
   async function checkStatus(id: number) {
     attemptsRef.current += 1;
     try {
@@ -199,6 +209,7 @@ export default function FamilyPassportPhotoClient() {
 
       if (response.ok && result.found && result.imageUrl) {
         stopChecking();
+        clearPhotoWatch();
         setJobState("done");
         setFinalImageUrl(result.imageUrl);
         stashPhotoForPrintSheet(result.imageUrl, "family-passport-photo.jpg", true, parsePhotoCount(selectedPackage?.label, 1));
@@ -209,12 +220,14 @@ export default function FamilyPassportPhotoClient() {
         stopChecking();
         setJobState("failed");
         setError(result.message || "Photo generation failed. Please try again.");
+        watchLateResult(id);
         return;
       }
 
       if (attemptsRef.current >= MAX_CHECK_ATTEMPTS) {
         setJobState("not_found");
         setError("We could not find your processed image yet. Please try again.");
+        watchLateResult(id);
         return;
       }
 
@@ -223,6 +236,7 @@ export default function FamilyPassportPhotoClient() {
       if (attemptsRef.current >= MAX_CHECK_ATTEMPTS) {
         setJobState("not_found");
         setError("We could not find your processed image yet. Please try again.");
+        watchLateResult(id);
         return;
       }
       timeoutRef.current = setTimeout(() => checkStatus(id), CHECK_INTERVAL_MS);

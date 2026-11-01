@@ -4,6 +4,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import {
+  PHOTO_READY_EVENT,
+  PHOTO_WATCH_EVENT,
+  PHOTO_WATCH_WINDOW_MS,
+  readPhotoWatch,
+  type PendingPhotoWatch,
+} from "@/lib/pendingPhotoWatch";
+import {
   BarChart3,
   CalendarDays,
   ChevronLeft,
@@ -129,6 +136,10 @@ export default function OrdersClient() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [compareOrder, setCompareOrder] = useState<Order | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
+  // A photo that was still generating when the owner left the photo page (see ReadyPhotoWatcher): its order shows a
+  // countdown here until the photo turns up, at which point the order opens by itself.
+  const [photoWatch, setPhotoWatch] = useState<PendingPhotoWatch | null>(null);
+  const [watchNow, setWatchNow] = useState(() => Date.now());
   const isPhotoOrder = (order: Order) => order.serviceKey === "passport_photo" || order.serviceKey === "family_passport_photo";
   const passportQueuedCount = orders.filter((order) => isPhotoOrder(order) && order.status === "queued").length;
   const filteredOrders = useMemo(
@@ -195,6 +206,51 @@ export default function OrdersClient() {
     loadOrders();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    const sync = () => setPhotoWatch(readPhotoWatch());
+    sync();
+    window.addEventListener(PHOTO_WATCH_EVENT, sync);
+    return () => window.removeEventListener(PHOTO_WATCH_EVENT, sync);
+  }, []);
+
+  // Ticks the countdown; when the watch window runs out the shell stops checking, so refresh once to show the final state.
+  useEffect(() => {
+    if (!photoWatch) return;
+    const timer = setInterval(() => {
+      setWatchNow(Date.now());
+      if (!readPhotoWatch()) {
+        setPhotoWatch(null);
+        loadOrders({ silent: true });
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [photoWatch]);
+
+  // The shell found the photo while this page is open: refresh the list and open the order (Raw / Final photo + Print).
+  useEffect(() => {
+    async function handleReady(event: Event) {
+      const id = Number((event as CustomEvent<{ id: number }>).detail?.id);
+      setPhotoWatch(null);
+      await loadOrders({ silent: true });
+      if (!id) return;
+      setCompareLoading(true);
+      try {
+        const response = await apiFetch(`/api/orders/${id}/`);
+        const result = await response.json().catch(() => ({}));
+        if (response.ok && result.order) setCompareOrder(result.order);
+      } finally {
+        setCompareLoading(false);
+      }
+    }
+    window.addEventListener(PHOTO_READY_EVENT, handleReady);
+    return () => window.removeEventListener(PHOTO_READY_EVENT, handleReady);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const watchSecondsLeft = photoWatch ? Math.max(0, Math.ceil((photoWatch.startedAt + PHOTO_WATCH_WINDOW_MS - watchNow) / 1000)) : 0;
+  const watchClock = `${Math.floor(watchSecondsLeft / 60)}:${String(watchSecondsLeft % 60).padStart(2, "0")}`;
 
   async function markToolOrderPaid(orderId: number, endpoint: string) {
     setMarkingPaidId(orderId);
@@ -350,6 +406,16 @@ export default function OrdersClient() {
                 )}
               </div>
             ) : null}
+            {photoWatch ? (
+              <div className="orders-photo-pending" role="status">
+                <Loader2 size={18} className="spin" />
+                <div>
+                  <strong>Your photo is still being generated.</strong>
+                  <span>It will open here by itself as soon as it is ready - you can keep working meanwhile.</span>
+                </div>
+                <em>{watchClock}</em>
+              </div>
+            ) : null}
             {actionError ? <div className="profile-alert error orders-action-error">{actionError}</div> : null}
             {message ? (
               message === "Loading orders..." ? (
@@ -417,7 +483,11 @@ export default function OrdersClient() {
                               {order.fileName || "Document"}
                             </a>
                           ) : null}
-                          {(order.serviceKey === "passport_photo" || order.serviceKey === "family_passport_photo") && order.photoStatus === "failed" ? (
+                          {photoWatch && photoWatch.id === order.id && !order.hasGeminiPhoto ? (
+                            <small className="order-photo-timer">
+                              <Loader2 size={12} className="spin" /> Generating... {watchClock}
+                            </small>
+                          ) : (order.serviceKey === "passport_photo" || order.serviceKey === "family_passport_photo") && order.photoStatus === "failed" ? (
                             <small className="order-status failed">{friendlyPhotoErrorMessage(order)}</small>
                           ) : (order.serviceKey === "passport_photo" || order.serviceKey === "family_passport_photo") && !order.hasGeminiPhoto ? (
                             <small>{order.serviceKey === "family_passport_photo" ? "Family photo processing..." : "Passport photo processing..."}</small>
