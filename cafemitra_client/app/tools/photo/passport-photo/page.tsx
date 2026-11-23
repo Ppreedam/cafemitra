@@ -10,14 +10,14 @@ const siteUrl = "https://repetigo.com";
 const pageUrl = `${siteUrl}/tools/photo/passport-photo/`;
 
 const shareImage = ogImage({
-  title: "Passport Size Photo Maker Free",
+  title: "AI Passport Size Photo Maker",
   subtitle: "Make a passport size photo at home.",
-  category: "Free Tool",
+  category: "AI Photo Tool",
   icon: "passport",
 });
 
 export const metadata: Metadata = {
-  title: "Passport Size Photo Maker Free - AI Attire Selection | RepetiGo",
+  title: "AI Passport Size Photo Maker - Attire & Print | RepetiGo",
   description:
     "Make a passport size photo at home - upload a selfie, keep your clothes or pick Blazer & Tie or Burqa, let AI process it, then print. No studio visit.",
   alternates: {
@@ -29,7 +29,7 @@ export const metadata: Metadata = {
   },
   openGraph: {
     images: [shareImage],
-    title: "Passport Size Photo Maker Free - AI Attire Selection | RepetiGo",
+    title: "AI Passport Size Photo Maker - Attire & Print | RepetiGo",
     description:
       "Make a passport size photo at home - upload selfie, keep your clothes or pick Blazer & Tie / Burqa, AI processes it, print on any paper size. No studio.",
     type: "website",
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
   twitter: {
     images: [shareImage],
     card: "summary_large_image",
-    title: "AI Passport Size Photo Maker Free - RepetiGo",
+    title: "AI Passport Size Photo Maker - RepetiGo",
     description: "Upload selfie -> choose look -> AI processes -> print at home. Passport photo in minutes.",
   },
 };
@@ -235,15 +235,10 @@ const schemaGraph = [
     "@type": "SoftwareApplication",
     name: "RepetiGo Passport Size Photo Maker",
     description:
-      "AI-powered passport size photo maker. Upload a selfie, keep your clothes or pick Blazer & Tie or Burqa, AI processes and frames the photo, print on any paper size. Free, no sign-up, files deleted after processing.",
+      "AI-powered passport size photo maker. Upload a selfie, keep your clothes or pick Blazer & Tie or Burqa, AI processes and frames the photo, print on any paper size. Files deleted after processing.",
     applicationCategory: "UtilitiesApplication",
     operatingSystem: "Web",
     url: pageUrl,
-    offers: {
-      "@type": "Offer",
-      price: "0",
-      priceCurrency: "INR",
-    },
     featureList: [
       "AI attire options - Same as Photo, Blazer & Tie (Men/Women), Burqa",
       "Automatic white background removal",
@@ -367,7 +362,7 @@ export default function PassportPhotoMakerPage() {
               <span>&#10003; Files deleted after processing</span>
             </div>
             <div className="tool-seo-cta-stack">
-              <PassportPhotoCta className="tool-seo-inline-cta" label="Make Your Passport Photo Now - Free" />
+              <PassportPhotoCta className="tool-seo-inline-cta" label="Make Your Passport Photo Now" />
             </div>
           </section>
 
@@ -438,7 +433,7 @@ export default function PassportPhotoMakerPage() {
               ))}
             </div>
             <div className="tool-seo-cta-stack">
-              <PassportPhotoCta className="tool-seo-inline-cta" label="Make Your Passport Photo Now - Free" />
+              <PassportPhotoCta className="tool-seo-inline-cta" label="Make Your Passport Photo Now" />
             </div>
           </section>
 
@@ -620,7 +615,7 @@ export default function PassportPhotoMakerPage() {
           </section>
 
           <section className="tool-seo-cta">
-            <h2>Make Your Passport Size Photo Now - Free</h2>
+            <h2>Make Your Passport Size Photo Now</h2>
             <p>Upload a selfie, choose your look, let AI do the rest. No studio, no sign-up required to try.</p>
             <PassportPhotoCta label="Make Your Passport Photo Now" />
           </section>
