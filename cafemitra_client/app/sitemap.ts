@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import type { MetadataRoute } from "next";
-import { fetchBlogArticles } from "@/lib/blog";
+import { blogHasNoArticles, fetchBlogArticles } from "@/lib/blog";
 
 const siteUrl = "https://repetigo.com";
 
@@ -72,7 +72,9 @@ function collectPageRoutes(directory: string, segments: string[] = []): string[]
 const publicRoutes = collectPageRoutes(path.join(process.cwd(), "app")).sort();
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const staticEntries: MetadataRoute.Sitemap = publicRoutes.map((route) => ({
+  // /blog is noindex while no article is published (see app/blog/page.tsx).
+  const hideBlog = await blogHasNoArticles();
+  const staticEntries: MetadataRoute.Sitemap = publicRoutes.filter((route) => !(hideBlog && route === "/blog")).map((route) => ({
     url: `${siteUrl}${route}`,
     changeFrequency: route === "/" ? "weekly" : "monthly",
     priority: route === "/" ? 1 : route.startsWith("/pdf-tools/") ? 0.8 : 0.7,

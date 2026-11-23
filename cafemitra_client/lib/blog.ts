@@ -28,14 +28,26 @@ export type BlogArticle = BlogArticleSummary & { content: string };
 export const BLOG_REVALIDATE_SECONDS = 300;
 
 export async function fetchBlogArticles(): Promise<BlogArticleSummary[]> {
+  return (await fetchBlogArticlesOrNull()) ?? [];
+}
+
+/** Like fetchBlogArticles, but null when the API could not be read - so callers can
+ * tell "no articles published" (empty list) apart from "API down" (null). */
+export async function fetchBlogArticlesOrNull(): Promise<BlogArticleSummary[] | null> {
   try {
     const response = await fetch(apiUrl("/api/blog/"), { next: { revalidate: BLOG_REVALIDATE_SECONDS } });
-    if (!response.ok) return [];
+    if (!response.ok) return null;
     const data = await response.json();
-    return Array.isArray(data.articles) ? data.articles : [];
+    return Array.isArray(data.articles) ? data.articles : null;
   } catch {
-    return [];
+    return null;
   }
+}
+
+/** True only when the API answered and there are no published articles. */
+export async function blogHasNoArticles(): Promise<boolean> {
+  const articles = await fetchBlogArticlesOrNull();
+  return articles !== null && articles.length === 0;
 }
 
 export async function fetchBlogArticle(slug: string): Promise<BlogArticle | null> {

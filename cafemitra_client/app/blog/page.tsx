@@ -5,7 +5,7 @@ import { ArrowRight, Sparkles } from "lucide-react";
 import { LandingNavbar } from "../LandingNavbar";
 import { PublicFooter } from "../PublicFooter";
 import { blogPosts } from "../blog-data";
-import { fetchBlogArticles } from "@/lib/blog";
+import { blogHasNoArticles, fetchBlogArticles } from "@/lib/blog";
 import { ogImage } from "@/lib/og";
 
 const siteUrl = "https://repetigo.com";
@@ -17,21 +17,27 @@ const shareImage = ogImage({
   icon: "file",
 });
 
-export const metadata: Metadata = {
-  title: "Blog | RepetiGo",
-  description:
-    "Guides and how-tos on print automation, PDF tools, and image tools from RepetiGo.",
-  alternates: {
-    canonical: "/blog",
-  },
-  openGraph: {
-    images: [shareImage],
+export async function generateMetadata(): Promise<Metadata> {
+  // Until the first article is published this page only links to tool pages,
+  // so keep it out of Google; it becomes indexable by itself once one goes live.
+  const noArticles = await blogHasNoArticles();
+  return {
     title: "Blog | RepetiGo",
-    description: "Guides and how-tos on print automation, PDF tools, and image tools from RepetiGo.",
-    type: "website",
-    url: `${siteUrl}/blog`,
-  },
-};
+    description:
+      "Guides and how-tos on print automation, PDF tools, and image tools from RepetiGo.",
+    alternates: {
+      canonical: "/blog",
+    },
+    openGraph: {
+      images: [shareImage],
+      title: "Blog | RepetiGo",
+      description: "Guides and how-tos on print automation, PDF tools, and image tools from RepetiGo.",
+      type: "website",
+      url: `${siteUrl}/blog`,
+    },
+    ...(noArticles ? { robots: { index: false, follow: true } } : {}),
+  };
+}
 
 export const revalidate = 300; // must be a literal; keep in sync with BLOG_REVALIDATE_SECONDS
 
