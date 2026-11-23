@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import FamilyPassportPhotoClient from "./FamilyPassportPhotoClient";
+import FamilyPassportPhotoSeoContent from "./FamilyPassportPhotoSeoContent";
 import { ogStaticImage } from "@/lib/og";
+import { getToolCharge } from "@/lib/toolCharge";
 
 const pageUrl = "https://repetigo.com/family-passport-photo";
 
@@ -27,6 +29,8 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-export default function FamilyPassportPhotoPage() {
-  return <FamilyPassportPhotoClient />;
+export default async function FamilyPassportPhotoPage() {
+  // Live charge from the wallet config, so the guide never shows a stale price.
+  const charge = await getToolCharge("family_passport_photo");
+  return <FamilyPassportPhotoClient seo={<FamilyPassportPhotoSeoContent charge={charge} />} />;
 }

@@ -10,7 +10,6 @@ import { WalletLimitBanner } from "../WalletLimitBanner";
 import { apiFetch, apiUrl, dataUriToBlob } from "@/lib/api";
 import { fetchPricingServiceByKey, type PriceItem } from "@/lib/pricing";
 import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
-import PassportPhotoSeoContent from "./PassportPhotoSeoContent";
 import { stashPhotoForPrintSheet } from "@/lib/printSheetHandoff";
 import { clearPhotoWatch, startPhotoWatch } from "@/lib/pendingPhotoWatch";
 import { CropEditor, cropImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, warpPerspectiveCrop, type CropQuad, type CropRect } from "../CropEditor";
@@ -69,7 +68,8 @@ export type ExistingPassportOrder = {
 const CHECK_INTERVAL_MS = 5_000;
 const MAX_CHECK_ATTEMPTS = 7;
 
-export default function PassportPhotoClient() {
+// seo: server-rendered guide from page.tsx, shown below the tool.
+export default function PassportPhotoClient({ seo }: { seo?: React.ReactNode }) {
   const router = useRouter();
   const [mode, setMode] = useState<ToolMode>("ai");
   const [file, setFile] = useState<File | null>(null);
@@ -1028,7 +1028,7 @@ export default function PassportPhotoClient() {
           </div>
         </div>
       ) : null}
-      <PassportPhotoSeoContent />
+      {seo}
     </DashboardShell>
   );
 }

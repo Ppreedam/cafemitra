@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import PassportPhotoClient from "./PassportPhotoClient";
+import PassportPhotoSeoContent from "./PassportPhotoSeoContent";
 import { ogStaticImage } from "@/lib/og";
+import { getToolCharge } from "@/lib/toolCharge";
 
 const pageUrl = "https://repetigo.com/passport-photo";
 
@@ -27,6 +29,8 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-export default function PassportPhotoPage() {
-  return <PassportPhotoClient />;
+export default async function PassportPhotoPage() {
+  // Live charge from the wallet config, so the guide never shows a stale price.
+  const charge = await getToolCharge("passport_photo");
+  return <PassportPhotoClient seo={<PassportPhotoSeoContent charge={charge} />} />;
 }

@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { shopChargeSentence, type ToolCharge } from "@/lib/toolCharge";
 
 // Crawlable guide shown below the family photo tool. Claims match the tool:
 // 2-6 people, one JPG/PNG per person (FamilyPassportPhotoClient), no attire
 // picker and a plain light studio background (lib/family-photo-prompt.ts),
-// and Print / Download opening the Photo Print Sheet Maker.
+// and Print / Download opening the Photo Print Sheet Maker. The shop charge is
+// the live "family_passport_photo" price passed in by page.tsx.
 
 const steps = [
   ["Upload one photo per person", "JPG or PNG, 2 to 6 people. You can drop several photos at once and they fill the empty slots."],
@@ -12,25 +14,34 @@ const steps = [
   ["Print or download", "Tap Print / Download to open the photo in the Photo Print Sheet Maker, choose your paper and print."],
 ] as const;
 
-const faqs = [
-  ["How many people can be in one family photo?", "2 to 6 people. Upload one photo for each person."],
-  ["How much does it cost?", "Generating a family photo costs ₹10. Printing on your own printer is free."],
+const firstFaq = ["How many people can be in one family photo?", "2 to 6 people. Upload one photo for each person."] as const;
+
+const otherFaqs = [
   ["Can I choose the clothes?", "No. There is no attire picker - everyone keeps the clothes from their own photo. For a formal single passport photo with a blazer or burqa, use the Passport Photo Maker."],
   ["What kind of background does it use?", "A plain, light, evenly lit studio background."],
   ["How do I print it?", "Tap Print / Download after the photo is ready. It opens in the Photo Print Sheet Maker, where you pick the paper size and print."],
 ] as const;
 
-const faqJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: faqs.map(([question, answer]) => ({
-    "@type": "Question",
-    name: question,
-    acceptedAnswer: { "@type": "Answer", text: answer },
-  })),
-};
+export default function FamilyPassportPhotoSeoContent({ charge }: { charge: ToolCharge }) {
+  const chargeSentence = shopChargeSentence(charge, "family photo");
+  const faqs: (readonly [string, string])[] = [
+    firstFaq,
+    [
+      "How much does it cost?",
+      `The price your customer pays is set by the shop. ${chargeSentence} Printing on your own printer is free. See the Pricing page for current rates.`,
+    ],
+    ...otherFaqs,
+  ];
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: faqs.map(([question, answer]) => ({
+      "@type": "Question",
+      name: question,
+      acceptedAnswer: { "@type": "Answer", text: answer },
+    })),
+  };
 
-export default function FamilyPassportPhotoSeoContent() {
   return (
     <section className="tool-seo-content" aria-label="About the family passport photo maker">
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd).replace(/</g, "\\u003c") }} />
@@ -75,7 +86,8 @@ export default function FamilyPassportPhotoSeoContent() {
       <h2>For Cyber Cafes and Print Shops</h2>
       <p>
         A family photo is a quick add-on sale at the counter: collect one photo of each family member on WhatsApp or a pen
-        drive, generate the group photo and print it on the spot. Generating a family photo costs ₹10.
+        drive, generate the group photo and print it on the spot. {chargeSentence}{" "}
+        <Link href="/pricing">See current rates</Link>.
       </p>
 
       <h2>Family Photo FAQs</h2>

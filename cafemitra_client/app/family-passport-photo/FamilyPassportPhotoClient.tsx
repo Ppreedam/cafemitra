@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Check, Eye, IdCard, Plus, RefreshCw, Settings, Trash2, Upload, Users, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
@@ -10,7 +10,6 @@ import { apiFetch, apiUrl } from "@/lib/api";
 import { fetchPricingServiceByKey, type PriceItem } from "@/lib/pricing";
 import { buildFamilyPhotoPrompt } from "@/lib/family-photo-prompt";
 import { parsePhotoCount } from "../passport-photo/printSheet";
-import FamilyPassportPhotoSeoContent from "./FamilyPassportPhotoSeoContent";
 import { stashPhotoForPrintSheet } from "@/lib/printSheetHandoff";
 import { clearPhotoWatch, startPhotoWatch } from "@/lib/pendingPhotoWatch";
 import { buildFamilyProcessingGroups, ProcessingTimeline, useStepAnimation, WaitingJokeWidget } from "../ProcessingSteps";
@@ -44,7 +43,8 @@ function makeSlot(): FamilySlot {
   return { id: Math.random().toString(36).slice(2), file: null, previewUrl: "" };
 }
 
-export default function FamilyPassportPhotoClient() {
+// seo: server-rendered guide from page.tsx, shown below the tool.
+export default function FamilyPassportPhotoClient({ seo }: { seo?: ReactNode }) {
   const router = useRouter();
   const [slots, setSlots] = useState<FamilySlot[]>(() => [makeSlot(), makeSlot()]);
   const [priceItems, setPriceItems] = useState<PriceItem[]>([]);
@@ -473,7 +473,7 @@ export default function FamilyPassportPhotoClient() {
           </div>
         </div>
       ) : null}
-      <FamilyPassportPhotoSeoContent />
+      {seo}
     </DashboardShell>
   );
 }
