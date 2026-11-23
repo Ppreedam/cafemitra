@@ -175,9 +175,9 @@ const indiaRows = [
 const privacyPoints = [
   { emoji: "🔒", title: "Encrypted in transit.", text: "Your photo uploads over TLS (HTTPS) encryption. It cannot be intercepted between your device and our servers." },
   { emoji: "🤖", title: "Processed by AI, not viewed by staff.", text: "Your photo goes directly into the AI processing pipeline. No human employee reviews, accesses, or views your uploaded photo." },
-  { emoji: "🗑️", title: "Deleted after processing.", text: "Your uploaded photo and the generated passport photo are permanently deleted from our servers after your session ends - typically within 60 minutes of upload." },
-  { emoji: "🚫", title: "Never stored, trained on, or shared.", text: "Your photo is not used to train AI models, shared with third parties, or retained in any database. The DPDP Act 2023 personal data protections apply to all photos uploaded." },
-  { emoji: "📵", title: "No account required.", text: "Because no account is created, we hold no identity information linking you to the photo you uploaded." },
+  { emoji: "🗑️", title: "Auto-deleted within 24 hours.", text: "Your uploaded photo and the generated passport photo are automatically deleted from our servers within 24 hours." },
+  { emoji: "🚫", title: "Never sold or used for advertising.", text: "Your photo is used only to make your passport photo. When an AI provider processes it, it is sent securely under contract, as our Privacy Policy explains. The DPDP Act 2023 personal data protections apply to all photos uploaded." },
+  { emoji: "🏪", title: "Made from a shop account.", text: "AI passport photos are made from a signed-in RepetiGo shop account - usually your cyber cafe or print shop makes the photo for you." },
 ];
 
 const printShopBullets = [
@@ -210,7 +210,7 @@ const faqs: [string, string][] = [
   ],
   [
     "Is it safe to upload my face photo to an online tool?",
-    "With RepetiGo, yes. Your photo uploads over TLS encryption, processes in an isolated AI session, and is permanently deleted within 60 minutes. No human views your photo. It is not used for AI training, not stored in any database, and not shared with any third party. Under India's DPDP Act 2023, your photo is classified as personal data and receives the full protections that law requires.",
+    "With RepetiGo, yes. Your photo uploads over TLS encryption, is processed by AI and automatically deleted from our servers within 24 hours. No RepetiGo employee views your photo. It is never sold or used for advertising; when an AI provider processes it, it is sent securely under contract. Under India's DPDP Act 2023, your photo is classified as personal data and receives the full protections that law requires.",
   ],
   [
     "Can I use this for a US visa or UK passport photo?",
@@ -235,7 +235,7 @@ const schemaGraph = [
     "@type": "SoftwareApplication",
     name: "RepetiGo Passport Size Photo Maker",
     description:
-      "AI-powered passport size photo maker. Upload a selfie, keep your clothes or pick Blazer & Tie or Burqa, AI processes and frames the photo, print on any paper size. Files deleted after processing.",
+      "AI-powered passport size photo maker. Upload a selfie, keep your clothes or pick Blazer & Tie or Burqa, AI processes and frames the photo, print on any paper size. Files auto-deleted within 24 hours.",
     applicationCategory: "UtilitiesApplication",
     operatingSystem: "Web",
     url: pageUrl,
@@ -246,8 +246,7 @@ const schemaGraph = [
       "India passport dimensions (51x51mm)",
       "US passport dimensions (2x2 inch)",
       "Tile print layout for multiple photos per sheet",
-      "Files auto-deleted after processing",
-      "No account required",
+      "Files auto-deleted within 24 hours",
     ],
     publisher: {
       "@type": "Organization",
@@ -359,7 +358,7 @@ export default function PassportPhotoMakerPage() {
               <span>&#10003; AI processes and frames</span>
               <span>&#10003; Print at home or at a print shop</span>
               <span>&#10003; Government-compliant dimensions</span>
-              <span>&#10003; Files deleted after processing</span>
+              <span>&#10003; Files auto-deleted within 24 hours</span>
             </div>
             <div className="tool-seo-cta-stack">
               <PassportPhotoCta className="tool-seo-inline-cta" label="Make Your Passport Photo Now" />
@@ -527,8 +526,8 @@ export default function PassportPhotoMakerPage() {
             </p>
             <Callout emoji="⚠️">
               Under India&apos;s DPDP Act 2023, photos uploaded to online services for processing are considered
-              personal data. RepetiGo processes your photo for the duration of your session and deletes it after
-              processing - no facial data or photo is stored beyond your active session.
+              personal data. RepetiGo processes your photo to make your passport photo and automatically deletes it
+              from our servers within 24 hours.
             </Callout>
           </section>
 
@@ -546,8 +545,8 @@ export default function PassportPhotoMakerPage() {
               ))}
             </ul>
             <Callout emoji="🔒">
-              Your face is your identity. RepetiGo&apos;s 60-minute auto-deletion policy means your photo is never at
-              risk of exposure after your session ends. Read our full security policy at repetigo.com/privacy-policy.
+              Your face is your identity. RepetiGo&apos;s 24-hour auto-deletion keeps your photo from sitting on our
+              servers. Read our full security policy at repetigo.com/privacy-policy.
             </Callout>
             <div className="tool-seo-cta-stack">
               <Link className="tool-seo-inline-cta" href="/privacy-policy">
@@ -616,7 +615,7 @@ export default function PassportPhotoMakerPage() {
 
           <section className="tool-seo-cta">
             <h2>Make Your Passport Size Photo Now</h2>
-            <p>Upload a selfie, choose your look, let AI do the rest. No studio, no sign-up required to try.</p>
+            <p>Upload a selfie, choose your look, let AI do the rest. No studio visit needed.</p>
             <PassportPhotoCta label="Make Your Passport Photo Now" />
           </section>
         </article>
