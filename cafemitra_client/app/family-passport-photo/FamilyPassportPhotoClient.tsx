@@ -10,6 +10,7 @@ import { apiFetch, apiUrl } from "@/lib/api";
 import { fetchPricingServiceByKey, type PriceItem } from "@/lib/pricing";
 import { buildFamilyPhotoPrompt } from "@/lib/family-photo-prompt";
 import { parsePhotoCount } from "../passport-photo/printSheet";
+import FamilyPassportPhotoSeoContent from "./FamilyPassportPhotoSeoContent";
 import { stashPhotoForPrintSheet } from "@/lib/printSheetHandoff";
 import { clearPhotoWatch, startPhotoWatch } from "@/lib/pendingPhotoWatch";
 import { buildFamilyProcessingGroups, ProcessingTimeline, useStepAnimation, WaitingJokeWidget } from "../ProcessingSteps";
@@ -472,6 +473,7 @@ export default function FamilyPassportPhotoClient() {
           </div>
         </div>
       ) : null}
+      <FamilyPassportPhotoSeoContent />
     </DashboardShell>
   );
 }
