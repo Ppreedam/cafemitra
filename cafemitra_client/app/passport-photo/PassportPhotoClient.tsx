@@ -10,6 +10,7 @@ import { WalletLimitBanner } from "../WalletLimitBanner";
 import { apiFetch, apiUrl, dataUriToBlob } from "@/lib/api";
 import { fetchPricingServiceByKey, type PriceItem } from "@/lib/pricing";
 import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
+import PassportPhotoSeoContent from "./PassportPhotoSeoContent";
 import { stashPhotoForPrintSheet } from "@/lib/printSheetHandoff";
 import { clearPhotoWatch, startPhotoWatch } from "@/lib/pendingPhotoWatch";
 import { CropEditor, cropImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, warpPerspectiveCrop, type CropQuad, type CropRect } from "../CropEditor";
@@ -1027,6 +1028,7 @@ export default function PassportPhotoClient() {
           </div>
         </div>
       ) : null}
+      <PassportPhotoSeoContent />
     </DashboardShell>
   );
 }
