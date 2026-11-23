@@ -107,7 +107,7 @@ export default function PanCardMakerPage() {
           faqSchemaQuestions={faqSchemaQuestions}
         />
         <article className="tool-seo-content" id="pan-card-maker-guide">
-          <StructuredSeoCopy content={panContent} />
+          <StructuredSeoCopy content={panContent} pageHasH1 />
         </article>
       </div>
     </DashboardShell>

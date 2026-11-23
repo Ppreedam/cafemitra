@@ -106,7 +106,7 @@ export default function AadhaarCardMakerPage() {
           faqSchemaQuestions={faqSchemaQuestions}
         />
         <article className="tool-seo-content" id="aadhaar-card-maker-guide">
-          <StructuredSeoCopy content={aadhaarContent} />
+          <StructuredSeoCopy content={aadhaarContent} pageHasH1 />
         </article>
       </div>
     </DashboardShell>

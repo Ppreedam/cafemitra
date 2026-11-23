@@ -19,7 +19,7 @@ const shareImage = ogImage({
 export const metadata: Metadata = {
   title: "Passport Size Photo Maker Free - AI Attire Selection | RepetiGo",
   description:
-    "Make a passport size photo at home - upload a selfie, choose your look (Casual, Normal or Official), let AI process it, then print on any paper size. Free. No studio visit.",
+    "Make a passport size photo at home - upload a selfie, choose your look (Same as Photo, Blazer & Tie or Burqa), let AI process it, then print on any paper size. Free. No studio visit.",
   alternates: {
     canonical: pageUrl,
   },
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     images: [shareImage],
     title: "Passport Size Photo Maker Free - AI Attire Selection | RepetiGo",
     description:
-      "Make a passport size photo at home - upload selfie, choose Casual/Normal/Official look, AI processes it, print on any paper size. No studio.",
+      "Make a passport size photo at home - upload selfie, keep your clothes or pick Blazer & Tie / Burqa, AI processes it, print on any paper size. No studio.",
     type: "website",
     url: pageUrl,
   },
@@ -45,16 +45,20 @@ export const metadata: Metadata = {
 
 const attireLooks = [
   {
-    title: "Casual Look",
-    text: "For informal ID cards, college IDs, and internal employee cards where a relaxed, approachable appearance is appropriate. The AI applies a neat casual attire to your photo - clean, presentable, but not overly formal.",
+    title: "Same as Photo",
+    text: "Keeps the clothes you are already wearing - only the background, framing and size are fixed. Best when you are already neatly dressed.",
   },
   {
-    title: "Normal Look",
-    text: "The balanced option. Suitable for most official documents - driving licence, PAN card, Aadhaar update, school admission forms. A neat, presentable look that reads as professional without being too formal.",
+    title: "Blazer & Tie (Men)",
+    text: "Replaces your clothing with a dark formal blazer, white shirt and tie - a clean, professional look for passport, visa and job applications.",
   },
   {
-    title: "Official Look",
-    text: "For government passport applications, visa submissions, and formal government ID documents. The AI applies professional formal attire - the clean, authoritative look that official document checkers expect.",
+    title: "Blazer & Tie (Women)",
+    text: "The same formal blazer, white shirt and tie look, for women.",
+  },
+  {
+    title: "Burqa",
+    text: "Replaces your clothing with a black burqa and hijab while keeping your full face clearly visible, as passport photo rules require.",
   },
 ];
 
@@ -65,7 +69,7 @@ const steps = [
   },
   {
     title: "Step 2 - Select Your Attire Look",
-    text: "Choose one of three AI-powered attire styles: Casual, Normal, or Official. This determines the look and formality of your final passport photo. If you are applying for an Indian passport, visa, or government document, select Official. For ID cards and institutional photos, Normal works for most cases.",
+    text: "Choose one of four attire options: Same as Photo, Blazer & Tie (Men), Blazer & Tie (Women), or Burqa. Your face and expression are never changed.",
   },
   {
     title: "Step 3 - Click Generate Image",
@@ -189,8 +193,8 @@ const faqs: [string, string][] = [
     "Yes. RepetiGo's AI processes any photo taken on a modern smartphone into a government-compliant passport size photo. Take a photo in good natural light, looking directly at the camera with a neutral expression. Upload it to the tool, choose your attire look, and the AI handles the background removal, framing, and sizing automatically.",
   ],
   [
-    "What is the difference between Casual, Normal, and Official look?",
-    "These are three AI-powered attire styles. Casual is for informal ID cards and institutional photos where a relaxed appearance is appropriate. Normal is the standard choice for most official documents - PAN, Aadhaar, voter ID. Official is for government passport and visa applications where a formal, professional look is required. The AI applies the chosen attire style to your photo while keeping your face and expression unchanged.",
+    "Which attire options can I choose?",
+    "There are four: Same as Photo keeps your own clothes; Blazer & Tie (Men) and Blazer & Tie (Women) give a formal dark blazer, white shirt and tie; Burqa adds a black burqa and hijab with the full face visible. The AI changes only the clothing - your face and expression stay unchanged.",
   ],
   [
     "What size is a passport photo in India?",
@@ -231,7 +235,7 @@ const schemaGraph = [
     "@type": "SoftwareApplication",
     name: "RepetiGo Passport Size Photo Maker",
     description:
-      "AI-powered passport size photo maker. Upload a selfie, choose Casual, Normal or Official look, AI processes and frames the photo, print on any paper size. Free, no sign-up, files deleted after processing.",
+      "AI-powered passport size photo maker. Upload a selfie, keep your clothes or pick Blazer & Tie or Burqa, AI processes and frames the photo, print on any paper size. Free, no sign-up, files deleted after processing.",
     applicationCategory: "UtilitiesApplication",
     operatingSystem: "Web",
     url: pageUrl,
@@ -241,7 +245,7 @@ const schemaGraph = [
       priceCurrency: "INR",
     },
     featureList: [
-      "AI attire selection - Casual, Normal, Official",
+      "AI attire options - Same as Photo, Blazer & Tie (Men/Women), Burqa",
       "Automatic white background removal",
       "Face detection and centring",
       "India passport dimensions (51x51mm)",
@@ -350,13 +354,13 @@ export default function PassportPhotoMakerPage() {
               existing photo - right from your browser.
             </p>
             <p>
-              What makes it different: you choose your look. Casual, Normal, or Official - our AI adjusts your
+              What makes it different: you choose your look. Same as Photo, Blazer &amp; Tie, or Burqa - our AI adjusts your
               attire, fixes the background to a clean white, corrects the framing, and produces a print-ready
               passport size photo that meets official requirements.
             </p>
             <div className="tool-seo-badges">
               <span>&#10003; Upload any selfie or photo</span>
-              <span>&#10003; Choose Casual, Normal or Official look</span>
+              <span>&#10003; Keep your clothes or pick Blazer &amp; Tie / Burqa</span>
               <span>&#10003; AI processes and frames</span>
               <span>&#10003; Print at home or at a print shop</span>
               <span>&#10003; Government-compliant dimensions</span>
@@ -381,9 +385,9 @@ export default function PassportPhotoMakerPage() {
               face framing, size formatting, and quality optimisation.
             </p>
             <p>
-              RepetiGo&apos;s version goes one step further: it adds AI-powered attire selection, so the look of your
-              photo - Casual, Normal, or Official - can be adjusted to suit the context, whether it is an internal ID
-              card, a visa application, or a formal government document.
+              RepetiGo&apos;s version goes one step further: it adds AI-powered attire selection, so your photo can
+              keep your own clothes or switch to a formal blazer &amp; tie or burqa - whether it is for an ID card, a
+              visa application, or a government document.
             </p>
             <Callout emoji="📋">
               Passport size photos are required for: Indian passport applications, Aadhaar enrolment updates, PAN
@@ -393,13 +397,13 @@ export default function PassportPhotoMakerPage() {
           </section>
 
           <section>
-            <h2>Choose Your Look - Casual, Normal, or Official Attire. Our AI Does the Rest.</h2>
+            <h2>Choose Your Look - Same as Photo, Blazer &amp; Tie, or Burqa. Our AI Does the Rest.</h2>
             <p>
               The most common reason people hesitate to take their own passport photo at home is simple: &quot;I&apos;m
               not dressed for it.&quot; A selfie taken on a Tuesday afternoon in a t-shirt doesn&apos;t look like a
               passport photo. RepetiGo solves this with AI attire selection.
             </p>
-            <p>When you upload your photo, you choose one of three looks before generating:</p>
+            <p>When you upload your photo, you choose one of four looks before generating:</p>
             <div className="tool-seo-step-grid">
               {attireLooks.map((look) => (
                 <div key={look.title}>
@@ -409,9 +413,8 @@ export default function PassportPhotoMakerPage() {
               ))}
             </div>
             <Callout emoji="💡">
-              Not sure which to choose? Use Normal for most purposes. Use Official for passport and visa applications
-              where strict government checkers review the photo. Use Casual for student IDs, gym memberships, and
-              informal workplace cards.
+              Already dressed neatly? Use Same as Photo. In a t-shirt or casual clothes? Pick Blazer &amp; Tie for a
+              formal look.
             </Callout>
           </section>
 

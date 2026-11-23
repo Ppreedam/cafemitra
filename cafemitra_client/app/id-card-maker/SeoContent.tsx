@@ -47,7 +47,9 @@ function CtaLine({ text }: { text: string }) {
   );
 }
 
-export function StructuredSeoCopy({ content }: { content: string }) {
+// pageHasH1: the page already renders its own <h1>, so the copy's "H1:" line
+// becomes an <h2> to keep a single H1 per page.
+export function StructuredSeoCopy({ content, pageHasH1 = false }: { content: string; pageHasH1?: boolean }) {
   return (
     <>
       {content.split(/\r?\n(?:\r?\n)+/).map((block, index) => {
@@ -55,7 +57,7 @@ export function StructuredSeoCopy({ content }: { content: string }) {
         if (!text) return null;
 
         if (text.startsWith("H1: ")) {
-          return <h1 key={index}>{text.slice(4)}</h1>;
+          return pageHasH1 ? <h2 key={index}>{text.slice(4)}</h2> : <h1 key={index}>{text.slice(4)}</h1>;
         }
 
         if (text.startsWith("H2: ")) {

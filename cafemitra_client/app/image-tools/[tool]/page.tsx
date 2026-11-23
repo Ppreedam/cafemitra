@@ -3,6 +3,13 @@ import { DashboardShell } from "../../DashboardShell";
 import ImageTransformTool from "../ImageTransformTool";
 import { isImageTransformSlug, type ImageTransformSlug } from "../imageTransformSlugs";
 
+// Every real image tool has its own folder, so this dynamic page is only ever
+// reached by unknown names. Return a real 404 for those instead of a 200 page.
+export const dynamicParams = false;
+export function generateStaticParams() {
+  return [];
+}
+
 type Props = { params: Promise<{ tool: string }> };
 
 const seo: Partial<Record<ImageTransformSlug, { title: string; description: string; ogDescription: string; twitterDescription: string }>> = {

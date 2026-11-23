@@ -103,7 +103,7 @@ export default function VoterCardMakerPage() {
           faqSchemaQuestions={faqSchemaQuestions}
         />
         <article className="tool-seo-content" id="voter-card-maker-guide">
-          <StructuredSeoCopy content={voterContent} />
+          <StructuredSeoCopy content={voterContent} pageHasH1 />
         </article>
       </div>
     </DashboardShell>
