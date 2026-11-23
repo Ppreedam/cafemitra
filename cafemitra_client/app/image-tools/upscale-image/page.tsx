@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import UpscaleImageClient from "./UpscaleImageClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/image-tools/upscale-image";
+
+const shareImage = ogImage({
+  title: "Upscale Image Free",
+  subtitle: "Enlarge JPG, PNG & WebP up to 4×.",
+  category: "Free Image Tool",
+  icon: "resize",
+});
 
 export const metadata: Metadata = {
   title: "Upscale Image Free - 2× / 4× AI Image Upscaler | RepetiGo",
@@ -9,12 +17,14 @@ export const metadata: Metadata = {
     "Upscale image resolution free - enlarge JPG, PNG & WebP up to 4× with a browser-based image upscaler. Standard 2×/4× runs in your browser; AI mode for tougher photos.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Upscale Image Free - 2× / 4× Image Upscaler",
     description: "Enlarge JPG, PNG & WebP up to 4×. Standard mode runs in your browser; AI mode for tougher photos.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Upscale Image Free - 2× / 4× Image Upscaler",
     description: "Free image upscaler. 2×/4×, choose WebP/PNG/JPG, standard mode 100% in-browser.",

@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import { SplitPdfTool } from "./SplitPdfClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/pdf-tools/split-pdf";
+
+const shareImage = ogImage({
+  title: "Split PDF Online Free",
+  subtitle: "Divide by page range, select individual pages, or split by size.",
+  category: "Free PDF Tool",
+  icon: "split",
+});
 
 export const metadata: Metadata = {
   title: "Split PDF Online Free - Divide PDF Files Instantly | RepetiGo",
@@ -11,6 +19,7 @@ export const metadata: Metadata = {
     canonical: pageUrl,
   },
   openGraph: {
+    images: [shareImage],
     title: "Split PDF Online Free - Divide PDF Files Instantly | RepetiGo",
     description:
       "Free PDF splitter - divide by page range, select individual pages, or split by size. No sign-up, browser-only - never uploaded. Works on any device.",
@@ -18,6 +27,7 @@ export const metadata: Metadata = {
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Split PDF Free Online - RepetiGo",
     description: "Divide PDFs by page range, page selection, or file size. Free, no sign-up, browser-only. India-built.",
@@ -442,7 +452,7 @@ function SeoTable({ headers, rows }: SeoTableData) {
         <thead><tr>{headers.map((header) => <th key={header}>{header}</th>)}</tr></thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.join("|")}>{row.map((cell, index) => <td key={`${cell}-${index}`}>{renderTableCell(cell)}</td>)}</tr>
+            <tr key={row.join("|")}>{row.map((cell, index) => <td key={`cell-${index}`}>{renderTableCell(cell)}</td>)}</tr>
           ))}
         </tbody>
       </table>
@@ -469,7 +479,7 @@ function renderInlineMappedLinks(text: string) {
   return parts.map((part, index) => {
     const href = mapSeoRoute(part.startsWith("repetigo.com") ? `https://${part}` : part);
     if (!href) return part;
-    return <a href={href} key={`${part}-${index}`}>{getRouteLabel(href)}</a>;
+    return <a href={href} key={`part-${index}`}>{getRouteLabel(href)}</a>;
   });
 }
 

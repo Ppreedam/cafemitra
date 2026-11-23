@@ -1,15 +1,24 @@
 import type { Metadata } from "next";
 import { DashboardShell } from "../../DashboardShell";
 import ConversionTool from "../ConversionTool";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/pdf-tools/html-to-pdf";
+
+const shareImage = ogImage({
+  title: "HTML to PDF Converter",
+  subtitle: "Turn saved HTML pages into PDF files.",
+  category: "Free PDF Tool",
+  icon: "convert",
+});
 
 export const metadata: Metadata = {
   title: "HTML to PDF Converter - Free Online, No Sign-Up | RepetiGo",
   description: "Convert HTML to PDF free online - upload an .html file and download a clean text PDF in seconds. No sign-up, no install. Files browser-only - never uploaded.",
   alternates: { canonical: pageUrl },
-  twitter: { card: "summary_large_image", title: "HTML to PDF Converter Free Online - RepetiGo", description: "Convert HTML to PDF free - upload your file. No sign-up, no install, browser-only - never uploaded." },
+  twitter: { images: [shareImage], card: "summary_large_image", title: "HTML to PDF Converter Free Online - RepetiGo", description: "Convert HTML to PDF free - upload your file. No sign-up, no install, browser-only - never uploaded." },
   robots: { index: true, follow: true },
+  openGraph: { type: "website", url: "https://repetigo.com/pdf-tools/html-to-pdf", siteName: "RepetiGo", images: [shareImage] },
 };
 
 const content = String.raw`H1: HTML to PDF Converter. Free Online. Upload .html Files.

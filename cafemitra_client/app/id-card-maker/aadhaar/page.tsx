@@ -2,8 +2,16 @@ import type { Metadata } from "next";
 import { DashboardShell } from "../../DashboardShell";
 import IdCardStudioClient from "../IdCardStudioClient";
 import { JsonLd, StructuredSeoCopy } from "../SeoContent";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/id-card-maker/aadhaar";
+
+const shareImage = ogImage({
+  title: "Aadhaar Card Maker from PDF Online Free",
+  subtitle: "Upload your downloaded e-Aadhaar PDF and print a card-size copy.",
+  category: "ID Card Maker",
+  icon: "idcard",
+});
 
 export const metadata: Metadata = {
   title: "Aadhaar Card Maker from PDF Online Free | RepetiGo",
@@ -11,12 +19,14 @@ export const metadata: Metadata = {
     "Turn your downloaded e-Aadhaar PDF into a clean, print-ready Aadhaar card - upload the PDF, review the extracted details, and print. Free, built for print shops and cyber cafes.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Aadhaar Card Maker from PDF Online Free | RepetiGo",
     description: "Upload your e-Aadhaar PDF, review the details, and print a ready-to-use Aadhaar card. Free, no sign-up required to try.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Aadhaar Card Maker from PDF - RepetiGo",
     description: "Create a printable Aadhaar card from your e-Aadhaar PDF - upload, review, and print.",

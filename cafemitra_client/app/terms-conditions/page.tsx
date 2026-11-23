@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   title: "Terms & Conditions - RepetiGo",
   description:
     "Read the RepetiGo Terms & Conditions governing use of our AI-powered print shop software, secure document upload, document processing, subscriptions, and related services.",
+  alternates: {
+    canonical: "https://repetigo.com/terms-conditions",
+  },
 };
 
 const effectiveDate = BUSINESS.effectiveDate;

@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
 import MergePdfClient from "./MergePdfClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/pdf-tools/merge-pdf";
+const shareImage = ogImage({
+  title: "Merge PDF Online Free",
+  subtitle: "Combine multiple PDFs into one file in seconds.",
+  category: "Free PDF Tool",
+  icon: "merge",
+});
 
 export const metadata: Metadata = {
   title: "Merge PDF Online Free India - Combine PDF Files Instantly | RepetiGo",
@@ -16,9 +23,11 @@ export const metadata: Metadata = {
       "Free PDF merger - combine multiple PDFs into one in seconds. No sign-up, browser-only - never uploaded. Works on phone & laptop.",
     type: "website",
     url: pageUrl,
+    images: [shareImage],
   },
   twitter: {
     card: "summary_large_image",
+    images: [shareImage],
     title: "Merge PDF Free Online - RepetiGo",
     description: "Combine PDFs free - merge multiple files into one. No sign-up, browser-only. India-built.",
   },
@@ -423,7 +432,7 @@ function renderInlineMappedLinks(text: string) {
   return parts.map((part, index) => {
     const href = mapSeoRoute(part.startsWith("repetigo.com") ? `https://${part}` : part);
     if (!href) return part;
-    return <a href={href} key={`${part}-${index}`}>{getRouteLabel(href)}</a>;
+    return <a href={href} key={`part-${index}`}>{getRouteLabel(href)}</a>;
   });
 }
 
@@ -491,7 +500,7 @@ function SeoTable({ headers, rows }: SeoTableData) {
         <tbody>
           {rows.map((row) => (
             <tr key={row.join("|")}>
-              {row.map((cell, index) => <td key={`${cell}-${index}`}>{renderTableCell(cell)}</td>)}
+              {row.map((cell, index) => <td key={`cell-${index}`}>{renderTableCell(cell)}</td>)}
             </tr>
           ))}
         </tbody>

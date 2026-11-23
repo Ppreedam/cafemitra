@@ -2,20 +2,30 @@ import type { Metadata } from "next";
 import { DashboardShell } from "../../DashboardShell";
 import PdfSecurityTool from "../PdfSecurityTool";
 import { StructuredSeoCopy } from "../pdf-to-jpg/page";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/pdf-tools/unlock-pdf";
+
+const shareImage = ogImage({
+  title: "Unlock PDF Free Online",
+  subtitle: "Enter the password once and save an unlocked copy.",
+  category: "Free PDF Tool",
+  icon: "lock",
+});
 
 export const metadata: Metadata = {
   title: "Unlock PDF Free Online - Remove Password | RepetiGo",
   description: "Unlock PDF free - enter your password to decrypt any locked PDF, or remove permission restrictions (no printing/copying) without needing a password. Browser-only. No sign-up.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Unlock PDF Free Online - Remove Password | RepetiGo",
     description: "Unlock PDF free - enter your password to decrypt any locked PDF, or remove permission restrictions (no printing/copying) without needing a password. Browser-only. No sign-up.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Unlock PDF Free Online - RepetiGo",
     description: "Decrypt a password-protected PDF or remove permission restrictions. No sign-up, browser-only.",

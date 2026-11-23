@@ -19,6 +19,7 @@ import { LandingNavbar } from "../../LandingNavbar";
 import { PublicFooter } from "../../PublicFooter";
 import { BUSINESS } from "../../../lib/businessInfo";
 import { LINKS, Rich, plain, type LinkKey } from "../solutionKit";
+import { ogImage } from "@/lib/og";
 
 const PAGE_PATH = "/solutions/print-shops";
 const PAGE_URL = `${BUSINESS.website}${PAGE_PATH}`;
@@ -30,12 +31,20 @@ const OG_TITLE = "Print Shop Management Software India | Automate Every Job - Re
 const OG_DESCRIPTION =
   "QR upload. AI in 30 seconds. Auto-delete. Replace WhatsApp-based document workflows at your print shop with RepetiGo.";
 
+const shareImage = ogImage({
+  title: "Print Shop Software",
+  subtitle: "Customers upload by QR and jobs land on your printer.",
+  category: "Solution",
+  icon: "print",
+});
+
 export const metadata: Metadata = {
   title: { absolute: TITLE },
   description: DESCRIPTION,
   robots: { index: true, follow: true },
   alternates: { canonical: PAGE_PATH },
   openGraph: {
+    images: [shareImage],
     title: OG_TITLE,
     description: OG_DESCRIPTION,
     type: "website",
@@ -43,6 +52,7 @@ export const metadata: Metadata = {
     siteName: "RepetiGo",
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: OG_TITLE,
     description: OG_DESCRIPTION,

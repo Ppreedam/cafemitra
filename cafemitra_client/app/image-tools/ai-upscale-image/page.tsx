@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import AiUpscaleImageClient from "./AiUpscaleImageClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/image-tools/ai-upscale-image";
+
+const shareImage = ogImage({
+  title: "AI Image Upscaler Free",
+  subtitle: "Enhance blurry, low-res or pixelated photos up to 4× with AI.",
+  category: "Free Image Tool",
+  icon: "resize",
+});
 
 export const metadata: Metadata = {
   title: "AI Image Upscaler Free - Enhance & Enlarge Photos to 4× | RepetiGo",
@@ -9,12 +17,14 @@ export const metadata: Metadata = {
     "Free AI image upscaler - enhance and enlarge blurry, low-res or pixelated photos up to 4× with AI. Prefer on-device? Switch to the standard upscaler in one click.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "AI Image Upscaler Free - Enhance & Enlarge Photos to 4×",
     description: "Enhance blurry, low-res or pixelated photos up to 4× with AI. On-device standard mode available.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "AI Image Upscaler Free - Enhance & Enlarge to 4×",
     description: "Free AI image upscaler. 2×/4×, WebP/PNG/JPG, auto-deleted from our servers, standard fallback.",

@@ -71,9 +71,9 @@ export const metadata: Metadata = {
   icons: {
     icon: "/Fab-Icon.png",
   },
-  alternates: {
-    canonical: siteUrl,
-  },
+  // No site-wide canonical here: a canonical set in the root layout is inherited by
+  // every page that doesn't set its own, which pointed those pages at the homepage.
+  // Each page sets its own `alternates.canonical` (the homepage does so in app/page.tsx).
   robots: {
     index: true,
     follow: true,
@@ -83,7 +83,6 @@ export const metadata: Metadata = {
   },
   openGraph: {
     type: "website",
-    url: siteUrl,
     siteName: "RepetiGo",
     title: "RepetiGo - AI-Powered Print Shop & Cyber Cafe Automation",
     description:

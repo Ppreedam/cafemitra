@@ -3,10 +3,18 @@ import type React from "react";
 import Link from "next/link";
 import { LandingNavbar } from "../../LandingNavbar";
 import { PublicFooter } from "../../PublicFooter";
+import { ogImage } from "@/lib/og";
 
 const siteUrl = "https://repetigo.com";
 const pageUrl = `${siteUrl}/tools/biodata-maker/`;
 const builderUrl = "/biodata-maker";
+
+const shareImage = ogImage({
+  title: "Marriage Biodata Maker",
+  subtitle: "Pick a template, add your photo and details, and download a print-ready marriage biodata PDF.",
+  category: "Free Tool",
+  icon: "resume",
+});
 
 export const metadata: Metadata = {
   title: "Marriage Biodata Maker - Free Templates & PDF | RepetiGo",
@@ -15,12 +23,14 @@ export const metadata: Metadata = {
   alternates: { canonical: pageUrl },
   robots: { index: true, follow: true },
   openGraph: {
+    images: [shareImage],
     title: "Marriage Biodata Maker - Free Templates & PDF",
     description: "Pick a template, add your photo and details, and download a print-ready marriage biodata PDF. Free.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Marriage Biodata Maker - Free Templates & PDF",
     description: "Free marriage biodata maker: templates, photo, print-ready PDF. Online or at a nearby shop.",
@@ -197,7 +207,7 @@ function SeoTable({ headers, rows }: { headers: string[]; rows: string[][] }) {
           {rows.map((row) => (
             <tr key={row.join("|")}>
               {row.map((cell, index) => (
-                <td key={`${cell}-${index}`}>{cell}</td>
+                <td key={`cell-${index}`}>{cell}</td>
               ))}
             </tr>
           ))}

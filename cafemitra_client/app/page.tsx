@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import HeroVideoModal from "./HeroVideoModal";
 import type { ElementType, ReactNode } from "react";
@@ -42,6 +43,22 @@ type IconType = ElementType;
 
 const siteUrl = "https://repetigo.com";
 const pageUrl = `${siteUrl}/`;
+
+// The homepage sets its own canonical; the root layout no longer sets one site-wide.
+// openGraph here replaces the layout's openGraph, so title/description are repeated.
+export const metadata: Metadata = {
+  alternates: {
+    canonical: pageUrl,
+  },
+  openGraph: {
+    type: "website",
+    url: pageUrl,
+    siteName: "RepetiGo",
+    title: "RepetiGo - AI-Powered Print Shop & Cyber Cafe Automation",
+    description:
+      "AI-powered print shop and cyber cafe software to automate document printing, passport photos, PDF tools and repetitive daily tasks.",
+  },
+};
 
 const trust = [
   { icon: MessageCircle, label: "No WhatsApp required" },

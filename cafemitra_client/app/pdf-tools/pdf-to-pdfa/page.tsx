@@ -1,20 +1,30 @@
 import type { Metadata } from "next";
 import { DashboardShell } from "../../DashboardShell";
 import ConversionTool from "../ConversionTool";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/pdf-tools/pdf-to-pdfa";
+
+const shareImage = ogImage({
+  title: "Convert PDF to PDF/A Free Online",
+  subtitle: "Convert PDFs to PDF/A for long-term archiving.",
+  category: "Free PDF Tool",
+  icon: "convert",
+});
 
 export const metadata: Metadata = {
   title: "Convert PDF to PDF/A Free Online - Archival Format Preparation | RepetiGo",
   description: "Convert any PDF to PDF/A free online - ISO 19005 compliant archival format for courts, government portals, and academic repositories. Best-effort archival preparation. No sign-up. Browser-only processing.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Convert PDF to PDF/A Free Online - Archival Format Preparation | RepetiGo",
     description: "Convert PDF to PDF/A free - ISO 19005 archival format for courts, governments, and academic repositories. PDF/A-1b and PDF/A-2 best-effort preparation supported. No sign-up, auto-deleted.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Convert PDF to PDF/A Free Online - RepetiGo",
     description: "ISO 19005-compliant PDF/A conversion free. Courts, government portals, universities. No sign-up, auto-deleted.",
@@ -104,7 +114,7 @@ function renderInline(text: string) {
   const routePattern = /((?:https?:\/\/)?(?:www\.)?repetigo\.com(?:\/[^\s.,;!?)]*)?|\/(?:tools|features|products|security|pricing|use-cases)\/[^\s.,;!?)]*|(?:https?:\/\/)?(?:www\.)?verapdf\.org)/gi;
   return text.split(routePattern).map((part, index) => {
     const href = mapRoute(part);
-    if (href) return <a key={`${part}-${index}`} href={href}>{labelFor(href)}</a>;
+    if (href) return <a key={`part-${index}`} href={href}>{labelFor(href)}</a>;
     return part;
   });
 }
@@ -140,7 +150,7 @@ function isCallout(line: string) {
 }
 
 function renderTable(table: SeoTable) {
-  return <div className="tool-seo-table-wrap"><table><thead><tr>{table.headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{table.rows.map((row) => <tr key={row.join("|")}>{row.map((cell, index) => <td key={`${cell}-${index}`}>{renderInline(cell)}</td>)}</tr>)}</tbody></table></div>;
+  return <div className="tool-seo-table-wrap"><table><thead><tr>{table.headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{table.rows.map((row) => <tr key={row.join("|")}>{row.map((cell, index) => <td key={`cell-${index}`}>{renderInline(cell)}</td>)}</tr>)}</tbody></table></div>;
 }
 
 function renderLines(lines: string[], keyPrefix: string) {

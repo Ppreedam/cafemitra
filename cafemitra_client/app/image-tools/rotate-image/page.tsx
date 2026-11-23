@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import RotateImageClient from "./RotateImageClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/image-tools/rotate-image";
+
+const shareImage = ogImage({
+  title: "Rotate Image Free",
+  subtitle: "Rotate left/right/180° or any exact angle, flip, and batch-rotate to a ZIP.",
+  category: "Free Image Tool",
+  icon: "convert",
+});
 
 export const metadata: Metadata = {
   title: "Rotate Image Free - Rotate & Flip by 90° or Any Angle | RepetiGo",
@@ -9,12 +17,14 @@ export const metadata: Metadata = {
     "Free image rotator - rotate a photo left, right, 180°, or any exact angle, and flip it. Batch-rotate many images and download a ZIP. Runs in your browser, no upload.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Rotate Image Free - Rotate & Flip by 90° or Any Angle",
     description: "Rotate left/right/180° or any exact angle, flip, and batch-rotate to a ZIP. In your browser.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Rotate Image Free - Rotate & Flip Online",
     description: "Free image rotator. 90°/180°/any angle, flip H/V, batch + ZIP, 100% in your browser.",

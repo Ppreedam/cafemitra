@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import CropImageClient from "./CropImageClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/image-tools/crop-image";
+
+const shareImage = ogImage({
+  title: "Crop Image Free Online",
+  subtitle: "Drag to crop, use exact numbers, or pick a ratio.",
+  category: "Free Image Tool",
+  icon: "resize",
+});
 
 export const metadata: Metadata = {
   title: "Crop Image Free Online - Rectangle & Circle Crop | RepetiGo",
@@ -9,12 +17,14 @@ export const metadata: Metadata = {
     "Free online crop image tool - drag to crop, use exact numbers, or pick a ratio (1:1, 16:9). Crop an image into a circle with a transparent PNG. Runs in your browser.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Crop Image Free Online - Rectangle & Circle Crop",
     description: "Drag to crop, use exact numbers, or pick a ratio. Crop into a circle with a transparent PNG.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Crop Image Free Online - Rectangle & Circle Crop",
     description: "Free crop tool. Drag + 8 handles + exact numbers, ratio presets, circle → transparent PNG.",

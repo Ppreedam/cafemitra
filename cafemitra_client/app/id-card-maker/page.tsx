@@ -3,8 +3,16 @@ import type React from "react";
 import Link from "next/link";
 import { DashboardShell } from "../DashboardShell";
 import { DOC_TYPES } from "./docTypes";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/id-card-maker";
+
+const shareImage = ogImage({
+  title: "ID Card Maker from PDF Online Free",
+  subtitle: "Upload a downloaded e-Aadhaar, e-PAN or e-EPIC PDF and print a card-size copy.",
+  category: "ID Card Maker",
+  icon: "idcard",
+});
 
 export const metadata: Metadata = {
   title: "ID Card Maker from PDF Online Free | RepetiGo",
@@ -12,12 +20,14 @@ export const metadata: Metadata = {
     "Create printable ID cards from a PDF online, free - Aadhaar, PAN, Voter ID, e-Shram, Ayushman, Ration, APAAR, EPFO, Driving Licence, or Agriculture card. Upload, review, and print.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "ID Card Maker from PDF Online Free | RepetiGo",
     description: "Upload any supported ID PDF, review the details, and print a ready-to-use ID card. Free, no sign-up required to try.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "ID Card Maker from PDF - RepetiGo",
     description: "Create printable ID cards from a PDF - upload, review, and print.",

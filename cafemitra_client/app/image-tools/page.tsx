@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
 import { imageTools } from "../imageToolsData";
+import { ogImage } from "@/lib/og";
 
 type NavItem = {
   name: string;
@@ -33,18 +34,27 @@ type NavGroup = {
 
 const pageUrl = "https://repetigo.com/image-tools";
 
+const shareImage = ogImage({
+  title: "Free Image Tools Online",
+  subtitle: "Convert, compress, resize and edit JPG, PNG, WebP and HEIC images.",
+  category: "Free Image Tool",
+  icon: "image",
+});
+
 export const metadata: Metadata = {
   title: "Image Converter Online Free - Convert JPG PNG WebP SVG BMP ICO | RepetiGo",
   description:
     "Free image converter online - convert any image format: JPG, PNG, WebP, SVG, BMP, ICO, HEIC, TIFF, PDF. No sign-up, no watermark, batch convert. India portal-ready. Files auto-deleted 60 minutes.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Image Converter Online Free - JPG PNG WebP SVG BMP ICO PDF | RepetiGo",
     description: "Free online image converter. Convert any format: JPG, PNG, WebP, SVG, BMP, ICO, HEIC, TIFF. No sign-up, batch convert, India portal-ready. Auto-deleted 60 min.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Image Converter Online Free - RepetiGo",
     description: "Convert any image format free - JPG, PNG, WebP, SVG, BMP, ICO. No sign-up, batch convert.",

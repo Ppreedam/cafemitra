@@ -2,8 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { DashboardShell } from "../../DashboardShell";
 import PdfEditTool from "../PdfEditTool";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/pdf-tools/page-numbers";
+
+const shareImage = ogImage({
+  title: "Add Page Numbers to PDF Free Online",
+  subtitle: "Number every page of your PDF in a few clicks.",
+  category: "Free PDF Tool",
+  icon: "edit",
+});
 
 export const metadata: Metadata = {
   title: "Add Page Numbers to PDF Free Online | RepetiGo",
@@ -11,12 +19,14 @@ export const metadata: Metadata = {
     "Add page numbers to PDF free - choose position (top/bottom, left/centre/right), font size, colour, and starting number. 6 placement options. Browser-only. No sign-up.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Add Page Numbers to PDF Free Online | RepetiGo",
     description: "Add page numbers to PDF free - choose position (top/bottom, left/centre/right), font size, colour, and starting number. 6 placement options. Browser-only. No sign-up.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Add Page Numbers to PDF Free Online - RepetiGo",
     description: "6 positions, custom starting number, font size and colour. No sign-up, browser-only.",
@@ -128,7 +138,7 @@ function Callout({ children }: { children: React.ReactNode }) {
 }
 
 function SeoTable({ headers, rows }: { headers: string[]; rows: string[][] }) {
-  return <div className="tool-seo-table-wrap"><table><thead><tr>{headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{rows.map((row) => <tr key={row.join("|")}>{row.map((cell, index) => <td key={`${cell}-${index}`}>{cell}</td>)}</tr>)}</tbody></table></div>;
+  return <div className="tool-seo-table-wrap"><table><thead><tr>{headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{rows.map((row) => <tr key={row.join("|")}>{row.map((cell, index) => <td key={`cell-${index}`}>{cell}</td>)}</tr>)}</tbody></table></div>;
 }
 
 function labelFor(href: string) {

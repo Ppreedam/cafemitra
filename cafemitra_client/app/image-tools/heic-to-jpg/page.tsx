@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import HeicToJpgClient from "./HeicToJpgClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/image-tools/heic-to-jpg";
+
+const shareImage = ogImage({
+  title: "HEIC to JPG Free",
+  subtitle: "Turn iPhone HEIC photos into JPG in your browser.",
+  category: "Free Image Tool",
+  icon: "convert",
+});
 
 export const metadata: Metadata = {
   title: "HEIC to JPG Free - Convert iPhone Photos in Your Browser | RepetiGo",
@@ -9,12 +17,14 @@ export const metadata: Metadata = {
     "Free HEIC to JPG converter - turn iPhone HEIC photos into JPG in your browser. Batch-convert and download a ZIP. Your photos never leave your device. No sign-up.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "HEIC to JPG Free - Convert iPhone Photos in Your Browser",
     description: "Turn iPhone HEIC photos into JPG in your browser. Batch-convert to a ZIP. Photos never leave your device.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "HEIC to JPG Free - iPhone Photo Converter",
     description: "Free HEIC→JPG. Batch + ZIP, quality slider, 100% in your browser - HEIC never leaves your device.",

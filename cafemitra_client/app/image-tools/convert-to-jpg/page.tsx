@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import ConvertToJpgClient from "./ConvertToJpgClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/image-tools/convert-to-jpg";
+
+const shareImage = ogImage({
+  title: "Convert to JPG Free",
+  subtitle: "Turn HEIC, WebP, PNG, SVG, BMP or GIF into JPG in your browser.",
+  category: "Free Image Tool",
+  icon: "convert",
+});
 
 export const metadata: Metadata = {
   title: "Convert to JPG Free - HEIC, WebP, PNG, SVG & GIF to JPG | RepetiGo",
@@ -9,12 +17,14 @@ export const metadata: Metadata = {
     "Free image-to-JPG converter - turn HEIC, WebP, PNG, SVG, BMP or GIF into JPG in your browser. Batch-convert and download a ZIP. No upload, no watermark.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Convert to JPG Free - HEIC, WebP, PNG, SVG & GIF to JPG",
     description: "Turn HEIC, WebP, PNG, SVG, BMP or GIF into JPG in your browser. Batch-convert to a ZIP.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Convert to JPG Free - HEIC, WebP, PNG, SVG & GIF",
     description: "Free image-to-JPG converter. HEIC/WebP/PNG/SVG/BMP/GIF, quality slider, batch + ZIP, in-browser.",

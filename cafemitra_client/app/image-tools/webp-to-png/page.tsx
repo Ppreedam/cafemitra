@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import WebpToPngClient from "./WebpToPngClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/image-tools/webp-to-png";
+
+const shareImage = ogImage({
+  title: "WebP to PNG Free",
+  subtitle: "Turn WebP images into lossless PNG in your browser, transparency preserved.",
+  category: "Free Image Tool",
+  icon: "convert",
+});
 
 export const metadata: Metadata = {
   title: "WebP to PNG Free - Lossless Converter, Transparency Kept | RepetiGo",
@@ -9,12 +17,14 @@ export const metadata: Metadata = {
     "Free WebP to PNG converter - turn WebP images into lossless PNG in your browser, with transparency fully preserved. Batch-convert and download a ZIP. No upload.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "WebP to PNG Free - Lossless Converter, Transparency Kept",
     description: "Turn WebP images into lossless PNG in your browser, transparency preserved. Batch + ZIP.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "WebP to PNG Free - Lossless Converter",
     description: "Free WebP→PNG. Lossless, transparency kept, batch + ZIP, 100% in your browser.",

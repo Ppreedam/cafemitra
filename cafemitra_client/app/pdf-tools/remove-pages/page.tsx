@@ -1,8 +1,16 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import RemovePagesClient from "./RemovePagesClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/pdf-tools/remove-pages";
+
+const shareImage = ogImage({
+  title: "Remove Pages from PDF",
+  subtitle: "Delete pages from a PDF free in your browser.",
+  category: "Free PDF Tool",
+  icon: "split",
+});
 
 export const metadata: Metadata = {
   title: "Remove Pages from PDF - Free Online, No Sign-Up | RepetiGo",
@@ -12,12 +20,14 @@ export const metadata: Metadata = {
     canonical: pageUrl,
   },
   openGraph: {
+    images: [shareImage],
     title: "Remove Pages from PDF - Free Online, No Sign-Up | RepetiGo",
     description: "Delete pages from a PDF free in your browser. No sign-up. Processed entirely in your browser - never uploaded.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Remove Pages from PDF - Free Online | RepetiGo",
     description: "Free online tool to delete pages from a PDF on any device. No sign-up. Browser-only processing.",
@@ -245,10 +255,10 @@ function isCallout(line: string) {
 function renderInline(text: string): ReactNode[] {
   const patterns = /(security page|PrintPilot|RepetiGo's Remove Pages tool|remove pages from PDF tool|Remove Pages tool)/g;
   return text.split(patterns).map((part, index) => {
-    if (part === "security page") return <a href="/privacy-policy" key={`${part}-${index}`}>security page</a>;
-    if (part === "PrintPilot") return <a href="/print-automation" key={`${part}-${index}`}>PrintPilot</a>;
+    if (part === "security page") return <a href="/privacy-policy" key={`part-${index}`}>security page</a>;
+    if (part === "PrintPilot") return <a href="/print-automation" key={`part-${index}`}>PrintPilot</a>;
     if (part === "RepetiGo's Remove Pages tool" || part === "remove pages from PDF tool" || part === "Remove Pages tool") {
-      return <a href="/pdf-tools/remove-pages" key={`${part}-${index}`}>{part}</a>;
+      return <a href="/pdf-tools/remove-pages" key={`part-${index}`}>{part}</a>;
     }
     return part;
   });

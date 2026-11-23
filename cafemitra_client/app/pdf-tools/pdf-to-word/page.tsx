@@ -1,15 +1,24 @@
 import type { Metadata } from "next";
 import { DashboardShell } from "../../DashboardShell";
 import ConversionTool from "../ConversionTool";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/pdf-tools/pdf-to-word";
+
+const shareImage = ogImage({
+  title: "PDF to Word Converter",
+  subtitle: "Extract PDF text into an editable Word file.",
+  category: "Free PDF Tool",
+  icon: "convert",
+});
 
 export const metadata: Metadata = {
   title: "PDF to Word Converter - Free Online, No Sign-Up | RepetiGo",
   description: "Convert PDF to Word free online - turn any PDF into an editable .docx file in seconds - text content extracted, ready to edit. No sign-up, no install. Files browser-only - never uploaded.",
   alternates: { canonical: pageUrl },
-  twitter: { card: "summary_large_image", title: "PDF to Word Converter Free Online - RepetiGo", description: "Convert PDF to editable Word free. No sign-up, no install, browser-only - never uploaded." },
+  twitter: { images: [shareImage], card: "summary_large_image", title: "PDF to Word Converter Free Online - RepetiGo", description: "Convert PDF to editable Word free. No sign-up, no install, browser-only - never uploaded." },
   robots: { index: true, follow: true },
+  openGraph: { type: "website", url: "https://repetigo.com/pdf-tools/pdf-to-word", siteName: "RepetiGo", images: [shareImage] },
 };
 
 const pdfToWordContent = String.raw`H1: PDF to Word Converter. Free Online. Editable Text in Seconds.

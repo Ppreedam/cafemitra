@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   title: "Disclaimer - RepetiGo Print Shop Software",
   description:
     "RepetiGo disclaimer. Limitations of liability, no warranty, AI processing, document verification, and platform use terms for Indian print shops and cyber cafes.",
+  alternates: {
+    canonical: "https://repetigo.com/disclaimer",
+  },
   robots: {
     index: true,
     follow: true,

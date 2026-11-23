@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import CompressImageClient from "./CompressImageClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/image-tools/compress-image";
+
+const shareImage = ogImage({
+  title: "Compress Image Free",
+  subtitle: "Reduce JPG, PNG and WebP file size for forms and portals.",
+  category: "Free Image Tool",
+  icon: "compress",
+});
 
 export const metadata: Metadata = {
   title: "Compress Image Free - Reduce Image Size in Your Browser | RepetiGo",
@@ -9,12 +17,14 @@ export const metadata: Metadata = {
     "Compress image files free - reduce JPG, PNG & WebP size right in your browser. Nothing is uploaded. Adjust quality, batch-compress, and download in seconds.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Compress Image Free - Reduce Image Size in Your Browser",
     description: "Reduce JPG, PNG & WebP file size free. Nothing uploaded - everything runs in your browser.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Compress Image Free - In Your Browser",
     description: "Free image compressor. Adjustable quality, batch + ZIP download, 100% client-side.",

@@ -1,8 +1,16 @@
 import type { Metadata } from "next";
 import IdCardUploadClient from "../IdCardUploadClient";
 import { JsonLd, StructuredSeoCopy } from "../SeoContent";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/id-card-maker/dl";
+
+const shareImage = ogImage({
+  title: "Driving Licence Card Maker from PDF Online Free",
+  subtitle: "Print a card-size copy from your downloaded Driving Licence PDF - launching soon.",
+  category: "Coming Soon",
+  icon: "idcard",
+});
 
 export const metadata: Metadata = {
   title: "Driving Licence Card Maker from PDF Online Free | RepetiGo",
@@ -10,12 +18,14 @@ export const metadata: Metadata = {
     "Turn your downloaded Driving Licence PDF into a clean, print-ready DL card - upload the PDF, review the extracted details, and print. Free, built for print shops and cyber cafes.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Driving Licence Card Maker from PDF Online Free | RepetiGo",
     description: "Upload your Driving Licence PDF, review the details, and print a ready-to-use DL card. Free, no sign-up required to try.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Driving Licence Card Maker from PDF - RepetiGo",
     description: "Create a printable Driving Licence card from your DL PDF - upload, review, and print.",

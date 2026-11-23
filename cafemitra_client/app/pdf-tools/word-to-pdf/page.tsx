@@ -1,8 +1,25 @@
 import type { Metadata } from "next";
 import { DashboardShell } from "../../DashboardShell";
 import ConversionTool from "../ConversionTool";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/pdf-tools/word-to-pdf";
+
+const shareImage = ogImage({
+  title: "Word to PDF Converter",
+  subtitle: "Convert .docx to a clean text PDF free.",
+  category: "Free PDF Tool",
+  icon: "convert",
+});
+
+export const metadata: Metadata = {
+  title: "Word to PDF Converter - Free Online, No Sign-Up | RepetiGo",
+  description: "Convert Word (.docx) to PDF free online. Extracts your document's text into a clean, simple PDF - fonts, tables and images are not kept. No sign-up, no install.",
+  alternates: { canonical: pageUrl },
+  openGraph: { images: [shareImage], type: "website", url: pageUrl, siteName: "RepetiGo", title: "Word to PDF Converter Free Online - RepetiGo", description: "Convert .docx to a clean text PDF free. No sign-up, no install." },
+  twitter: { images: [shareImage], card: "summary_large_image", title: "Word to PDF Converter Free Online - RepetiGo", description: "Convert .docx to a clean text PDF free. No sign-up, no install." },
+  robots: { index: true, follow: true },
+};
 
 const wordToPdfContent = String.raw`H1: Word to PDF Converter Free. Convert DOCX to PDF - Text Content Extracted.
 RepetiGo's free Word to PDF converter turns your Microsoft Word .docx documents into a PDF containing the text content of your document. This is a text-extraction tool: it reads the paragraphs from your DOCX file and lays them out in a clean PDF - fonts, tables, images, and complex layout are not carried over. Upload your document, click Convert, and download a PDF in seconds.
@@ -285,11 +302,11 @@ function StructuredSeoCopy({ content }: { content: string }) { const normal = se
 function separateBlocks(content: string) { const starts = ["Format\nSource Application", "Method\nHow It Works", "Element\nWhat Happens During Conversion", "Use Case\nWhy Word? Why PDF?", "Feature\nRepetiGo", "Protection Layer\nWhat It Means in Practice", "Tool\nWhat It Does"]; const withHeadings = content.replace(/(^|\n)(H[123]: [^\n]+)\n/g, "$1\n$2\n\n"); return starts.reduce((result, start) => result.replaceAll(`\n${start}`, `\n\n${start}`), withHeadings); }
 function getKnownTable(text: string): SeoTable | null { const lines = text.split("\n").filter(Boolean); const defs: Record<string, string[]> = { Format: ["Format", "Source Application", "Accepted", "Formatting Preserved"], Method: ["Method", "How It Works", "When to Use", "Limitation"], Element: ["Element", "What Happens During Conversion"], "Use Case": ["Use Case", "Why Word? Why PDF?", "India-Specific Context"], Feature: ["Feature", "RepetiGo", "ilovepdf", "Smallpdf", "Adobe Acrobat Free"], "Protection Layer": ["Protection Layer", "What It Means in Practice"], Tool: ["Tool", "What It Does", "Link"] }; const headers = defs[lines[0]]; if (!headers || !headers.every((header, index) => lines[index] === header)) return null; return { headers: headers[0] === "Tool" ? ["Tool", "What It Does", "Link"] : headers, rows: chunkRows(lines.slice(headers.length), headers.length) }; }
 function chunkRows(values: string[], size: number) { const rows: string[][] = []; for (let index = 0; index < values.length; index += size) rows.push(values.slice(index, index + size)); return rows; }
-function SeoTable({ headers, rows }: SeoTable) { return <div className="tool-seo-table-wrap"><table><thead><tr>{headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{rows.map((row) => <tr key={row.join("|")}>{row.map((cell, index) => <td key={`${cell}-${index}`}>{renderTableCell(cell)}</td>)}</tr>)}</tbody></table></div>; }
+function SeoTable({ headers, rows }: SeoTable) { return <div className="tool-seo-table-wrap"><table><thead><tr>{headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{rows.map((row) => <tr key={row.join("|")}>{row.map((cell, index) => <td key={`cell-${index}`}>{renderTableCell(cell)}</td>)}</tr>)}</tbody></table></div>; }
 function isCtaLine(line: string) { return line.startsWith("[") && line.endsWith("]"); }
 function CtaLine({ text }: { text: string }) { const inner = text.slice(2, -2); const arrow = inner.indexOf("→"); const href = mapSeoRoute(arrow >= 0 ? inner.slice(arrow + 1) : ""); return <a className="tool-seo-inline-cta" href={href || "#word-to-pdf-guide"}>{(arrow >= 0 ? inner.slice(0, arrow) : inner).trim()}{href ? <span>→</span> : null}</a>; }
 function renderTableCell(cell: string) { const href = mapSeoRoute(cell.replace(/^→\s*/, "")); return href ? <a className="tool-seo-table-link" href={href}>{getRouteLabel(href)}</a> : renderInlineMappedLinks(cell); }
-function renderInlineMappedLinks(text: string) { return text.split(/(repetigo\.com\/(?:tools\/pdf\/[a-z-]+|pricing)\/?|\/tools\/pdf\/[a-z-]*\/?|\/products\/printpilot\/?|\/features\/(?:qr-upload|auto-delete)\/?|\/security\/?|\/use-cases\/secure-printing\/?)/g).map((part, index) => { const href = mapSeoRoute(part.startsWith("repetigo.com") ? `https://${part}` : part); return href ? <a href={href} key={`${part}-${index}`}>{getRouteLabel(href)}</a> : part; }); }
+function renderInlineMappedLinks(text: string) { return text.split(/(repetigo\.com\/(?:tools\/pdf\/[a-z-]+|pricing)\/?|\/tools\/pdf\/[a-z-]*\/?|\/products\/printpilot\/?|\/features\/(?:qr-upload|auto-delete)\/?|\/security\/?|\/use-cases\/secure-printing\/?)/g).map((part, index) => { const href = mapSeoRoute(part.startsWith("repetigo.com") ? `https://${part}` : part); return href ? <a href={href} key={`part-${index}`}>{getRouteLabel(href)}</a> : part; }); }
 function mapSeoRoute(route: string) { const clean = route.trim().replace(/^https?:\/\/(www\.)?repetigo\.com/i, "").replace(/\/$/, ""); const routes: Record<string, string> = { "/pdf-tools": "/pdf-tools", "/pdf-tools/word-to-pdf": "/pdf-tools/word-to-pdf", "/pdf-tools/compress-pdf": "/pdf-tools/compress-pdf", "/pdf-tools/merge-pdf": "/pdf-tools/merge-pdf", "/pdf-tools/split-pdf": "/pdf-tools/split-pdf", "/pdf-tools/jpg-to-pdf": "/pdf-tools/jpg-to-pdf", "/pdf-tools/rotate-pdf": "/pdf-tools/rotate-pdf", "/pdf-tools/pdf-to-jpg": "/pdf-tools/pdf-to-jpg", "/products/printpilot": "/print-automation", "/features/qr-upload": "/print-automation", "/features/auto-delete": "/privacy-policy", "/security": "/privacy-policy", "/use-cases/secure-printing": "/privacy-policy", "/pricing": "/pricing" }; return routes[clean] || ""; }
 function getRouteLabel(href: string) { const labels: Record<string, string> = { "/pdf-tools": "Explore All PDF Tools", "/pdf-tools/word-to-pdf": "Open Word to PDF", "/pdf-tools/compress-pdf": "Open Compress PDF", "/pdf-tools/merge-pdf": "Open Merge PDF", "/pdf-tools/split-pdf": "Open Split PDF", "/pdf-tools/jpg-to-pdf": "Open JPG to PDF", "/pdf-tools/rotate-pdf": "Open Rotate PDF", "/pdf-tools/pdf-to-jpg": "Open PDF to JPG", "/print-automation": "Learn About PrintPilot", "/privacy-policy": "Read Privacy Policy", "/pricing": "Start Free Trial" }; return labels[href] || "Open Tool"; }
 function normalizeMojibake(value: string) { return value.replaceAll("âœ“", "✓").replaceAll("âœ•", "✕").replaceAll("âœ—", "✕").replaceAll("âš ï¸", "⚠️").replaceAll("ðŸ’¡", "💡").replaceAll("ðŸ“±", "📱").replaceAll("ðŸ”’", "🔒").replaceAll("ðŸ”", "🔐").replaceAll("ðŸ—‘ï¸", "🗑️").replaceAll("ðŸ‘ï¸", "👁️").replaceAll("ðŸš«", "🚫").replaceAll("ðŸ–¨ï¸", "🖨️").replaceAll("âžœ", "➜").replaceAll("â†’", "→").replaceAll("â€“", "–").replaceAll("â€”", "—").replaceAll("â‚¹", "₹").replaceAll("â˜…", "★").replaceAll("Â·", "·").replaceAll("ðŸ“„", "📄").replaceAll("ðŸŽ“", "🎓").replaceAll("ðŸ›ï¸", "🏛️").replaceAll("ðŸ“‹", "📋").replaceAll("ðŸ¤", "🤝").replaceAll("âœï¸", "✍️").replaceAll("â‰¤", "≤").replaceAll("â‰¥", "≥").replaceAll("âœ…", "✅").replaceAll("ðŸš€", "🚀").replaceAll("ðŸ§¾", "🧾"); }

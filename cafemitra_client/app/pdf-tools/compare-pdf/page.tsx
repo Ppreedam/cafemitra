@@ -1,20 +1,30 @@
 import type { Metadata } from "next";
 import { DashboardShell } from "../../DashboardShell";
 import PdfSecurityTool from "../PdfSecurityTool";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/pdf-tools/compare-pdf";
+
+const shareImage = ogImage({
+  title: "Compare PDF Files Free",
+  subtitle: "Upload two PDFs and get a page-by-page similarity score.",
+  category: "Free PDF Tool",
+  icon: "file",
+});
 
 export const metadata: Metadata = {
   title: "Compare PDF Files Free - Similarity Score | RepetiGo",
   description: "Compare PDF files free - upload two PDFs and get a page-by-page word-overlap similarity score (0-100%) with side-by-side thumbnails. Text-layer comparison. Browser-only. No sign-up.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Compare PDF Files Free - Similarity Score | RepetiGo",
     description: "Compare PDF files free - upload two PDFs and get a page-by-page word-overlap similarity score (0-100%) with side-by-side thumbnails. Text-layer comparison. Browser-only. No sign-up.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Compare PDF Files Free - RepetiGo",
     description: "Word-overlap similarity score with side-by-side thumbnails. No sign-up, browser-only.",
@@ -261,7 +271,7 @@ function renderInline(text: string) {
   const routePattern = /((?:https?:\/\/)?(?:www\.)?repetigo\.com(?:\/[^\s.,;!?)]*)?|\/(?:tools|features|products|security|pricing|use-cases)\/[^\s.,;!?)]*)/gi;
   return text.split(routePattern).map((part, index) => {
     const href = mapRoute(part);
-    if (href) return <a key={`${part}-${index}`} href={href}>{labelFor(href)}</a>;
+    if (href) return <a key={`part-${index}`} href={href}>{labelFor(href)}</a>;
     return part;
   });
 }
@@ -296,7 +306,7 @@ function renderBracketCta(line: string) {
 }
 
 function renderTable(table: SeoTable) {
-  return <div className="tool-seo-table-wrap"><table><thead><tr>{table.headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{table.rows.map((row) => <tr key={row.join("|")}>{row.map((cell, index) => <td key={`${cell}-${index}`}>{renderInline(cell)}</td>)}</tr>)}</tbody></table></div>;
+  return <div className="tool-seo-table-wrap"><table><thead><tr>{table.headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{table.rows.map((row) => <tr key={row.join("|")}>{row.map((cell, index) => <td key={`cell-${index}`}>{renderInline(cell)}</td>)}</tr>)}</tbody></table></div>;
 }
 
 function renderLines(lines: string[], keyPrefix: string): React.ReactNode[] {

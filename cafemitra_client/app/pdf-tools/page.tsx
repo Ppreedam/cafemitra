@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
 import { pdfTools, pdfToolHref } from "../pdfToolsData";
+import { ogImage } from "@/lib/og";
 
 type NavItem = {
   name: string;
@@ -33,18 +34,27 @@ type NavGroup = {
 
 const pageUrl = "https://repetigo.com/pdf-tools";
 
+const shareImage = ogImage({
+  title: "Free PDF Tools Online",
+  subtitle: "Merge, split, compress, convert and edit PDFs in one place.",
+  category: "Free PDF Tool",
+  icon: "file",
+});
+
 export const metadata: Metadata = {
   title: "Free PDF Tools Online - Merge, Split, Compress, Convert & Sign | RepetiGo",
   description:
     "30+ free PDF tools online - merge, split, compress, convert PDF to/from Word, Excel, and PowerPoint, sign, watermark, OCR, and more. No sign-up, no watermark, 100% browser-based - nothing is ever uploaded.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Free PDF Tools Online - Merge, Split, Compress, Convert & Sign | RepetiGo",
     description: "30+ free PDF tools in one place - merge, split, compress, convert, sign, watermark, OCR. No sign-up, nothing uploaded.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Free PDF Tools Online - RepetiGo",
     description: "Merge, split, compress, convert, sign, and edit PDFs free. No sign-up, 100% browser-based.",

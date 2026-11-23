@@ -2,20 +2,30 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { DashboardShell } from "../../DashboardShell";
 import PdfSecurityTool from "../PdfSecurityTool";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/pdf-tools/redact-pdf";
+
+const shareImage = ogImage({
+  title: "Redact PDF Free",
+  subtitle: "Permanently black out sensitive text and images with a rectangular area.",
+  category: "Free PDF Tool",
+  icon: "lock",
+});
 
 export const metadata: Metadata = {
   title: "Redact PDF Free - Permanently Remove Sensitive Data | RepetiGo",
   description: "Redact PDF free - permanently black out sensitive text and images with a rectangular area. Applied identically across selected pages. Entire output rasterised. DPDP Act compliant. No sign-up.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Redact PDF Free - Permanently Remove Sensitive Data | RepetiGo",
     description: "Redact PDF free - permanently black out sensitive text and images with a rectangular area. Applied identically across selected pages. Entire output rasterised. DPDP Act compliant. No sign-up.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Redact PDF Free - RepetiGo",
     description: "Permanently black out sensitive content with a rectangular area. Entire output rasterised. No sign-up, browser-only.",
@@ -241,12 +251,12 @@ function renderInline(text: string) {
   const routePattern = /((?:https?:\/\/)?(?:www\.)?repetigo\.com(?:\/[^\s.,;!?)]*)?|\/(?:tools|features|products|security|pricing|use-cases)\/[^\s.,;!?)]*)/gi;
   return text.split(routePattern).map((part, index) => {
     const href = mapRoute(part);
-    return href ? <a key={`${part}-${index}`} href={href}>{routeLabels[href] || "Open PDF Tool"}</a> : part;
+    return href ? <a key={`part-${index}`} href={href}>{routeLabels[href] || "Open PDF Tool"}</a> : part;
   });
 }
 
 function renderTable(table: SeoTable) {
-  return <div className="tool-seo-table-wrap"><table><thead><tr>{table.headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{table.rows.map((row) => <tr key={row.join("|")}>{row.map((cell, index) => <td key={`${cell}-${index}`}>{renderInline(cell)}</td>)}</tr>)}</tbody></table></div>;
+  return <div className="tool-seo-table-wrap"><table><thead><tr>{table.headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{table.rows.map((row) => <tr key={row.join("|")}>{row.map((cell, index) => <td key={`cell-${index}`}>{renderInline(cell)}</td>)}</tr>)}</tbody></table></div>;
 }
 
 function renderLines(lines: string[], keyPrefix: string): ReactNode[] {

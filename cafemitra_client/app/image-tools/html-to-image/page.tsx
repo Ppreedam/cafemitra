@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import HtmlToImageClient from "./HtmlToImageClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/image-tools/html-to-image";
+
+const shareImage = ogImage({
+  title: "HTML to Image Free",
+  subtitle: "Turn the readable text of an HTML file into a PNG, safely in your browser.",
+  category: "Free Image Tool",
+  icon: "convert",
+});
 
 export const metadata: Metadata = {
   title: "HTML to Image Free - Render HTML Text to a PNG | RepetiGo",
@@ -9,12 +17,14 @@ export const metadata: Metadata = {
     "Free HTML to image tool - turn the readable text of an HTML file into a PNG, safely in your browser. No scripts run, nothing uploaded. (Text render, not a full screenshot.)",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "HTML to Image Free - Render HTML Text to a PNG",
     description: "Turn the readable text of an HTML file into a PNG, safely in your browser. No scripts run.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "HTML to Image Free - HTML Text to PNG",
     description: "Free, safe HTML-text-to-PNG. No scripts executed, nothing uploaded. Text render, not a screenshot.",

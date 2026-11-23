@@ -16,6 +16,7 @@ import { LandingNavbar } from "../../LandingNavbar";
 import { PublicFooter } from "../../PublicFooter";
 import { BUSINESS } from "../../../lib/businessInfo";
 import { LINKS, Rich, plain, type LinkKey } from "../solutionKit";
+import { ogImage } from "@/lib/og";
 
 const PAGE_PATH = "/solutions/colleges";
 const PAGE_URL = `${BUSINESS.website}${PAGE_PATH}`;
@@ -27,12 +28,20 @@ const OG_TITLE = "College Printing Software India | Bulk Admit Card & Document P
 const OG_DESCRIPTION =
   "Bulk admit cards, hall tickets, student assignment printing - AI-processed, auto-deleted. RepetiGo handles thousands of college documents per exam cycle securely.";
 
+const shareImage = ogImage({
+  title: "College Printing Software",
+  subtitle: "Admit cards, hall tickets and assignments via QR upload.",
+  category: "Solution",
+  icon: "print",
+});
+
 export const metadata: Metadata = {
   title: { absolute: TITLE },
   description: DESCRIPTION,
   robots: { index: true, follow: true },
   alternates: { canonical: PAGE_PATH },
   openGraph: {
+    images: [shareImage],
     title: OG_TITLE,
     description: OG_DESCRIPTION,
     type: "website",
@@ -40,6 +49,7 @@ export const metadata: Metadata = {
     siteName: "RepetiGo",
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: OG_TITLE,
     description: OG_DESCRIPTION,

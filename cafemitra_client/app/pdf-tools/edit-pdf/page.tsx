@@ -1,20 +1,30 @@
 import type { Metadata } from "next";
 import { DashboardShell } from "../../DashboardShell";
 import InPlacePdfEditor from "../InPlacePdfEditor";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/pdf-tools/edit-pdf";
+
+const shareImage = ogImage({
+  title: "Edit PDF Online Free",
+  subtitle: "Edit existing text or add new text anywhere on the page.",
+  category: "Free PDF Tool",
+  icon: "edit",
+});
 
 export const metadata: Metadata = {
   title: "Edit PDF Online Free - Add and Edit Text | RepetiGo",
   description: "Edit PDF free - click to edit existing text, add new text anywhere, bold/italic/colour/size. Unlimited undo/redo. Edited pages become image-based. Browser-only. No sign-up.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Edit PDF Online Free - Add and Edit Text | RepetiGo",
     description: "Edit PDF free - click to edit existing text, add new text anywhere, bold/italic/colour/size. Unlimited undo/redo. Edited pages become image-based. Browser-only. No sign-up.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Edit PDF Online Free - RepetiGo",
     description: "Click to edit existing text or add new text, with unlimited undo/redo. No sign-up, browser-only.",
@@ -252,10 +262,10 @@ function getTableDefinition(lines: string[], index: number): { headers: string[]
 }
 function chunkRows(values: string[], size: number) { const rows: string[][] = []; for (let index = 0; index < values.length; index += size) rows.push(values.slice(index, index + size)); return rows; }
 function renderLines(lines: string[], prefix: string) { const output: React.ReactNode[] = []; for (let index = 0; index < lines.length; index += 1) { const line = lines[index]; if (/^[•-]\s/.test(line) || /^\d+\.\s/.test(line)) { const ordered = /^\d+\./.test(line); const items: string[] = []; while (index < lines.length && (ordered ? /^\d+\.\s/.test(lines[index]) : /^[•-]\s/.test(lines[index]))) { items.push(lines[index].replace(/^(?:•|-|\d+\.)\s*/, "")); index += 1; } index -= 1; output.push(ordered ? <ol className="tool-seo-steps" key={`${prefix}-list-${index}`}>{items.map((item) => <li key={item}>{renderInlineMappedLinks(item)}</li>)}</ol> : <ul className="tool-seo-list" key={`${prefix}-list-${index}`}>{items.map((item) => <li key={item}>{renderInlineMappedLinks(item)}</li>)}</ul>); } else if (/^(?:💡|✅|⚠️|🔒|🔐|🗑️|👁️|🚫|🖨️|â|ð)/.test(line)) output.push(<aside className="tool-seo-callout" key={`${prefix}-${index}`}>{renderInlineMappedLinks(line)}</aside>); else output.push(<p key={`${prefix}-${index}`}>{renderInlineMappedLinks(line)}</p>); } return output; }
-function SeoTable({ headers, rows }: SeoTable) { return <div className="tool-seo-table-wrap"><table><thead><tr>{headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{rows.map((row) => <tr key={row.join("|")}>{row.map((cell, index) => <td key={`${cell}-${index}`}>{renderInlineMappedLinks(cell)}</td>)}</tr>)}</tbody></table></div>; }
+function SeoTable({ headers, rows }: SeoTable) { return <div className="tool-seo-table-wrap"><table><thead><tr>{headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{rows.map((row) => <tr key={row.join("|")}>{row.map((cell, index) => <td key={`cell-${index}`}>{renderInlineMappedLinks(cell)}</td>)}</tr>)}</tbody></table></div>; }
 function isCtaLine(line: string) { return line.trim().startsWith("[") && line.trim().endsWith("]"); }
 function CtaLine({ text }: { text: string }) { const inner = text.trim().slice(2, -2); const arrow = inner.indexOf("→"); const href = mapSeoRoute(arrow >= 0 ? inner.slice(arrow + 1) : ""); return <a className="tool-seo-inline-cta" href={href || "#edit-pdf-guide"}>{(arrow >= 0 ? inner.slice(0, arrow) : inner).trim()}{href ? <span>→</span> : null}</a>; }
-function renderInlineMappedLinks(text: string) { return text.split(/(repetigo\.com\/(?:tools\/pdf\/[a-z-]+|pricing)\/?|\/tools\/pdf\/[a-z-]*\/?|\/products\/printpilot\/?|\/features\/(?:auto-delete|qr-upload)\/?|\/security\/?)/g).map((part, index) => { const href = mapSeoRoute(part.startsWith("repetigo.com") ? `https://${part}` : part); return href ? <a href={href} key={`${part}-${index}`}>{getRouteLabel(href)}</a> : part; }); }
+function renderInlineMappedLinks(text: string) { return text.split(/(repetigo\.com\/(?:tools\/pdf\/[a-z-]+|pricing)\/?|\/tools\/pdf\/[a-z-]*\/?|\/products\/printpilot\/?|\/features\/(?:auto-delete|qr-upload)\/?|\/security\/?)/g).map((part, index) => { const href = mapSeoRoute(part.startsWith("repetigo.com") ? `https://${part}` : part); return href ? <a href={href} key={`part-${index}`}>{getRouteLabel(href)}</a> : part; }); }
 function mapSeoRoute(route: string) { const clean = route.trim().replace(/^https?:\/\/(www\.)?repetigo\.com/i, "").replace(/\/$/, ""); const routes: Record<string, string> = { "/pdf-tools": "/pdf-tools", "/pdf-tools/edit-pdf": "/pdf-tools/edit-pdf", "/pdf-tools/unlock-pdf": "/pdf-tools/unlock-pdf", "/pdf-tools/pdf-to-word": "/pdf-tools/pdf-to-word", "/pdf-tools/ocr-pdf": "/pdf-tools/ocr-pdf", "/pdf-tools/watermark-pdf": "/pdf-tools/watermark-pdf", "/pdf-tools/add-page-numbers": "/pdf-tools/page-numbers", "/pdf-tools/redact-pdf": "/pdf-tools/redact-pdf", "/pdf-tools/pdf-form": "/pdf-tools/pdf-form", "/pdf-tools/crop-pdf": "/pdf-tools/crop-pdf", "/pdf-tools/rotate-pdf": "/pdf-tools/rotate-pdf", "/pdf-tools/compress-pdf": "/pdf-tools/compress-pdf", "/products/printpilot": "/print-automation", "/security": "/privacy-policy", "/features/auto-delete": "/privacy-policy", "/features/qr-upload": "/print-automation", "/pricing": "/pricing" }; return routes[clean] || ""; }
 function getRouteLabel(href: string) { const labels: Record<string, string> = { "/pdf-tools": "Explore All PDF Tools", "/pdf-tools/edit-pdf": "Open PDF Editor", "/pdf-tools/unlock-pdf": "Open Unlock PDF", "/pdf-tools/pdf-to-word": "Open PDF to Word", "/pdf-tools/ocr-pdf": "Open OCR PDF", "/pdf-tools/watermark-pdf": "Open Add Watermark", "/pdf-tools/page-numbers": "Open Page Numbers", "/pdf-tools/redact-pdf": "Open Redact PDF", "/pdf-tools/pdf-form": "Open PDF Form", "/pdf-tools/crop-pdf": "Open Crop PDF", "/pdf-tools/rotate-pdf": "Open Rotate PDF", "/pdf-tools/compress-pdf": "Open Compress PDF", "/print-automation": "Learn About PrintPilot", "/privacy-policy": "Read Privacy Policy", "/pricing": "Start Free Trial" }; return labels[href] || "Open Tool"; }
 function JsonLd() { const schemas = [{ "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo PDF Editor", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online PDF editor - click to edit existing text or add new text anywhere, with bold/italic/colour/size formatting and unlimited undo/redo, entirely in the browser. Edited pages become image-based; unedited pages stay in their original format.", url: pageUrl }, { "@context": "https://schema.org", "@type": "HowTo", name: "How to Edit a PDF in 3 Steps", step: [{ "@type": "HowToStep", name: "Upload and Browse Your PDF" }, { "@type": "HowToStep", name: "Edit Existing Text or Add New Text" }, { "@type": "HowToStep", name: "Download Your Edited PDF" }] }, { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqs.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "PDF Tools", item: "https://repetigo.com/pdf-tools" }, { "@type": "ListItem", position: 3, name: "Edit PDF", item: pageUrl }] }]; return <>{schemas.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>; }

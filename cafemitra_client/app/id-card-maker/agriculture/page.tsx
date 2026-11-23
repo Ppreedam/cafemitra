@@ -1,8 +1,16 @@
 import type { Metadata } from "next";
 import IdCardUploadClient from "../IdCardUploadClient";
 import { JsonLd, StructuredSeoCopy } from "../SeoContent";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/id-card-maker/agriculture";
+
+const shareImage = ogImage({
+  title: "Agriculture / Kisan Card Maker from PDF Online Free",
+  subtitle: "Print a card-size copy from your downloaded Kisan PDF - launching soon.",
+  category: "Coming Soon",
+  icon: "idcard",
+});
 
 export const metadata: Metadata = {
   title: "Agriculture / Kisan Card Maker from PDF Online Free | RepetiGo",
@@ -10,12 +18,14 @@ export const metadata: Metadata = {
     "Turn your downloaded Agriculture / Kisan card PDF into a clean, print-ready farmer ID card - upload the PDF, review the extracted details, and print. Free.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Agriculture / Kisan Card Maker from PDF Online Free | RepetiGo",
     description: "Upload your Agriculture / Kisan card PDF, review the details, and print a ready-to-use farmer ID card. Free, no sign-up required to try.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Agriculture Card Maker from PDF - RepetiGo",
     description: "Create a printable Agriculture / Kisan card from your PDF - upload, review, and print.",

@@ -4,9 +4,17 @@ import Link from "next/link";
 import { LandingNavbar } from "../../../LandingNavbar";
 import { PublicFooter } from "../../../PublicFooter";
 import { PassportPhotoCta } from "./PassportPhotoCta";
+import { ogImage } from "@/lib/og";
 
 const siteUrl = "https://repetigo.com";
 const pageUrl = `${siteUrl}/tools/photo/passport-photo/`;
+
+const shareImage = ogImage({
+  title: "Passport Size Photo Maker Free",
+  subtitle: "Make a passport size photo at home.",
+  category: "Free Tool",
+  icon: "passport",
+});
 
 export const metadata: Metadata = {
   title: "Passport Size Photo Maker Free - AI Attire Selection | RepetiGo",
@@ -20,6 +28,7 @@ export const metadata: Metadata = {
     follow: true,
   },
   openGraph: {
+    images: [shareImage],
     title: "Passport Size Photo Maker Free - AI Attire Selection | RepetiGo",
     description:
       "Make a passport size photo at home - upload selfie, choose Casual/Normal/Official look, AI processes it, print on any paper size. No studio.",
@@ -27,6 +36,7 @@ export const metadata: Metadata = {
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "AI Passport Size Photo Maker Free - RepetiGo",
     description: "Upload selfie -> choose look -> AI processes -> print at home. Passport photo in minutes.",
@@ -305,7 +315,7 @@ function SeoTable({ headers, rows }: { headers: string[]; rows: string[][] }) {
           {rows.map((row) => (
             <tr key={row.join("|")}>
               {row.map((cell, index) => (
-                <td key={`${cell}-${index}`}>{cell}</td>
+                <td key={`cell-${index}`}>{cell}</td>
               ))}
             </tr>
           ))}

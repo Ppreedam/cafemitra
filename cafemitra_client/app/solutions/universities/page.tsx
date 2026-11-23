@@ -17,6 +17,7 @@ import { LandingNavbar } from "../../LandingNavbar";
 import { PublicFooter } from "../../PublicFooter";
 import { BUSINESS } from "../../../lib/businessInfo";
 import { LINKS, Rich, plain, type LinkKey } from "../solutionKit";
+import { ogImage } from "@/lib/og";
 
 const PAGE_PATH = "/solutions/universities";
 const PAGE_URL = `${BUSINESS.website}${PAGE_PATH}`;
@@ -29,12 +30,20 @@ const OG_TITLE = "University Printing Management India | Multi-Department Docume
 const OG_DESCRIPTION =
   "Multi-department QR upload, ERP integration, AI formatting, auto-delete. RepetiGo handles university document printing at examination scale across departments and campuses.";
 
+const shareImage = ogImage({
+  title: "University Printing Management",
+  subtitle: "QR document upload and printing across departments.",
+  category: "Solution",
+  icon: "print",
+});
+
 export const metadata: Metadata = {
   title: { absolute: TITLE },
   description: DESCRIPTION,
   robots: { index: true, follow: true },
   alternates: { canonical: PAGE_PATH },
   openGraph: {
+    images: [shareImage],
     title: OG_TITLE,
     description: OG_DESCRIPTION,
     type: "website",
@@ -42,6 +51,7 @@ export const metadata: Metadata = {
     siteName: "RepetiGo",
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: OG_TITLE,
     description: OG_DESCRIPTION,

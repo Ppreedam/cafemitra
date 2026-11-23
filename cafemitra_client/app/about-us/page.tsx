@@ -22,6 +22,9 @@ export const metadata: Metadata = {
   title: "About RepetiGo - India's Document Infrastructure Platform",
   description:
     "RepetiGo is building AI-powered print shop software that eliminates WhatsApp-based document sharing, automates processing, and protects customer privacy across India.",
+  alternates: {
+    canonical: "https://repetigo.com/about-us",
+  },
 };
 
 const workflow = [

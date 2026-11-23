@@ -1,20 +1,30 @@
 import type { Metadata } from "next";
 import { DashboardShell } from "../../DashboardShell";
 import PdfEditTool from "../PdfEditTool";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/pdf-tools/watermark-pdf";
+
+const shareImage = ogImage({
+  title: "Add Watermark to PDF Free",
+  subtitle: "Stamp a text or image watermark on PDF pages.",
+  category: "Free PDF Tool",
+  icon: "edit",
+});
 
 export const metadata: Metadata = {
   title: "Add Watermark to PDF Free - DRAFT/CONFIDENTIAL | RepetiGo",
   description: "Add watermark to PDF free - custom text (DRAFT, CONFIDENTIAL, company name), opacity 5-80%, rotation, font size and colour. Apply to any pages. Text-only. Browser-only. No sign-up.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Add Watermark to PDF Free - DRAFT/CONFIDENTIAL | RepetiGo",
     description: "Add watermark to PDF free - custom text (DRAFT, CONFIDENTIAL, company name), opacity 5-80%, rotation, font size and colour. Apply to any pages. Text-only. Browser-only. No sign-up.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Add Watermark to PDF Free - RepetiGo",
     description: "Custom text watermark, opacity 5-80%, rotation, font size and colour. No sign-up, browser-only.",

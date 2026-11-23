@@ -1,8 +1,16 @@
 import type { Metadata } from "next";
 import { DashboardShell } from "../../DashboardShell";
 import WebsiteToImageClient from "./WebsiteToImageClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/image-tools/website-to-image";
+
+const shareImage = ogImage({
+  title: "Website to Image Free",
+  subtitle: "Capture a full-page or viewport screenshot of any URL as a JPG or PNG.",
+  category: "Free Image Tool",
+  icon: "convert",
+});
 
 export const metadata: Metadata = {
   title: "Website to Image Free - Full Page Screenshot Tool | RepetiGo",
@@ -10,12 +18,14 @@ export const metadata: Metadata = {
     "Free website-to-image tool - capture a full-page or viewport screenshot of any URL as a JPG or PNG. Choose desktop, tablet or mobile width. No sign-up.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Website to Image Free - Full Page Screenshot Tool",
     description: "Capture a full-page or viewport screenshot of any URL as a JPG or PNG. Desktop, tablet, mobile.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Website to Image Free - Full Page Screenshot",
     description: "Free full-page website screenshots. Viewport or full page, device widths, JPG/PNG output.",

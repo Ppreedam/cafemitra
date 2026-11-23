@@ -18,6 +18,7 @@ import { LandingNavbar } from "../../LandingNavbar";
 import { PublicFooter } from "../../PublicFooter";
 import { BUSINESS } from "../../../lib/businessInfo";
 import { LINKS, Rich, plain, type LinkKey } from "../solutionKit";
+import { ogImage } from "@/lib/og";
 
 const PAGE_PATH = "/solutions/xerox-shops";
 const PAGE_URL = `${BUSINESS.website}${PAGE_PATH}`;
@@ -29,12 +30,20 @@ const OG_TITLE = "Xerox Shop Software India | Secure Document Printing - RepetiG
 const OG_DESCRIPTION =
   "QR upload. AI in 30 seconds. Auto-delete. RepetiGo replaces WhatsApp-based document sharing at every Xerox shop, photocopy centre and copy shop in India.";
 
+const shareImage = ogImage({
+  title: "Xerox Shop Software",
+  subtitle: "QR document upload and printing for photocopy shops.",
+  category: "Solution",
+  icon: "print",
+});
+
 export const metadata: Metadata = {
   title: { absolute: TITLE },
   description: DESCRIPTION,
   robots: { index: true, follow: true },
   alternates: { canonical: PAGE_PATH },
   openGraph: {
+    images: [shareImage],
     title: OG_TITLE,
     description: OG_DESCRIPTION,
     type: "website",
@@ -42,6 +51,7 @@ export const metadata: Metadata = {
     siteName: "RepetiGo",
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: OG_TITLE,
     description: OG_DESCRIPTION,

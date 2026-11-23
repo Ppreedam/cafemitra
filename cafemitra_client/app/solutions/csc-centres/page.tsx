@@ -18,6 +18,7 @@ import { LandingNavbar } from "../../LandingNavbar";
 import { PublicFooter } from "../../PublicFooter";
 import { BUSINESS } from "../../../lib/businessInfo";
 import { LINKS, Rich, plain, type LinkKey } from "../solutionKit";
+import { ogImage } from "@/lib/og";
 
 const PAGE_PATH = "/solutions/csc-centres";
 const PAGE_URL = `${BUSINESS.website}${PAGE_PATH}`;
@@ -29,12 +30,20 @@ const OG_TITLE = "CSC Centre Printing Software India | Secure Government Documen
 const OG_DESCRIPTION =
   "QR upload. AI processing. DPDP Act compliant auto-delete. RepetiGo is the secure document printing platform built for CSC centres and VLEs across India.";
 
+const shareImage = ogImage({
+  title: "CSC Centre Printing Software",
+  subtitle: "Secure QR upload and printing for CSC centres and VLEs.",
+  category: "Solution",
+  icon: "print",
+});
+
 export const metadata: Metadata = {
   title: { absolute: TITLE },
   description: DESCRIPTION,
   robots: { index: true, follow: true },
   alternates: { canonical: PAGE_PATH },
   openGraph: {
+    images: [shareImage],
     title: OG_TITLE,
     description: OG_DESCRIPTION,
     type: "website",
@@ -42,6 +51,7 @@ export const metadata: Metadata = {
     siteName: "RepetiGo",
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: OG_TITLE,
     description: OG_DESCRIPTION,

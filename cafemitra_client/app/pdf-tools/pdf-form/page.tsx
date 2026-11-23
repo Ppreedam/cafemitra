@@ -2,20 +2,30 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { DashboardShell } from "../../DashboardShell";
 import PdfEditTool from "../PdfEditTool";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/pdf-tools/pdf-form";
+
+const shareImage = ogImage({
+  title: "Fill PDF Form Online Free",
+  subtitle: "Detect and fill text fields, checkboxes and dropdowns in a PDF.",
+  category: "Free PDF Tool",
+  icon: "edit",
+});
 
 export const metadata: Metadata = {
   title: "Fill PDF Form Online Free - Fill or Create Fields | RepetiGo",
   description: "Fill PDF form free - detect and fill existing text fields, checkboxes, and dropdowns. Or create a new text field at a custom position. Browser-only. No Adobe. No sign-up.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Fill PDF Form Online Free - Fill or Create Fields | RepetiGo",
     description: "Fill PDF form free - detect and fill existing text fields, checkboxes, and dropdowns. Or create a new text field at a custom position. Browser-only. No Adobe. No sign-up.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Fill PDF Form Online Free - RepetiGo",
     description: "Fill existing fields or create one new text field on a flat PDF. No sign-up, browser-only.",
@@ -237,7 +247,7 @@ function renderInline(text: string) {
   const routePattern = /((?:https?:\/\/)?(?:www\.)?repetigo\.com(?:\/[^\s.,;!?)]*)?|\/(?:tools|features|products|security|pricing|use-cases)\/[^\s.,;!?)]*)/gi;
   return text.split(routePattern).map((part, index) => {
     const href = mapRoute(part);
-    return href ? <a key={`${part}-${index}`} href={href}>{routeLabels[href] || "Open PDF Tool"}</a> : part;
+    return href ? <a key={`part-${index}`} href={href}>{routeLabels[href] || "Open PDF Tool"}</a> : part;
   });
 }
 
@@ -309,7 +319,7 @@ function findTable(lines: string[]) {
 }
 
 function renderTable(table: SeoTable) {
-  return <div className="tool-seo-table-wrap"><table><thead><tr>{table.headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{table.rows.map((row) => <tr key={row.join("|")}>{row.map((cell, index) => <td key={`${cell}-${index}`}>{renderInline(cell)}</td>)}</tr>)}</tbody></table></div>;
+  return <div className="tool-seo-table-wrap"><table><thead><tr>{table.headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{table.rows.map((row) => <tr key={row.join("|")}>{row.map((cell, index) => <td key={`cell-${index}`}>{renderInline(cell)}</td>)}</tr>)}</tbody></table></div>;
 }
 
 function normalizeContent(source: string) {

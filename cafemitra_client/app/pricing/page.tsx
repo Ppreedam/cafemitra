@@ -13,8 +13,16 @@ import {
 import { LandingNavbar } from "../LandingNavbar";
 import { PublicFooter } from "../PublicFooter";
 import { apiUrl } from "../../lib/api";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/pricing";
+
+const shareImage = ogImage({
+  title: "Pricing - Pay Only When You Earn",
+  subtitle: "No monthly software fee. A small commission only on completed jobs.",
+  category: "Pricing",
+  icon: "file",
+});
 
 export const metadata: Metadata = {
   title: "Pricing - Pay Only When You Earn | RepetiGo PrintPilot",
@@ -22,6 +30,7 @@ export const metadata: Metadata = {
     "RepetiGo pricing for print shops and cyber cafes: everyday PDF, image, and document tools stay free. Prepaid service credits are only spent on completed PrintPilot print jobs - no fixed monthly software fee.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Pricing - Pay Only When You Earn | RepetiGo PrintPilot",
     description:
       "Prepaid service credits, spent only on completed print jobs. Everyday tools stay free for every print shop and cyber cafe.",
@@ -29,6 +38,7 @@ export const metadata: Metadata = {
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Pricing - Pay Only When You Earn | RepetiGo",
     description: "No fixed monthly fee. Prepaid service credits are only spent on completed PrintPilot print jobs.",

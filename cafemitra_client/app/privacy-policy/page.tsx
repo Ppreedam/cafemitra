@@ -17,6 +17,9 @@ export const metadata: Metadata = {
   title: "Privacy Policy - RepetiGo Print Shop Software",
   description:
     "RepetiGo privacy policy covering document handling, AI processing, cookies, payments, data retention, user rights, and security.",
+  alternates: {
+    canonical: "https://repetigo.com/privacy-policy",
+  },
   robots: {
     index: true,
     follow: true,
@@ -210,7 +213,7 @@ function DataTable({ rows, headers }: { rows: string[][]; headers?: string[] }) 
           {rows.map((row) => (
             <tr key={row.join("|")}>
               {row.map((cell, index) => (
-                <td key={`${cell}-${index}`}>{cell}</td>
+                <td key={`cell-${index}`}>{cell}</td>
               ))}
             </tr>
           ))}

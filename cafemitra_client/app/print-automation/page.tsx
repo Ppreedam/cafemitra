@@ -24,9 +24,17 @@ import {
 } from "lucide-react";
 import { LandingNavbar } from "../LandingNavbar";
 import { PublicFooter } from "../PublicFooter";
+import { ogImage } from "@/lib/og";
 
 const siteUrl = "https://repetigo.com";
 const pageUrl = `${siteUrl}/print-automation`;
+
+const shareImage = ogImage({
+  title: "PrintPilot - Print Automation",
+  subtitle: "Customers scan your QR, upload, and the job lands on your printer.",
+  category: "Product",
+  icon: "print",
+});
 
 export const metadata: Metadata = {
   title: "PrintPilot: Print Automation Software for Indian Shops | RepetiGo",
@@ -36,6 +44,7 @@ export const metadata: Metadata = {
     canonical: pageUrl,
   },
   openGraph: {
+    images: [shareImage],
     title: "PrintPilot: Print Automation Software for Indian Shops | RepetiGo",
     description:
       "AI-powered print automation software. QR upload, secure document printing, auto-delete in 15 min. Built for cyber cafes & print shops.",
@@ -43,6 +52,7 @@ export const metadata: Metadata = {
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "PrintPilot - Print Automation Software by RepetiGo",
     description:

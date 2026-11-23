@@ -76,7 +76,7 @@ function renderInline(text: string): ReactNode[] {
   const routePattern = /((?:https?:\/\/)?(?:www\.)?repetigo\.com(?:\/[^\s.,;!?)]*)?|\/(?:tools|features|products|security|pricing|use-cases)\/[^\s.,;!?)]*)/gi;
   return text.split(routePattern).map((part, index) => {
     const href = mapRoute(part);
-    if (href) return <a key={`${part}-${index}`} href={href}>{labelFor(href)}</a>;
+    if (href) return <a key={`part-${index}`} href={href}>{labelFor(href)}</a>;
     return part;
   });
 }
@@ -119,7 +119,7 @@ function renderTableCell(cell: string) {
 }
 
 function renderTable(table: SeoTable) {
-  return <div className="tool-seo-table-wrap"><table><thead><tr>{table.headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{table.rows.map((row) => <tr key={row.join("|")}>{row.map((cell, index) => <td key={`${cell}-${index}`}>{renderTableCell(cell)}</td>)}</tr>)}</tbody></table></div>;
+  return <div className="tool-seo-table-wrap"><table><thead><tr>{table.headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{table.rows.map((row) => <tr key={row.join("|")}>{row.map((cell, index) => <td key={`cell-${index}`}>{renderTableCell(cell)}</td>)}</tr>)}</tbody></table></div>;
 }
 
 function findTable(lines: string[]) {

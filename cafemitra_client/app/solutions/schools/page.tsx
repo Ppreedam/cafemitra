@@ -17,6 +17,7 @@ import { LandingNavbar } from "../../LandingNavbar";
 import { PublicFooter } from "../../PublicFooter";
 import { BUSINESS } from "../../../lib/businessInfo";
 import { LINKS, Rich, plain, type LinkKey } from "../solutionKit";
+import { ogImage } from "@/lib/og";
 
 const PAGE_PATH = "/solutions/schools";
 const PAGE_URL = `${BUSINESS.website}${PAGE_PATH}`;
@@ -28,12 +29,20 @@ const OG_TITLE = "School Document Printing Software India | Secure, Staff-Ready 
 const OG_DESCRIPTION =
   "Admit cards, marksheets, Aadhaar verification, exam papers - all printed securely via QR upload with AI processing and auto-delete. No WhatsApp. No training needed.";
 
+const shareImage = ogImage({
+  title: "School Document Printing",
+  subtitle: "Admit cards, marksheets and forms printed via QR upload.",
+  category: "Solution",
+  icon: "print",
+});
+
 export const metadata: Metadata = {
   title: { absolute: TITLE },
   description: DESCRIPTION,
   robots: { index: true, follow: true },
   alternates: { canonical: PAGE_PATH },
   openGraph: {
+    images: [shareImage],
     title: OG_TITLE,
     description: OG_DESCRIPTION,
     type: "website",
@@ -41,6 +50,7 @@ export const metadata: Metadata = {
     siteName: "RepetiGo",
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: OG_TITLE,
     description: OG_DESCRIPTION,

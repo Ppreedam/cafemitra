@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import MemeGeneratorClient from "./MemeGeneratorClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/image-tools/meme-generator";
+
+const shareImage = ogImage({
+  title: "Meme Generator Free",
+  subtitle: "Upload your image, add draggable Impact-style captions, and download.",
+  category: "Free Image Tool",
+  icon: "image",
+});
 
 export const metadata: Metadata = {
   title: "Meme Generator Free - Add Text to Your Own Image | RepetiGo",
@@ -9,12 +17,14 @@ export const metadata: Metadata = {
     "Free meme generator - upload your own image, add draggable Impact-style top and bottom text, and download. Runs in your browser, no watermark, no sign-up.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Meme Generator Free - Add Text to Your Own Image",
     description: "Upload your image, add draggable Impact-style captions, and download. No watermark, no sign-up.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Meme Generator Free - Add Text to Your Own Image",
     description: "Free meme maker. Impact font, top/bottom text, outline & colour, PNG/JPG. 100% in your browser.",

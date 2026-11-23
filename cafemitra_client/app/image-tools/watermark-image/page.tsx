@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import WatermarkImageClient from "./WatermarkImageClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/image-tools/watermark-image";
+
+const shareImage = ogImage({
+  title: "Watermark Image Free",
+  subtitle: "Add a text or logo watermark to your images.",
+  category: "Free Image Tool",
+  icon: "edit",
+});
 
 export const metadata: Metadata = {
   title: "Watermark Image Free - Add Text or Logo Watermarks | RepetiGo",
@@ -9,12 +17,14 @@ export const metadata: Metadata = {
     "Free tool to add a text or logo watermark to your images - drag to position, set opacity and rotation, and batch-watermark many photos at once. In your browser, no upload.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Watermark Image Free - Add Text or Logo Watermarks",
     description: "Add a text or logo watermark to your images. Drag to position, set opacity, batch-watermark many photos.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Watermark Image Free - Text & Logo",
     description: "Free: add text/logo watermarks, drag to position, batch + ZIP, 100% in your browser.",

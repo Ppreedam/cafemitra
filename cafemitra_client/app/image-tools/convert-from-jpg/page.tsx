@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import ConvertFromJpgClient from "./ConvertFromJpgClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/image-tools/convert-from-jpg";
+
+const shareImage = ogImage({
+  title: "Convert JPG to PNG & WebP Free",
+  subtitle: "Change a JPG or WebP into PNG or WebP in your browser.",
+  category: "Free Image Tool",
+  icon: "convert",
+});
 
 export const metadata: Metadata = {
   title: "Convert JPG to PNG & WebP Free - From-JPG Converter | RepetiGo",
@@ -9,12 +17,14 @@ export const metadata: Metadata = {
     "Free converter to change a JPG (or WebP) into PNG or WebP in your browser. Note: converting JPG to PNG does not add transparency. No upload, no watermark.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Convert JPG to PNG & WebP Free - From-JPG Converter",
     description: "Change a JPG or WebP into PNG or WebP in your browser. Converting to PNG does not add transparency.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Convert JPG to PNG & WebP Free - From-JPG Converter",
     description: "Free JPG→PNG / JPG→WebP / WebP→PNG converter. Quality slider for WebP, 100% in your browser.",

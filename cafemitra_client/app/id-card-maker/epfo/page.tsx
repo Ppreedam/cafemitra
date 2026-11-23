@@ -1,8 +1,16 @@
 import type { Metadata } from "next";
 import IdCardUploadClient from "../IdCardUploadClient";
 import { JsonLd, StructuredSeoCopy } from "../SeoContent";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/id-card-maker/epfo";
+
+const shareImage = ogImage({
+  title: "EPFO / UAN Card Maker from PDF Online Free",
+  subtitle: "Print a card-size copy from your downloaded EPFO / UAN PDF - launching soon.",
+  category: "Coming Soon",
+  icon: "idcard",
+});
 
 export const metadata: Metadata = {
   title: "EPFO / UAN Card Maker from PDF Online Free | RepetiGo",
@@ -10,12 +18,14 @@ export const metadata: Metadata = {
     "Turn your downloaded EPFO / UAN PDF into a clean, print-ready card - upload the PDF, review the extracted details, and print. Free.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "EPFO / UAN Card Maker from PDF Online Free | RepetiGo",
     description: "Upload your EPFO / UAN PDF, review the details, and print a ready-to-use card. Free, no sign-up required to try.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "EPFO / UAN Card Maker from PDF - RepetiGo",
     description: "Create a printable EPFO / UAN card from your PDF - upload, review, and print.",

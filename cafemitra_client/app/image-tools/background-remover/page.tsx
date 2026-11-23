@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
 import BackgroundRemoverClient from "./BackgroundRemoverClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/image-tools/background-remover";
+const shareImage = ogImage({
+  title: "Remove Background from Image",
+  subtitle: "Get a clean transparent PNG, or add a white or custom colour.",
+  category: "Free Image Tool",
+  icon: "background",
+});
 
 export const metadata: Metadata = {
   title: "Remove Background from Image Free - AI Background Remover | RepetiGo",
@@ -13,9 +20,11 @@ export const metadata: Metadata = {
     description: "Get a clean transparent PNG in seconds, or add a white / custom colour. Free, no watermark.",
     type: "website",
     url: pageUrl,
+    images: [shareImage],
   },
   twitter: {
     card: "summary_large_image",
+    images: [shareImage],
     title: "Remove Background from Image Free - AI Background Remover",
     description: "Free AI background remover. Transparent PNG, white/colour swatch, Enhance edges toggle.",
   },

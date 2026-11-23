@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import ResizeImageClient from "./ResizeImageClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/image-tools/resize-image";
+
+const shareImage = ogImage({
+  title: "Resize Image Free",
+  subtitle: "Resize by exact pixels, percentage, or a social preset.",
+  category: "Free Image Tool",
+  icon: "resize",
+});
 
 export const metadata: Metadata = {
   title: "Resize Image Free - Image Resizer by Size, %, or Social | RepetiGo",
@@ -9,12 +17,14 @@ export const metadata: Metadata = {
     "Free image resizer - resize an image by exact pixels, percentage, or a social-media preset. Lock the aspect ratio and export WebP or PNG. Runs in your browser.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Resize Image Free - Image Resizer by Size, %, or Social",
     description: "Resize by exact pixels, percentage, or a social preset. Lock aspect ratio, export WebP or PNG.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Resize Image Free - Image Resizer",
     description: "Free image resizer. By size, %, or social preset. Aspect-lock, WebP/PNG, 100% in your browser.",

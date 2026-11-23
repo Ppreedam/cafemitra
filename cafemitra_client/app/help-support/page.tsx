@@ -35,6 +35,9 @@ export const metadata: Metadata = {
   title: "RepetiGo Help & Support Center - Print Shop Software Guides",
   description:
     "Get help with RepetiGo print shop software. Troubleshooting guides, setup instructions, FAQs, downloads, and contact support for Indian print shops and cyber cafes.",
+  alternates: {
+    canonical: "https://repetigo.com/help-support",
+  },
 };
 
 const popularSearches = ["Printer offline", "Upload failed", "QR not working", "Cancel subscription", "Connect printer", "Aadhaar printing"];

@@ -21,6 +21,9 @@ export const metadata: Metadata = {
   title: "Contact RepetiGo - Print Shop Software Support India",
   description:
     "Get in touch with RepetiGo. Sales, technical support, billing, and partnerships for print shops and cyber cafes across India. We respond within 24 hours.",
+  alternates: {
+    canonical: "https://repetigo.com/contact-us",
+  },
 };
 
 const responsePromises = [

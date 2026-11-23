@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import GifConverterClient from "./GifConverterClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/image-tools/gif-converter";
+
+const shareImage = ogImage({
+  title: "GIF Converter Free Online",
+  subtitle: "Convert GIF to JPG, PNG, WebP, BMP, ICO, PDF, or SVG free.",
+  category: "Free Image Tool",
+  icon: "convert",
+});
 
 export const metadata: Metadata = {
   title: "GIF Converter Free Online - GIF to JPG, PNG, WebP, ICO, PDF | RepetiGo",
@@ -9,12 +17,14 @@ export const metadata: Metadata = {
     "Convert GIF to JPG, PNG, WebP, BMP, ICO, PDF, or SVG free online - one tool, every format. Batch convert multiple files. No sign-up, no watermark, 100% browser-based - nothing is ever uploaded.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "GIF Converter Free Online - GIF to JPG, PNG, WebP, ICO, PDF | RepetiGo",
     description: "Convert GIF to JPG, PNG, WebP, BMP, ICO, PDF, or SVG free - one tool, every format. Batch convert. No sign-up, 100% browser-based.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "GIF Converter Free - RepetiGo",
     description: "Convert GIF to any format free, one file or a batch. No sign-up, 100% browser-based.",

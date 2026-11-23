@@ -18,6 +18,7 @@ import { LandingNavbar } from "../../LandingNavbar";
 import { PublicFooter } from "../../PublicFooter";
 import { BUSINESS } from "../../../lib/businessInfo";
 import { LINKS, Rich, plain, type LinkKey } from "../solutionKit";
+import { ogImage } from "@/lib/og";
 
 const PAGE_PATH = "/solutions/cyber-cafes";
 const PAGE_URL = `${BUSINESS.website}${PAGE_PATH}`;
@@ -29,12 +30,20 @@ const OG_TITLE = "Cyber Cafe Management Software India | Secure Document Printin
 const OG_DESCRIPTION =
   "QR upload. AI in 30 seconds. Auto-delete in 15 minutes. Replace WhatsApp-based document sharing at your cyber cafe with RepetiGo.";
 
+const shareImage = ogImage({
+  title: "Cyber Cafe Software",
+  subtitle: "Secure QR document upload and printing - no WhatsApp needed.",
+  category: "Solution",
+  icon: "print",
+});
+
 export const metadata: Metadata = {
   title: { absolute: TITLE },
   description: DESCRIPTION,
   robots: { index: true, follow: true },
   alternates: { canonical: PAGE_PATH },
   openGraph: {
+    images: [shareImage],
     title: OG_TITLE,
     description: OG_DESCRIPTION,
     type: "website",
@@ -42,6 +51,7 @@ export const metadata: Metadata = {
     siteName: "RepetiGo",
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: OG_TITLE,
     description: OG_DESCRIPTION,

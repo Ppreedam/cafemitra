@@ -21,7 +21,24 @@ const privateRoutePrefixes = [
   "/wallet",
 ];
 
+// Public URLs that must not be in the sitemap: noindex pages, redirects, duplicates,
+// and app/editor screens with no indexable content.
+const excludedRoutes = new Set([
+  "/impersonate", // admin support login link (token in URL hash)
+  "/influencer", // noindex
+  "/referral", // noindex
+  "/print-desk", // redirects to /photo-copy
+  "/card-print", // unlinked legacy page without metadata
+  "/pdf-tools/pdf-forms", // duplicate of /pdf-tools/pdf-form
+]);
+
+// Route endings for per-user or editor screens (e.g. /resume-builder/saved,
+// /biodata-maker/build, /id-card-maker/aadhaar/design) - all noindex or empty.
+const excludedRouteSuffixes = ["/saved", "/build", "/design"];
+
 function isPublicRoute(route: string) {
+  if (excludedRoutes.has(route)) return false;
+  if (excludedRouteSuffixes.some((suffix) => route.endsWith(suffix))) return false;
   return !privateRoutePrefixes.some(
     (prefix) => route === prefix || route.startsWith(`${prefix}/`),
   );

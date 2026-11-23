@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import PngToSvgClient from "./PngToSvgClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/image-tools/png-to-svg";
+
+const shareImage = ogImage({
+  title: "PNG to SVG Free",
+  subtitle: "Turn a PNG logo, icon or line art into a scalable SVG with real vector tracing.",
+  category: "Free Image Tool",
+  icon: "convert",
+});
 
 export const metadata: Metadata = {
   title: "PNG to SVG Free - Real Vector Tracing for Logos & Cricut | RepetiGo",
@@ -9,12 +17,14 @@ export const metadata: Metadata = {
     "Free PNG to SVG converter with real vector tracing - turn a PNG logo, icon or line art into a scalable SVG in your browser. 4 detail presets, great for Cricut. No upload.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "PNG to SVG Free - Real Vector Tracing for Logos & Cricut",
     description: "Turn a PNG logo, icon or line art into a scalable SVG with real vector tracing. 4 presets, great for Cricut.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "PNG to SVG Free - Real Vector Tracing",
     description: "Free PNG→SVG with real path tracing. 4 detail presets, great for logos & Cricut, in your browser.",

@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import PngToJpgClient from "./PngToJpgClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/image-tools/png-to-jpg";
+
+const shareImage = ogImage({
+  title: "PNG to JPG Free",
+  subtitle: "Turn PNG images into JPG with a quality slider.",
+  category: "Free Image Tool",
+  icon: "convert",
+});
 
 export const metadata: Metadata = {
   title: "PNG to JPG Free - Convert & Batch, with Quality Control | RepetiGo",
@@ -9,12 +17,14 @@ export const metadata: Metadata = {
     "Free PNG to JPG converter - turn PNG images into JPG in your browser, with a quality slider. Batch-convert many files and download a ZIP. No upload, no watermark.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "PNG to JPG Free - Convert & Batch, with Quality Control",
     description: "Turn PNG images into JPG with a quality slider. Batch-convert many files to a ZIP. In your browser.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "PNG to JPG Free - Convert & Batch",
     description: "Free PNG→JPG. Quality slider, batch + ZIP, 100% in your browser.",

@@ -3,10 +3,18 @@ import type React from "react";
 import Link from "next/link";
 import { LandingNavbar } from "../../LandingNavbar";
 import { PublicFooter } from "../../PublicFooter";
+import { ogImage } from "@/lib/og";
 
 const siteUrl = "https://repetigo.com";
 const pageUrl = `${siteUrl}/tools/resume-maker/`;
 const builderUrl = "/resume-builder";
+
+const shareImage = ogImage({
+  title: "Free Resume Maker",
+  subtitle: "9 professional templates, including an ATS-safe design.",
+  category: "Free Tool",
+  icon: "resume",
+});
 
 export const metadata: Metadata = {
   title: "Resume Maker - Free Templates, Photo & Print-Ready PDF | RepetiGo",
@@ -15,12 +23,14 @@ export const metadata: Metadata = {
   alternates: { canonical: pageUrl },
   robots: { index: true, follow: true },
   openGraph: {
+    images: [shareImage],
     title: "Resume Maker - Free Templates, Photo & Print-Ready PDF",
     description: "9 professional templates incl. an ATS-safe design. Fill your details and download a print-ready PDF.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Resume Maker - Free Templates & PDF",
     description: "Free resume maker: 9 templates, ATS-safe design, photo upload, print-ready PDF. Online or at a nearby shop.",
@@ -213,7 +223,7 @@ function SeoTable({ headers, rows }: { headers: string[]; rows: string[][] }) {
           {rows.map((row) => (
             <tr key={row.join("|")}>
               {row.map((cell, index) => (
-                <td key={`${cell}-${index}`}>{cell}</td>
+                <td key={`cell-${index}`}>{cell}</td>
               ))}
             </tr>
           ))}

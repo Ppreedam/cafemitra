@@ -2,20 +2,30 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { DashboardShell } from "../../DashboardShell";
 import PdfEditTool from "../PdfEditTool";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/pdf-tools/crop-pdf";
+
+const shareImage = ogImage({
+  title: "Crop PDF Online Free",
+  subtitle: "Trim the margins of PDF pages to the size you need.",
+  category: "Free PDF Tool",
+  icon: "resize",
+});
 
 export const metadata: Metadata = {
   title: "Crop PDF Online Free - Trim Margins | RepetiGo",
   description: "Crop PDF free - trim margins by entering Top, Right, Bottom, Left values in points (72pt = 1 inch). Same values apply to all selected pages. Browser-only. No sign-up.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Crop PDF Online Free - Trim Margins | RepetiGo",
     description: "Crop PDF free - trim margins by entering Top, Right, Bottom, Left values in points (72pt = 1 inch). Same values apply to all selected pages. Browser-only. No sign-up.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Crop PDF Online Free - RepetiGo",
     description: "Trim margins with Top/Right/Bottom/Left point values. No sign-up, browser-only.",
@@ -214,7 +224,7 @@ function renderInline(text: string) {
   const routePattern = /((?:https?:\/\/)?(?:www\.)?repetigo\.com(?:\/[^\s.,;!?)]*)?|\/(?:tools|features|products|security|pricing|use-cases)\/[^\s.,;!?)]*)/gi;
   return text.split(routePattern).map((part, index) => {
     const href = mapRoute(part);
-    return href ? <a key={`${part}-${index}`} href={href}>{routeLabels[href] || "Open PDF Tool"}</a> : part;
+    return href ? <a key={`part-${index}`} href={href}>{routeLabels[href] || "Open PDF Tool"}</a> : part;
   });
 }
 

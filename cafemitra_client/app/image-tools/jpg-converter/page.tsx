@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import JpgConverterClient from "./JpgConverterClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/image-tools/jpg-converter";
+
+const shareImage = ogImage({
+  title: "JPG Converter Free",
+  subtitle: "Convert JPG to SVG (vector tracing), PDF, ICO, GIF or BMP in your browser.",
+  category: "Free Image Tool",
+  icon: "convert",
+});
 
 export const metadata: Metadata = {
   title: "JPG Converter Free - JPG to SVG, PDF, ICO, GIF & BMP | RepetiGo",
@@ -9,12 +17,14 @@ export const metadata: Metadata = {
     "Free JPG converter - convert JPG to SVG (real vector tracing), PDF, ICO, GIF or BMP in your browser. Batch-convert and download a ZIP. No upload, no watermark.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "JPG Converter Free - JPG to SVG, PDF, ICO, GIF & BMP",
     description: "Convert JPG to SVG (vector tracing), PDF, ICO, GIF or BMP in your browser. Batch + ZIP, nothing uploaded.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "JPG Converter Free - JPG to 7 Formats",
     description: "Free JPG converter: SVG (real trace)/PDF/ICO/GIF/BMP/PNG/WebP. Batch + ZIP, in your browser.",

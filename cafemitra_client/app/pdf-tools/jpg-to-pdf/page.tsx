@@ -2,15 +2,24 @@ import type { Metadata } from "next";
 import { DashboardShell } from "../../DashboardShell";
 import ConversionTool from "../ConversionTool";
 import { StructuredSeoCopy } from "../pdf-to-jpg/page";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/pdf-tools/jpg-to-pdf";
+
+const shareImage = ogImage({
+  title: "JPG to PDF Converter Online Free",
+  subtitle: "Turn photos and scans into a single PDF.",
+  category: "Free PDF Tool",
+  icon: "convert",
+});
 
 export const metadata: Metadata = {
   title: "JPG to PDF Converter Online Free India | RepetiGo",
   description: "Convert JPG to PDF online free - turn photos, Aadhaar scans, PAN cards and PNG files into PDF instantly. No sign-up. Files browser-only - never uploaded.",
   alternates: { canonical: pageUrl },
-  twitter: { card: "summary_large_image", title: "JPG to PDF Converter Free - RepetiGo", description: "Convert photos to PDF free. JPG and PNG supported. No sign-up, browser-only. India-built." },
+  twitter: { images: [shareImage], card: "summary_large_image", title: "JPG to PDF Converter Free - RepetiGo", description: "Convert photos to PDF free. JPG and PNG supported. No sign-up, browser-only. India-built." },
   robots: { index: true, follow: true },
+  openGraph: { type: "website", url: "https://repetigo.com/pdf-tools/jpg-to-pdf", siteName: "RepetiGo", images: [shareImage] },
 };
 
 const content = String.raw`H1: JPG to PDF Converter Online Free. Convert JPG and PNG Images to PDF in Seconds.

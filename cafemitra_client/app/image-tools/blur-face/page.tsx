@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import BlurFaceClient from "./BlurFaceClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/image-tools/blur-face";
+
+const shareImage = ogImage({
+  title: "Blur Face Free",
+  subtitle: "Auto-detect and blur faces in a photo, or add custom blur areas.",
+  category: "Free Image Tool",
+  icon: "background",
+});
 
 export const metadata: Metadata = {
   title: "Blur Face Free - Auto-Detect & Blur Faces in Photos | RepetiGo",
@@ -9,12 +17,14 @@ export const metadata: Metadata = {
     "Free tool to blur faces in a photo - it auto-detects faces, and you can add custom blur areas too. Adjust blur strength and download. Faces detected, then discarded.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Blur Face Free - Auto-Detect & Blur Faces in Photos",
     description: "Auto-detect and blur faces in a photo, or add custom blur areas. Adjust strength and download.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Blur Face Free - Auto Face Blur for Photos",
     description: "Free: auto-detect & blur faces in a photo, custom blur areas, adjustable strength.",

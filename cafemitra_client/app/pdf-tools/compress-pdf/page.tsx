@@ -1,7 +1,14 @@
 import type { Metadata } from "next";
 import CompressPdfClient from "./CompressPdfClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/pdf-tools/compress-pdf";
+const shareImage = ogImage({
+  title: "Compress PDF Online Free",
+  subtitle: "Reduce PDF file size for forms, portals and email.",
+  category: "Free PDF Tool",
+  icon: "compress",
+});
 
 export const metadata: Metadata = {
   title: "Compress PDF Online Free India - Reduce Size Instantly | RepetiGo",
@@ -14,9 +21,11 @@ export const metadata: Metadata = {
       "Free PDF compressor - reduce PDF size in seconds. No sign-up, browser-only - never uploaded. Works on phone, tablet, laptop.",
     type: "website",
     url: pageUrl,
+    images: [shareImage],
   },
   twitter: {
     card: "summary_large_image",
+    images: [shareImage],
     title: "Compress PDF Free Online - RepetiGo",
     description: "Compress PDF free - reduce size in seconds. No sign-up, no install, browser-only. India-built.",
   },

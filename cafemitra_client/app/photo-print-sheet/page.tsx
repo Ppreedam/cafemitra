@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import PhotoPrintSheetClient from "./PhotoPrintSheetClient";
+import { ogStaticImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/photo-print-sheet";
+
+const shareImage = ogStaticImage("photo-print-sheet.jpg", "RepetiGo Photo Print Sheet - many photos, many sizes, one A4, 4x6 or 5x7 sheet with cut lines");
 
 export const metadata: Metadata = {
   title: "Print Multiple Passport Photos on One Page Free | RepetiGo",
@@ -10,6 +13,7 @@ export const metadata: Metadata = {
     "Print multiple passport photos on one page free - different people, different sizes, one sheet. Live preview. A4, 4x6, 5x7 paper. 300 DPI download or direct print. No signup.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Print Multiple Passport Photos on One Page Free | RepetiGo",
     description:
       "Print multiple passport photos on one page free - different people, different sizes, one sheet. Live preview. A4, 4x6, 5x7 paper. 300 DPI download or direct print. No signup.",
@@ -17,6 +21,7 @@ export const metadata: Metadata = {
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Photo Print Sheet Maker - Multiple Photos, One Sheet | RepetiGo",
     description: "Different people, different sizes, one sheet. Live preview. Free. No signup.",

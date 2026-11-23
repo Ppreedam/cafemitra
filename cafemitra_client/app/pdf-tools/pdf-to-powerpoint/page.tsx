@@ -1,15 +1,24 @@
 import type { Metadata } from "next";
 import { DashboardShell } from "../../DashboardShell";
 import ConversionTool from "../ConversionTool";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/pdf-tools/pdf-to-powerpoint";
+
+const shareImage = ogImage({
+  title: "PDF to PowerPoint Converter",
+  subtitle: "Turn PDF pages into PowerPoint slides.",
+  category: "Free PDF Tool",
+  icon: "convert",
+});
 
 export const metadata: Metadata = {
   title: "PDF to PowerPoint Converter - Free Online, No Sign-Up | RepetiGo",
   description: "Convert PDF to PowerPoint free online - turn any PDF into a .pptx file in seconds - each page becomes a visual slide. No sign-up, no install. Files browser-only - never uploaded.",
   alternates: { canonical: pageUrl },
-  twitter: { card: "summary_large_image", title: "PDF to PowerPoint Converter Free Online - RepetiGo", description: "Convert PDF to editable PowerPoint slides free. No sign-up, no install, browser-only - never uploaded." },
+  twitter: { images: [shareImage], card: "summary_large_image", title: "PDF to PowerPoint Converter Free Online - RepetiGo", description: "Convert PDF to editable PowerPoint slides free. No sign-up, no install, browser-only - never uploaded." },
   robots: { index: true, follow: true },
+  openGraph: { type: "website", url: "https://repetigo.com/pdf-tools/pdf-to-powerpoint", siteName: "RepetiGo", images: [shareImage] },
 };
 
 const pdfToPowerPointContent = String.raw`H1: PDF to PowerPoint Converter. Free Online. Visual Slides in Seconds.
@@ -296,11 +305,11 @@ function getTableDefinition(lines: string[], index: number): { headers: string[]
 }
 
 function chunkRows(values: string[], size: number) { const rows: string[][] = []; for (let index = 0; index < values.length; index += size) rows.push(values.slice(index, index + size)); return rows; }
-function SeoTable({ headers, rows }: SeoTable) { return <div className="tool-seo-table-wrap"><table><thead><tr>{headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{rows.map((row) => <tr key={row.join("|")}>{row.map((cell, index) => <td key={`${cell}-${index}`}>{renderTableCell(cell)}</td>)}</tr>)}</tbody></table></div>; }
+function SeoTable({ headers, rows }: SeoTable) { return <div className="tool-seo-table-wrap"><table><thead><tr>{headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{rows.map((row) => <tr key={row.join("|")}>{row.map((cell, index) => <td key={`cell-${index}`}>{renderTableCell(cell)}</td>)}</tr>)}</tbody></table></div>; }
 function isCtaLine(line: string) { return /^[^\[]*\[ .+ \]$/.test(line); }
 function CtaLine({ text }: { text: string }) { const inner = text.slice(text.indexOf("[") + 2, -2); const arrowIndex = inner.indexOf("→"); const label = (arrowIndex >= 0 ? inner.slice(0, arrowIndex) : inner).trim(); const href = mapSeoRoute(arrowIndex >= 0 ? inner.slice(arrowIndex + 1) : ""); return <a className="tool-seo-inline-cta" href={href || "#pdf-to-powerpoint-guide"}>{label}{href ? <span>→</span> : null}</a>; }
 function renderTableCell(cell: string) { const href = mapSeoRoute(cell.replace(/^→\s*/, "")); return href ? <a className="tool-seo-table-link" href={href}>{getRouteLabel(href)}</a> : renderInlineMappedLinks(cell); }
-function renderInlineMappedLinks(text: string) { return text.split(/(repetigo\.com\/(?:tools\/pdf\/[a-z-]+|pricing)\/?|\/tools\/pdf\/[a-z-]*\/?|\/products\/printpilot\/?|\/features\/(?:qr-upload|auto-delete)\/?|\/security\/?)/g).map((part, index) => { const href = mapSeoRoute(part.startsWith("repetigo.com") ? `https://${part}` : part); return href ? <a href={href} key={`${part}-${index}`}>{getRouteLabel(href)}</a> : part; }); }
+function renderInlineMappedLinks(text: string) { return text.split(/(repetigo\.com\/(?:tools\/pdf\/[a-z-]+|pricing)\/?|\/tools\/pdf\/[a-z-]*\/?|\/products\/printpilot\/?|\/features\/(?:qr-upload|auto-delete)\/?|\/security\/?)/g).map((part, index) => { const href = mapSeoRoute(part.startsWith("repetigo.com") ? `https://${part}` : part); return href ? <a href={href} key={`part-${index}`}>{getRouteLabel(href)}</a> : part; }); }
 function mapSeoRoute(route: string) { const clean = route.trim().replace(/^https?:\/\/(www\.)?repetigo\.com/i, "").replace(/\/$/, ""); const routes: Record<string, string> = { "/tools/pdf": "/pdf-tools", "/pdf-tools": "/pdf-tools", "/pdf-tools/pdf-to-powerpoint": "/pdf-tools/pdf-to-powerpoint", "/pdf-tools/powerpoint-to-pdf": "/pdf-tools/powerpoint-to-pdf", "/pdf-tools/pdf-to-word": "/pdf-tools/pdf-to-word", "/pdf-tools/ocr-pdf": "/pdf-tools/ocr-pdf", "/pdf-tools/compress-pdf": "/pdf-tools/compress-pdf", "/pdf-tools/merge-pdf": "/pdf-tools/merge-pdf", "/products/printpilot": "/print-automation", "/features/qr-upload": "/print-automation", "/features/auto-delete": "/privacy-policy", "/security": "/privacy-policy", "/pricing": "/pricing" }; if (routes[clean]) return routes[clean]; if (/^\/tools\/pdf\//.test(clean)) return `/pdf-tools/${clean.split("/")[3]}`; return ""; }
 function getRouteLabel(href: string) { const labels: Record<string, string> = { "/pdf-tools": "Explore All PDF Tools", "/pdf-tools/pdf-to-powerpoint": "Open PDF to PowerPoint", "/pdf-tools/powerpoint-to-pdf": "Open PowerPoint to PDF", "/pdf-tools/pdf-to-word": "Open PDF to Word", "/pdf-tools/ocr-pdf": "Open OCR PDF", "/pdf-tools/compress-pdf": "Open Compress PDF", "/pdf-tools/merge-pdf": "Open Merge PDF", "/print-automation": "Learn About PrintPilot", "/privacy-policy": "Read Privacy Policy", "/pricing": "Start Free Trial" }; return labels[href] || "Open Tool"; }
 function JsonLd() { const schemas = [{ "@context": "https://schema.org", "@type": "SoftwareApplication", name: "RepetiGo PDF to PowerPoint Converter", applicationCategory: "UtilitiesApplication", operatingSystem: "Web", offers: { "@type": "Offer", price: "0", priceCurrency: "INR" }, description: "Free online PDF to PowerPoint converter that renders each PDF page as a high-fidelity image slide in a .pptx file, ready to present. Runs entirely in the browser - no file is ever uploaded to a server.", url: pageUrl }, { "@context": "https://schema.org", "@type": "HowTo", name: "How to Convert PDF to PowerPoint Online Free", step: [{ "@type": "HowToStep", name: "Upload PDF" }, { "@type": "HowToStep", name: "RepetiGo renders each page as a slide" }, { "@type": "HowToStep", name: "Download .pptx" }] }, { "@context": "https://schema.org", "@type": "FAQPage", mainEntity: faqSchemaQuestions.map(([question, answer]) => ({ "@type": "Question", name: question, acceptedAnswer: { "@type": "Answer", text: answer } })) }, { "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Home", item: "https://repetigo.com/" }, { "@type": "ListItem", position: 2, name: "PDF Tools", item: "https://repetigo.com/pdf-tools" }, { "@type": "ListItem", position: 3, name: "PDF to PowerPoint", item: pageUrl }] }]; return <>{schemas.map((schema) => <script key={schema["@type"]} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }} />)}</>; }

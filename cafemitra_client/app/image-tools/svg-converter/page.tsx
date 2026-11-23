@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import SvgConverterClient from "./SvgConverterClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/image-tools/svg-converter";
+
+const shareImage = ogImage({
+  title: "SVG Converter Free",
+  subtitle: "Turn SVG files into PNG or JPG, scaled up to 8× for a crisp image.",
+  category: "Free Image Tool",
+  icon: "convert",
+});
 
 export const metadata: Metadata = {
   title: "SVG Converter Free - Convert SVG to PNG or JPG (up to 8×) | RepetiGo",
@@ -9,12 +17,14 @@ export const metadata: Metadata = {
     "Free SVG converter - turn SVG files into PNG or JPG in your browser, scaled up to 8× for a crisp, high-resolution image. Batch-convert and download a ZIP.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "SVG Converter Free - Convert SVG to PNG or JPG (up to 8×)",
     description: "Turn SVG files into PNG or JPG, scaled up to 8× for a crisp image. Batch + ZIP, in your browser.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "SVG Converter Free - SVG to PNG or JPG",
     description: "Free SVG→PNG/JPG. Scale up to 8×, transparency preserved, batch + ZIP, 100% in your browser.",

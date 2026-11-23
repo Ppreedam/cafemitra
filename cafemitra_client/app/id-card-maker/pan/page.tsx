@@ -2,8 +2,16 @@ import type { Metadata } from "next";
 import { DashboardShell } from "../../DashboardShell";
 import IdCardStudioClient from "../IdCardStudioClient";
 import { JsonLd, StructuredSeoCopy } from "../SeoContent";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/id-card-maker/pan";
+
+const shareImage = ogImage({
+  title: "PAN Card Maker from PDF Online Free",
+  subtitle: "Upload your downloaded e-PAN PDF and print a card-size copy.",
+  category: "ID Card Maker",
+  icon: "idcard",
+});
 
 export const metadata: Metadata = {
   title: "PAN Card Maker from PDF Online Free | RepetiGo",
@@ -11,12 +19,14 @@ export const metadata: Metadata = {
     "Turn your downloaded e-PAN PDF into a clean, print-ready PAN card - upload the PDF, review the extracted details, and print. Free, built for print shops and cyber cafes.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "PAN Card Maker from PDF Online Free | RepetiGo",
     description: "Upload your e-PAN PDF, review the details, and print a ready-to-use PAN card. Free, no sign-up required to try.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "PAN Card Maker from PDF - RepetiGo",
     description: "Create a printable PAN card from your e-PAN PDF - upload, review, and print.",

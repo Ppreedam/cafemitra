@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import WebpToJpgClient from "./WebpToJpgClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/image-tools/webp-to-jpg";
+
+const shareImage = ogImage({
+  title: "WebP to JPG Free",
+  subtitle: "Turn WebP images into JPG with a quality slider.",
+  category: "Free Image Tool",
+  icon: "convert",
+});
 
 export const metadata: Metadata = {
   title: "WebP to JPG Free - Convert & Batch, with Quality Control | RepetiGo",
@@ -9,12 +17,14 @@ export const metadata: Metadata = {
     "Free WebP to JPG converter - turn WebP images into JPG in your browser, with a quality slider. Batch-convert many files and download a ZIP. No upload, no watermark.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "WebP to JPG Free - Convert & Batch, with Quality Control",
     description: "Turn WebP images into JPG with a quality slider. Batch-convert many files to a ZIP. In your browser.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "WebP to JPG Free - Convert & Batch",
     description: "Free WebP→JPG. Quality slider, batch + ZIP, 100% in your browser.",

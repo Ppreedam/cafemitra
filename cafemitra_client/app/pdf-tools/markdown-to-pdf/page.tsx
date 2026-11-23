@@ -2,8 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { DashboardShell } from "../../DashboardShell";
 import MarkdownToPdfClient from "./MarkdownToPdfClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/pdf-tools/markdown-to-pdf";
+
+const shareImage = ogImage({
+  title: "Markdown to PDF Converter Free Online",
+  subtitle: "Turn Markdown notes into a clean PDF.",
+  category: "Free PDF Tool",
+  icon: "convert",
+});
 
 export const metadata: Metadata = {
   title: "Markdown to PDF Converter Free Online - No Pandoc | RepetiGo",
@@ -11,6 +19,7 @@ export const metadata: Metadata = {
     "Convert Markdown to PDF free online - paste .md content or upload a file, get a clean PDF instantly. No Pandoc, no CLI, no setup. Also: PDF to Markdown. No sign-up. Browser-only - files never uploaded.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Markdown to PDF Converter Free Online - No Pandoc | RepetiGo",
     description:
       "Convert Markdown to PDF free online - paste .md or upload file, get clean PDF. No Pandoc, no CLI, no setup. Also PDF to Markdown. No sign-up.",
@@ -18,6 +27,7 @@ export const metadata: Metadata = {
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Markdown to PDF Free Online - RepetiGo",
     description: "Paste Markdown, get PDF. No Pandoc, no setup. Also PDF to Markdown.",
@@ -165,7 +175,7 @@ function Callout({ children }: { children: React.ReactNode }) {
 }
 
 function SeoTable({ headers, rows }: { headers: string[]; rows: string[][] }) {
-  return <div className="tool-seo-table-wrap"><table><thead><tr>{headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{rows.map((row) => <tr key={row.join("|")}>{row.map((cell, index) => <td key={`${cell}-${index}`}>{cell}</td>)}</tr>)}</tbody></table></div>;
+  return <div className="tool-seo-table-wrap"><table><thead><tr>{headers.map((header) => <th key={header}>{header}</th>)}</tr></thead><tbody>{rows.map((row) => <tr key={row.join("|")}>{row.map((cell, index) => <td key={`cell-${index}`}>{cell}</td>)}</tr>)}</tbody></table></div>;
 }
 
 function labelFor(href: string) {

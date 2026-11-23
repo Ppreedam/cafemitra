@@ -1,8 +1,16 @@
 import type { Metadata } from "next";
 import IdCardUploadClient from "../IdCardUploadClient";
 import { JsonLd, StructuredSeoCopy } from "../SeoContent";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/id-card-maker/ration";
+
+const shareImage = ogImage({
+  title: "Ration Card Maker from PDF Online Free",
+  subtitle: "Print a card-size copy from your downloaded Ration PDF - launching soon.",
+  category: "Coming Soon",
+  icon: "idcard",
+});
 
 export const metadata: Metadata = {
   title: "Ration Card Maker from PDF Online Free | RepetiGo",
@@ -10,12 +18,14 @@ export const metadata: Metadata = {
     "Turn your downloaded Ration Card PDF into a clean, print-ready card - upload the PDF, review the extracted details, and print. Free.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Ration Card Maker from PDF Online Free | RepetiGo",
     description: "Upload your Ration Card PDF, review the details, and print a ready-to-use card. Free, no sign-up required to try.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Ration Card Maker from PDF - RepetiGo",
     description: "Create a printable Ration card from your PDF - upload, review, and print.",

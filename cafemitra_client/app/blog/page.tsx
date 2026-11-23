@@ -6,8 +6,16 @@ import { LandingNavbar } from "../LandingNavbar";
 import { PublicFooter } from "../PublicFooter";
 import { blogPosts } from "../blog-data";
 import { fetchBlogArticles } from "@/lib/blog";
+import { ogImage } from "@/lib/og";
 
 const siteUrl = "https://repetigo.com";
+
+const shareImage = ogImage({
+  title: "RepetiGo Blog",
+  subtitle: "Guides for print shops, PDFs and images.",
+  category: "Guide",
+  icon: "file",
+});
 
 export const metadata: Metadata = {
   title: "Blog | RepetiGo",
@@ -17,6 +25,7 @@ export const metadata: Metadata = {
     canonical: "/blog",
   },
   openGraph: {
+    images: [shareImage],
     title: "Blog | RepetiGo",
     description: "Guides and how-tos on print automation, PDF tools, and image tools from RepetiGo.",
     type: "website",

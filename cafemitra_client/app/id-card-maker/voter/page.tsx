@@ -2,8 +2,16 @@ import type { Metadata } from "next";
 import { DashboardShell } from "../../DashboardShell";
 import IdCardStudioClient from "../IdCardStudioClient";
 import { JsonLd, StructuredSeoCopy } from "../SeoContent";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/id-card-maker/voter";
+
+const shareImage = ogImage({
+  title: "Voter ID Card Maker from PDF Online Free",
+  subtitle: "Upload your downloaded e-EPIC (Voter ID) PDF and print a card-size copy.",
+  category: "ID Card Maker",
+  icon: "idcard",
+});
 
 export const metadata: Metadata = {
   title: "Voter ID Card Maker from PDF Online Free | RepetiGo",
@@ -11,12 +19,14 @@ export const metadata: Metadata = {
     "Turn your downloaded e-EPIC (Voter ID) PDF into a clean, print-ready Voter ID card - upload the PDF, review the extracted details, and print. Free.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Voter ID Card Maker from PDF Online Free | RepetiGo",
     description: "Upload your e-EPIC PDF, review the details, and print a ready-to-use Voter ID card. Free, no sign-up required to try.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Voter ID Card Maker from PDF - RepetiGo",
     description: "Create a printable Voter ID card from your e-EPIC PDF - upload, review, and print.",

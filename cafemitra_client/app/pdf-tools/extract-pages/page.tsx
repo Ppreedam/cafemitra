@@ -1,8 +1,16 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { SplitPdfTool } from "../split-pdf/SplitPdfClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/pdf-tools/extract-pages";
+
+const shareImage = ogImage({
+  title: "Extract Pages from PDF",
+  subtitle: "Pull specific pages out of a PDF free in your browser.",
+  category: "Free PDF Tool",
+  icon: "split",
+});
 
 export const metadata: Metadata = {
   title: "Extract Pages from PDF - Free Online, No Sign-Up | RepetiGo",
@@ -12,6 +20,7 @@ export const metadata: Metadata = {
     canonical: pageUrl,
   },
   openGraph: {
+    images: [shareImage],
     title: "Extract Pages from PDF - Free Online, No Sign-Up | RepetiGo",
     description:
       "Pull specific pages out of a PDF free in your browser. No sign-up. Files are processed locally - browser-only.",
@@ -19,6 +28,7 @@ export const metadata: Metadata = {
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Extract Pages from PDF - Free Online | RepetiGo",
     description: "Free online tool to extract pages from a PDF on any device. No sign-up. Browser-only processing.",
@@ -240,9 +250,9 @@ function isCallout(line: string) {
 function renderInline(text: string): ReactNode[] {
   const patterns = /(Remove Pages tool|security page|PrintPilot)/g;
   return text.split(patterns).map((part, index) => {
-    if (part === "Remove Pages tool") return <a href="/pdf-tools/remove-pages" key={`${part}-${index}`}>Remove Pages tool</a>;
-    if (part === "security page") return <a href="/privacy-policy" key={`${part}-${index}`}>security page</a>;
-    if (part === "PrintPilot") return <a href="/print-automation" key={`${part}-${index}`}>PrintPilot</a>;
+    if (part === "Remove Pages tool") return <a href="/pdf-tools/remove-pages" key={`part-${index}`}>Remove Pages tool</a>;
+    if (part === "security page") return <a href="/privacy-policy" key={`part-${index}`}>security page</a>;
+    if (part === "PrintPilot") return <a href="/print-automation" key={`part-${index}`}>PrintPilot</a>;
     return part;
   });
 }

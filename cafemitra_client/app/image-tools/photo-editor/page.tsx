@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import PhotoEditorClient from "./PhotoEditorClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/image-tools/photo-editor";
+
+const shareImage = ogImage({
+  title: "Free Photo Editor Online",
+  subtitle: "Filters, crop, text, stickers and frames - free in your browser.",
+  category: "Free Image Tool",
+  icon: "edit",
+});
 
 export const metadata: Metadata = {
   title: "Free Photo Editor Online - Filters, Crop, Background Remover & Batch | RepetiGo",
@@ -9,12 +17,14 @@ export const metadata: Metadata = {
     "Free online photo editor - remove backgrounds, adjust filters, crop to ID/passport sizes, add a Name & DOB caption, text, stickers, frames and merge photos in your browser. Batch-edit and download as PNG, JPG or WebP. No watermark.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Free Photo Editor Online - Filters, Crop, Background Remover & Batch",
     description: "Remove backgrounds, adjust filters, crop, add text, stickers, frames and merge photos in your browser. No watermark.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Free Photo Editor Online - All-in-One, In Your Browser",
     description: "Background removal, filters, crop, transform, draw, text, stickers, frames, merge + batch. PNG/JPG/WebP, no watermark.",

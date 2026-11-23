@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   title: "Refund & Cancellation Policy - RepetiGo",
   description:
     "RepetiGo Refund & Cancellation Policy covering service credit top-ups, subscription plans, and print/passport photo job payments.",
+  alternates: {
+    canonical: "https://repetigo.com/refund-policy",
+  },
   robots: {
     index: true,
     follow: true,

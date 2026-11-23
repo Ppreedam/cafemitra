@@ -1,20 +1,30 @@
 import type { Metadata } from "next";
 import { DashboardShell } from "../../DashboardShell";
 import PdfSecurityTool from "../PdfSecurityTool";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/pdf-tools/protect-pdf";
+
+const shareImage = ogImage({
+  title: "Password Protect PDF Free",
+  subtitle: "Add a password so only the right people can open your PDF.",
+  category: "Free PDF Tool",
+  icon: "lock",
+});
 
 export const metadata: Metadata = {
   title: "Password Protect PDF Free - AES-256 | RepetiGo",
   description: "Password protect PDF free - AES-256 encryption, open password + permission controls. No sign-up, browser-only - file never leaves your device. Stronger than most paid tools.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Password Protect PDF Free - AES-256 | RepetiGo",
     description: "Password protect PDF free - AES-256 encryption, open password + permission controls. No sign-up, browser-only - file never leaves your device. Stronger than most paid tools.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Password Protect PDF Free - AES-256 | RepetiGo",
     description: "AES-256 encryption, open password + permission controls. No sign-up, browser-only.",

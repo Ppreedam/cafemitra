@@ -1,20 +1,30 @@
 import type { Metadata } from "next";
 import { DashboardShell } from "../../DashboardShell";
 import PdfSecurityTool from "../PdfSecurityTool";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/pdf-tools/sign-pdf";
+
+const shareImage = ogImage({
+  title: "Sign PDF Online Free",
+  subtitle: "Add your signature to a PDF.",
+  category: "Free PDF Tool",
+  icon: "edit",
+});
 
 export const metadata: Metadata = {
   title: "Sign PDF Online Free - Draw, Type or Upload | RepetiGo",
   description: "Sign PDF online free - draw your signature, type it, or upload a photo. Apply to one page or all pages. No Adobe. No sign-up. Browser-only - files never uploaded.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "Sign PDF Online Free - Draw, Type or Upload | RepetiGo",
     description: "Sign PDF online free - draw your signature, type it, or upload a photo. Apply to one page or all pages. No Adobe. No sign-up. Browser-only - files never uploaded.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "Sign PDF Online Free - RepetiGo",
     description: "Draw, type, or upload your signature - apply it to any PDF for free. No Adobe, no sign-up, browser-only.",

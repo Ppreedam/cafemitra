@@ -28,7 +28,7 @@ function renderInlineMappedLinks(text: string) {
     const href = mapSeoRoute(part.startsWith("repetigo.com") ? `https://${part}` : part);
     if (!href) return part;
     return (
-      <a href={href} key={`${part}-${index}`}>
+      <a href={href} key={`part-${index}`}>
         {getRouteLabel(href)}
       </a>
     );

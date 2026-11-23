@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import PngConverterClient from "./PngConverterClient";
+import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/image-tools/png-converter";
+
+const shareImage = ogImage({
+  title: "PNG Converter Free",
+  subtitle: "Convert PNG to PDF, WebP, ICO, GIF or BMP in your browser.",
+  category: "Free Image Tool",
+  icon: "convert",
+});
 
 export const metadata: Metadata = {
   title: "PNG Converter Free - PNG to PDF, WebP, ICO, GIF & BMP | RepetiGo",
@@ -9,12 +17,14 @@ export const metadata: Metadata = {
     "Free PNG converter - convert PNG to PDF, WebP, ICO, GIF or BMP in your browser. Batch-convert and download a ZIP. No upload, no watermark, nothing to install.",
   alternates: { canonical: pageUrl },
   openGraph: {
+    images: [shareImage],
     title: "PNG Converter Free - PNG to PDF, WebP, ICO, GIF & BMP",
     description: "Convert PNG to PDF, WebP, ICO, GIF or BMP in your browser. Batch + ZIP, nothing uploaded.",
     type: "website",
     url: pageUrl,
   },
   twitter: {
+    images: [shareImage],
     card: "summary_large_image",
     title: "PNG Converter Free - PNG to 6 Formats",
     description: "Free PNG converter: PDF/WebP/ICO/GIF/BMP/JPG. Batch + ZIP, 100% in your browser.",
