@@ -34,7 +34,7 @@ export const metadata: Metadata = {
 
 const content = String.raw`H1: Free Photo Editor Online - Edit, Filter & Batch Your Photos in the Browser.
 
-RepetiGo's photo editor is a free, all-in-one photo editor online that runs entirely in your browser. Upload a picture and you get thirteen editing tools in one place - background removal, filters and light, resize, crop (with passport/ID and print-size presets), transform, draw, text, an ID Caption tool for Name & DOB, shapes, stickers, frames, rounded corners, and merge - so you can do a whole edit without switching apps. Adjust it, style it, and download the result as a PNG, JPG, or WebP.
+RepetiGo's photo editor is a free, all-in-one photo editor online that runs in your browser. Upload a picture and you get thirteen editing tools in one place - background removal, filters and light, resize, crop (with passport/ID and print-size presets), transform, draw, text, an ID Caption tool for Name & DOB, shapes, stickers, frames, rounded corners, and merge - so you can do a whole edit without switching apps. Adjust it, style it, and download the result as a PNG, JPG, or WebP.
 It is a genuinely free photo editor: no account, no watermark, and nothing to install. Because most of this online photo editor works on your own device, your photos generally stay local - the one exception is the Background Removal tool, which sends the image to RepetiGo's AI service to cut out the background and returns the result to keep editing. When you have a whole folder to get through, the batch feature applies the same edits to every photo and hands them back as a single ZIP. It is built to be the quick, no-nonsense editor you reach for when you do not want to open heavy software.
 
 ✓ Free · No sign-up · No watermark   ✓ 13 tools in one, incl. background removal   ✓ Batch-edit + ZIP download   ✓ Editing happens in your browser
@@ -55,7 +55,7 @@ Every change is live; Undo/Redo (up to 24 steps) and Reset are always there.
 Choose PNG, JPG, or WebP and download - or batch-apply to more photos.
 Your edited photo saves to your device with no watermark.
 
-🔒 Every edit happens in your browser using the Canvas engine - your photos are never uploaded to any server.
+🔒 Every edit except Background Removal happens in your browser using the Canvas engine - those edits never leave your device. Background Removal sends the image to RepetiGo's AI service and returns the result.
 
 H2: Thirteen Editing Tools in One Place.
 Most quick edits need more than one tool, so RepetiGo puts thirteen of them in a single editor. Here is what each tab does - you can use one, or chain several together in any order.
