@@ -42,9 +42,9 @@ const shareImage = ogImage({
 });
 
 export const metadata: Metadata = {
-  title: "Image Converter Online Free - Convert JPG PNG WebP SVG BMP ICO | RepetiGo",
+  title: "Free Image Tools - Convert, Resize & Compress | RepetiGo",
   description:
-    "Free image converter online - convert any image format: JPG, PNG, WebP, SVG, BMP, ICO, HEIC, TIFF, PDF. No sign-up, no watermark, batch convert. India portal-ready. Files auto-deleted 60 minutes.",
+    "Free image tools online - convert JPG, PNG, WebP, SVG, HEIC, PDF and more, plus resize and compress. No sign-up, no watermark, batch convert.",
   alternates: { canonical: pageUrl },
   openGraph: {
     images: [shareImage],

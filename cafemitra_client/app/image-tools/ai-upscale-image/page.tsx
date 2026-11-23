@@ -12,7 +12,7 @@ const shareImage = ogImage({
 });
 
 export const metadata: Metadata = {
-  title: "AI Image Upscaler Free - Enhance & Enlarge Photos to 4× | RepetiGo",
+  title: "AI Image Upscaler Free - Enlarge Photos to 4× | RepetiGo",
   description:
     "Free AI image upscaler - enhance and enlarge blurry, low-res or pixelated photos up to 4× with AI. Prefer on-device? Switch to the standard upscaler in one click.",
   alternates: { canonical: pageUrl },

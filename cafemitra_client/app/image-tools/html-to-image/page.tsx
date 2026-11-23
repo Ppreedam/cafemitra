@@ -14,7 +14,7 @@ const shareImage = ogImage({
 export const metadata: Metadata = {
   title: "HTML to Image Free - Render HTML Text to a PNG | RepetiGo",
   description:
-    "Free HTML to image tool - turn the readable text of an HTML file into a PNG, safely in your browser. No scripts run, nothing uploaded. (Text render, not a full screenshot.)",
+    "Free HTML to image tool - turn the readable text of an HTML file into a PNG in your browser. No scripts run, nothing uploaded. Text render only.",
   alternates: { canonical: pageUrl },
   openGraph: {
     images: [shareImage],

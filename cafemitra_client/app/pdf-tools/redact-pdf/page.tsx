@@ -15,12 +15,12 @@ const shareImage = ogImage({
 
 export const metadata: Metadata = {
   title: "Redact PDF Free - Permanently Remove Sensitive Data | RepetiGo",
-  description: "Redact PDF free - permanently black out sensitive text and images with a rectangular area. Applied identically across selected pages. Entire output rasterised. DPDP Act compliant. No sign-up.",
+  description: "Redact PDF free - permanently black out sensitive text and images by drawing boxes, across selected pages. Output is fully rasterised. No sign-up.",
   alternates: { canonical: pageUrl },
   openGraph: {
     images: [shareImage],
     title: "Redact PDF Free - Permanently Remove Sensitive Data | RepetiGo",
-    description: "Redact PDF free - permanently black out sensitive text and images with a rectangular area. Applied identically across selected pages. Entire output rasterised. DPDP Act compliant. No sign-up.",
+    description: "Redact PDF free - permanently black out sensitive text and images by drawing boxes, across selected pages. Output is fully rasterised. No sign-up.",
     type: "website",
     url: pageUrl,
   },

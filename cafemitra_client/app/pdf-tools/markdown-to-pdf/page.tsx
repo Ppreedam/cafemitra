@@ -16,7 +16,7 @@ const shareImage = ogImage({
 export const metadata: Metadata = {
   title: "Markdown to PDF Converter Free Online - No Pandoc | RepetiGo",
   description:
-    "Convert Markdown to PDF free online - paste .md content or upload a file, get a clean PDF instantly. No Pandoc, no CLI, no setup. Also: PDF to Markdown. No sign-up. Browser-only - files never uploaded.",
+    "Convert Markdown to PDF free - paste .md text or upload a file and get a clean PDF instantly. No Pandoc or setup. No sign-up, files never uploaded.",
   alternates: { canonical: pageUrl },
   openGraph: {
     images: [shareImage],

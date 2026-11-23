@@ -11,14 +11,14 @@ const shareImage = ogImage({
 });
 
 export const metadata: Metadata = {
-  title: "Merge PDF Online Free India - Combine PDF Files Instantly | RepetiGo",
+  title: "Merge PDF Online Free India - Combine PDFs | RepetiGo",
   description:
     "Merge PDF files online free - combine multiple PDFs into one in seconds. No sign-up, no install, works on any device. Files browser-only - never uploaded. Free.",
   alternates: {
     canonical: pageUrl,
   },
   openGraph: {
-    title: "Merge PDF Online Free India - Combine PDF Files Instantly | RepetiGo",
+    title: "Merge PDF Online Free India - Combine PDFs | RepetiGo",
     description:
       "Free PDF merger - combine multiple PDFs into one in seconds. No sign-up, browser-only - never uploaded. Works on phone & laptop.",
     type: "website",

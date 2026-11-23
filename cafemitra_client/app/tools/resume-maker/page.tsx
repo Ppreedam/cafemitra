@@ -19,7 +19,7 @@ const shareImage = ogImage({
 export const metadata: Metadata = {
   title: "Resume Maker - Free Templates, Photo & Print-Ready PDF | RepetiGo",
   description:
-    "Free resume maker with 9 professional templates and an ATS-safe design. Add your photo, fill your details, and download a print-ready PDF - online or at a nearby cyber cafe.",
+    "Free resume maker with 9 professional, ATS-safe templates. Add your photo and details and download a print-ready PDF - online or at a cyber cafe.",
   alternates: { canonical: pageUrl },
   robots: { index: true, follow: true },
   openGraph: {

@@ -12,7 +12,7 @@ const shareImage = ogImage({
 });
 
 export const metadata: Metadata = {
-  title: "SVG Converter Free - Convert SVG to PNG or JPG (up to 8×) | RepetiGo",
+  title: "SVG to PNG or JPG Converter Free (up to 8×) | RepetiGo",
   description:
     "Free SVG converter - turn SVG files into PNG or JPG in your browser, scaled up to 8× for a crisp, high-resolution image. Batch-convert and download a ZIP.",
   alternates: { canonical: pageUrl },

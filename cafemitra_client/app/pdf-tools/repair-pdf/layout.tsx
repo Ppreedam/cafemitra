@@ -9,12 +9,12 @@ const shareImage = ogImage({
 });
 
 export const metadata: Metadata = {
-  title: "PDF Repair Tool - Fix Corrupt, Damaged & Broken PDFs Free | RepetiGo",
-  description: "Free PDF repair tool online - fix corrupt, damaged, or broken PDF files in seconds. No sign-up. Upload your PDF and download a recovered version instantly. Processed entirely in your browser - never uploaded.",
+  title: "Repair PDF Free - Fix Corrupt or Damaged PDFs | RepetiGo",
+  description: "Repair PDF free - fix corrupt, damaged or broken PDF files and download a recovered version in seconds. No sign-up, runs in your browser.",
   alternates: { canonical: "https://repetigo.com/pdf-tools/repair-pdf" },
   openGraph: {
     images: [shareImage],
-    title: "PDF Repair Tool - Fix Corrupt, Damaged & Broken PDFs Free | RepetiGo",
+    title: "Repair PDF Free - Fix Corrupt or Damaged PDFs | RepetiGo",
     description: "Fix a corrupt, damaged, or broken PDF file free online. No sign-up. Processed entirely in your browser - never uploaded.",
     type: "website",
     url: "https://repetigo.com/pdf-tools/repair-pdf",

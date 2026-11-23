@@ -12,7 +12,7 @@ const shareImage = ogImage({
 });
 
 export const metadata: Metadata = {
-  title: "Convert to JPG Free - HEIC, WebP, PNG, SVG & GIF to JPG | RepetiGo",
+  title: "Convert to JPG Free - HEIC, WebP, PNG to JPG | RepetiGo",
   description:
     "Free image-to-JPG converter - turn HEIC, WebP, PNG, SVG, BMP or GIF into JPG in your browser. Batch-convert and download a ZIP. No upload, no watermark.",
   alternates: { canonical: pageUrl },

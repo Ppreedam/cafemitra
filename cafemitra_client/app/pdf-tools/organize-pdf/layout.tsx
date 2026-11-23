@@ -9,8 +9,8 @@ const shareImage = ogImage({
 });
 
 export const metadata: Metadata = {
-  title: "Organize PDF Pages - Free Online, Drag & Drop, No Sign-Up | RepetiGo",
-  description: "Organize PDF pages in seconds - drag and drop to rearrange, reorder, or fix page order in any PDF. Free, online, no sign-up. Processed entirely in your browser - never uploaded.",
+  title: "Organize PDF Pages Free - Drag & Drop Online | RepetiGo",
+  description: "Organize PDF pages free - drag and drop to rearrange or fix page order in any PDF. No sign-up. Runs entirely in your browser, never uploaded.",
   alternates: { canonical: "https://repetigo.com/pdf-tools/organize-pdf" },
   openGraph: {
     images: [shareImage],

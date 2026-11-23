@@ -13,7 +13,7 @@ const shareImage = ogImage({
 });
 
 export const metadata: Metadata = {
-  title: "Free Biodata Maker Online - Matrimonial & General Biodata | RepetiGo",
+  title: "Free Biodata Maker Online - Marriage Biodata | RepetiGo",
   description: "Pick a biodata template, fill in your details, and download a clean PDF. Matrimonial and general biodata, free, no sign-up required.",
   alternates: { canonical: pageUrl },
   robots: { index: true, follow: true },

@@ -25,7 +25,7 @@ const PAGE_URL = `${BUSINESS.website}${PAGE_PATH}`;
 
 const TITLE = "RepetiGo for Xerox Shops: Secure Document Printing Software India";
 const DESCRIPTION =
-  "RepetiGo is the xerox shop software India uses for secure document printing - QR upload, AI in 30 seconds, auto-delete. For Xerox centres, photocopy shops and copy centres.";
+  "Xerox shop software for secure document printing - QR upload, AI preparation in 30 seconds, auto-delete. For photocopy shops and copy centres.";
 const OG_TITLE = "Xerox Shop Software India | Secure Document Printing - RepetiGo";
 const OG_DESCRIPTION =
   "QR upload. AI in 30 seconds. Auto-delete. RepetiGo replaces WhatsApp-based document sharing at every Xerox shop, photocopy centre and copy shop in India.";

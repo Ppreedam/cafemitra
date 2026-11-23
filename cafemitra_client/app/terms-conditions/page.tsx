@@ -8,7 +8,7 @@ import { BUSINESS, formattedAddress, legalEntityStatement } from "../../lib/busi
 export const metadata: Metadata = {
   title: "Terms & Conditions - RepetiGo",
   description:
-    "Read the RepetiGo Terms & Conditions governing use of our AI-powered print shop software, secure document upload, document processing, subscriptions, and related services.",
+    "RepetiGo Terms & Conditions for our print shop software, secure document upload and processing, subscriptions and related services.",
   alternates: {
     canonical: "https://repetigo.com/terms-conditions",
   },

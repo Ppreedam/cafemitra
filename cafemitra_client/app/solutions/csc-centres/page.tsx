@@ -23,9 +23,9 @@ import { ogImage } from "@/lib/og";
 const PAGE_PATH = "/solutions/csc-centres";
 const PAGE_URL = `${BUSINESS.website}${PAGE_PATH}`;
 
-const TITLE = "RepetiGo for CSC Centres: Secure Government Document Printing India";
+const TITLE = "CSC Centre Printing Software India | RepetiGo";
 const DESCRIPTION =
-  "RepetiGo is the CSC centre printing software India uses for secure government document printing - QR upload, AI processing, DPDP Act compliant auto-delete. Built for VLEs.";
+  "CSC centre printing software for secure government document printing - QR upload, AI processing and auto-delete after printing. Built for VLEs.";
 const OG_TITLE = "CSC Centre Printing Software India | Secure Government Document Printing - RepetiGo";
 const OG_DESCRIPTION =
   "QR upload. AI processing. DPDP Act compliant auto-delete. RepetiGo is the secure document printing platform built for CSC centres and VLEs across India.";

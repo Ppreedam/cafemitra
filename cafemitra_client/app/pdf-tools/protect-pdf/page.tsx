@@ -14,12 +14,12 @@ const shareImage = ogImage({
 
 export const metadata: Metadata = {
   title: "Password Protect PDF Free - AES-256 | RepetiGo",
-  description: "Password protect PDF free - AES-256 encryption, open password + permission controls. No sign-up, browser-only - file never leaves your device. Stronger than most paid tools.",
+  description: "Password protect PDF free with AES-256 encryption, an open password and permission controls. No sign-up - your file never leaves your device.",
   alternates: { canonical: pageUrl },
   openGraph: {
     images: [shareImage],
     title: "Password Protect PDF Free - AES-256 | RepetiGo",
-    description: "Password protect PDF free - AES-256 encryption, open password + permission controls. No sign-up, browser-only - file never leaves your device. Stronger than most paid tools.",
+    description: "Password protect PDF free with AES-256 encryption, an open password and permission controls. No sign-up - your file never leaves your device.",
     type: "website",
     url: pageUrl,
   },

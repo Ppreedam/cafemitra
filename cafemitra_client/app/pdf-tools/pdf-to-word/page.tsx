@@ -14,7 +14,7 @@ const shareImage = ogImage({
 
 export const metadata: Metadata = {
   title: "PDF to Word Converter - Free Online, No Sign-Up | RepetiGo",
-  description: "Convert PDF to Word free online - turn any PDF into an editable .docx file in seconds - text content extracted, ready to edit. No sign-up, no install. Files browser-only - never uploaded.",
+  description: "Convert PDF to Word free - turn any PDF into an editable .docx with the text extracted, ready to edit. No sign-up, no install, files never uploaded.",
   alternates: { canonical: pageUrl },
   twitter: { images: [shareImage], card: "summary_large_image", title: "PDF to Word Converter Free Online - RepetiGo", description: "Convert PDF to editable Word free. No sign-up, no install, browser-only - never uploaded." },
   robots: { index: true, follow: true },

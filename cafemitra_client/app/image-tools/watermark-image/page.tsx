@@ -14,7 +14,7 @@ const shareImage = ogImage({
 export const metadata: Metadata = {
   title: "Watermark Image Free - Add Text or Logo Watermarks | RepetiGo",
   description:
-    "Free tool to add a text or logo watermark to your images - drag to position, set opacity and rotation, and batch-watermark many photos at once. In your browser, no upload.",
+    "Add a text or logo watermark to images free - drag to position, set opacity and rotation, batch-watermark many photos. In your browser, no upload.",
   alternates: { canonical: pageUrl },
   openGraph: {
     images: [shareImage],

@@ -13,12 +13,12 @@ const shareImage = ogImage({
 });
 
 export const metadata: Metadata = {
-  title: "Convert PDF to PDF/A Free Online - Archival Format Preparation | RepetiGo",
-  description: "Convert any PDF to PDF/A free online - ISO 19005 compliant archival format for courts, government portals, and academic repositories. Best-effort archival preparation. No sign-up. Browser-only processing.",
+  title: "PDF to PDF/A Converter Free Online | RepetiGo",
+  description: "Convert PDF to PDF/A free online - best-effort archival preparation (ISO 19005) for courts, government portals and repositories. No sign-up.",
   alternates: { canonical: pageUrl },
   openGraph: {
     images: [shareImage],
-    title: "Convert PDF to PDF/A Free Online - Archival Format Preparation | RepetiGo",
+    title: "PDF to PDF/A Converter Free Online | RepetiGo",
     description: "Convert PDF to PDF/A free - ISO 19005 archival format for courts, governments, and academic repositories. PDF/A-1b and PDF/A-2 best-effort preparation supported. No sign-up, auto-deleted.",
     type: "website",
     url: pageUrl,

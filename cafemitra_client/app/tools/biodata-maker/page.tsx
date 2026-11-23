@@ -19,7 +19,7 @@ const shareImage = ogImage({
 export const metadata: Metadata = {
   title: "Marriage Biodata Maker - Free Templates & PDF | RepetiGo",
   description:
-    "Free marriage biodata maker - pick a template, add your photo and details, and download a print-ready PDF. Matrimonial and simple formats, online or at a cyber cafe near you.",
+    "Free marriage biodata maker - pick a template, add your photo and details, and download a print-ready PDF. Online or at a cyber cafe near you.",
   alternates: { canonical: pageUrl },
   robots: { index: true, follow: true },
   openGraph: {

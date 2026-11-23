@@ -12,7 +12,7 @@ const shareImage = ogImage({
 });
 
 export const metadata: Metadata = {
-  title: "PNG to JPG Free - Convert & Batch, with Quality Control | RepetiGo",
+  title: "PNG to JPG Converter Free - Batch Convert | RepetiGo",
   description:
     "Free PNG to JPG converter - turn PNG images into JPG in your browser, with a quality slider. Batch-convert many files and download a ZIP. No upload, no watermark.",
   alternates: { canonical: pageUrl },

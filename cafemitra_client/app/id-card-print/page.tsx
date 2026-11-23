@@ -10,7 +10,7 @@ const shareImage = ogStaticImage("id-card-print.jpg", "RepetiGo ID Card Print - 
 export const metadata: Metadata = {
   title: "Print ID Card Online Free - Front & Back, True Size | RepetiGo",
   description:
-    "Print id card online free - upload front & back photo of Aadhaar, PAN, voter ID or any card. Crop to true card size. Adjust brightness. Print multiple cards on one A4 sheet. No software needed.",
+    "Print ID cards online free - upload front & back of Aadhaar, PAN, voter ID or any card, crop to true size, and print many on one A4 sheet.",
   alternates: { canonical: pageUrl },
   openGraph: {
     images: [shareImage],

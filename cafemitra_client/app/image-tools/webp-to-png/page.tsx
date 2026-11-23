@@ -12,7 +12,7 @@ const shareImage = ogImage({
 });
 
 export const metadata: Metadata = {
-  title: "WebP to PNG Free - Lossless Converter, Transparency Kept | RepetiGo",
+  title: "WebP to PNG Converter Free - Keeps Transparency | RepetiGo",
   description:
     "Free WebP to PNG converter - turn WebP images into lossless PNG in your browser, with transparency fully preserved. Batch-convert and download a ZIP. No upload.",
   alternates: { canonical: pageUrl },

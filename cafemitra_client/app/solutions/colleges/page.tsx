@@ -23,7 +23,7 @@ const PAGE_URL = `${BUSINESS.website}${PAGE_PATH}`;
 
 const TITLE = "RepetiGo for Colleges: Secure Bulk Document Printing India";
 const DESCRIPTION =
-  "RepetiGo: college printing software India - bulk admit cards, hall tickets, student printing. AI in 30 seconds, auto-delete. Handles thousands of documents per exam cycle.";
+  "College printing software for India - bulk admit cards, hall tickets and student printing with AI and auto-delete. Built for exam-season volume.";
 const OG_TITLE = "College Printing Software India | Bulk Admit Card & Document Printing - RepetiGo";
 const OG_DESCRIPTION =
   "Bulk admit cards, hall tickets, student assignment printing - AI-processed, auto-deleted. RepetiGo handles thousands of college documents per exam cycle securely.";

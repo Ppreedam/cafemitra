@@ -19,7 +19,7 @@ const shareImage = ogImage({
 export const metadata: Metadata = {
   title: "Passport Size Photo Maker Free - AI Attire Selection | RepetiGo",
   description:
-    "Make a passport size photo at home - upload a selfie, choose your look (Same as Photo, Blazer & Tie or Burqa), let AI process it, then print on any paper size. Free. No studio visit.",
+    "Make a passport size photo at home - upload a selfie, keep your clothes or pick Blazer & Tie or Burqa, let AI process it, then print. No studio visit.",
   alternates: {
     canonical: pageUrl,
   },

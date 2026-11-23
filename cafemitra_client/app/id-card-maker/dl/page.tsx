@@ -15,7 +15,7 @@ const shareImage = ogImage({
 export const metadata: Metadata = {
   title: "Driving Licence Card Maker from PDF Online Free | RepetiGo",
   description:
-    "Turn your downloaded Driving Licence PDF into a clean, print-ready DL card - upload the PDF, review the extracted details, and print. Free, built for print shops and cyber cafes.",
+    "Turn your Driving Licence PDF into a clean, print-ready DL card - upload, review the details, and print. Free, built for print shops and cyber cafes.",
   alternates: { canonical: pageUrl },
   openGraph: {
     images: [shareImage],

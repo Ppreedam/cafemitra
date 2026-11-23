@@ -11,7 +11,7 @@ const shareImage = ogImage({
 });
 
 export const metadata: Metadata = {
-  title: "Remove Background from Image Free - AI Background Remover | RepetiGo",
+  title: "Remove Background from Image Free - AI Tool | RepetiGo",
   description:
     "Remove the background from an image free with an AI background remover. Get a clean transparent PNG in seconds - or add a white / custom colour. No sign-up, no watermark.",
   alternates: { canonical: pageUrl },

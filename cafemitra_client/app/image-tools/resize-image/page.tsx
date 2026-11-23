@@ -12,7 +12,7 @@ const shareImage = ogImage({
 });
 
 export const metadata: Metadata = {
-  title: "Resize Image Free - Image Resizer by Size, %, or Social | RepetiGo",
+  title: "Resize Image Free - By Pixels, % or Social Size | RepetiGo",
   description:
     "Free image resizer - resize an image by exact pixels, percentage, or a social-media preset. Lock the aspect ratio and export WebP or PNG. Runs in your browser.",
   alternates: { canonical: pageUrl },

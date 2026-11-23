@@ -14,12 +14,12 @@ const shareImage = ogImage({
 
 export const metadata: Metadata = {
   title: "Add Watermark to PDF Free - DRAFT/CONFIDENTIAL | RepetiGo",
-  description: "Add watermark to PDF free - custom text (DRAFT, CONFIDENTIAL, company name), opacity 5-80%, rotation, font size and colour. Apply to any pages. Text-only. Browser-only. No sign-up.",
+  description: "Add a text watermark to PDF free - DRAFT, CONFIDENTIAL or your name, with opacity, rotation, size and colour, on any pages. Browser-only, no sign-up.",
   alternates: { canonical: pageUrl },
   openGraph: {
     images: [shareImage],
     title: "Add Watermark to PDF Free - DRAFT/CONFIDENTIAL | RepetiGo",
-    description: "Add watermark to PDF free - custom text (DRAFT, CONFIDENTIAL, company name), opacity 5-80%, rotation, font size and colour. Apply to any pages. Text-only. Browser-only. No sign-up.",
+    description: "Add a text watermark to PDF free - DRAFT, CONFIDENTIAL or your name, with opacity, rotation, size and colour, on any pages. Browser-only, no sign-up.",
     type: "website",
     url: pageUrl,
   },

@@ -12,7 +12,7 @@ const shareImage = ogImage({
 });
 
 export const metadata: Metadata = {
-  title: "Compress Image Free - Reduce Image Size in Your Browser | RepetiGo",
+  title: "Compress Image Free - Reduce Image Size Online | RepetiGo",
   description:
     "Compress image files free - reduce JPG, PNG & WebP size right in your browser. Nothing is uploaded. Adjust quality, batch-compress, and download in seconds.",
   alternates: { canonical: pageUrl },

@@ -26,7 +26,7 @@ const PAGE_URL = `${BUSINESS.website}${PAGE_PATH}`;
 
 const TITLE = "Print Shop Management Software India | Automate - RepetiGo";
 const DESCRIPTION =
-  "RepetiGo is the print shop management software India trusts - QR document upload, AI preparation in 30 seconds, auto-delete after printing. No more WhatsApp. No more manual editing.";
+  "Print shop management software for India - QR document upload, AI preparation in 30 seconds and auto-delete after printing. No more WhatsApp files.";
 const OG_TITLE = "Print Shop Management Software India | Automate Every Job - RepetiGo";
 const OG_DESCRIPTION =
   "QR upload. AI in 30 seconds. Auto-delete. Replace WhatsApp-based document workflows at your print shop with RepetiGo.";

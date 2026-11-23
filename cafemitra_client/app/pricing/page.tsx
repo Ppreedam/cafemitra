@@ -27,7 +27,7 @@ const shareImage = ogImage({
 export const metadata: Metadata = {
   title: "Pricing - Pay Only When You Earn | RepetiGo PrintPilot",
   description:
-    "RepetiGo pricing for print shops and cyber cafes: everyday PDF, image, and document tools stay free. Prepaid service credits are only spent on completed PrintPilot print jobs - no fixed monthly software fee.",
+    "RepetiGo pricing: everyday PDF, image and document tools are free. Prepaid credits are spent only on completed PrintPilot print jobs - no monthly fee.",
   alternates: { canonical: pageUrl },
   openGraph: {
     images: [shareImage],

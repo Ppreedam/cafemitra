@@ -12,13 +12,13 @@ const shareImage = ogImage({
 });
 
 export const metadata: Metadata = {
-  title: "GIF Converter Free Online - GIF to JPG, PNG, WebP, ICO, PDF | RepetiGo",
+  title: "GIF Converter Free - GIF to JPG, PNG, WebP, PDF | RepetiGo",
   description:
-    "Convert GIF to JPG, PNG, WebP, BMP, ICO, PDF, or SVG free online - one tool, every format. Batch convert multiple files. No sign-up, no watermark, 100% browser-based - nothing is ever uploaded.",
+    "Convert GIF to JPG, PNG, WebP, BMP, ICO, PDF or SVG free online. Batch convert, no sign-up, no watermark - runs in your browser, nothing uploaded.",
   alternates: { canonical: pageUrl },
   openGraph: {
     images: [shareImage],
-    title: "GIF Converter Free Online - GIF to JPG, PNG, WebP, ICO, PDF | RepetiGo",
+    title: "GIF Converter Free - GIF to JPG, PNG, WebP, PDF | RepetiGo",
     description: "Convert GIF to JPG, PNG, WebP, BMP, ICO, PDF, or SVG free - one tool, every format. Batch convert. No sign-up, 100% browser-based.",
     type: "website",
     url: pageUrl,

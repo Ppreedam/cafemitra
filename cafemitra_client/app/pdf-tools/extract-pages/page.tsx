@@ -15,7 +15,7 @@ const shareImage = ogImage({
 export const metadata: Metadata = {
   title: "Extract Pages from PDF - Free Online, No Sign-Up | RepetiGo",
   description:
-    "Extract pages from a PDF free and online - no sign-up, no software. Pull single, multiple, or specific pages into a new file on any device. Processed entirely in your browser - never uploaded.",
+    "Extract pages from a PDF free - pull single, multiple or specific pages into a new file on any device. No sign-up, runs in your browser, never uploaded.",
   alternates: {
     canonical: pageUrl,
   },

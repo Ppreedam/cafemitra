@@ -12,7 +12,7 @@ const shareImage = ogImage({
 });
 
 export const metadata: Metadata = {
-  title: "PNG to SVG Free - Real Vector Tracing for Logos & Cricut | RepetiGo",
+  title: "PNG to SVG Free - Vector Tracing for Logos | RepetiGo",
   description:
     "Free PNG to SVG converter with real vector tracing - turn a PNG logo, icon or line art into a scalable SVG in your browser. 4 detail presets, great for Cricut. No upload.",
   alternates: { canonical: pageUrl },

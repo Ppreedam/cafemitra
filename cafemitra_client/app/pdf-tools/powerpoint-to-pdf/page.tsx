@@ -13,7 +13,7 @@ const shareImage = ogImage({
 
 export const metadata: Metadata = {
   title: "PowerPoint to PDF Converter - Free Online, No Sign-Up | RepetiGo",
-  description: "Convert PowerPoint to PDF free online - upload your .ppt or .pptx file and download a PDF in seconds. Text content from slides extracted as PDF. No sign-up. Browser-only processing.",
+  description: "Convert PowerPoint to PDF free - upload a .ppt or .pptx and download a PDF of the slide text in seconds. No sign-up, runs in your browser.",
   alternates: { canonical: pageUrl },
   twitter: { images: [shareImage], card: "summary_large_image", title: "PowerPoint to PDF Free Online - RepetiGo", description: "Convert PPT/PPTX to PDF free. Fonts and text content extracted. No sign-up, browser-only - never uploaded." },
   robots: { index: true, follow: true },

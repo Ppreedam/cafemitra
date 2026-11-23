@@ -14,12 +14,12 @@ const shareImage = ogImage({
 
 export const metadata: Metadata = {
   title: "Compare PDF Files Free - Similarity Score | RepetiGo",
-  description: "Compare PDF files free - upload two PDFs and get a page-by-page word-overlap similarity score (0-100%) with side-by-side thumbnails. Text-layer comparison. Browser-only. No sign-up.",
+  description: "Compare two PDFs free - get a page-by-page text similarity score (0-100%) with side-by-side thumbnails. Runs in your browser. No sign-up.",
   alternates: { canonical: pageUrl },
   openGraph: {
     images: [shareImage],
     title: "Compare PDF Files Free - Similarity Score | RepetiGo",
-    description: "Compare PDF files free - upload two PDFs and get a page-by-page word-overlap similarity score (0-100%) with side-by-side thumbnails. Text-layer comparison. Browser-only. No sign-up.",
+    description: "Compare two PDFs free - get a page-by-page text similarity score (0-100%) with side-by-side thumbnails. Runs in your browser. No sign-up.",
     type: "website",
     url: pageUrl,
   },

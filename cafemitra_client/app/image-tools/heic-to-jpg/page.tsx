@@ -12,7 +12,7 @@ const shareImage = ogImage({
 });
 
 export const metadata: Metadata = {
-  title: "HEIC to JPG Free - Convert iPhone Photos in Your Browser | RepetiGo",
+  title: "HEIC to JPG Converter Free - iPhone Photos | RepetiGo",
   description:
     "Free HEIC to JPG converter - turn iPhone HEIC photos into JPG in your browser. Batch-convert and download a ZIP. Your photos never leave your device. No sign-up.",
   alternates: { canonical: pageUrl },

@@ -14,12 +14,12 @@ const shareImage = ogImage({
 
 export const metadata: Metadata = {
   title: "Edit PDF Online Free - Add and Edit Text | RepetiGo",
-  description: "Edit PDF free - click to edit existing text, add new text anywhere, bold/italic/colour/size. Unlimited undo/redo. Edited pages become image-based. Browser-only. No sign-up.",
+  description: "Edit PDF free - edit existing text or add new text with bold, italic, colour and size. Edited pages become image-based. Browser-only, no sign-up.",
   alternates: { canonical: pageUrl },
   openGraph: {
     images: [shareImage],
     title: "Edit PDF Online Free - Add and Edit Text | RepetiGo",
-    description: "Edit PDF free - click to edit existing text, add new text anywhere, bold/italic/colour/size. Unlimited undo/redo. Edited pages become image-based. Browser-only. No sign-up.",
+    description: "Edit PDF free - edit existing text or add new text with bold, italic, colour and size. Edited pages become image-based. Browser-only, no sign-up.",
     type: "website",
     url: pageUrl,
   },

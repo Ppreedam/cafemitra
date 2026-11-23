@@ -15,12 +15,12 @@ const shareImage = ogImage({
 
 export const metadata: Metadata = {
   title: "Unlock PDF Free Online - Remove Password | RepetiGo",
-  description: "Unlock PDF free - enter your password to decrypt any locked PDF, or remove permission restrictions (no printing/copying) without needing a password. Browser-only. No sign-up.",
+  description: "Unlock PDF free - enter your password to decrypt a locked PDF, or remove print/copy restrictions without one. Runs in your browser. No sign-up.",
   alternates: { canonical: pageUrl },
   openGraph: {
     images: [shareImage],
     title: "Unlock PDF Free Online - Remove Password | RepetiGo",
-    description: "Unlock PDF free - enter your password to decrypt any locked PDF, or remove permission restrictions (no printing/copying) without needing a password. Browser-only. No sign-up.",
+    description: "Unlock PDF free - enter your password to decrypt a locked PDF, or remove print/copy restrictions without one. Runs in your browser. No sign-up.",
     type: "website",
     url: pageUrl,
   },

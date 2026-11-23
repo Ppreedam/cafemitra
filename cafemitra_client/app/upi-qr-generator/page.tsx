@@ -15,7 +15,7 @@ const shareImage = ogImage({
 export const metadata: Metadata = {
   title: "UPI QR Code Generator - Fixed or Any Amount, Free | RepetiGo",
   description:
-    "Generate a UPI payment QR code with your shop name, UPI ID, and amount pre-filled. Fixed or any-amount QR, save multiple accounts, download, share, or print as a counter standee. Free.",
+    "Free UPI payment QR code with your shop name, UPI ID and amount. Fixed or any-amount QR, multiple accounts - download, share or print as a standee.",
   alternates: { canonical: pageUrl },
   openGraph: {
     images: [shareImage],

@@ -25,7 +25,7 @@ const DOCS_URL = "https://docs.repetigo.com";
 
 const TITLE = "RepetiGo: University Printing Management India - Secure, Scalable";
 const DESCRIPTION =
-  "RepetiGo: university printing management India. Multi-department QR, ERP integration, AI formatting, auto-delete. Secure document printing at examination scale across campuses.";
+  "University printing management for India - multi-department QR upload, AI formatting and auto-delete. Secure document printing at exam scale.";
 const OG_TITLE = "University Printing Management India | Multi-Department Document System - RepetiGo";
 const OG_DESCRIPTION =
   "Multi-department QR upload, ERP integration, AI formatting, auto-delete. RepetiGo handles university document printing at examination scale across departments and campuses.";

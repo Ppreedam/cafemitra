@@ -17,7 +17,7 @@ const shareImage = ogImage({
 export const metadata: Metadata = {
   title: "ID Card Maker from PDF Online Free | RepetiGo",
   description:
-    "Create printable ID cards from a PDF online, free - Aadhaar, PAN, Voter ID, e-Shram, Ayushman, Ration, APAAR, EPFO, Driving Licence, or Agriculture card. Upload, review, and print.",
+    "Make printable ID cards from a PDF, free - Aadhaar, PAN, Voter ID, e-Shram, Ayushman, Ration, APAAR, EPFO, DL and more. Upload, review, print.",
   alternates: { canonical: pageUrl },
   openGraph: {
     images: [shareImage],

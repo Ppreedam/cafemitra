@@ -6,7 +6,7 @@ import { ogImage } from "@/lib/og";
 const pageUrl = "https://repetigo.com/photo-copy";
 const title = "Photo Copy & Print Documents From Your Computer Online | RepetiGo";
 const description =
-  "Photo copy or print documents stored on your computer - upload PDF, JPG or PNG, pick pages and copies, straighten and crop, and print straight on your printer. Built for print shops and cyber cafes.";
+  "Print documents from your computer - upload PDF, JPG or PNG, pick pages and copies, straighten and crop, and print. Built for print shops and cyber cafes.";
 
 const shareImage = ogImage({
   title: "Photo Copy & Print From Your Computer",

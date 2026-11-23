@@ -12,9 +12,9 @@ const shareImage = ogImage({
 });
 
 export const metadata: Metadata = {
-  title: "Free Photo Editor Online - Filters, Crop, Background Remover & Batch | RepetiGo",
+  title: "Free Photo Editor Online - Crop, Filters & More | RepetiGo",
   description:
-    "Free online photo editor - remove backgrounds, adjust filters, crop to ID/passport sizes, add a Name & DOB caption, text, stickers, frames and merge photos in your browser. Batch-edit and download as PNG, JPG or WebP. No watermark.",
+    "Free online photo editor - remove backgrounds, filters, crop to passport sizes, add text, stickers and frames. Batch-edit, PNG/JPG/WebP. No watermark.",
   alternates: { canonical: pageUrl },
   openGraph: {
     images: [shareImage],

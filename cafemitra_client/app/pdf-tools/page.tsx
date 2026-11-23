@@ -42,13 +42,13 @@ const shareImage = ogImage({
 });
 
 export const metadata: Metadata = {
-  title: "Free PDF Tools Online - Merge, Split, Compress, Convert & Sign | RepetiGo",
+  title: "Free PDF Tools - Merge, Split, Compress & Convert | RepetiGo",
   description:
-    "30+ free PDF tools online - merge, split, compress, convert PDF to/from Word, Excel, and PowerPoint, sign, watermark, OCR, and more. No sign-up, no watermark, 100% browser-based - nothing is ever uploaded.",
+    "30+ free PDF tools - merge, split, compress, sign, OCR, and convert to/from Word, Excel and PowerPoint. No sign-up, no watermark, runs in your browser.",
   alternates: { canonical: pageUrl },
   openGraph: {
     images: [shareImage],
-    title: "Free PDF Tools Online - Merge, Split, Compress, Convert & Sign | RepetiGo",
+    title: "Free PDF Tools - Merge, Split, Compress & Convert | RepetiGo",
     description: "30+ free PDF tools in one place - merge, split, compress, convert, sign, watermark, OCR. No sign-up, nothing uploaded.",
     type: "website",
     url: pageUrl,

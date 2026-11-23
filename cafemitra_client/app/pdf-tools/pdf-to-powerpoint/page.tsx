@@ -14,7 +14,7 @@ const shareImage = ogImage({
 
 export const metadata: Metadata = {
   title: "PDF to PowerPoint Converter - Free Online, No Sign-Up | RepetiGo",
-  description: "Convert PDF to PowerPoint free online - turn any PDF into a .pptx file in seconds - each page becomes a visual slide. No sign-up, no install. Files browser-only - never uploaded.",
+  description: "Convert PDF to PowerPoint free - turn any PDF into a .pptx where each page becomes a slide. No sign-up, no install, files never uploaded.",
   alternates: { canonical: pageUrl },
   twitter: { images: [shareImage], card: "summary_large_image", title: "PDF to PowerPoint Converter Free Online - RepetiGo", description: "Convert PDF to editable PowerPoint slides free. No sign-up, no install, browser-only - never uploaded." },
   robots: { index: true, follow: true },

@@ -15,7 +15,7 @@ const shareImage = ogImage({
 export const metadata: Metadata = {
   title: "Remove Pages from PDF - Free Online, No Sign-Up | RepetiGo",
   description:
-    "Remove pages from a PDF free and online - no sign-up, no software. Delete single, multiple, or blank pages on any device. Processed entirely in your browser - never uploaded.",
+    "Remove pages from a PDF free - delete single, multiple or blank pages on any device. No sign-up, no software, runs in your browser, never uploaded.",
   alternates: {
     canonical: pageUrl,
   },
