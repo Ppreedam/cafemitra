@@ -3,7 +3,6 @@
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
 import { CircleAlert, CircleCheck, Contrast, Crop, FlipVertical2, LoaderCircle, LogIn, MessageSquareWarning, Palette, Plus, Printer, RotateCcw, RotateCw, ScanLine, SlidersHorizontal, Trash2, Undo2, Upload, Wallet, Wand2, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
 import { WalletLimitBanner } from "../WalletLimitBanner";
@@ -92,8 +91,6 @@ function sameSlot(a: SlotRef | null, b: SlotRef) {
 }
 
 export default function IdCardPrintClient() {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
   const price = useToolPrice("id_card_print");
   const [cards, setCards] = useState<CardEntry[]>(() => [newCard()]);
   const [active, setActive] = useState<SlotRef | null>(null);
@@ -160,7 +157,9 @@ export default function IdCardPrintClient() {
       // Not persisted - fine.
     }
   }
-  const loginNextUrl = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
+  // Read from window (only needed once the login modal is open, i.e. client-side) rather than
+  // useSearchParams(), which would force the whole page to client-render and hide the SEO content from crawlers.
+  const loginNextUrl = typeof window === "undefined" ? "/id-card-print" : `${window.location.pathname}${window.location.search}`;
 
   // Uploading, cropping, and previewing cards is free for anyone. Login (and
   // the wallet charge) is only required for the action that actually

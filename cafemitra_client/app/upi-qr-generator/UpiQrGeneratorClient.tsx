@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
 import { Bookmark, Check, Download, LogIn, Plus, Printer, QrCode, Share2, Trash2 } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
 import { apiFetch, hasStoredSession } from "@/lib/api";
@@ -170,9 +169,9 @@ async function buildBrandedCard({ qrDataUrl, label, vpa, amount, note }: { qrDat
 }
 
 export default function UpiQrGeneratorClient() {
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const loginNextUrl = `${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
+  // Read from window (only needed once the login modal is open, i.e. client-side) rather than
+  // useSearchParams(), which would force the whole page to client-render and hide the SEO content from crawlers.
+  const loginNextUrl = typeof window === "undefined" ? "/upi-qr-generator" : `${window.location.pathname}${window.location.search}`;
 
   const [payees, setPayees] = useState<UpiPayee[]>([]);
   const [activePayeeId, setActivePayeeId] = useState<number | null>(null);
