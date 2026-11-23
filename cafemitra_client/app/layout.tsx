@@ -39,6 +39,12 @@ const siteStructuredData = {
       },
       description:
         "AI-powered print shop and cyber cafe software to automate document printing, passport photos, PDF tools and repetitive daily tasks.",
+      // Official RepetiGo profiles, so search engines tie them to this brand.
+      sameAs: [
+        "https://www.youtube.com/@RepetiGo",
+        "https://www.instagram.com/repetigo/",
+        "https://www.facebook.com/profile.php?id=61592699698173",
+      ],
     },
     {
       "@type": "WebSite",
