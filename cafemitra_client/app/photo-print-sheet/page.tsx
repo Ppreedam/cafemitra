@@ -12,7 +12,10 @@ export const metadata: Metadata = {
   title: "Print Multiple Passport Photos on One Page Free | RepetiGo",
   description:
     "Print multiple passport photos on one page free - different people and sizes on one sheet. Live preview, A4/4x6/5x7 paper, 300 DPI. No signup.",
-  alternates: { canonical: pageUrl },
+  alternates: {
+    canonical: pageUrl,
+    languages: { "en-IN": pageUrl, "hi-IN": "https://repetigo.com/hi/photo-print-sheet" },
+  },
   openGraph: {
     images: [shareImage],
     title: "Print Multiple Passport Photos on One Page Free | RepetiGo",
