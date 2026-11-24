@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import UpiQrGeneratorClient from "./UpiQrGeneratorClient";
+import UpiQrSeoContent from "./UpiQrSeoContent";
 import { ogImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/upi-qr-generator";
@@ -37,7 +38,7 @@ export const metadata: Metadata = {
 export default function UpiQrGeneratorPage() {
   return (
     <Suspense fallback={null}>
-      <UpiQrGeneratorClient />
+      <UpiQrGeneratorClient seo={<UpiQrSeoContent />} />
     </Suspense>
   );
 }

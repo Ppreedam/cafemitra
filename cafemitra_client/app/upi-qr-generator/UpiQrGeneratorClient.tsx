@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Bookmark, Check, Download, LogIn, Plus, Printer, QrCode, Share2, Trash2 } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
@@ -168,7 +168,8 @@ async function buildBrandedCard({ qrDataUrl, label, vpa, amount, note }: { qrDat
   return canvas.toDataURL("image/png");
 }
 
-export default function UpiQrGeneratorClient() {
+// seo: server-rendered guide from page.tsx, shown below the tool.
+export default function UpiQrGeneratorClient({ seo }: { seo?: ReactNode }) {
   // Read from window (only needed once the login modal is open, i.e. client-side) rather than
   // useSearchParams(), which would force the whole page to client-render and hide the SEO content from crawlers.
   const loginNextUrl = typeof window === "undefined" ? "/upi-qr-generator" : `${window.location.pathname}${window.location.search}`;
@@ -413,7 +414,7 @@ export default function UpiQrGeneratorClient() {
         <div className="dashboard-hero pdf-tools-hero">
           <div>
             <span className="auto-print-kicker">RepetiGo UPI QR</span>
-            <h2>UPI QR Code Generator</h2>
+            <h1>UPI QR Code Generator</h1>
             <p>Save your shop&apos;s UPI ID, generate a fixed or any-amount payment QR, then download, share, or print it for your counter.</p>
           </div>
         </div>
@@ -613,6 +614,7 @@ export default function UpiQrGeneratorClient() {
           </div>
         ) : null}
       </div>
+      {seo}
     </DashboardShell>
   );
 }
