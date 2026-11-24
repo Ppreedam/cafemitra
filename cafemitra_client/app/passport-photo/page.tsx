@@ -12,7 +12,10 @@ export const metadata: Metadata = {
   title: "Passport Size Photo Maker - AI Background & Crop | RepetiGo",
   description:
     "Create a passport size photo online - AI background removal, exact passport-size crop and a built-in editor. Print-ready for passport, Aadhaar, PAN and visa.",
-  alternates: { canonical: pageUrl },
+  alternates: {
+    canonical: pageUrl,
+    languages: { "en-IN": pageUrl, "hi-IN": "https://repetigo.com/hi/passport-photo" },
+  },
   openGraph: {
     images: [shareImage],
     title: "Passport Size Photo Maker - AI Background & Crop | RepetiGo",

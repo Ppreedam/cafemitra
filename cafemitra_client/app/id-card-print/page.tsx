@@ -11,7 +11,10 @@ export const metadata: Metadata = {
   title: "Print ID Card Online Free - Front & Back, True Size | RepetiGo",
   description:
     "Print ID cards online free - upload front & back of Aadhaar, PAN, voter ID or any card, crop to true size, and print many on one A4 sheet.",
-  alternates: { canonical: pageUrl },
+  alternates: {
+    canonical: pageUrl,
+    languages: { "en-IN": pageUrl, "hi-IN": "https://repetigo.com/hi/id-card-print" },
+  },
   openGraph: {
     images: [shareImage],
     title: "Print ID Card Online Free - Front & Back, True Size | RepetiGo",
