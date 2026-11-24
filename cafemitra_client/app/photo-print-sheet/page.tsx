@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import PhotoPrintSheetClient from "./PhotoPrintSheetClient";
+import PhotoPrintSheetSeoContent from "./PhotoPrintSheetSeoContent";
 import { ogStaticImage } from "@/lib/og";
 
 const pageUrl = "https://repetigo.com/photo-print-sheet";
@@ -32,7 +33,7 @@ export const metadata: Metadata = {
 export default function PhotoPrintSheetPage() {
   return (
     <Suspense fallback={null}>
-      <PhotoPrintSheetClient />
+      <PhotoPrintSheetClient seo={<PhotoPrintSheetSeoContent />} />
     </Suspense>
   );
 }

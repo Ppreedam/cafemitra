@@ -9,7 +9,6 @@ import { PrintProfileSelect, useAgentPrint } from "../PrintProfileSelect";
 import { canvasesToPdfBytes } from "@/lib/agent-print";
 import { apiFetch, apiUrl, dataUriToBlob, hasStoredSession } from "@/lib/api";
 import { useToolPrice } from "@/lib/useToolPrice";
-import PhotoPrintSheetSeoContent from "./PhotoPrintSheetSeoContent";
 import { stashPhotoForEditor, takePendingPrintSheetPhoto, type EditorHandoffTool } from "@/lib/printSheetHandoff";
 import { trackToolEvent } from "@/lib/analytics";
 import { clearSavedPhotos, deleteSavedPhoto, loadSavedPhotos, putSavedPhoto } from "@/lib/savedPrintSheetPhotos";
@@ -61,7 +60,8 @@ function revokePhotoUrls(photo: QueuePhoto) {
   if (photo.printUrl) URL.revokeObjectURL(photo.printUrl);
 }
 
-export default function PhotoPrintSheetClient() {
+// seo: server-rendered guide from page.tsx, shown below the tool.
+export default function PhotoPrintSheetClient({ seo }: { seo?: React.ReactNode }) {
   const router = useRouter();
   const price = useToolPrice("photo_print_sheet");
   const [chargeConfirm, setChargeConfirm] = useState<{ resolve: (ok: boolean) => void } | null>(null);
@@ -850,7 +850,7 @@ export default function PhotoPrintSheetClient() {
         </div>
       ) : null}
 
-      <PhotoPrintSheetSeoContent />
+      {seo}
     </DashboardShell>
   );
 }
