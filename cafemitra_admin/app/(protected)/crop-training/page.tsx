@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Check, Trash2, X } from "lucide-react";
+import { Check, Download, Trash2, X } from "lucide-react";
 import Pagination from "@/components/Pagination";
 import {
   clearCropSamples,
@@ -28,6 +28,18 @@ const OUTCOMES: { key: "accepted" | "adjusted" | "manual" | "notfound"; label: s
 
 function pct(part: number, total: number) {
   return total ? `${Math.round((part / total) * 100)}%` : "-";
+}
+
+// Saves one stored photo as <id>_<side>_<input|output>.<ext>, so the pair stays matched by id.
+function downloadPhoto(sample: CropSampleRow, kind: "input" | "output") {
+  const dataUri = kind === "input" ? sample.originalImage : sample.resultImage;
+  const type = /^data:image\/(\w+)/.exec(dataUri)?.[1] || "jpeg";
+  const link = document.createElement("a");
+  link.href = dataUri;
+  link.download = `${sample.id}_${sample.side || "front"}_${kind}.${type === "jpeg" ? "jpg" : type}`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 }
 
 export default function CropTrainingPage() {
@@ -249,15 +261,29 @@ export default function CropTrainingPage() {
                     <input type="checkbox" checked={selected.has(sample.id)} onChange={() => toggle(sample.id)} />#{sample.id} · {sample.side} ·{" "}
                     <b>{OUTCOMES.find((o) => o.key === sample.outcome)?.label || sample.outcome}</b>
                   </label>
-                  <button
-                    type="button"
-                    disabled={busy}
-                    onClick={() => clear({ ids: [sample.id] }, `Remove the photos of sample #${sample.id}?`)}
-                    title="Delete this sample's photos"
-                    className="text-slate-400 hover:text-red-600 disabled:opacity-30"
-                  >
-                    <Trash2 size={15} />
-                  </button>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <button
+                      type="button"
+                      disabled={!sample.originalImage || !sample.resultImage}
+                      onClick={() => {
+                        downloadPhoto(sample, "input");
+                        downloadPhoto(sample, "output");
+                      }}
+                      title={`Download input and output of #${sample.id}`}
+                      className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 disabled:opacity-30"
+                    >
+                      <Download size={15} /> Download
+                    </button>
+                    <button
+                      type="button"
+                      disabled={busy}
+                      onClick={() => clear({ ids: [sample.id] }, `Remove the photos of sample #${sample.id}?`)}
+                      title="Delete this sample's photos"
+                      className="text-slate-400 hover:text-red-600 disabled:opacity-30"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
                 </div>
                 {sample.outcome === "accepted" ? (
                   <p className="mb-2 inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
@@ -279,12 +305,22 @@ export default function CropTrainingPage() {
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <p className="text-[11px] text-slate-500 mb-1">Input (uploaded)</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-[11px] text-slate-500">Input (uploaded)</p>
+                      <button type="button" disabled={!sample.originalImage} onClick={() => downloadPhoto(sample, "input")} title="Download input only" className="text-slate-400 hover:text-indigo-600 disabled:opacity-30">
+                        <Download size={13} />
+                      </button>
+                    </div>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={sample.originalImage} alt="Input" className="w-full rounded border border-slate-200" />
                   </div>
                   <div>
-                    <p className="text-[11px] text-slate-500 mb-1">Output (cropped)</p>
+                    <div className="flex items-center justify-between mb-1">
+                      <p className="text-[11px] text-slate-500">Output (cropped)</p>
+                      <button type="button" disabled={!sample.resultImage} onClick={() => downloadPhoto(sample, "output")} title="Download output only" className="text-slate-400 hover:text-indigo-600 disabled:opacity-30">
+                        <Download size={13} />
+                      </button>
+                    </div>
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={sample.resultImage} alt="Output" className="w-full rounded border border-slate-200" />
                   </div>
