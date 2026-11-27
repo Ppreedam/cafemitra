@@ -509,7 +509,7 @@ export default function PassportPhotoClient({ seo }: { seo?: React.ReactNode }) 
   const selectedPackage = priceItems.find((item) => item.id === selectedPriceItemId) || priceItems[0];
 
   return (
-    <DashboardShell activePath="/passport-photo">
+    <DashboardShell activePath={mode === "manual" ? "/passport-photo/manual" : "/passport-photo"}>
       <div className="dashboard passport-photo-page">
         <WalletLimitBanner />
         <div className="dashboard-hero pdf-tools-hero">
@@ -528,15 +528,6 @@ export default function PassportPhotoClient({ seo }: { seo?: React.ReactNode }) 
             </Link>
             <span className="status-pill">{mode === "ai" ? "AI Powered" : "Manual Edit"}</span>
           </div>
-        </div>
-
-        <div className="passport-mode-tabs" role="tablist">
-          <button type="button" role="tab" aria-selected={mode === "ai"} className={mode === "ai" ? "active" : ""} onClick={() => setMode("ai")}>
-            AI Generate
-          </button>
-          <button type="button" role="tab" aria-selected={mode === "manual"} className={mode === "manual" ? "active" : ""} onClick={() => router.push("/image-tools/photo-editor?for=passport")}>
-            Manual Edit
-          </button>
         </div>
 
         {mode === "manual" ? (

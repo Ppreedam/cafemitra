@@ -15,6 +15,7 @@ import {
   LayoutGrid,
   Printer,
   QrCode,
+  Sparkles,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -54,7 +55,8 @@ const navGroups: NavGroup[] = [
     items: [
       { name: "PrintPilot", icon: Printer, href: "/auto-print", match: ["/auto-print"], serviceKey: "auto_document_print" },
       { name: "Photo Copy", icon: Copy, href: "/photo-copy", match: ["/photo-copy", "/print-desk"] },
-      { name: "Passport Photo", icon: IdCard, href: "/passport-photo", match: ["/passport-photo"], serviceKey: "passport_photo" },
+      { name: "AI Passport Photo", icon: Sparkles, href: "/passport-photo", match: ["/passport-photo"], serviceKey: "passport_photo" },
+      { name: "Passport Photo", icon: IdCard, href: "/image-tools/photo-editor?for=passport", match: ["/passport-photo/manual"], serviceKey: "passport_photo" },
       { name: "Family Passport Photo", icon: Users, href: "/family-passport-photo", match: ["/family-passport-photo"], serviceKey: "family_passport_photo" },
       { name: "ID Card Maker", icon: FileScan, href: "/id-card-maker", match: ["/id-card-maker"], serviceKey: "id_card_maker" },
       { name: "ID Card Print", icon: IdCard, href: "/id-card-print", match: ["/id-card-print"], serviceKey: "id_card_print" },
@@ -72,6 +74,7 @@ const navGroups: NavGroup[] = [
 // "auto_document_print", Passport Photo under its own "passport_photo" key.
 const printerServiceKeyByPath: Record<string, string> = {
   "/passport-photo": "passport_photo",
+  "/passport-photo/manual": "passport_photo",
 };
 
 export function DashboardShell({ activePath, children }: { activePath: string; children: ReactNode }) {

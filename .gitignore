@@ -37,3 +37,5 @@ cafemitra_server/.env.local
 GPTPooler - Copy + Qwan/
 .prod_env
 **/.prod_env
+
+cafemitra_server/venv/
