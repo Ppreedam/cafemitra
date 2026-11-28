@@ -1,4 +1,4 @@
-export type PaperSize = "a4" | "4x6" | "5x7" | "a5" | "letter" | "custom";
+export type PaperSize = "a4" | "4x6" | "5x7" | "6x8" | "8x10" | "3.5x5" | "a3" | "a5" | "a6" | "letter" | "custom";
 
 export type PaperDims = { label: string; badge: string; widthMm: number; heightMm: number };
 
@@ -6,6 +6,11 @@ export const PAPER_SIZES: Record<Exclude<PaperSize, "custom">, PaperDims> = {
   a4: { label: "A4 (210 x 297mm)", badge: "A4", widthMm: 210, heightMm: 297 },
   "4x6": { label: "4x6 Inch (10 x 15cm)", badge: "4x6", widthMm: 101.6, heightMm: 152.4 },
   "5x7": { label: "5x7 Inch (13 x 18cm)", badge: "5x7", widthMm: 127, heightMm: 177.8 },
+  "6x8": { label: "6x8 Inch (15 x 20cm)", badge: "6x8", widthMm: 152.4, heightMm: 203.2 },
+  "8x10": { label: "8x10 Inch (20 x 25cm)", badge: "8x10", widthMm: 203.2, heightMm: 254 },
+  "3.5x5": { label: "3.5x5 Inch (9 x 13cm)", badge: "3.5x5", widthMm: 88.9, heightMm: 127 },
+  a3: { label: "A3 (297 x 420mm)", badge: "A3", widthMm: 297, heightMm: 420 },
+  a6: { label: "A6 (105 x 148mm)", badge: "A6", widthMm: 105, heightMm: 148 },
   a5: { label: "A5 (148 x 210mm)", badge: "A5", widthMm: 148, heightMm: 210 },
   letter: { label: "Letter (215.9 x 279.4mm)", badge: "Letter", widthMm: 215.9, heightMm: 279.4 },
 };
@@ -18,6 +23,19 @@ export function resolvePaperDims(paperSize: PaperSize, customWidthCm: number | n
   const widthMm = customWidthCm && customWidthCm > 0 ? customWidthCm * 10 : PAPER_SIZES.a4.widthMm;
   const heightMm = customHeightCm && customHeightCm > 0 ? customHeightCm * 10 : PAPER_SIZES.a4.heightMm;
   return { label: "Custom Size", badge: "Custom", widthMm, heightMm };
+}
+
+export type PaperOrientation = "portrait" | "landscape";
+
+// Portrait puts the short side across, landscape the long side - the same paper turned, so
+// a row of photos can run along the long edge (e.g. 8 passport photos on 4x6 landscape).
+export function orientPaper(paper: PaperDims, orientation: PaperOrientation): PaperDims {
+  const shortSide = Math.min(paper.widthMm, paper.heightMm);
+  const longSide = Math.max(paper.widthMm, paper.heightMm);
+  if (orientation === "landscape") {
+    return { ...paper, label: `${paper.label} - Landscape`, badge: `${paper.badge}-L`, widthMm: longSide, heightMm: shortSide };
+  }
+  return { ...paper, widthMm: shortSide, heightMm: longSide };
 }
 
 export type SizePreset = { key: string; label: string; widthCm: number; heightCm: number };
@@ -37,6 +55,18 @@ export const PHOTO_SIZE_PRESETS: SizePreset[] = [
 export const DEFAULT_GAP_MM = 2;
 export const DEFAULT_MARGIN_MM = 4;
 export const EXPORT_DPI = 300;
+
+// "standard" renders every sheet at 300 DPI. "uhd" renders the sheet's long side at 3840px (4K) -
+// never below 300 DPI, so on small paper (4x6 is ~640 DPI) the print is much sharper while A4 stays
+// near 330 DPI. Largest sheet at either setting is ~17 megapixels (A3 at 300 DPI).
+export type ExportQuality = "standard" | "uhd";
+export const UHD_LONG_SIDE_PX = 3840;
+
+export function exportPxPerMm(paper: { widthMm: number; heightMm: number }, quality: ExportQuality) {
+  const standard = EXPORT_DPI / 25.4;
+  if (quality !== "uhd") return standard;
+  return Math.max(standard, UHD_LONG_SIDE_PX / Math.max(paper.widthMm, paper.heightMm));
+}
 
 export type QueuePhoto = {
   id: string;
@@ -67,6 +97,9 @@ export type PackedTile = {
 // through the gap, so they never cross a photo; photos placed edge to edge (gap 0) get the line on
 // the shared edge.
 export type CutMark = { x1: number; y1: number; x2: number; y2: number };
+// An optional coloured frame drawn on the inside edge of every photo, so the photo's cut size never changes.
+export type TileBorder = { color: string; widthMm: number };
+
 export const MARK_WIDTH_MM = 0.2;
 export const MARK_DASH_MM = [1.4, 0.9];
 
@@ -155,6 +188,16 @@ export function packQueue(photos: QueuePhoto[], paper: PaperDims, gaps: MarginGa
     }
   }
 
+  // Whatever width is left over after the last full column is shared equally between the left
+  // and right edges, so the photos sit centred on the paper instead of hugging the left margin.
+  for (const tiles of pages) {
+    if (!tiles.length) continue;
+    const left = Math.min(...tiles.map((tile) => tile.xMm));
+    const right = Math.max(...tiles.map((tile) => tile.xMm + tile.wMm));
+    const shift = (widthMm - right - left) / 2;
+    if (Math.abs(shift) > 0.001) for (const tile of tiles) tile.xMm += shift;
+  }
+
   return { pages, skipped };
 }
 
@@ -178,9 +221,9 @@ function drawCover(ctx: CanvasRenderingContext2D, image: HTMLImageElement, dx: n
 
 const MM_PER_IN = 25.4;
 
-export async function renderPageCanvas(paper: PaperDims, tiles: PackedTile[], imageCache: Map<string, HTMLImageElement>, cutMarks = false): Promise<HTMLCanvasElement> {
+export async function renderPageCanvas(paper: PaperDims, tiles: PackedTile[], imageCache: Map<string, HTMLImageElement>, cutMarks = false, border: TileBorder | null = null, quality: ExportQuality = "standard"): Promise<HTMLCanvasElement> {
   const { widthMm, heightMm } = paper;
-  const pxPerMm = EXPORT_DPI / MM_PER_IN;
+  const pxPerMm = exportPxPerMm(paper, quality);
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(widthMm * pxPerMm);
   canvas.height = Math.round(heightMm * pxPerMm);
@@ -201,8 +244,14 @@ export async function renderPageCanvas(paper: PaperDims, tiles: PackedTile[], im
     const dh = tile.hMm * pxPerMm;
     drawCover(ctx, image, dx, dy, dw, dh);
     ctx.strokeStyle = "#c7cbe0";
-    ctx.lineWidth = 1;
+    ctx.lineWidth = Math.max(1, pxPerMm * 0.085);
     ctx.strokeRect(dx, dy, dw, dh);
+    if (border && border.widthMm > 0) {
+      const lineWidth = Math.max(1, border.widthMm * pxPerMm);
+      ctx.strokeStyle = border.color;
+      ctx.lineWidth = lineWidth;
+      ctx.strokeRect(dx + lineWidth / 2, dy + lineWidth / 2, dw - lineWidth, dh - lineWidth);
+    }
   }
 
   if (cutMarks) {
@@ -249,7 +298,7 @@ export function downloadCanvas(canvas: HTMLCanvasElement, filename: string) {
 // Browser print (window.print) as a free alternative to the HD canvas
 // export - no rendering wait, and the shop's own printer driver handles
 // paper feed/scaling, at the cost of DPI being whatever that driver picks.
-export function buildPrintHtml(paper: PaperDims, pages: PackedTile[][], cutMarks = false): string {
+export function buildPrintHtml(paper: PaperDims, pages: PackedTile[][], cutMarks = false, border: TileBorder | null = null): string {
   const pageSizeCss = `width:${paper.widthMm}mm;height:${paper.heightMm}mm;`;
   const pageRuleCss = `size:${paper.widthMm}mm ${paper.heightMm}mm;`;
 
@@ -259,7 +308,9 @@ export function buildPrintHtml(paper: PaperDims, pages: PackedTile[][], cutMarks
       const tilesHtml = tiles
         .map(
           (tile) =>
-            `<div class="tile" style="left:${tile.xMm}mm;top:${tile.yMm}mm;width:${tile.wMm}mm;height:${tile.hMm}mm;"><img src="${tile.url}" /></div>`,
+            `<div class="tile" style="left:${tile.xMm}mm;top:${tile.yMm}mm;width:${tile.wMm}mm;height:${tile.hMm}mm;"><img src="${tile.url}" />${
+              border && border.widthMm > 0 ? `<span class="edge" style="border:${border.widthMm}mm solid ${border.color};"></span>` : ""
+            }</div>`,
         )
         .join("");
       const marksHtml = cutMarks
@@ -282,6 +333,7 @@ body{background:#f2f2f2;font-family:Arial, Helvetica, sans-serif;}
 .page{position:relative;${pageSizeCss}background:#fff;margin:20px auto;}
 .tile{position:absolute;overflow:hidden;border:1px solid #c7cbe0;background:#fff;}
 .tile img{width:100%;height:100%;object-fit:cover;object-position:center;}
+.tile .edge{position:absolute;inset:0;pointer-events:none;}
 @media print{
   body{background:white;}
   .page{margin:0;page-break-after:always;}
@@ -303,11 +355,11 @@ ${pagesHtml}
 </html>`;
 }
 
-export function openPrintWindow(paper: PaperDims, pages: PackedTile[][], cutMarks = false) {
+export function openPrintWindow(paper: PaperDims, pages: PackedTile[][], cutMarks = false, border: TileBorder | null = null) {
   const printWindow = window.open("", "_blank");
   if (!printWindow) return;
   printWindow.document.open();
-  printWindow.document.write(buildPrintHtml(paper, pages, cutMarks));
+  printWindow.document.write(buildPrintHtml(paper, pages, cutMarks, border));
   printWindow.document.close();
 }
 

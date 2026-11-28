@@ -2,8 +2,8 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, CheckCircle2, ChevronDown, ChevronRight, Download, ListChecks, RotateCcw } from "lucide-react";
-import Link from "next/link";
 import StatCard from "@/components/StatCard";
+import ShopLink from "@/components/ShopLink";
 import Pagination from "@/components/Pagination";
 import { exportOrderIssuesCsv, fetchOrderIssues, setOrderIssueReviewed, type OrderIssueGroup } from "@/lib/api";
 import { formatCurrency } from "@/lib/format";
@@ -179,13 +179,9 @@ export default function OrderIssuesPage() {
                         {expanded ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
                       </td>
                       <td className="px-4 py-3">
-                        <Link
-                          href={`/shops/${group.shopId}`}
-                          onClick={(e) => e.stopPropagation()}
-                          className="font-medium text-indigo-700 hover:underline"
-                        >
+                        <ShopLink shopId={group.shopId} className="font-medium text-indigo-700 hover:underline">
                           {group.shopName || "(unnamed)"}
-                        </Link>
+                        </ShopLink>
                       </td>
                       <td className="px-4 py-3 text-slate-700">
                         <div>{group.email}</div>

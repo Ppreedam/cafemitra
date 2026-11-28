@@ -163,7 +163,7 @@ export async function rotateImageBlob(source: Blob, degrees: number) {
   }
 }
 
-export async function cropImage(fileUrl: string, rect: CropRect) {
+export async function cropImage(fileUrl: string, rect: CropRect, mimeType: "image/png" | "image/jpeg" = "image/png") {
   const image = await loadImage(fileUrl);
   const sourceX = (rect.x / 100) * image.naturalWidth;
   const sourceY = (rect.y / 100) * image.naturalHeight;
@@ -180,7 +180,7 @@ export async function cropImage(fileUrl: string, rect: CropRect) {
   context.drawImage(image, sourceX, sourceY, sourceWidth, sourceHeight, 0, 0, canvas.width, canvas.height);
 
   return new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Crop failed"))), "image/png", 0.95);
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Crop failed"))), mimeType, 0.95);
   });
 }
 

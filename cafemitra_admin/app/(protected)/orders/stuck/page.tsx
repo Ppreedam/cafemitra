@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import ShopLink from "@/components/ShopLink";
 import { fetchStuckOrders, type StuckOrder } from "@/lib/api";
 
 function StuckTable({ title, rows }: { title: string; rows: StuckOrder[] }) {
@@ -37,9 +38,7 @@ function StuckTable({ title, rows }: { title: string; rows: StuckOrder[] }) {
                 </Link>
               </td>
               <td className="px-4 py-2 text-slate-700">
-                <Link href={`/shops/${order.shopId}`} className="hover:underline">
-                  {order.shopName}
-                </Link>
+                <ShopLink shopId={order.shopId}>{order.shopName}</ShopLink>
               </td>
               <td className="px-4 py-2 text-slate-700">{order.serviceName}</td>
               <td className="px-4 py-2 text-slate-700">{order.status || order.photoStatus}</td>

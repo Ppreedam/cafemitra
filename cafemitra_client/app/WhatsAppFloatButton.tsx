@@ -1,10 +1,17 @@
+"use client";
+
+import { usePathname } from "next/navigation";
 import { BUSINESS } from "../lib/businessInfo";
 
 const waNumber = BUSINESS.phone.replace(/[^\d]/g, "");
 const waMessage = encodeURIComponent("Hi RepetiGo, I need help with...");
 const waHref = `https://wa.me/${waNumber}?text=${waMessage}`;
 
+// Not shown on the customer-facing PrintPilot pages (/s/<shop code>): those belong to the cafe and
+// its customer, so they carry no RepetiGo support button.
 export function WhatsAppFloatButton() {
+  const pathname = usePathname();
+  if (pathname === "/s" || pathname?.startsWith("/s/")) return null;
   return (
     <a
       href={waHref}

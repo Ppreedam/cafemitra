@@ -205,6 +205,7 @@ export function fetchRecentActivity(page?: number, pageSize?: number) {
 }
 
 export type OverviewResponse = {
+  printAgent: { online: number; offline: number; total: number };
   shops: {
     total: number;
     active: number;
@@ -419,15 +420,58 @@ export function deleteCustomerNote(noteId: number) {
   return request<{ deleted: boolean }>(`/admin/customer-notes/${noteId}/`, { method: "DELETE" });
 }
 
-export function exportCustomersCsv(params?: { search?: string; ids?: number[] }) {
+export type CustomerBulkParams = {
+  search?: string;
+  ids?: number[];
+  tagId?: number;
+  walletOp?: "gte" | "lte";
+  walletValue?: string;
+};
+
+function bulkQuery(params?: CustomerBulkParams) {
   const query = new URLSearchParams();
   if (params?.ids && params.ids.length > 0) {
     query.set("ids", params.ids.join(","));
-  } else if (params?.search) {
-    query.set("search", params.search);
+  } else {
+    if (params?.search) query.set("search", params.search);
+    if (params?.tagId) query.set("tag", String(params.tagId));
+    if (params?.walletOp && params.walletValue) {
+      query.set("walletOp", params.walletOp);
+      query.set("walletValue", params.walletValue);
+    }
   }
   const qs = query.toString();
-  return downloadCsv(`/admin/customers/export/${qs ? `?${qs}` : ""}`, "customers.csv");
+  return qs ? `?${qs}` : "";
+}
+
+export function exportCustomersCsv(params?: CustomerBulkParams) {
+  return downloadCsv(`/admin/customers/export/${bulkQuery(params)}`, "customers.csv");
+}
+
+export function sendCustomerEmail(
+  params: CustomerBulkParams & { subject: string; body: string; isHtml: boolean; test?: boolean }
+) {
+  return request<{ sent: number; failed: number; failedEmails?: string[]; test?: boolean; to?: string }>(
+    "/admin/customers/send-email/",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        subject: params.subject,
+        body: params.body,
+        isHtml: params.isHtml,
+        test: params.test,
+        ids: params.ids,
+        search: params.search,
+        tagId: params.tagId,
+        walletOp: params.walletOp,
+        walletValue: params.walletValue,
+      }),
+    }
+  );
+}
+
+export function fetchCustomerContacts(params?: CustomerBulkParams) {
+  return request<{ total: number; emails: string[]; phones: string[] }>(`/admin/customers/contacts/${bulkQuery(params)}`);
 }
 
 export function fetchCustomerDetail(id: number) {
@@ -545,6 +589,7 @@ export type AdminOrderListResponse = {
 };
 
 export function fetchOrders(params: {
+  search?: string;
   shop?: string;
   service?: string;
   paymentMode?: string;
@@ -646,7 +691,7 @@ export function fetchWalletTopups(params: { gateway?: string; status?: string; p
   Object.entries(params).forEach(([key, value]) => {
     if (value) query.set(key, String(value));
   });
-  return request<{ count: number; page: number; pageSize: number; topups: AdminTopup[] }>(`/admin/wallet/topups/?${query.toString()}`);
+  return request<{ count: number; page: number; pageSize: number; totalAmount: number; topups: AdminTopup[] }>(`/admin/wallet/topups/?${query.toString()}`);
 }
 
 export type AdminWithdrawal = {
@@ -1204,15 +1249,24 @@ export type PrintAgentFailedJob = {
   id: number;
   orderNumber: string;
   shopName: string;
+  shopEmail: string;
   serviceName: string;
   agentMessage: string;
   createdAt: string;
 };
 
-export function fetchPrintAgentStats() {
-  return request<{ onlineCount: number; shops: PrintAgentShopStatus[]; recentFailedJobs: PrintAgentFailedJob[] }>(
-    "/admin/print-agent/stats/"
-  );
+export function fetchPrintAgentStats(params?: { shopsPage?: number; jobsPage?: number }) {
+  const query = new URLSearchParams();
+  if (params?.shopsPage) query.set("shopsPage", String(params.shopsPage));
+  if (params?.jobsPage) query.set("jobsPage", String(params.jobsPage));
+  return request<{
+    onlineCount: number;
+    pageSize: number;
+    shopsCount: number;
+    failedCount: number;
+    shops: PrintAgentShopStatus[];
+    recentFailedJobs: PrintAgentFailedJob[];
+  }>(`/admin/print-agent/stats/?${query.toString()}`);
 }
 
 export type PassportAIMode = "agent_gemini_backup" | "agent_openai_backup" | "openai_primary" | "gemini_primary";
@@ -1257,7 +1311,7 @@ export function exportWalletLedgerCsv() {
   return downloadCsv("/admin/wallet/ledger/export/", "wallet-ledger.csv");
 }
 
-export function exportOrdersCsv(params?: { shop?: string; service?: string; paymentMode?: string; status?: string; from?: string; to?: string }) {
+export function exportOrdersCsv(params?: { search?: string; shop?: string; service?: string; paymentMode?: string; status?: string; from?: string; to?: string }) {
   const query = new URLSearchParams();
   Object.entries(params || {}).forEach(([key, value]) => {
     if (value) query.set(key, String(value));

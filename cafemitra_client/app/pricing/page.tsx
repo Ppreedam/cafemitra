@@ -147,13 +147,12 @@ export default async function PricingPage() {
   const toolSentence = config.tools.map((tool) => `${tool.label} ${formatRupees(tool.price)} ${tool.unit}`).join(", ");
 
   const walletSteps = [
-    ["1", "Your 14-day trial starts free", `The moment you sign up, RepetiGo credits ${signupBonus} to your service credits balance for 14 days so you can try PrintPilot on real customer orders, risk free.`],
-    ["2", "Recharge when you need more", `Once your 14-day trial ends or your ${signupBonus} credit runs out, simply add more service credits to keep PrintPilot billing your print and photo jobs automatically.`],
+    ["1", "Start with free service credits", `The moment you sign up, RepetiGo credits ${signupBonus} to your service credits balance so you can try PrintPilot on real customer orders, risk free.`],
+    ["2", "Recharge when you need more", `Once your ${signupBonus} free credit runs out, simply add more service credits to keep PrintPilot billing your print and photo jobs automatically.`],
     ["3", "Pay only for completed jobs", "There is no fixed monthly bill. RepetiGo deducts a small, fixed commission from your service credits only when a job actually completes - you always know exactly what you're spending."],
   ];
 
   const walletHighlights = [
-    ["Free trial", "14 days"],
     ["Trial service credit", signupBonus],
     ["Billing", "Pay-as-you-go"],
     ["Monthly software fee", "Rs. 0"],
@@ -169,8 +168,8 @@ export default async function PricingPage() {
       `The current charges are: ${toolSentence}. These small amounts are deducted automatically from your service credits - you are always free to charge your own customers whatever counter price you prefer.`,
     ],
     [
-      "What happens after my 14-day trial ends?",
-      `RepetiGo gives every new shop ${signupBonus} of free service credits that stays valid for 14 days, so you can put PrintPilot to work on real orders before spending anything. Once the 14 days are over or the credit is used up, just add more service credits to keep PrintPilot billing your jobs without any interruption.`,
+      "What happens when my free service credit runs out?",
+      `RepetiGo gives every new shop ${signupBonus} of free service credits, so you can put PrintPilot to work on real orders before spending anything. Once the credit is used up, just add more service credits to keep PrintPilot billing your jobs without any interruption.`,
     ],
     [
       "How does service credits billing work?",
@@ -201,7 +200,6 @@ export default async function PricingPage() {
             commission only when PrintPilot completes a real customer print or photo job for your shop.
           </p>
           <div className="pricing-hero-meta">
-            <span>14-day free trial</span>
             <span>{signupBonus} trial service credit</span>
             <span>No monthly software fee</span>
           </div>
@@ -227,7 +225,7 @@ export default async function PricingPage() {
             </h2>
           </div>
           <div className="pricing-offer-grid">
-            {["14-Day Free Trial", `${signupBonus} Free Service Credits`, "No Setup Fee", "Free PDF & Image Tools", "Pay-as-you-go Billing"].map((item) => (
+            {[`${signupBonus} Free Service Credits`, "No Setup Fee", "Free PDF & Image Tools", "Pay-as-you-go Billing"].map((item) => (
               <span key={item}>
                 <BadgeCheck size={17} /> {item}
               </span>
@@ -280,7 +278,7 @@ export default async function PricingPage() {
           <p className="pricing-small-note">You keep everything you charge your customer beyond this small commission.</p>
 
           <Link className="pricing-primary-link" href="/register">
-            Start Free Trial <Zap size={17} />
+            Get Started Free <Zap size={17} />
           </Link>
         </article>
 
@@ -352,7 +350,7 @@ export default async function PricingPage() {
           <div className="pricing-why-grid">
             {[
               `You always know exactly what a job costs you - ${toolSentence}.`,
-              `Your 14-day trial and ${signupBonus} service credit let you try PrintPilot on real orders before you ever recharge.`,
+              `Your ${signupBonus} free service credit lets you try PrintPilot on real orders before you ever recharge.`,
               "No fixed monthly software bill - you only pay the small per-job commission, straight from your prepaid service credits.",
             ].map((item) => (
               <div key={item}>

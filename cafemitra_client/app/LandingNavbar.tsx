@@ -10,6 +10,7 @@ import {
   Bot,
   BookUser,
   ChevronDown,
+  Copy,
   Crop,
   FileWarning,
   FileImage,
@@ -21,6 +22,7 @@ import {
   FileUser,
   Files,
   IdCard,
+  Image as ImageIcon,
   Images,
   Menu,
   Printer,
@@ -91,9 +93,9 @@ const serviceMenu = [
   //   comingSoon: true,
   // },
   {
-    name: "Passport Photo",
+    name: "AI Passport Photo",
     href: "/passport-photo",
-    icon: Users,
+    icon: Sparkles,
     color: "#5740ed",
     summary: "Government-size photo sheets with cropping and background assistance.",
     description: "Create consistent photo sheets for common ID requirements without opening separate tools.",
@@ -153,7 +155,7 @@ const serviceMenu = [
   //   comingSoon: true,
   // },
   {
-    name: "ID Card Maker",
+    name: "PVC Card Maker",
     href: "/id-card-maker",
     icon: FileScan,
     color: "#0d9488",
@@ -173,6 +175,65 @@ const serviceMenu = [
     openAccess: true,
     toolKey: "id_card_print",
   },
+  {
+    name: "Photo Copy",
+    href: "/photo-copy",
+    icon: Copy,
+    color: "#0ea5e9",
+    summary: "Print or photo copy any PDF, scan or phone photo straight from your computer.",
+    description: "Upload, straighten or crop pages, choose copies and print on your own printer - no order, no payment.",
+    metric: "Counter copy",
+  },
+  {
+    name: "Passport Photo",
+    href: "/image-tools/photo-editor?for=passport",
+    icon: IdCard,
+    color: "#6d5bf5",
+    summary: "Edit a photo yourself - background, crop and caption - and save it as a passport photo.",
+    description: "Manual passport photo editor with ratio-locked crop presets, no AI wait.",
+    metric: "Manual editor",
+    openAccess: true,
+    toolKey: "passport_photo",
+  },
+  {
+    name: "PDF Tools",
+    href: "/pdf-tools",
+    icon: FileText,
+    color: "#2563eb",
+    summary: "Merge, split, compress, convert and edit PDFs.",
+    description: "Everyday PDF tools for the counter.",
+    metric: "PDF tools",
+    openAccess: true,
+    toolKey: "pdf_tools",
+  },
+  {
+    name: "Image Tools",
+    href: "/image-tools",
+    icon: ImageIcon,
+    color: "#65b741",
+    summary: "Compress, resize, crop, convert and clean up images.",
+    description: "Everyday image tools for the counter.",
+    metric: "Image tools",
+    openAccess: true,
+    toolKey: "image_tools",
+  },
+];
+
+// Same order as the dashboard sidebar, so the menu and the sidebar always list the tools alike.
+const SERVICE_MENU_ORDER = [
+  "PrintPilot",
+  "Photo Copy",
+  "AI Passport Photo",
+  "Passport Photo",
+  "Family Passport Photo",
+  "PVC Card Maker",
+  "ID Card Print",
+  "Photo Print Sheet",
+  "PDF Tools",
+  "Image Tools",
+  "Resume Builder",
+  "Biodata Maker",
+  "UPI QR Generator",
 ];
 
 const pdfToolGroups = [
@@ -253,12 +314,18 @@ export function LandingNavbar() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [disabledTools, setDisabledTools] = useState<Set<string>>(new Set());
   const searchWrapRef = useRef<HTMLDivElement>(null);
-  const visibleServiceMenu = serviceMenu.filter((item) => !item.toolKey || !disabledTools.has(item.toolKey));
+  const visibleServiceMenu = serviceMenu
+    .filter((item) => !item.toolKey || !disabledTools.has(item.toolKey))
+    .sort((a, b) => {
+      const rank = (name: string) => (SERVICE_MENU_ORDER.includes(name) ? SERVICE_MENU_ORDER.indexOf(name) : SERVICE_MENU_ORDER.length);
+      return rank(a.name) - rank(b.name);
+    });
   const isHomeActive = pathname === "/";
   const isServicesActive = pathname === "/print-automation";
   const isPdfToolsActive = pathname.startsWith("/pdf-tools");
   const isImageToolsActive = pathname.startsWith("/image-tools");
   const isBlogActive = pathname.startsWith("/blog");
+  const isPricingActive = pathname === "/pricing";
   const isContactActive = pathname === "/contact-us";
 
   useEffect(() => {
@@ -346,6 +413,9 @@ export function LandingNavbar() {
             </Link>
             <BlogMegaMenu />
           </div>
+          <Link className={isPricingActive ? "nav-link-active" : undefined} href="/pricing">
+            Pricing
+          </Link>
           <Link className={isContactActive ? "nav-link-active" : undefined} href="/contact-us">
             Contact Us
           </Link>
@@ -393,6 +463,9 @@ export function LandingNavbar() {
           <Link className={isBlogActive ? "nav-link-active" : undefined} href="/blog">
             Blog
           </Link>
+          <Link className={isPricingActive ? "nav-link-active" : undefined} href="/pricing">
+            Pricing
+          </Link>
           <Link className={isContactActive ? "nav-link-active" : undefined} href="/contact-us">
             Contact Us
           </Link>
@@ -418,6 +491,7 @@ function PdfToolsMegaMenu() {
 function BlogMegaMenu() {
   return (
     <div className="nav-mega-menu blog-nav-menu" aria-label="Blog menu">
+      <span className="blog-nav-menu-heading">From the blog</span>
       {blogPosts.map((post) => {
         const Icon = post.icon;
         return (
@@ -467,7 +541,7 @@ type MegaMenuItem = {
 
 function ProductMegaMenu({ items, isLoggedIn }: { items: MegaMenuItem[]; isLoggedIn: boolean }) {
   return (
-    <div className="nav-mega-menu services-simple-menu" aria-label="Services menu">
+    <div className="nav-mega-menu services-simple-menu" aria-label="Services menu" style={{ "--service-menu-rows": Math.ceil(items.length / 2) } as React.CSSProperties}>
       {items.map((item) => {
         const Icon = item.icon;
         const href = isLoggedIn || item.openAccess ? item.href : `/login?next=${encodeURIComponent(item.href)}`;

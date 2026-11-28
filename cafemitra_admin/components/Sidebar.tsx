@@ -39,7 +39,6 @@ type NavLink = {
 const links: NavLink[] = [
   { href: "/dashboard", label: "Overview", section: null },
   { href: "/analytics", label: "Analytics", section: "analytics" },
-  { href: "/shops", label: "Shops", section: "shops" },
   { href: "/customers", label: "Customers", section: "customers" },
   { href: "/orders", label: "Orders", section: "orders" },
   { href: "/photo-storage", label: "Photo Storage", section: "orders" },

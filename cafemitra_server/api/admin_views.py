@@ -243,10 +243,23 @@ def admin_overview(request):
         pending=Count("id", filter=Q(status=Agent.STATUS_PENDING)),
     )
 
+    # Same definition as the Print Agent page: online = agent polled in the last 5 minutes.
+    agent_online_stats = UserProfile.objects.filter(
+        user__is_staff=False, user__shop__isnull=False, agent_last_seen_at__isnull=False
+    ).aggregate(
+        total=Count("id"),
+        online=Count("id", filter=Q(agent_last_seen_at__gte=now - timedelta(minutes=5))),
+    )
+
     gateway_name, _gateway_config = active_payment_gateway()
 
     return JsonResponse(
         {
+            "printAgent": {
+                "online": agent_online_stats["online"],
+                "offline": agent_online_stats["total"] - agent_online_stats["online"],
+                "total": agent_online_stats["total"],
+            },
             "shops": {
                 "total": shop_stats["total"],
                 "active": shop_stats["active"],
@@ -487,6 +500,34 @@ def last_seen_map(user_ids):
     return result
 
 
+def filter_customers(customers, params):
+    """Search / tag / wallet filters shared by the customers list, CSV export
+    and bulk-contacts endpoints so all three always match the same people."""
+    search = params.get("search", "").strip()
+    if search:
+        customers = customers.filter(
+            Q(email__icontains=search)
+            | Q(first_name__icontains=search)
+            | Q(last_name__icontains=search)
+            | Q(profile__phone__icontains=search)
+        )
+
+    tag_id = params.get("tag", "").strip()
+    if tag_id:
+        customers = customers.filter(customer_tags__id=tag_id)
+
+    wallet_op = params.get("walletOp", "").strip()
+    wallet_value_raw = params.get("walletValue", "").strip()
+    if wallet_op in ("gte", "lte") and wallet_value_raw:
+        try:
+            wallet_value = Decimal(wallet_value_raw)
+        except (InvalidOperation, ValueError):
+            wallet_value = None
+        if wallet_value is not None:
+            customers = customers.filter(**{f"profile__balance__{wallet_op}": wallet_value})
+    return customers
+
+
 @csrf_exempt
 @require_http_methods(["GET", "OPTIONS"])
 def admin_customers(request):
@@ -497,30 +538,7 @@ def admin_customers(request):
     if err:
         return err
 
-    customers = shops_queryset()
-
-    search = request.GET.get("search", "").strip()
-    if search:
-        customers = customers.filter(
-            Q(email__icontains=search)
-            | Q(first_name__icontains=search)
-            | Q(last_name__icontains=search)
-            | Q(profile__phone__icontains=search)
-        )
-
-    tag_id = request.GET.get("tag", "").strip()
-    if tag_id:
-        customers = customers.filter(customer_tags__id=tag_id)
-
-    wallet_op = request.GET.get("walletOp", "").strip()
-    wallet_value_raw = request.GET.get("walletValue", "").strip()
-    if wallet_op in ("gte", "lte") and wallet_value_raw:
-        try:
-            wallet_value = Decimal(wallet_value_raw)
-        except (InvalidOperation, ValueError):
-            wallet_value = None
-        if wallet_value is not None:
-            customers = customers.filter(**{f"profile__balance__{wallet_op}": wallet_value})
+    customers = filter_customers(shops_queryset(), request.GET)
 
     try:
         page = max(1, int(request.GET.get("page", 1)))
@@ -696,6 +714,21 @@ def admin_customer_note_detail(request, note_id):
     return JsonResponse({"deleted": True})
 
 
+def select_customers_for_bulk(request):
+    """An explicit id selection (checkboxes ticked in the admin table) wins
+    over the search/tag/wallet filters - it's "exactly these", not another
+    filter to combine. Returns (queryset, error_response)."""
+    customers = shops_queryset()
+    ids_param = request.GET.get("ids", "").strip()
+    if ids_param:
+        try:
+            ids = [int(x) for x in ids_param.split(",") if x.strip()]
+        except ValueError:
+            return None, JsonResponse({"message": "ids must be a comma-separated list of numbers."}, status=400)
+        return customers.filter(id__in=ids), None
+    return filter_customers(customers, request.GET), None
+
+
 @csrf_exempt
 @require_http_methods(["GET", "OPTIONS"])
 def admin_customers_export(request):
@@ -706,32 +739,15 @@ def admin_customers_export(request):
     if err:
         return err
 
-    customers = shops_queryset()
+    customers, bad = select_customers_for_bulk(request)
+    if bad:
+        return bad
 
-    # An explicit id selection (checkboxes ticked in the admin table) wins
-    # over the search/tag filters - it's "export exactly these", not another
-    # filter to combine with whatever's currently typed in the search box.
-    ids_param = request.GET.get("ids", "").strip()
-    if ids_param:
-        try:
-            ids = [int(x) for x in ids_param.split(",") if x.strip()]
-        except ValueError:
-            return JsonResponse({"message": "ids must be a comma-separated list of numbers."}, status=400)
-        customers = customers.filter(id__in=ids)
-    else:
-        search = request.GET.get("search", "").strip()
-        if search:
-            customers = customers.filter(
-                Q(email__icontains=search)
-                | Q(first_name__icontains=search)
-                | Q(last_name__icontains=search)
-                | Q(profile__phone__icontains=search)
-            )
-
-    customers = customers.order_by("-date_joined")[:EXPORT_ROW_CAP]
+    customers = list(customers.order_by("-date_joined").distinct()[:EXPORT_ROW_CAP])
     customer_ids = [user.id for user in customers]
     last_seen_by_id = last_seen_map(customer_ids)
     order_count_by_id = order_count_map(customer_ids)
+    tags_by_id = customer_tags_map(customer_ids)
 
     def row(user):
         record = public_admin_customer(user, last_seen=last_seen_by_id.get(user.id), order_count=order_count_by_id.get(user.id, 0))
@@ -744,13 +760,139 @@ def admin_customers_export(request):
             record["address"],
             record["dateJoined"],
             record["lastSeen"] or "",
+            ", ".join(t["name"] for t in tags_by_id.get(user.id, [])),
         ]
 
     return csv_response(
         "customers.csv",
-        ["Name", "Email", "Phone", "Wallet Amount", "Orders", "Address", "Joined", "Last Seen"],
+        ["Name", "Email", "Phone", "Wallet Amount", "Orders", "Address", "Joined", "Last Seen", "Tags"],
         (row(user) for user in customers),
     )
+
+
+@csrf_exempt
+@require_http_methods(["GET", "OPTIONS"])
+def admin_customers_contacts(request):
+    """Emails and phone numbers for a bulk message: either the ticked ids or
+    everyone matching the current filters (across all pages)."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    _, err = require_section(request, "customers")
+    if err:
+        return err
+
+    customers, bad = select_customers_for_bulk(request)
+    if bad:
+        return bad
+
+    users = customers.order_by("-date_joined").distinct().select_related("profile")[:EXPORT_ROW_CAP]
+    emails, phones, seen_phones = [], [], set()
+    total = 0
+    for user in users:
+        total += 1
+        if user.email:
+            emails.append(user.email)
+        phone = "".join(ch for ch in (getattr(user.profile, "phone", "") or "") if ch.isdigit())
+        if len(phone) == 10:
+            phone = "91" + phone
+        if phone and phone not in seen_phones:
+            seen_phones.add(phone)
+            phones.append(phone)
+    return JsonResponse({"total": total, "emails": emails, "phones": phones})
+
+
+BULK_EMAIL_CAP = 300
+
+
+@csrf_exempt
+@require_http_methods(["POST", "OPTIONS"])
+def admin_customers_send_email(request):
+    """Email playground: sends one personalised email per customer (so nobody
+    sees anyone else's address) to the ticked ids or to everyone matching the
+    current filters. `{name}` in subject/body is replaced with the customer's
+    name. With `test: true` only the logged-in admin receives a sample."""
+    if request.method == "OPTIONS":
+        return JsonResponse({})
+
+    admin_user, err = require_section(request, "customers")
+    if err:
+        return err
+
+    body = parse_body(request)
+    subject = str(body.get("subject", "")).strip()
+    message = str(body.get("body", "")).strip()
+    is_html = bool(body.get("isHtml"))
+    if not subject or not message:
+        return JsonResponse({"message": "Subject and message are both required."}, status=400)
+
+    from django.core.mail import EmailMultiAlternatives, get_connection
+    from django.utils.html import escape, strip_tags
+
+    def render(template, name):
+        return template.replace("{name}", name)
+
+    def build(to_email, name):
+        text_subject = render(subject, name)
+        if is_html:
+            html = render(message, escape(name))
+            text = strip_tags(html)
+        else:
+            text = render(message, name)
+            html = "<div style=\"font-family:Arial,sans-serif;font-size:14px;line-height:1.6\">" + escape(text).replace("\n", "<br>") + "</div>"
+        mail = EmailMultiAlternatives(text_subject, text, settings.DEFAULT_FROM_EMAIL, [to_email])
+        mail.attach_alternative(html, "text/html")
+        return mail
+
+    if body.get("test"):
+        if not admin_user.email:
+            return JsonResponse({"message": "Your admin account has no email address for the test."}, status=400)
+        try:
+            build(admin_user.email, admin_user.get_full_name() or "there").send(fail_silently=False)
+        except Exception as exc:
+            return JsonResponse({"message": f"Test email failed: {exc}"}, status=502)
+        return JsonResponse({"sent": 1, "failed": 0, "test": True, "to": admin_user.email})
+
+    params = {
+        "ids": ",".join(str(int(i)) for i in body.get("ids", []) if str(i).isdigit()),
+        "search": str(body.get("search") or ""),
+        "tag": str(body.get("tagId") or ""),
+        "walletOp": str(body.get("walletOp") or ""),
+        "walletValue": str(body.get("walletValue") or ""),
+    }
+    customers = shops_queryset()
+    if params["ids"]:
+        customers = customers.filter(id__in=[int(x) for x in params["ids"].split(",")])
+    else:
+        customers = filter_customers(customers, params)
+    recipients = [u for u in customers.order_by("-date_joined").distinct()[: BULK_EMAIL_CAP + 1] if u.email]
+    if not recipients:
+        return JsonResponse({"message": "No customers with an email address match."}, status=400)
+    if len(recipients) > BULK_EMAIL_CAP:
+        return JsonResponse(
+            {"message": f"Too many recipients - send to at most {BULK_EMAIL_CAP} at a time (use a tag or filter to narrow down)."},
+            status=400,
+        )
+
+    sent, failed = 0, []
+    connection = get_connection()
+    try:
+        connection.open()
+        for user in recipients:
+            try:
+                mail = build(user.email, user.get_full_name() or "there")
+                mail.connection = connection
+                mail.send(fail_silently=False)
+                sent += 1
+            except Exception:
+                failed.append(user.email)
+    except Exception as exc:
+        return JsonResponse({"message": f"Could not connect to the mail server: {exc}"}, status=502)
+    finally:
+        connection.close()
+
+    log_admin_activity(admin_user, "customers.bulk_email", "customer", 0, f"{sent} sent, {len(failed)} failed: {subject[:80]}")
+    return JsonResponse({"sent": sent, "failed": len(failed), "failedEmails": failed[:20]})
 
 
 def get_shop_user(shop_id):
@@ -1040,6 +1182,19 @@ def admin_shop_orders(request, shop_id):
 
 # --- Phase 4: Orders monitoring (platform-wide) -----------------------------
 
+def filter_orders_by_search(orders, raw):
+    """Search by order number: the full "CM0332-04059", just "04059" / "4059",
+    or a token id. The trailing number of an order number is the order's id."""
+    raw = (raw or "").strip()
+    if not raw:
+        return orders
+    query = Q(token_id__iexact=raw)
+    tail = raw.split("-")[-1].strip()
+    if tail.isdigit() and int(tail) < 2**31:
+        query |= Q(id=int(tail))
+    return orders.filter(query)
+
+
 def paginate(queryset, request, default_size=20):
     try:
         page = max(1, int(request.GET.get("page", 1)))
@@ -1069,6 +1224,8 @@ def admin_orders(request):
     shop_id = request.GET.get("shop", "").strip()
     if shop_id:
         orders = orders.filter(user_id=shop_id)
+
+    orders = filter_orders_by_search(orders, request.GET.get("search"))
 
     service = request.GET.get("service", "").strip()
     if service:
@@ -1280,11 +1437,15 @@ def admin_wallet_topups(request):
     if status:
         topups = topups.filter(status=status)
 
+    # Sum over the whole filtered set (all pages), not just the visible page.
+    total_amount = topups.aggregate(total=Sum("amount"))["total"] or 0
+
     page_items, meta = paginate(topups, request)
 
     return JsonResponse(
         {
             **meta,
+            "totalAmount": float(total_amount),
             "topups": [
                 {
                     "id": topup.id,
@@ -1973,6 +2134,9 @@ def admin_contact_message_detail(request, message_id):
 
 # --- Phase 9: Desktop Print Agent monitoring ---------------------------------
 
+AGENT_PAGE_SIZE = 20
+
+
 @csrf_exempt
 @require_http_methods(["GET", "OPTIONS"])
 def admin_print_agent_stats(request):
@@ -1998,11 +2162,23 @@ def admin_print_agent_stats(request):
     recent_failed = PrintOrder.objects.select_related("user", "user__shop").filter(
         status=PrintOrder.STATUS_FAILED,
         created_at__gte=now - timedelta(days=7),
-    ).order_by("-created_at")[:30]
+    ).order_by("-created_at")
+
+    # The two tables page independently (shopsPage / jobsPage), 20 rows each.
+    def page_slice(queryset, param):
+        try:
+            page = max(1, int(request.GET.get(param, 1)))
+        except (TypeError, ValueError):
+            page = 1
+        start = (page - 1) * AGENT_PAGE_SIZE
+        return queryset[start : start + AGENT_PAGE_SIZE]
 
     return JsonResponse(
         {
             "onlineCount": shops.filter(profile__agent_last_seen_at__gte=online_cutoff).count(),
+            "pageSize": AGENT_PAGE_SIZE,
+            "shopsCount": shops.count(),
+            "failedCount": recent_failed.count(),
             "shops": [
                 {
                     "id": shop.id,
@@ -2011,18 +2187,19 @@ def admin_print_agent_stats(request):
                     "lastSeenAt": shop.profile.agent_last_seen_at.isoformat() if shop.profile.agent_last_seen_at else None,
                     "online": shop.profile.agent_last_seen_at is not None and shop.profile.agent_last_seen_at >= online_cutoff,
                 }
-                for shop in shops[:100]
+                for shop in page_slice(shops, "shopsPage")
             ],
             "recentFailedJobs": [
                 {
                     "id": order.id,
                     "orderNumber": f"{order.shop_code}-{order.id:05d}",
                     "shopName": order.user.shop.shop_name if hasattr(order.user, "shop") else "",
+                    "shopEmail": order.user.email,
                     "serviceName": order.service_name,
                     "agentMessage": order.agent_message,
                     "createdAt": order.created_at.isoformat(),
                 }
-                for order in recent_failed
+                for order in page_slice(recent_failed, "jobsPage")
             ],
         }
     )
@@ -2220,6 +2397,7 @@ def admin_orders_export(request):
     shop_id = request.GET.get("shop", "").strip()
     if shop_id:
         orders = orders.filter(user_id=shop_id)
+    orders = filter_orders_by_search(orders, request.GET.get("search"))
     service = request.GET.get("service", "").strip()
     if service:
         orders = orders.filter(service_key=service)

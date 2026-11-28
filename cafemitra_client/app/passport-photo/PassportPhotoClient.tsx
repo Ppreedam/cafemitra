@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Check, ChevronLeft, ChevronRight, Circle, Crop, Eye, IdCard, Laugh, Loader2, Printer, RefreshCw, Settings, Sparkles, Trash2, Upload, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
 import { WalletLimitBanner } from "../WalletLimitBanner";
+import TutorialVideo from "../TutorialVideo";
 import { apiFetch, apiUrl, dataUriToBlob } from "@/lib/api";
 import { fetchPricingServiceByKey, type PriceItem } from "@/lib/pricing";
 import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
@@ -796,6 +797,8 @@ export default function PassportPhotoClient({ seo }: { seo?: React.ReactNode }) 
                 <p className="photo-scan-caption">Scanning your photo...</p>
               </div>
             ) : null}
+
+            <TutorialVideo youtubeId="XSPyJKOkWQI" heading="How to use the AI Passport Photo tool" title="AI Passport Photo tutorial" />
           </article>
 
           <article className="customer-panel">

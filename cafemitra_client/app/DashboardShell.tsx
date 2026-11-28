@@ -58,7 +58,7 @@ const navGroups: NavGroup[] = [
       { name: "AI Passport Photo", icon: Sparkles, href: "/passport-photo", match: ["/passport-photo"], serviceKey: "passport_photo" },
       { name: "Passport Photo", icon: IdCard, href: "/image-tools/photo-editor?for=passport", match: ["/passport-photo/manual"], serviceKey: "passport_photo" },
       { name: "Family Passport Photo", icon: Users, href: "/family-passport-photo", match: ["/family-passport-photo"], serviceKey: "family_passport_photo" },
-      { name: "ID Card Maker", icon: FileScan, href: "/id-card-maker", match: ["/id-card-maker"], serviceKey: "id_card_maker" },
+      { name: "PVC Card Maker", icon: FileScan, href: "/id-card-maker", match: ["/id-card-maker"], serviceKey: "id_card_maker" },
       { name: "ID Card Print", icon: IdCard, href: "/id-card-print", match: ["/id-card-print"], serviceKey: "id_card_print" },
       { name: "Photo Print Sheet", icon: LayoutGrid, href: "/photo-print-sheet", match: ["/photo-print-sheet"] },
       { name: "PDF Tools", icon: FileText, href: "/pdf-tools", match: ["/pdf-tools"], serviceKey: "pdf_tools" },

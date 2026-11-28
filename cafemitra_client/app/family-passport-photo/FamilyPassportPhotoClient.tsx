@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Check, Eye, IdCard, Plus, RefreshCw, Settings, Trash2, Upload, Users, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
 import { WalletLimitBanner } from "../WalletLimitBanner";
+import TutorialVideo from "../TutorialVideo";
 import Link from "next/link";
 import { apiFetch, apiUrl } from "@/lib/api";
 import { fetchPricingServiceByKey, type PriceItem } from "@/lib/pricing";
@@ -358,6 +359,8 @@ export default function FamilyPassportPhotoClient({ seo }: { seo?: ReactNode }) 
             ) : null}
 
             {error ? <div className="profile-alert error">{error}</div> : null}
+
+            <TutorialVideo youtubeId="hGBro0Kt8DA" heading="How to use the Family Passport Photo tool" title="Family Passport Photo tutorial" />
           </article>
 
           <article className="customer-panel">

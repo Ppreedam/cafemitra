@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { marked } from "marked";
 import Link from "next/link";
-import { ArrowDown, ArrowUp, ArrowUpDown, ExternalLink, NotebookPen, Plus, RefreshCw, Tag as TagIcon, Trash2, X } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, ExternalLink, Mail, NotebookPen, Plus, RefreshCw, Tag as TagIcon, Trash2, X } from "lucide-react";
 import CopyButton from "@/components/CopyButton";
 import Pagination from "@/components/Pagination";
 import {
@@ -11,6 +12,8 @@ import {
   deleteCustomerNote,
   deleteCustomerTag,
   exportCustomersCsv,
+  fetchCustomerContacts,
+  sendCustomerEmail,
   fetchCustomerNotes,
   fetchCustomers,
   fetchCustomerTags,
@@ -23,6 +26,21 @@ import {
 import { formatCurrency } from "@/lib/format";
 
 const PAGE_SIZE = 20;
+type EmailFormat = "text" | "markdown" | "html";
+
+const EMAIL_WRAPPER_STYLE = "font-family:Arial,Helvetica,sans-serif;font-size:14px;line-height:1.6;color:#1e293b";
+
+function escapeHtml(value: string) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+}
+
+// The exact HTML that gets emailed. Markdown is rendered here (not on the
+// server) so the preview and the delivered email can never differ.
+function buildEmailHtml(format: EmailFormat, body: string) {
+  if (format === "html") return body;
+  if (format === "markdown") return `<div style="${EMAIL_WRAPPER_STYLE}">${marked.parse(body, { async: false, breaks: true }) as string}</div>`;
+  return `<div style="${EMAIL_WRAPPER_STYLE}">${escapeHtml(body).replace(/\n/g, "<br>")}</div>`;
+}
 type SortValue = "orders_asc" | "orders_desc" | "wallet_asc" | "wallet_desc" | null;
 
 // Stable per-tag color, purely derived from tag.id so it never changes across
@@ -80,6 +98,15 @@ export default function CustomersPage() {
   const [openTagMenuFor, setOpenTagMenuFor] = useState<number | null>(null);
   const [savingCustomerId, setSavingCustomerId] = useState<number | null>(null);
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [copyStatus, setCopyStatus] = useState("");
+
+  const [showEmail, setShowEmail] = useState(false);
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
+  const [emailFormat, setEmailFormat] = useState<EmailFormat>("text");
+  const [emailTab, setEmailTab] = useState<"write" | "preview">("write");
+  const [emailSending, setEmailSending] = useState(false);
+  const [emailResult, setEmailResult] = useState<{ ok: boolean; text: string } | null>(null);
 
   const [launchingCustomerId, setLaunchingCustomerId] = useState<number | null>(null);
 
@@ -166,6 +193,72 @@ export default function CustomersPage() {
 
   function toggleSelectAll() {
     setSelectedIds((prev) => (prev.size === customers.length ? new Set() : new Set(customers.map((c) => c.id))));
+  }
+
+  // Selected rows win; otherwise everyone matching the current search / tag /
+  // wallet filters (across all pages, not just the visible one).
+  function bulkParams() {
+    return {
+      search,
+      ids: selectedIds.size > 0 ? Array.from(selectedIds) : undefined,
+      tagId: tagFilter || undefined,
+      walletOp: walletValue.trim() ? walletOp : undefined,
+      walletValue: walletValue.trim() || undefined,
+    };
+  }
+
+  async function handleCopyContacts(kind: "emails" | "phones") {
+    setCopyStatus("");
+    try {
+      const res = await fetchCustomerContacts(bulkParams());
+      const list = res[kind];
+      if (list.length === 0) {
+        setCopyStatus(`No ${kind} found for these ${res.total} customers.`);
+        return;
+      }
+      // Emails comma-separated (paste into Gmail BCC); phones one per line
+      // (paste into a WhatsApp broadcast / bulk SMS tool).
+      await navigator.clipboard.writeText(kind === "emails" ? list.join(", ") : list.join("\n"));
+      setCopyStatus(`Copied ${list.length} ${kind} (from ${res.total} customers).`);
+    } catch (err) {
+      setCopyStatus(err instanceof Error ? err.message : "Copy failed.");
+    }
+  }
+
+  const recipientCount = selectedIds.size > 0 ? selectedIds.size : count;
+  const sampleName = customers.find((c) => selectedIds.has(c.id))?.fullName || customers[0]?.fullName || "Rahul";
+  const previewDoc = useMemo(() => {
+    const html = buildEmailHtml(emailFormat, emailBody.replace(/\{name\}/g, emailFormat === "html" ? escapeHtml(sampleName) : sampleName));
+    return `<!doctype html><html><body style="margin:16px;background:#fff">${html || '<p style="color:#94a3b8;font-family:Arial">Nothing to preview yet.</p>'}</body></html>`;
+  }, [emailFormat, emailBody, sampleName]);
+
+  async function handleSendEmail(test: boolean) {
+    if (!emailSubject.trim() || !emailBody.trim()) {
+      setEmailResult({ ok: false, text: "Subject and message are required." });
+      return;
+    }
+    if (!test && !confirm(`Send this email to ${recipientCount} customer(s)? This cannot be undone.`)) return;
+    setEmailSending(true);
+    setEmailResult(null);
+    try {
+      const res = await sendCustomerEmail({
+        ...bulkParams(),
+        subject: emailSubject,
+        body: buildEmailHtml(emailFormat, emailBody),
+        isHtml: true,
+        test,
+      });
+      setEmailResult({
+        ok: res.failed === 0,
+        text: res.test
+          ? `Test email sent to ${res.to}.`
+          : `Sent ${res.sent}, failed ${res.failed}.${res.failedEmails?.length ? ` Failed: ${res.failedEmails.join(", ")}` : ""}`,
+      });
+    } catch (err) {
+      setEmailResult({ ok: false, text: err instanceof Error ? err.message : "Sending failed." });
+    } finally {
+      setEmailSending(false);
+    }
   }
 
   async function handleCreateTag(e: React.FormEvent) {
@@ -341,13 +434,31 @@ export default function CustomersPage() {
             Manage tags
           </button>
           <button
-            onClick={() =>
-              exportCustomersCsv({ search, ids: selectedIds.size > 0 ? Array.from(selectedIds) : undefined }).catch((err) =>
-                setError(err instanceof Error ? err.message : "Export failed.")
-              )
-            }
+            onClick={() => handleCopyContacts("emails")}
             className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
-            title={selectedIds.size > 0 ? `Export the ${selectedIds.size} selected customer(s)` : "Export all customers matching the current search"}
+            title="Copy emails (comma separated) of the selected customers, or of everyone matching the current filters"
+          >
+            Copy emails
+          </button>
+          <button
+            onClick={() => setShowEmail((v) => !v)}
+            className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700"
+            title="Compose and send an email to the selected customers / current filter"
+          >
+            <Mail size={14} />
+            Email playground
+          </button>
+          <button
+            onClick={() => handleCopyContacts("phones")}
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+            title="Copy phone numbers (with 91, one per line) of the selected customers, or of everyone matching the current filters"
+          >
+            Copy phones
+          </button>
+          <button
+            onClick={() => exportCustomersCsv(bulkParams()).catch((err) => setError(err instanceof Error ? err.message : "Export failed."))}
+            className="rounded-md border border-slate-300 px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50"
+            title={selectedIds.size > 0 ? `Export the ${selectedIds.size} selected customer(s)` : "Export all customers matching the current filters"}
           >
             Export CSV{selectedIds.size > 0 ? ` (${selectedIds.size} selected)` : ""}
           </button>
@@ -398,6 +509,103 @@ export default function CustomersPage() {
         </div>
       )}
 
+      {showEmail && (
+        <div className="rounded-xl border border-slate-200 bg-white p-4 mb-4 space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold text-slate-900">Email playground</h2>
+            <p className="text-xs text-slate-500">
+              To:{" "}
+              <span className="font-medium text-slate-800">
+                {selectedIds.size > 0 ? `${selectedIds.size} selected customer(s)` : `all ${count} customer(s) matching the current filters`}
+              </span>
+              {" "}· each gets their own email · use {"{name}"} to personalise · max 300 per send
+            </p>
+          </div>
+          <input
+            type="text"
+            placeholder="Subject, e.g. Hi {name}, new offer on RepetiGo"
+            value={emailSubject}
+            onChange={(e) => setEmailSubject(e.target.value)}
+            className="w-full rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          />
+          <div className="flex items-center gap-1 border-b border-slate-200">
+            {(["write", "preview"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setEmailTab(tab)}
+                className={`px-3 py-1.5 text-sm font-medium -mb-px border-b-2 ${emailTab === tab ? "border-indigo-600 text-indigo-700" : "border-transparent text-slate-500 hover:text-slate-700"}`}
+              >
+                {tab === "write" ? "Write" : "Preview"}
+              </button>
+            ))}
+          </div>
+          {emailTab === "write" ? (
+            <textarea
+              value={emailBody}
+              onChange={(e) => setEmailBody(e.target.value)}
+              placeholder={
+                emailFormat === "html"
+                  ? "<p>Hello {name},</p><p>...</p>"
+                  : emailFormat === "markdown"
+                    ? "Hello **{name}**,\n\n- point one\n- point two\n\n[Open RepetiGo](https://repetigo.com)"
+                    : "Hello {name},\n\nWrite your message here..."
+              }
+              rows={10}
+              className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            />
+          ) : (
+            <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs text-slate-500 mb-2">
+                How it will look to the customer (sample name: <span className="font-medium">{sampleName}</span>)
+              </p>
+              <div className="rounded-md border border-slate-200 bg-white">
+                <div className="border-b border-slate-100 px-4 py-2 text-sm">
+                  <span className="text-slate-400">Subject: </span>
+                  <span className="font-medium text-slate-900">{emailSubject.replace(/\{name\}/g, sampleName) || "(no subject)"}</span>
+                </div>
+                <iframe title="Email preview" sandbox="" srcDoc={previewDoc} className="w-full h-80 rounded-b-md bg-white" />
+              </div>
+            </div>
+          )}
+          <div className="flex flex-wrap items-center gap-3">
+            <label className="flex items-center gap-1.5 text-sm text-slate-700">
+              Format
+              <select
+                value={emailFormat}
+                onChange={(e) => setEmailFormat(e.target.value as EmailFormat)}
+                className="rounded-md border border-slate-300 px-2 py-1 text-sm"
+              >
+                <option value="text">Plain text</option>
+                <option value="markdown">Markdown</option>
+                <option value="html">HTML</option>
+              </select>
+            </label>
+            <div className="flex-1" />
+            <button
+              onClick={() => handleSendEmail(true)}
+              disabled={emailSending}
+              className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+            >
+              Send test to me
+            </button>
+            <button
+              onClick={() => handleSendEmail(false)}
+              disabled={emailSending || recipientCount === 0}
+              className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-700 disabled:opacity-60"
+            >
+              <Mail size={14} />
+              {emailSending ? "Sending..." : `Send to ${recipientCount}`}
+            </button>
+          </div>
+          {emailResult && (
+            <div className={`rounded-md px-3 py-2 text-sm ${emailResult.ok ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-700"}`}>
+              {emailResult.text}
+            </div>
+          )}
+        </div>
+      )}
+
+      {copyStatus && <div className="mb-4 rounded-md bg-emerald-50 text-emerald-800 text-sm px-3 py-2">{copyStatus}</div>}
       {error && <div className="mb-4 rounded-md bg-red-50 text-red-700 text-sm px-3 py-2">{error}</div>}
 
       <div className="rounded-xl border border-slate-200 bg-white overflow-x-auto">

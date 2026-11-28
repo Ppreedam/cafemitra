@@ -94,7 +94,7 @@ export default function PanCardMakerPage() {
     <DashboardShell activePath="/id-card-maker">
       <div className="dashboard idcard-page idstudio-page">
         <div className="idstudio-head">
-          <span className="auto-print-kicker">PrintPilot ID Card Maker</span>
+          <span className="auto-print-kicker">PrintPilot PVC Card Maker</span>
           <h1>PAN Card Maker from PDF</h1>
           <p>Open an e-PAN PDF, enter the password if it asks, adjust the cut and print a card-sized copy.</p>
         </div>

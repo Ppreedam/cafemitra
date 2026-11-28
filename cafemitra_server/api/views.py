@@ -15,7 +15,7 @@ import urllib.parse
 import urllib.request
 import uuid
 from datetime import timedelta
-from decimal import Decimal, InvalidOperation
+from decimal import ROUND_HALF_UP, Decimal, InvalidOperation
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -4187,7 +4187,9 @@ def request_withdrawal(request):
         # into fee_amount at request time so a later WalletSetting change
         # doesn't retroactively alter this request.
         fee_percent = get_wallet_setting("withdrawal_fee_percent")
-        fee_amount = (amount * fee_percent / Decimal("100")).quantize(Decimal("0.01"))
+        # ROUND_HALF_UP (not Decimal's default half-even) so the paise always match
+        # the "You'll receive" figure the wallet page shows - see withdrawalFeeSplit() in WalletClient.tsx.
+        fee_amount = (amount * fee_percent / Decimal("100")).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
         net_amount = (amount - fee_amount).quantize(Decimal("0.01"))
 
         withdrawal = WithdrawalRequest.objects.create(

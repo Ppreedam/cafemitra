@@ -40,8 +40,8 @@ export default function IdCardMakerHubPage() {
     <DashboardShell activePath="/id-card-maker">
       <div className="dashboard idcard-page idstudio-page">
         <div className="idstudio-head">
-          <span className="auto-print-kicker">PrintPilot ID Card Maker</span>
-          <h1>ID Card Maker from PDF</h1>
+          <span className="auto-print-kicker">PrintPilot PVC Card Maker</span>
+          <h1>PVC Card Maker from PDF</h1>
           <p>Choose the document type you want to recreate. Upload the downloaded PDF, review the extracted details, and print a card-sized copy.</p>
         </div>
         <div className="idcard-type-grid">

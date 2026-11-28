@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { CircleAlert, CircleCheck, Clock3, Copy, Crop, Download, Eye, EyeOff, FileText, IdCard, Image as ImageIcon, Info, LoaderCircle, LockKeyhole, Pencil, Plus, Printer, RotateCw, ShieldCheck, Trash2, Undo2, Upload, Wallet, X } from "lucide-react";
+import { CircleAlert, CircleCheck, Clock3, Copy, Crop, Download, Eye, EyeOff, FileText, IdCard, Image as ImageIcon, Info, LoaderCircle, LockKeyhole, Pencil, Plus, Printer, RotateCw, ShieldCheck, Trash2, Undo2, Upload, Wallet, Wand2, X } from "lucide-react";
 import { apiUrl } from "@/lib/api";
 import { calculatePhotoOrderTotal, calculatePriceItemRate, formatPriceItem, getAllowedPaymentModes, getDuplexRate, mergePricingDefaults, photoPackageCount, type PriceItem, type PricingService } from "@/lib/pricing";
 import { buildPassportPrompt, passportAttireOptions } from "@/lib/passport-attire";
@@ -19,6 +19,7 @@ import PublicBiodataMaker from "./PublicBiodataMaker";
 import { parsePhotoCount } from "../../passport-photo/printSheet";
 import IdCardPrintUpload from "./IdCardPrintUpload";
 import MergePrepareModal from "./MergePrepareModal";
+import PdfPlayground from "./PdfPlayground";
 import { applyCleanScanToFile, type CleanScanProgress } from "./cleanScan/cleanScanEngine";
 import { scanDocument } from "../../id-card-print/cardScan";
 import { PrintProfileSelect, useAgentPrint } from "../../PrintProfileSelect";
@@ -121,6 +122,8 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
   const [attireCategory, setAttireCategory] = useState(passportAttireOptions[0].key);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [isPageManagerOpen, setIsPageManagerOpen] = useState(false);
+  // Owner mode: the PDF Playground (rotate / reorder, pages per sheet, watermark, page numbers, compress).
+  const [isPlaygroundOpen, setIsPlaygroundOpen] = useState(false);
   const [isCropOpen, setIsCropOpen] = useState(false);
   const [isRotating, setIsRotating] = useState(false);
   // Original page id of every current page (empty = untouched file), so copies
@@ -140,6 +143,7 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
   const [pageRangeInput, setPageRangeInput] = useState("");
   const [pageRangeError, setPageRangeError] = useState("");
   const [isCombiningFiles, setIsCombiningFiles] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   // Reading a single large file (encryption check + page count) takes a moment.
   const [isReadingUpload, setIsReadingUpload] = useState(false);
   const isUploadBusy = isCombiningFiles || isReadingUpload;
@@ -584,7 +588,7 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
     }
   }
 
-  async function handleUpload(fileList?: FileList | null) {
+  async function handleUpload(fileList?: FileList | File[] | null) {
     const files = fileList ? Array.from(fileList) : [];
     if (!files.length) return;
 
@@ -1072,6 +1076,21 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
     } finally {
       setIsProcessingPdf(false);
     }
+  }
+
+  // The PDF Playground hands back the rebuilt PDF; it replaces the current document the same way a page edit does.
+  function applyPlaygroundResult(blob: Blob, pageCount: number) {
+    const updatedUrl = URL.createObjectURL(blob);
+    if (fileUrl) URL.revokeObjectURL(fileUrl);
+    setFinalFile(blob);
+    setFileUrl(updatedUrl);
+    setPages(pageCount);
+    setPageOrigins([]);
+    setIsPdfEdited(true);
+    setIsPreviewOpen(false);
+    setCopyPromptIndex(null);
+    setOrder(null);
+    setOrderError("");
   }
 
   async function removePdfPage(pageIndex: number) {
@@ -1626,6 +1645,11 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
                       <Trash2 size={16} /> Manage Pages
                     </button>
                   ) : null}
+                  {ownerMode && hasPdfFile && !isIdCardPrint ? (
+                    <button type="button" onClick={() => setIsPlaygroundOpen(true)} disabled={isProcessingPdf || isCleanScanProcessing} title="Rotate, reorder, pages per sheet, watermark, page numbers, smaller file">
+                      <Wand2 size={16} /> PDF Playground
+                    </button>
+                  ) : null}
                   {canCropImage ? (
                     <button type="button" onClick={() => setIsCropOpen(true)} disabled={isCleanScanProcessing || autoScanWorking}>
                       <Crop size={16} /> Crop
@@ -1647,8 +1671,13 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
                     </button>
                   ) : null}
                   {!isPassportPhoto && !isIdCardPrint ? (
-                    <button type="button" onClick={runCleanScan} disabled title="Coming soon">
-                      <ImageIcon size={16} /> Clean Scan <small className="coming-soon-tag">Coming Soon</small>
+                    <button
+                      type="button"
+                      onClick={runCleanScan}
+                      disabled={!ownerMode || isCleanScanProcessing || isProcessingPdf || isUploadBusy}
+                      title={ownerMode ? "Straighten and clean the scan before printing" : "Coming soon"}
+                    >
+                      <ImageIcon size={16} /> Clean Scan {ownerMode ? null : <small className="coming-soon-tag">Coming Soon</small>}
                     </button>
                   ) : null}
                   {isIdCardPrint && !order ? (
@@ -1797,7 +1826,24 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
               </div>
             </div>
           ) : isIdCardPrint ? null : (
-            <label className={`customer-upload ${isUploadBusy ? "is-busy" : ""}`}>
+            <label
+              className={`customer-upload ${isUploadBusy ? "is-busy" : ""} ${isDragOver ? "is-dragover" : ""}`}
+              onDragOver={(event) => {
+                event.preventDefault();
+                if (!isUploadBusy) setIsDragOver(true);
+              }}
+              onDragLeave={(event) => {
+                if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setIsDragOver(false);
+              }}
+              onDrop={(event) => {
+                event.preventDefault();
+                setIsDragOver(false);
+                if (isUploadBusy) return;
+                const dropped = Array.from(event.dataTransfer.files);
+                // The passport photo upload takes one image; everything else accepts several files at once.
+                void handleUpload(isPassportPhoto ? dropped.slice(0, 1) : dropped);
+              }}
+            >
               {isReadingUpload ? <LoaderCircle size={24} className="spin" /> : <Upload size={24} />}
               <strong>{isReadingUpload ? "Reading your document…" : isPassportPhoto ? "Upload Passport Photo" : "Upload PDF, JPG, PNG, JPEG"}</strong>
               <span>
@@ -1807,9 +1853,9 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
                   ? combineStatus || "Combining your files into one document…"
                   : isPassportPhoto
                     ? "Upload a JPG, PNG, or JPEG image. A 6-piece printable sheet will be created after cropping."
-                    : "Pages will be detected automatically. You can also select multiple files at once - they'll be combined and priced together."}
+                    : "Drag & drop files here, or choose them. Pages are detected automatically. Several files at once are combined and priced together."}
               </span>
-              <em>{isUploadBusy ? "Please wait…" : "Tap to choose a file"}</em>
+              <em>{isUploadBusy ? "Please wait…" : isDragOver ? "Drop to upload" : "Tap to choose a file"}</em>
               <input
                 accept={isPassportPhoto ? "image/jpeg,image/png,.jpg,.jpeg,.png" : "application/pdf,image/jpeg,image/png,.pdf,.jpg,.jpeg,.png"}
                 type="file"
@@ -2256,6 +2302,17 @@ export default function PrintPilotScan({ code, ownerMode = false }: { code: stri
             </div>
           </div>
         </div>
+      ) : null}
+
+      {ownerMode && isPlaygroundOpen && hasPdfFile && fileUrl ? (
+        <PdfPlayground
+          fileUrl={fileUrl}
+          fileName={fileName}
+          pages={pages}
+          Thumb={PdfPageThumb}
+          onApply={applyPlaygroundResult}
+          onClose={() => setIsPlaygroundOpen(false)}
+        />
       ) : null}
 
       {isPageManagerOpen ? (

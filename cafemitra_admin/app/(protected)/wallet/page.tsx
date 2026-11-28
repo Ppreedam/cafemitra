@@ -549,20 +549,43 @@ function TopupsTab() {
   const [count, setCount] = useState(0);
   const [pageSize, setPageSize] = useState(20);
   const [page, setPage] = useState(1);
+  const [totalAmount, setTotalAmount] = useState(0);
+  const [status, setStatus] = useState("");
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchWalletTopups({ page })
+    fetchWalletTopups({ page, status })
       .then((res) => {
         setTopups(res.topups);
         setCount(res.count);
         setPageSize(res.pageSize);
+        setTotalAmount(res.totalAmount);
+        setError("");
       })
       .catch((err) => setError(err instanceof Error ? err.message : "Failed to load top-ups."));
-  }, [page]);
+  }, [page, status]);
 
   return (
     <div>
+      <div className="flex flex-wrap items-center gap-3 mb-3">
+        <select
+          value={status}
+          onChange={(e) => {
+            setStatus(e.target.value);
+            setPage(1);
+          }}
+          className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+        >
+          <option value="">All status</option>
+          <option value="pending">Pending</option>
+          <option value="paid">Paid</option>
+          <option value="failed">Failed</option>
+        </select>
+        <p className="text-sm text-slate-500">
+          {count} top-up(s){status ? ` ${status}` : ""} · Total{" "}
+          <span className="font-semibold text-slate-900">{formatCurrency(totalAmount)}</span>
+        </p>
+      </div>
       {error && <div className="mb-3 rounded-md bg-red-50 text-red-700 text-sm px-3 py-2">{error}</div>}
       <div className="rounded-xl border border-slate-200 bg-white overflow-x-auto">
         <table className="w-full text-sm">
@@ -578,7 +601,10 @@ function TopupsTab() {
           <tbody>
             {topups.map((t) => (
               <tr key={t.id} className="border-b border-slate-100 last:border-0">
-                <td className="px-4 py-2 text-slate-700">{t.shopName || t.shopEmail}</td>
+                <td className="px-4 py-2 text-slate-700">
+                  {t.shopName || t.shopEmail}
+                  {t.shopName && <span className="text-xs text-slate-400"> ({t.shopEmail})</span>}
+                </td>
                 <td className="px-4 py-2 text-slate-900 font-medium">{formatCurrency(t.amount)}</td>
                 <td className="px-4 py-2 text-slate-700">{t.paymentGateway}</td>
                 <td className="px-4 py-2 text-slate-700">{t.status}</td>
@@ -586,6 +612,15 @@ function TopupsTab() {
               </tr>
             ))}
           </tbody>
+          <tfoot>
+            <tr className="border-t border-slate-200 bg-slate-50">
+              <td className="px-4 py-2 font-medium text-slate-700">
+                Total{status ? ` (${status})` : ""} · {count} top-up(s)
+              </td>
+              <td className="px-4 py-2 font-semibold text-slate-900">{formatCurrency(totalAmount)}</td>
+              <td colSpan={3} />
+            </tr>
+          </tfoot>
         </table>
         <Pagination page={page} pageSize={pageSize} count={count} onPageChange={setPage} />
       </div>

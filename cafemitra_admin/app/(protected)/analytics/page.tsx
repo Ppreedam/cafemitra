@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import SignupBarChart from "@/components/SignupBarChart";
+import ShopLink from "@/components/ShopLink";
 import { fetchSignupAnalytics, fetchOrderAnalytics, fetchOrders, type SignupAnalytics, type OrderAnalytics, type AdminOrder } from "@/lib/api";
 import { formatCurrency, orderResultMessage } from "@/lib/format";
 
@@ -167,9 +168,7 @@ export default function AnalyticsPage() {
                         </Link>
                       </td>
                       <td className="px-4 py-2 text-slate-700">
-                        <Link href={`/shops/${order.shopId}`} className="hover:underline">
-                          {order.shopName || order.shopEmail}
-                        </Link>
+                        <ShopLink shopId={order.shopId}>{order.shopName || order.shopEmail}</ShopLink>
                         {order.shopName && <span className="text-xs text-slate-400"> ({order.shopEmail})</span>}
                       </td>
                       <td className="px-4 py-2 text-slate-700">{order.serviceName}</td>

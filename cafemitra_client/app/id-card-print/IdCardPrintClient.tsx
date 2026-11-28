@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { CircleAlert, CircleCheck, Contrast, Crop, FlipVertical2, LoaderCircle, LogIn, MessageSquareWarning, Palette, Plus, Printer, RotateCcw, RotateCw, ScanLine, SlidersHorizontal, Trash2, Undo2, Upload, Wallet, Wand2, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
+import TutorialVideo from "../TutorialVideo";
 import { WalletLimitBanner } from "../WalletLimitBanner";
 import { CropEditor, cropImage, DEFAULT_CROP_QUAD, DEFAULT_CROP_RECT, PerspectiveCropEditor, rotateQuad, warpPerspectiveCrop, type CropQuad, type CropRect } from "../CropEditor";
 import { apiFetch, apiUrl, hasStoredSession } from "@/lib/api";
@@ -966,6 +967,10 @@ export default function IdCardPrintClient() {
             </p>
           ) : null}
           {error ? <div className="profile-alert error">{error}</div> : null}
+        </article>
+
+        <article className="customer-panel">
+          <TutorialVideo youtubeId="JFHrelMJSWA" heading="How to use ID Card Print" title="ID Card Print tutorial" />
         </article>
       </div>
 

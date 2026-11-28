@@ -36,7 +36,7 @@ export default function IdCardUploadClient({ docType, children }: { docType: Doc
           accept="application/pdf,.pdf"
           multiple={false}
           backHref="/id-card-maker"
-          backLabel="ID Card Maker"
+          backLabel="PVC Card Maker"
         />
       </div>
     </DashboardShell>

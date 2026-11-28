@@ -956,7 +956,7 @@ export default function IdCardStudioClient() {
       </div>
 
       {modal === "help" ? (
-        <Dialog title="How to use the ID Card Maker" onClose={() => setModal("")}>
+        <Dialog title="How to use the PVC Card Maker" onClose={() => setModal("")}>
           <ol className="idstudio-help-steps">
             <li>Click <b>File</b> (or the folder icon) and choose the downloaded PDF: e-Aadhaar, e-PAN, e-EPIC voter card, DL and so on. You can pick several at once.</li>
             <li>If the PDF is locked, type the <b>Password</b> and press <b>Go!</b>. e-Aadhaar: first 4 letters of the name in capitals + birth year (RAHU1990). e-PAN: date of birth as DDMMYYYY.</li>

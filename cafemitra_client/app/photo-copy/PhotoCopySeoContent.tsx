@@ -67,7 +67,7 @@ export default function PhotoCopySeoContent() {
     <>
       <JsonLd />
       <article className="tool-seo-content" id="photo-copy-guide">
-        <h2>Photo Copy and Print Documents From Your Computer - Free With RepetiGo.</h2>
+        <h1>Photo Copy and Print Documents From Your Computer - Free With RepetiGo.</h1>
         <div className="tool-seo-copy-paragraph tool-seo-hero">
           <p>
             RepetiGo Photo Copy lets a print shop or cyber cafe print or photo copy documents that are already on the local computer - PDFs, scans and phone photos - straight on the printer next to it. Upload, tidy up the pages, choose copies and print, all from one screen alongside the other RepetiGo tools.

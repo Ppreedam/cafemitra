@@ -57,6 +57,7 @@ import {
   type AgentHealth,
 } from "@/lib/printpilot-agent";
 import { DashboardShell } from "../DashboardShell";
+import TutorialVideo from "../TutorialVideo";
 import { WalletLimitBanner } from "../WalletLimitBanner";
 
 type NavItem = {
@@ -985,6 +986,7 @@ export default function AutoPrintClient() {
 
               {currentStep.key === "printer" ? (
                 <div className="wizard-action-content">
+                  <TutorialVideo youtubeId="8Bdt8aMW9dQ" heading="How to create a print profile" title="Print profile tutorial" />
                   <SimplePrinterSetup
                     agentConnected={agentConnected}
                     printers={availablePrinters}

@@ -2,9 +2,10 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { Trash2 } from "lucide-react";
+import { RefreshCw, Trash2 } from "lucide-react";
 import Pagination from "@/components/Pagination";
 import PhotoOrderModal from "@/components/PhotoOrderModal";
+import ShopLink from "@/components/ShopLink";
 import { deleteOrders, exportOrdersCsv, fetchOrders, type AdminOrder } from "@/lib/api";
 import { formatCurrency, orderResultMessage, orderStatusBadgeClass, orderEffectiveStatus } from "@/lib/format";
 
@@ -23,6 +24,7 @@ export default function OrdersPage() {
   const [pageSize, setPageSize] = useState(20);
   const [page, setPage] = useState(1);
   const [service, setService] = useState("");
+  const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
   const [paymentMode, setPaymentMode] = useState("");
   const [from, setFrom] = useState("");
@@ -32,19 +34,25 @@ export default function OrdersPage() {
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(() => {
-    fetchOrders({ service, status, paymentMode, from, to, page })
+    fetchOrders({ search: search.trim(), service, status, paymentMode, from, to, page })
       .then((res) => {
         setOrders(res.orders);
         setCount(res.count);
         setPageSize(res.pageSize);
         setError("");
       })
-      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load orders."));
-  }, [service, status, paymentMode, from, to, page]);
+      .catch((err) => setError(err instanceof Error ? err.message : "Failed to load orders."))
+      .finally(() => setRefreshing(false));
+  }, [search, service, status, paymentMode, from, to, page]);
 
-  useEffect(load, [load]);
+  // Debounced so typing an order number doesn't fire a request per keystroke.
+  useEffect(() => {
+    const timeout = setTimeout(load, 250);
+    return () => clearTimeout(timeout);
+  }, [load]);
 
   function toggle(id: number) {
     setSelected((current) => {
@@ -97,6 +105,13 @@ export default function OrdersPage() {
       <p className="text-sm text-slate-500 mb-4">{count} orders match these filters.</p>
 
       <div className="flex flex-wrap gap-2 mb-4">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => updateFilter(setSearch)(e.target.value)}
+          placeholder="Search order ID, e.g. CM0332-04059 or 4059"
+          className="rounded-md border border-slate-300 px-3 py-1.5 text-sm w-72 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
         <select value={service} onChange={(e) => updateFilter(setService)(e.target.value)} className="rounded-md border border-slate-300 px-2 py-1.5 text-sm">
           {SERVICES.map((s) => (
             <option key={s.value} value={s.value}>
@@ -138,9 +153,10 @@ export default function OrdersPage() {
             className="rounded-md border border-slate-300 px-2 py-1.5 text-sm text-slate-700"
           />
         </label>
-        {(service || status || paymentMode || from || to) && (
+        {(search || service || status || paymentMode || from || to) && (
           <button
             onClick={() => {
+              setSearch("");
               setService("");
               setStatus("");
               setPaymentMode("");
@@ -153,6 +169,18 @@ export default function OrdersPage() {
             Clear filters
           </button>
         )}
+        <button
+          type="button"
+          onClick={() => {
+            setRefreshing(true);
+            load();
+          }}
+          disabled={refreshing}
+          title="Refresh orders"
+          className="inline-flex items-center justify-center rounded-md border border-slate-300 bg-white p-1.5 text-slate-700 hover:bg-slate-50 disabled:opacity-60"
+        >
+          <RefreshCw size={15} className={refreshing ? "animate-spin" : ""} />
+        </button>
         <Link
           href="/orders/stuck"
           className="rounded-md border border-red-200 bg-red-50 px-3 py-1.5 text-sm font-medium text-red-700 hover:bg-red-100"
@@ -161,7 +189,7 @@ export default function OrdersPage() {
         </Link>
         <button
           onClick={() =>
-            exportOrdersCsv({ service, status, paymentMode, from, to }).catch((err) =>
+            exportOrdersCsv({ search: search.trim(), service, status, paymentMode, from, to }).catch((err) =>
               setError(err instanceof Error ? err.message : "Export failed.")
             )
           }
@@ -225,9 +253,7 @@ export default function OrdersPage() {
                   )}
                 </td>
                 <td className="px-4 py-2 text-slate-700">
-                  <Link href={`/shops/${order.shopId}`} className="hover:underline">
-                    {order.shopName || order.shopEmail}
-                  </Link>
+                  <ShopLink shopId={order.shopId}>{order.shopName || order.shopEmail}</ShopLink>
                   {order.shopName && <span className="text-xs text-slate-400"> ({order.shopEmail})</span>}
                 </td>
                 <td className="px-4 py-2 text-slate-700">{order.serviceName}</td>

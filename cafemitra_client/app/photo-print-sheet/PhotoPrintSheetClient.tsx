@@ -3,8 +3,10 @@
 import type React from "react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Bookmark, BookmarkCheck, Pencil, CaseSensitive, ChevronLeft, ChevronRight, Download, Eye, ImagePlus, Loader2, Minus, Paintbrush, Plus, Printer, RefreshCw, RotateCw, Trash2, Upload, Wallet, X } from "lucide-react";
+import { Bookmark, BookmarkCheck, CircleAlert, CircleCheck, Crop, LoaderCircle, Pencil, CaseSensitive, ChevronLeft, ChevronRight, Download, Eye, ImagePlus, Loader2, Minus, Paintbrush, Plus, Printer, RefreshCw, RotateCw, Trash2, Upload, Wallet, X } from "lucide-react";
 import { DashboardShell } from "../DashboardShell";
+import TutorialVideo from "../TutorialVideo";
+import { CropEditor, cropImage, loadImage, type CropRect } from "../CropEditor";
 import { PrintProfileSelect, useAgentPrint } from "../PrintProfileSelect";
 import { canvasesToPdfBytes } from "@/lib/agent-print";
 import { apiFetch, apiUrl, dataUriToBlob, hasStoredSession } from "@/lib/api";
@@ -29,21 +31,26 @@ import {
   MARK_WIDTH_MM,
   cutMarkSegments,
   openPrintWindow,
+  orientPaper,
   packQueue,
   renderPageCanvas,
   renderSingleTileCanvas,
   resolvePaperDims,
   rotateImageFile,
   type MarginGapMm,
+  exportPxPerMm,
+  type ExportQuality,
+  type PaperOrientation,
   type PaperSize,
   type QueuePhoto,
+  type TileBorder,
 } from "./printLayout";
 
 const MAX_COUNT = 200;
 const DEFAULT_COUNT = 6;
 const CM_PER_INCH = 2.54;
 
-const PAPER_SIZE_ORDER: PaperSize[] = ["a4", "4x6", "5x7", "a5", "letter", "custom"];
+const PAPER_SIZE_ORDER: PaperSize[] = ["a4", "4x6", "5x7", "6x8", "8x10", "3.5x5", "a3", "a5", "a6", "letter", "custom"];
 
 function sheetTurnsOf(photo: QueuePhoto) {
   return (((photo.sheetTurns ?? 0) % 4) + 4) % 4;
@@ -58,6 +65,53 @@ function sheetCopyPending(photo: QueuePhoto) {
 function revokePhotoUrls(photo: QueuePhoto) {
   URL.revokeObjectURL(photo.url);
   if (photo.printUrl) URL.revokeObjectURL(photo.printUrl);
+}
+
+type CropJob = { id: string; file: File; url: string };
+type CropPhase = "detecting" | "found" | "notfound";
+
+// Largest centred crop of the given width/height ratio - the starting frame when no face is found.
+function centeredCropRect(imgW: number, imgH: number, ratio: number): CropRect {
+  const widthPx = imgW / imgH > ratio ? imgH * ratio : imgW;
+  const heightPx = widthPx / ratio;
+  return { x: ((imgW - widthPx) / 2 / imgW) * 100, y: ((imgH - heightPx) / 2 / imgH) * 100, width: (widthPx / imgW) * 100, height: (heightPx / imgH) * 100 };
+}
+
+// A passport-style frame around a detected face (face box in percent of the image).
+// The detector's box runs roughly brow-to-chin, so the frame is ~1.75x its height with
+// the face a little above centre, leaving room for hair on top and shoulders below.
+function faceCropRect(face: CropRect, imgW: number, imgH: number, ratio: number): CropRect {
+  const faceH = (face.height / 100) * imgH;
+  const centerX = ((face.x + face.width / 2) / 100) * imgW;
+  const centerY = ((face.y + face.height / 2) / 100) * imgH;
+  let heightPx = faceH * 1.75;
+  let widthPx = heightPx * ratio;
+  const fit = Math.min(1, imgW / widthPx, imgH / heightPx);
+  widthPx *= fit;
+  heightPx *= fit;
+  const left = Math.min(Math.max(centerX - widthPx / 2, 0), imgW - widthPx);
+  const top = Math.min(Math.max(centerY - heightPx * 0.46, 0), imgH - heightPx);
+  return { x: (left / imgW) * 100, y: (top / imgH) * 100, width: (widthPx / imgW) * 100, height: (heightPx / imgH) * 100 };
+}
+
+// Asks the server's face detector for the biggest face (percent box), or null. The photo is
+// shrunk first so a 10MB phone photo isn't uploaded just to find a face.
+async function detectLargestFace(image: HTMLImageElement): Promise<CropRect | null> {
+  const scale = Math.min(1, 1600 / Math.max(image.naturalWidth, image.naturalHeight));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+  canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+  canvas.getContext("2d")?.drawImage(image, 0, 0, canvas.width, canvas.height);
+  const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.9));
+  if (!blob) return null;
+  const body = new FormData();
+  body.append("image", blob, "photo.jpg");
+  body.append("sensitivity", "recommended");
+  const response = await fetch(apiUrl("/api/tools/detect-faces/"), { method: "POST", body });
+  if (!response.ok) return null;
+  const data = await response.json().catch(() => ({}));
+  const faces: CropRect[] = Array.isArray(data.faces) ? data.faces : [];
+  return faces.length ? faces.reduce((best, face) => (face.width * face.height > best.width * best.height ? face : best)) : null;
 }
 
 // seo: server-rendered guide from page.tsx, shown below the tool.
@@ -88,7 +142,16 @@ export default function PhotoPrintSheetClient({ seo }: { seo?: React.ReactNode }
   }
 
   const [photos, setPhotos] = useState<QueuePhoto[]>([]);
+  // Uploaded photos wait here and are cropped one at a time (face detected -> passport frame) before joining the queue.
+  const [cropJobs, setCropJobs] = useState<CropJob[]>([]);
+  const [cropRect, setCropRect] = useState<CropRect>({ x: 10, y: 10, width: 80, height: 80 });
+  const [autoCropRect, setAutoCropRect] = useState<CropRect | null>(null);
+  const [cropPhase, setCropPhase] = useState<CropPhase>("detecting");
+  const [cropBusy, setCropBusy] = useState(false);
+  const currentCrop = cropJobs[0] ?? null;
   const [paperSize, setPaperSize] = useState<PaperSize>("a4");
+  // null = the paper as it is (portrait for the standard sizes, whatever was typed for Custom).
+  const [orientation, setOrientation] = useState<PaperOrientation | null>(null);
   const [customWidthCm, setCustomWidthCm] = useState<number | null>(null);
   const [customHeightCm, setCustomHeightCm] = useState<number | null>(null);
   const [gaps, setGaps] = useState<MarginGapMm>({ gapX: DEFAULT_GAP_MM, gapY: DEFAULT_GAP_MM, marginTop: DEFAULT_MARGIN_MM, marginLeft: DEFAULT_MARGIN_MM });
@@ -234,7 +297,7 @@ export default function PhotoPrintSheetClient({ seo }: { seo?: React.ReactNode }
         const item = items[i];
         if (item.kind === "file" && item.type.startsWith("image/")) {
           const pasted = item.getAsFile();
-          if (pasted) addFiles([pasted]);
+          if (pasted) queueForCrop([pasted]);
           break;
         }
       }
@@ -246,7 +309,9 @@ export default function PhotoPrintSheetClient({ seo }: { seo?: React.ReactNode }
 
   const activeGaps = liveView ? gaps : pendingGaps;
   const isCustomPaperReady = paperSize !== "custom" || !!(customWidthCm && customWidthCm > 0 && customHeightCm && customHeightCm > 0);
-  const paperMeta = useMemo(() => resolvePaperDims(paperSize, customWidthCm, customHeightCm), [paperSize, customWidthCm, customHeightCm]);
+  const basePaper = useMemo(() => resolvePaperDims(paperSize, customWidthCm, customHeightCm), [paperSize, customWidthCm, customHeightCm]);
+  const paperMeta = useMemo(() => (orientation ? orientPaper(basePaper, orientation) : basePaper), [basePaper, orientation]);
+  const currentOrientation: PaperOrientation = paperMeta.widthMm > paperMeta.heightMm ? "landscape" : "portrait";
   const { pages, skipped } = useMemo(
     () => (isCustomPaperReady ? packQueue(photos, paperMeta, gaps) : { pages: [[]], skipped: 0 }),
     [photos, paperMeta, gaps, isCustomPaperReady],
@@ -268,6 +333,60 @@ export default function PhotoPrintSheetClient({ seo }: { seo?: React.ReactNode }
       // Not remembered - the choice still applies to this sheet.
     }
   }
+  // Optional frame around every photo (off by default); colour, width and on/off are remembered on this device.
+  const [borderOn, setBorderOn] = useState(false);
+  const [borderColor, setBorderColor] = useState("#000000");
+  const [borderWidthMm, setBorderWidthMm] = useState(0.4);
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("pps:border") || "null");
+      if (saved && typeof saved === "object") {
+        if (typeof saved.on === "boolean") setBorderOn(saved.on);
+        if (typeof saved.color === "string" && /^#[0-9a-fA-F]{6}$/.test(saved.color)) setBorderColor(saved.color);
+        if (typeof saved.widthMm === "number" && saved.widthMm > 0 && saved.widthMm <= 5) setBorderWidthMm(saved.widthMm);
+      }
+    } catch {
+      // Storage unavailable or unreadable - keep the defaults.
+    }
+  }, []);
+  function updateBorder(next: { on?: boolean; color?: string; widthMm?: number }) {
+    const merged = { on: next.on ?? borderOn, color: next.color ?? borderColor, widthMm: next.widthMm ?? borderWidthMm };
+    setBorderOn(merged.on);
+    setBorderColor(merged.color);
+    setBorderWidthMm(merged.widthMm);
+    try {
+      localStorage.setItem("pps:border", JSON.stringify(merged));
+    } catch {
+      // Not remembered - the choice still applies to this sheet.
+    }
+  }
+  const tileBorder: TileBorder | null = borderOn ? { color: borderColor, widthMm: borderWidthMm } : null;
+
+  // Export resolution for Download HD and Print: 4K (long side 3840px) or standard 300 DPI; remembered on this device.
+  const [exportQuality, setExportQuality] = useState<ExportQuality>("standard");
+  useEffect(() => {
+    try {
+      if (localStorage.getItem("pps:quality") === "uhd") setExportQuality("uhd");
+    } catch {
+      // Storage unavailable - keep the default.
+    }
+  }, []);
+  function chooseExportQuality(next: ExportQuality) {
+    setExportQuality(next);
+    try {
+      localStorage.setItem("pps:quality", next);
+    } catch {
+      // Not remembered - the choice still applies to this sheet.
+    }
+  }
+
+  // Sheets the whole queue needs on the paper turned each way, so the shop can see which fits more.
+  const orientationSheets = useMemo(() => {
+    if (!isCustomPaperReady || !photos.length) return null;
+    const sheetsFor = (turned: PaperOrientation) => packQueue(photos, orientPaper(basePaper, turned), gaps).pages.length;
+    return { portrait: sheetsFor("portrait"), landscape: sheetsFor("landscape") };
+  }, [photos, basePaper, gaps, isCustomPaperReady]);
+
   const previewMarks = useMemo(() => (cutMarks ? cutMarkSegments(paperMeta, pages[activePage] || []) : []), [cutMarks, paperMeta, pages, activePage]);
   const totalTiles = pages.reduce((sum, page) => sum + page.length, 0);
 
@@ -298,9 +417,71 @@ export default function PhotoPrintSheetClient({ seo }: { seo?: React.ReactNode }
     setError("");
   }
 
+  // Photos the user uploads (choose, drag-drop, paste) go through the crop popup first.
+  // Photos handed over from other tools were already cropped there, so they use addFiles directly.
+  function queueForCrop(fileList: FileList | File[]) {
+    const files = Array.from(fileList).filter((file) => file.type.startsWith("image/"));
+    if (!files.length) return;
+    setCropJobs((prev) => [...prev, ...files.map((file) => ({ id: crypto.randomUUID(), file, url: URL.createObjectURL(file) }))]);
+  }
+
+  // Detect the face for whichever photo is at the front of the crop queue.
+  useEffect(() => {
+    if (!currentCrop) return;
+    let cancelled = false;
+    const tile = PHOTO_SIZE_PRESETS.find((item) => item.key === "custom") || PHOTO_SIZE_PRESETS[0];
+    const ratio = tile.widthCm / tile.heightCm;
+    setCropPhase("detecting");
+    setAutoCropRect(null);
+    (async () => {
+      let rect: CropRect | null = null;
+      let found = false;
+      try {
+        const image = await loadImage(currentCrop.url);
+        rect = centeredCropRect(image.naturalWidth, image.naturalHeight, ratio);
+        const face = await detectLargestFace(image).catch(() => null);
+        if (face) {
+          rect = faceCropRect(face, image.naturalWidth, image.naturalHeight, ratio);
+          found = true;
+        }
+      } catch {
+        // unreadable image: keep the default frame, the user can still use the full photo
+      }
+      if (cancelled) return;
+      if (rect) setCropRect(rect);
+      setAutoCropRect(found ? rect : null);
+      setCropPhase(found ? "found" : "notfound");
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentCrop?.id]);
+
+  // Adds the photo at the front of the crop queue to the sheet (cropped, or as uploaded) and moves on.
+  async function finishCrop(useCrop: boolean) {
+    const job = currentCrop;
+    if (!job || cropBusy) return;
+    setCropBusy(true);
+    try {
+      let file = job.file;
+      if (useCrop) {
+        const blob = await cropImage(job.url, cropRect, "image/jpeg");
+        file = new File([blob], `${job.file.name.replace(/\.[^.]+$/, "")}.jpg`, { type: "image/jpeg" });
+      }
+      addFiles([file]);
+    } catch {
+      addFiles([job.file]);
+    } finally {
+      URL.revokeObjectURL(job.url);
+      setCropJobs((prev) => prev.filter((item) => item.id !== job.id));
+      setCropBusy(false);
+    }
+  }
+
   function handleDrop(event: React.DragEvent<HTMLLabelElement>) {
     event.preventDefault();
-    if (event.dataTransfer.files?.length) addFiles(event.dataTransfer.files);
+    if (event.dataTransfer.files?.length) queueForCrop(event.dataTransfer.files);
   }
 
   function toSavedRecord(photo: QueuePhoto) {
@@ -448,7 +629,7 @@ export default function PhotoPrintSheetClient({ seo }: { seo?: React.ReactNode }
       const imageCache = new Map<string, HTMLImageElement>();
       for (let pageIndex = 0; pageIndex < pages.length; pageIndex += 1) {
         if (!pages[pageIndex].length) continue;
-        const canvas = await renderPageCanvas(paperMeta, pages[pageIndex], imageCache, cutMarks);
+        const canvas = await renderPageCanvas(paperMeta, pages[pageIndex], imageCache, cutMarks, tileBorder, exportQuality);
         downloadCanvas(canvas, `print-sheet-${paperMeta.badge.toLowerCase()}-page-${pageIndex + 1}.png`);
         if (pageIndex < pages.length - 1) await new Promise((resolve) => setTimeout(resolve, 350));
       }
@@ -485,11 +666,11 @@ export default function PhotoPrintSheetClient({ seo }: { seo?: React.ReactNode }
           const rendered = [];
           for (const tiles of pages) {
             if (!tiles.length) continue;
-            rendered.push({ canvas: await renderPageCanvas(paperMeta, tiles, imageCache, cutMarks), widthMm: paperMeta.widthMm, heightMm: paperMeta.heightMm });
+            rendered.push({ canvas: await renderPageCanvas(paperMeta, tiles, imageCache, cutMarks, tileBorder, exportQuality), widthMm: paperMeta.widthMm, heightMm: paperMeta.heightMm });
           }
           return canvasesToPdfBytes(rendered);
         },
-        { fileName: `print-sheet-${paperMeta.badge.toLowerCase()}.pdf`, fallback: () => openPrintWindow(paperMeta, pages, cutMarks) },
+        { fileName: `print-sheet-${paperMeta.badge.toLowerCase()}.pdf`, fallback: () => openPrintWindow(paperMeta, pages, cutMarks, tileBorder) },
       );
       trackToolEvent("photo_print_sheet", "print_sheet", { total_tiles: totalTiles });
     } catch (reason) {
@@ -650,7 +831,10 @@ export default function PhotoPrintSheetClient({ seo }: { seo?: React.ReactNode }
               {photos.length ? <ImagePlus size={20} /> : <Upload size={24} />}
               <strong>{photos.length ? "Add More Photos" : "Upload Passport Photos"}</strong>
               <span>Drag &amp; drop, paste from clipboard, or choose JPG/PNG files. Select multiple at once.</span>
-              <input accept=".jpg,.jpeg,.png" type="file" multiple onChange={(event) => event.target.files && addFiles(event.target.files)} />
+              <input accept=".jpg,.jpeg,.png" type="file" multiple onChange={(event) => {
+                if (event.target.files) queueForCrop(event.target.files);
+                event.target.value = "";
+              }} />
             </label>
 
             {photos.length ? (
@@ -660,6 +844,8 @@ export default function PhotoPrintSheetClient({ seo }: { seo?: React.ReactNode }
             ) : null}
 
             {error ? <div className="profile-alert error">{error}</div> : null}
+
+            <TutorialVideo youtubeId="M_jNabH4reE" heading="How to use the Photo Print Sheet Maker" title="Photo Print Sheet Maker tutorial" />
           </article>
 
           <article className="customer-panel">
@@ -687,6 +873,22 @@ export default function PhotoPrintSheetClient({ seo }: { seo?: React.ReactNode }
                       <img src={tile.url} alt="" />
                     </div>
                   ))}
+                  {tileBorder ? (
+                    <svg className="pps-marks" viewBox={`0 0 ${paperMeta.widthMm} ${paperMeta.heightMm}`} preserveAspectRatio="none" aria-hidden="true">
+                      {(pages[activePage] || []).map((tile, index) => (
+                        <rect
+                          key={index}
+                          x={tile.xMm + tileBorder.widthMm / 2}
+                          y={tile.yMm + tileBorder.widthMm / 2}
+                          width={Math.max(0, tile.wMm - tileBorder.widthMm)}
+                          height={Math.max(0, tile.hMm - tileBorder.widthMm)}
+                          fill="none"
+                          stroke={tileBorder.color}
+                          strokeWidth={tileBorder.widthMm}
+                        />
+                      ))}
+                    </svg>
+                  ) : null}
                   {previewMarks.length ? (
                     <svg className="pps-marks" viewBox={`0 0 ${paperMeta.widthMm} ${paperMeta.heightMm}`} preserveAspectRatio="none" aria-hidden="true">
                       {previewMarks.map((mark, index) => (
@@ -722,80 +924,165 @@ export default function PhotoPrintSheetClient({ seo }: { seo?: React.ReactNode }
             ) : null}
 
             <div className="pps-controls">
-              <div className="pps-controls-row">
-                <label className="pps-field">
-                  <span>Paper Size</span>
-                  <select value={paperSize} onChange={(event) => setPaperSize(event.target.value as PaperSize)}>
-                    {PAPER_SIZE_ORDER.map((key) => (
-                      <option key={key} value={key}>
-                        {key === "custom" ? "Custom Size" : PAPER_SIZES[key].label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
+              <section className="pps-section">
+                <h3 className="pps-section-title">Paper</h3>
+                <div className="pps-controls-row">
+                  <label className="pps-field">
+                    <span>Paper Size</span>
+                    <select value={paperSize} onChange={(event) => setPaperSize(event.target.value as PaperSize)}>
+                      {PAPER_SIZE_ORDER.map((key) => (
+                        <option key={key} value={key}>
+                          {key === "custom" ? "Custom Size" : PAPER_SIZES[key].label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
 
-                <div className="pps-field">
-                  <span>Margin / Gap Control</span>
+                  <div className="pps-field">
+                    <span>Orientation</span>
+                    <div className="pps-orient" role="group" aria-label="Paper orientation">
+                      {(["portrait", "landscape"] as const).map((turned) => (
+                        <button
+                          key={turned}
+                          type="button"
+                          className={currentOrientation === turned ? "active" : ""}
+                          aria-pressed={currentOrientation === turned}
+                          onClick={() => setOrientation(turned)}
+                        >
+                          {turned === "portrait" ? "Portrait" : "Landscape"}
+                          {orientationSheets ? <small>{orientationSheets[turned]} sheet{orientationSheets[turned] === 1 ? "" : "s"}</small> : null}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {paperSize === "custom" ? (
+                  <div className="pps-custom-paper">
+                    <span>Size (cm):</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="200"
+                      step="0.1"
+                      placeholder="W (cm)"
+                      value={customWidthCm ?? ""}
+                      onChange={(event) => setCustomWidthCm(event.target.value ? Number(event.target.value) : null)}
+                    />
+                    <span className="pps-custom-paper-x">X</span>
+                    <input
+                      type="number"
+                      min="1"
+                      max="200"
+                      step="0.1"
+                      placeholder="H (cm)"
+                      value={customHeightCm ?? ""}
+                      onChange={(event) => setCustomHeightCm(event.target.value ? Number(event.target.value) : null)}
+                    />
+                  </div>
+                ) : null}
+              </section>
+
+              <section className="pps-section">
+                <div className="pps-section-head">
+                  <h3 className="pps-section-title">Margin &amp; Gap</h3>
                   <button type="button" className="pps-reset-default" onClick={resetGaps}>
                     <RefreshCw size={13} /> Reset Default
                   </button>
                 </div>
-              </div>
-
-              <label className="pps-cutmarks" title="A dashed line between the photos to cut along.">
-                <input type="checkbox" checked={cutMarks} onChange={(event) => toggleCutMarks(event.target.checked)} />
-                <span>Cut lines (dashed line between photos)</span>
-              </label>
-
-              {paperSize === "custom" ? (
-                <div className="pps-custom-paper">
-                  <span>Size (cm):</span>
-                  <input
-                    type="number"
-                    min="1"
-                    max="200"
-                    step="0.1"
-                    placeholder="W (cm)"
-                    value={customWidthCm ?? ""}
-                    onChange={(event) => setCustomWidthCm(event.target.value ? Number(event.target.value) : null)}
-                  />
-                  <span className="pps-custom-paper-x">X</span>
-                  <input
-                    type="number"
-                    min="1"
-                    max="200"
-                    step="0.1"
-                    placeholder="H (cm)"
-                    value={customHeightCm ?? ""}
-                    onChange={(event) => setCustomHeightCm(event.target.value ? Number(event.target.value) : null)}
-                  />
+                <div className="pps-gap-grid">
+                  <label className="pps-slider">
+                    <span>Gap X <b>{activeGaps.gapX}mm</b></span>
+                    <input type="range" min={0} max={10} step={0.5} value={activeGaps.gapX} onChange={(event) => setGapValue("gapX", Number(event.target.value))} />
+                  </label>
+                  <label className="pps-slider">
+                    <span>Gap Y <b>{activeGaps.gapY}mm</b></span>
+                    <input type="range" min={0} max={10} step={0.5} value={activeGaps.gapY} onChange={(event) => setGapValue("gapY", Number(event.target.value))} />
+                  </label>
+                  <label className="pps-slider">
+                    <span>Margin Top <b>{activeGaps.marginTop}mm</b></span>
+                    <input type="range" min={0} max={20} step={0.5} value={activeGaps.marginTop} onChange={(event) => setGapValue("marginTop", Number(event.target.value))} />
+                  </label>
+                  <label className="pps-slider">
+                    <span>Margin Left <b>{activeGaps.marginLeft}mm</b></span>
+                    <input type="range" min={0} max={20} step={0.5} value={activeGaps.marginLeft} onChange={(event) => setGapValue("marginLeft", Number(event.target.value))} />
+                  </label>
                 </div>
-              ) : null}
 
-              <div className="pps-gap-grid">
-                <label className="pps-slider">
-                  <span>Gap X <b>{activeGaps.gapX}mm</b></span>
-                  <input type="range" min={0} max={10} step={0.5} value={activeGaps.gapX} onChange={(event) => setGapValue("gapX", Number(event.target.value))} />
-                </label>
-                <label className="pps-slider">
-                  <span>Gap Y <b>{activeGaps.gapY}mm</b></span>
-                  <input type="range" min={0} max={10} step={0.5} value={activeGaps.gapY} onChange={(event) => setGapValue("gapY", Number(event.target.value))} />
-                </label>
-                <label className="pps-slider">
-                  <span>Margin Top <b>{activeGaps.marginTop}mm</b></span>
-                  <input type="range" min={0} max={20} step={0.5} value={activeGaps.marginTop} onChange={(event) => setGapValue("marginTop", Number(event.target.value))} />
-                </label>
-                <label className="pps-slider">
-                  <span>Margin Left <b>{activeGaps.marginLeft}mm</b></span>
-                  <input type="range" min={0} max={20} step={0.5} value={activeGaps.marginLeft} onChange={(event) => setGapValue("marginLeft", Number(event.target.value))} />
-                </label>
-              </div>
+                {!liveView ? (
+                  <button type="button" className="pps-refresh-preview" onClick={() => setGaps(pendingGaps)}>
+                    <RefreshCw size={14} /> Refresh Preview
+                  </button>
+                ) : null}
+              </section>
 
-              {!liveView ? (
-                <button type="button" className="pps-refresh-preview" onClick={() => setGaps(pendingGaps)}>
-                  <RefreshCw size={14} /> Refresh Preview
-                </button>
-              ) : null}
+              <section className="pps-section">
+                <h3 className="pps-section-title">Cut Lines &amp; Border</h3>
+                <label className="pps-cutmarks" title="A dashed line between the photos to cut along.">
+                  <input type="checkbox" checked={cutMarks} onChange={(event) => toggleCutMarks(event.target.checked)} />
+                  <span>Cut lines (dashed line between photos)</span>
+                </label>
+
+                <div className="pps-border-control">
+                  <label className="pps-cutmarks" title="A coloured frame on the edge of every photo.">
+                    <input type="checkbox" checked={borderOn} onChange={(event) => updateBorder({ on: event.target.checked })} />
+                    <span>Border around each photo</span>
+                  </label>
+                  {borderOn ? (
+                    <div className="pps-border-options">
+                      <div className="pps-border-color-row">
+                        <label className="pps-border-color">
+                          <span>Color</span>
+                          <input type="color" value={borderColor} onChange={(event) => updateBorder({ color: event.target.value })} aria-label="Border color" />
+                        </label>
+                        <div className="pps-border-swatches" role="group" aria-label="Quick border colors">
+                          {["#000000", "#ffffff", "#2563eb", "#dc2626", "#16a34a", "#6b7280"].map((swatch) => (
+                            <button
+                              key={swatch}
+                              type="button"
+                              className={borderColor.toLowerCase() === swatch ? "active" : ""}
+                              style={{ background: swatch }}
+                              onClick={() => updateBorder({ color: swatch })}
+                              aria-label={`Border color ${swatch}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <label className="pps-slider pps-border-width">
+                        <span>Width <b>{borderWidthMm}mm</b></span>
+                        <input type="range" min={0.1} max={3} step={0.1} value={borderWidthMm} onChange={(event) => updateBorder({ widthMm: Math.round(Number(event.target.value) * 10) / 10 })} />
+                      </label>
+                    </div>
+                  ) : null}
+                </div>
+              </section>
+
+              <section className="pps-section" role="group" aria-label="Export resolution">
+                <h3 className="pps-section-title">Export Resolution</h3>
+                <div className="pps-quality-options">
+                  {([
+                    { key: "uhd", title: "4K Ultra HD", note: "3840px long side" },
+                    { key: "standard", title: "300 DPI", note: "Standard print" },
+                  ] as const).map((option) => (
+                    <button
+                      key={option.key}
+                      type="button"
+                      className={exportQuality === option.key ? "active" : ""}
+                      aria-pressed={exportQuality === option.key}
+                      onClick={() => chooseExportQuality(option.key)}
+                    >
+                      <strong>{option.title}</strong>
+                      <small>{option.note}</small>
+                    </button>
+                  ))}
+                </div>
+                <small className="pps-quality-info">
+                  {(() => {
+                    const pxPerMm = exportPxPerMm(paperMeta, exportQuality);
+                    return `This sheet: ${Math.round(paperMeta.widthMm * pxPerMm)} x ${Math.round(paperMeta.heightMm * pxPerMm)} px (about ${Math.round(pxPerMm * 25.4)} DPI)`;
+                  })()}
+                </small>
+              </section>
 
               <PrintProfileSelect print={agentPrint} className="pps-print-profile" />
               <div className="pps-final-actions">
@@ -814,6 +1101,65 @@ export default function PhotoPrintSheetClient({ seo }: { seo?: React.ReactNode }
           </article>
         </section>
       </div>
+
+      {currentCrop ? (
+        <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Crop photo">
+          <div className="crop-window idcrop-window">
+            <div className="document-preview-head">
+              <div>
+                <strong>Crop Photo{cropJobs.length > 1 ? ` (1 of ${cropJobs.length})` : ""}</strong>
+                <span>{currentCrop.file.name}</span>
+              </div>
+              <button type="button" onClick={() => void finishCrop(cropPhase === "found")} disabled={cropBusy} aria-label="Close crop">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="crop-body idcrop-body">
+              {cropPhase === "detecting" ? (
+                <div className="idcrop-note">
+                  <LoaderCircle size={20} className="spin" />
+                  <div>
+                    <strong>Finding the face...</strong>
+                    <span>The crop frame will be placed on the face in passport-photo size.</span>
+                  </div>
+                </div>
+              ) : cropPhase === "found" ? (
+                <div className="idcrop-note ok">
+                  <CircleCheck size={20} />
+                  <div>
+                    <strong>Face detected automatically</strong>
+                    <span>
+                      The crop frame was placed on the face for you in passport-photo size. If it looks right, press <b>Apply Crop</b> and the photo is added. If not, drag the frame or its corners first.
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div className="idcrop-note warn">
+                  <CircleAlert size={20} />
+                  <div>
+                    <strong>We could not find a face automatically</strong>
+                    <span>Move and resize the frame by hand, then press Apply Crop - or use the full photo.</span>
+                  </div>
+                </div>
+              )}
+              <CropEditor fileUrl={currentCrop.url} rect={cropRect} onRectChange={setCropRect} />
+              <div className="crop-controls">
+                <p>Drag a corner or edge to resize the crop area. Drag inside the box to move it.</p>
+                <button type="button" disabled={cropBusy} onClick={() => setCropRect(autoCropRect ?? { x: 10, y: 10, width: 80, height: 80 })}>
+                  Reset Crop
+                </button>
+                <button type="button" disabled={cropBusy || cropPhase === "detecting"} onClick={() => void finishCrop(true)}>
+                  <Crop size={17} /> {cropBusy ? "Adding..." : "Apply Crop"}
+                </button>
+                <button type="button" disabled={cropBusy} onClick={() => void finishCrop(false)}>
+                  Use full photo
+                </button>
+                {cropPhase === "found" ? <small>Closing this window keeps the automatic crop.</small> : <small>Closing this window adds the full photo.</small>}
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {previewPhoto ? (
         <div className="document-preview-modal" role="dialog" aria-modal="true" aria-label="Photo preview">

@@ -107,6 +107,14 @@ export default function DashboardPage() {
           hint={`${data.agents.pending} pending approval`}
           href="/agents"
         />
+        <StatTile
+          icon={Printer}
+          label="Print agents online"
+          value={`${formatCompactNumber(data.printAgent.online)} / ${formatCompactNumber(data.printAgent.total)}`}
+          tone={data.printAgent.online > 0 ? "good" : "warning"}
+          hint={`${data.printAgent.offline} offline · seen in the last 5 minutes`}
+          href="/print-agent"
+        />
         <StatTile label="Active payment gateway" value={data.activePaymentGateway ?? "None configured"} />
       </div>
 

@@ -389,8 +389,9 @@ export default function WalletClient() {
   const canSubmitWithdrawal =
     Number(amount) > 0 && Number(amount) <= wallet.summary.netWithdrawable && Boolean(trimmedAccountDetail) && !upiError;
   const withdrawFeePercent = wallet.summary.withdrawalFeePercent;
-  const withdrawFeeAmount = Number(amount) > 0 && !amountError ? Math.round(Number(amount) * (withdrawFeePercent / 100) * 100) / 100 : 0;
-  const withdrawNetAmount = Number(amount) > 0 && !amountError ? Math.round((Number(amount) - withdrawFeeAmount) * 100) / 100 : 0;
+  const withdrawSplit = Number(amount) > 0 && !amountError ? withdrawalFeeSplit(Number(amount), withdrawFeePercent) : { fee: 0, net: 0 };
+  const withdrawFeeAmount = withdrawSplit.fee;
+  const withdrawNetAmount = withdrawSplit.net;
   const withdrawFeeHint =
     Number(amount) > 0 && !amountError && withdrawFeePercent > 0
       ? `You'll receive Rs. ${withdrawNetAmount} after the ${withdrawFeePercent}% transaction fee (Rs. ${withdrawFeeAmount}).`
@@ -534,7 +535,7 @@ export default function WalletClient() {
                       {formatCurrency(wallet.summary.netWithdrawable)}
                       {withdrawFeePercent > 0 && wallet.summary.netWithdrawable > 0 ? (
                         <small>
-                          You receive {formatCurrency(Math.round(wallet.summary.netWithdrawable * (1 - withdrawFeePercent / 100) * 100) / 100)} after the {withdrawFeePercent}% fee
+                          You receive {formatCurrency(withdrawalFeeSplit(wallet.summary.netWithdrawable, withdrawFeePercent).net)} after the {withdrawFeePercent}% fee
                         </small>
                       ) : null}
                     </dd>
@@ -668,6 +669,17 @@ export default function WalletClient() {
       </div>
     </DashboardShell>
   );
+}
+
+// Must stay identical to request_withdrawal() in the server's views.py: the fee is the
+// typed amount x percent, rounded half-up to the paisa; the owner receives amount - fee.
+// Integer paise / basis-point maths so float error can't shift a paisa (the old
+// Math.round(x * pct * 100) could disagree with the server's rounding).
+function withdrawalFeeSplit(amount: number, feePercent: number) {
+  const paise = Math.round(amount * 100);
+  const basisPoints = Math.round(feePercent * 100);
+  const feePaise = Math.floor((paise * basisPoints + 5000) / 10000);
+  return { fee: feePaise / 100, net: (paise - feePaise) / 100 };
 }
 
 function formatCurrency(value: number) {
